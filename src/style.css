@@ -1,0 +1,272 @@
+@import "tailwindcss";
+
+/* ================================
+   Desidia v2 - Task Management SaaS
+   Custom CSS & Design System
+   ================================ */
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Primary colors */
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+}
+
+/* CSS Custom Properties for theming */
+:root {
+  /* Primary colors (for CSS usage) */
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 64px;
+  --topbar-height: 56px;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Base reset and styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* Sidebar specific styles */
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-300) transparent;
+}
+
+/* Dropdown submenu vertical line */
+.dropdown-content.open .submenu-item {
+  position: relative;
+}
+
+.dropdown-content.open .submenu-item::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-gray-200);
+}
+
+.dropdown-content.open .submenu-item:last-child::before {
+  height: 50%;
+}
+
+/* PrimeVue customizations */
+.p-button {
+  font-family: var(--font-sans);
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  transition: background-color var(--transition-fast);
+}
+
+/* Task status badges */
+.status-badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-todo {
+  @apply bg-gray-100 text-gray-700;
+}
+
+.status-in-progress {
+  @apply bg-blue-100 text-blue-700;
+}
+
+.status-done {
+  @apply bg-green-100 text-green-700;
+}
+
+.status-blocked {
+  @apply bg-red-100 text-red-700;
+}
+
+/* Priority indicators */
+.priority-low {
+  @apply text-gray-500;
+}
+
+.priority-medium {
+  @apply text-yellow-500;
+}
+
+.priority-high {
+  @apply text-orange-500;
+}
+
+.priority-urgent {
+  @apply text-red-500;
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-shadow duration-200;
+}
+
+.card-hover:hover {
+  @apply shadow-md;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Form input focus states */
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px var(--color-primary-100);
+}
+
+/* AI feature highlight */
+.ai-feature {
+  @apply bg-gradient-to-r from-violet-500 to-purple-600;
+}
+
+/* Kanban column styles */
+.kanban-column {
+  @apply bg-gray-100 rounded-lg p-3 min-h-96;
+}
+
+.kanban-card {
+  @apply bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-pointer;
+  @apply hover:shadow-md transition-shadow duration-200;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 100%;
+  }
+
+  .sidebar-overlay {
+    @apply fixed inset-0 bg-black/50 z-40;
+  }
+}
+
+/* Animation keyframes */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft var(--transition-normal) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight var(--transition-normal) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) forwards;
+}
+
+/* CKEditor customizations */
+.ck-editor__editable {
+  min-height: 200px;
+  max-height: 500px;
+}
+
+.ck-editor__editable:focus {
+  border-color: var(--color-primary-500) !important;
+  box-shadow: 0 0 0 2px var(--color-primary-100) !important;
+}

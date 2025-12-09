@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar with Dropdowns</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom scrollbar */
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: #d1cdd6;
+      border-radius: 3px;
+    }
+    .sidebar::-webkit-scrollbar-thumb:hover {
+      background: #b8b3bf;
+    }
+    /* Added vertical line for submenu items */
+    .dropdown-content.open .submenu-item {
+      position: relative;
+    }
+    .dropdown-content.open .submenu-item::before {
+      content: '';
+      position: absolute;
+      left: 24px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: #e5e7eb;
+    }
+    .dropdown-content.open .submenu-item:last-child::before {
+      height: 50%;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+  <aside class="sidebar w-72 h-screen bg-[#faf9fb] border-r border-gray-200 py-4 px-3 overflow-y-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-2 mb-4">
+      <div class="flex items-center gap-2 font-semibold text-sm text-gray-900">
+        <div class="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-md flex items-center justify-center text-white text-xs font-bold">D</div>
+        DARTAI_TESTING
+      </div>
+      <div class="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-rose-500"></div>
+    </div>
+
+    <!-- New Task Button -->
+    <button class="flex items-center gap-2 w-full py-2.5 px-3 bg-transparent border border-dashed border-gray-300 rounded-lg text-gray-500 text-sm cursor-pointer mb-5 hover:bg-gray-100 hover:border-gray-400 transition-all">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      New task
+    </button>
+
+    <!-- Main Navigation -->
+    <nav class="mb-6">
+      <a class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-700 text-sm cursor-pointer bg-gray-200/70 hover:bg-gray-200" href="#">
+        <span class="w-5 h-5 flex items-center justify-center opacity-70">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </span>
+        Home
+      </a>
+      <a class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" href="#">
+        <span class="w-5 h-5 flex items-center justify-center opacity-70">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        My tasks
+      </a>
+      <a class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" href="#">
+        <span class="w-5 h-5 flex items-center justify-center opacity-70">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </span>
+        Inbox
+        <span class="ml-auto bg-violet-500 text-white text-[11px] py-0.5 px-2 rounded-full font-medium">57</span>
+      </a>
+      <a class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" href="#">
+        <span class="w-5 h-5 flex items-center justify-center opacity-70">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </span>
+        Intelligence
+      </a>
+
+      <!-- Dropdown - Dashboards -->
+      <div class="dropdown-section mb-1 relative">
+        <!-- Added hover:bg-gray-200 and rounded-md to arrow wrapper for hover effect -->
+        <div class="dropdown-header group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" data-dropdown="dashboards">
+          <span class="w-5 h-5 relative flex items-center justify-center">
+            <span class="dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+            <span class="dropdown-icon opacity-70 group-hover:opacity-0 transition-all duration-200">
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>
+          </span>
+          <span class="flex-1">Dashboards</span>
+          <button class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all" onclick="event.stopPropagation(); toggleContextMenu(this)">
+            <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+              <circle cx="12" cy="19" r="2"></circle>
+            </svg>
+          </button>
+        </div>
+        <div class="context-menu hidden absolute right-0 top-10 z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+          <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+            Rename
+          </a>
+          <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            Space settings
+          </a>
+          <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            Copy settings link
+          </a>
+          <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copy ID
+          </a>
+          <div class="border-t border-gray-100 my-1"></div>
+          <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            Go to reports
+          </a>
+          <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+            Replicate space
+          </a>
+        </div>
+        <!-- Added submenu-item class to each link for vertical line styling -->
+        <div class="dropdown-content max-h-0 overflow-hidden opacity-0 transition-all duration-300" id="dropdown-dashboards">
+          <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+            <span class="w-[18px] h-[18px] rounded bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">📊</span> Overview
+          </a>
+          <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+            <span class="w-[18px] h-[18px] rounded bg-green-100 text-green-600 flex items-center justify-center text-[10px]">📈</span> Analytics
+          </a>
+          <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+            <span class="w-[18px] h-[18px] rounded bg-purple-100 text-purple-600 flex items-center justify-center text-[10px]">📉</span> Performance
+          </a>
+        </div>
+      </div>
+
+      <a class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" href="#">
+        <span class="w-5 h-5 flex items-center justify-center opacity-70">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+        </span>
+        Reports
+      </a>
+      <a class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" href="#">
+        <span class="w-5 h-5 flex items-center justify-center opacity-70">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="12" cy="5" r="1"></circle>
+            <circle cx="12" cy="19" r="1"></circle>
+          </svg>
+        </span>
+        Views
+      </a>
+    </nav>
+
+    <!-- Spaces Section -->
+    <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-3 py-2 mt-2">Spaces</div>
+
+    <!-- Dropdown - VERKSTEDHAGEN -->
+    <div class="dropdown-section mb-1 relative">
+      <div class="dropdown-header group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" data-dropdown="verkstedhagen">
+        <span class="w-5 h-5 relative flex items-center justify-center">
+          <!-- Added hover:bg-gray-200 rounded for arrow hover effect -->
+          <span class="dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          <span class="dropdown-icon w-5 h-5 rounded bg-purple-100 flex items-center justify-center text-[11px] group-hover:opacity-0 transition-all duration-200">🏢</span>
+        </span>
+        <span class="flex-1">VERKSTEDHAGEN</span>
+        <button class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all" onclick="event.stopPropagation(); toggleContextMenu(this)">
+          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+          </svg>
+        </button>
+      </div>
+      <div class="context-menu hidden absolute right-0 top-10 z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          Rename
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Space settings
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          Copy settings link
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy ID
+        </a>
+        <div class="border-t border-gray-100 my-1"></div>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Go to reports
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+          Replicate space
+        </a>
+      </div>
+      <!-- Added submenu-item class for vertical line styling -->
+      <div class="dropdown-content max-h-0 overflow-hidden opacity-0 transition-all duration-300" id="dropdown-verkstedhagen">
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-red-100 text-red-600 flex items-center justify-center text-[10px]">🚨</span> HMS 25/26
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-orange-100 text-orange-600 flex items-center justify-center text-[10px]">📁</span> HMS ARKIV 2025
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-yellow-100 text-yellow-600 flex items-center justify-center text-[10px]">🔧</span> Serviceleverandører
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-green-100 text-green-600 flex items-center justify-center text-[10px]">👥</span> Beboere
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">📚</span> Arkiv Verkstedhagen
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-teal-100 text-teal-600 flex items-center justify-center text-[10px]">💻</span> DevHub
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-green-100 text-green-600 flex items-center justify-center text-[10px]">📄</span> Docs
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-purple-100 text-purple-600 flex items-center justify-center text-[10px]">📖</span> Kunnskap
+        </a>
+      </div>
+    </div>
+
+    <!-- Dropdown - LO MEDIA -->
+    <div class="dropdown-section mb-1 relative">
+      <div class="dropdown-header group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" data-dropdown="lomedia">
+        <span class="w-5 h-5 relative flex items-center justify-center">
+          <span class="dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          <span class="dropdown-icon w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-[11px] group-hover:opacity-0 transition-all duration-200">🖥️</span>
+        </span>
+        <span class="flex-1">LO MEDIA</span>
+        <button class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all" onclick="event.stopPropagation(); toggleContextMenu(this)">
+          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+          </svg>
+        </button>
+      </div>
+      <div class="context-menu hidden absolute right-0 top-10 z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          Rename
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Space settings
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          Copy settings link
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy ID
+        </a>
+        <div class="border-t border-gray-100 my-1"></div>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Go to reports
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+          Replicate space
+        </a>
+      </div>
+      <div class="dropdown-content max-h-0 overflow-hidden opacity-0 transition-all duration-300" id="dropdown-lomedia">
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">📹</span> Videos
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-pink-100 text-pink-600 flex items-center justify-center text-[10px]">🎨</span> Graphics
+        </a>
+      </div>
+    </div>
+
+    <!-- Dropdown - PRISER -->
+    <div class="dropdown-section mb-1 relative">
+      <div class="dropdown-header group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" data-dropdown="priser">
+        <span class="w-5 h-5 relative flex items-center justify-center">
+          <span class="dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          <span class="dropdown-icon w-5 h-5 rounded bg-pink-100 flex items-center justify-center text-[11px] group-hover:opacity-0 transition-all duration-200">💰</span>
+        </span>
+        <span class="flex-1">PRISER</span>
+        <button class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all" onclick="event.stopPropagation(); toggleContextMenu(this)">
+          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+          </svg>
+        </button>
+      </div>
+      <div class="context-menu hidden absolute right-0 top-10 z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          Rename
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Space settings
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          Copy settings link
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy ID
+        </a>
+        <div class="border-t border-gray-100 my-1"></div>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Go to reports
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+          Replicate space
+        </a>
+      </div>
+      <div class="dropdown-content max-h-0 overflow-hidden opacity-0 transition-all duration-300" id="dropdown-priser">
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-green-100 text-green-600 flex items-center justify-center text-[10px]">💵</span> Standard
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-purple-100 text-purple-600 flex items-center justify-center text-[10px]">👑</span> Premium
+        </a>
+      </div>
+    </div>
+
+    <!-- Dropdown - DESIDIA -->
+    <div class="dropdown-section mb-1 relative">
+      <div class="dropdown-header group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" data-dropdown="desidia">
+        <span class="w-5 h-5 relative flex items-center justify-center">
+          <span class="dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          <span class="dropdown-icon w-5 h-5 rounded bg-orange-100 flex items-center justify-center text-[11px] group-hover:opacity-0 transition-all duration-200">🔥</span>
+        </span>
+        <span class="flex-1">DESIDIA</span>
+        <button class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all" onclick="event.stopPropagation(); toggleContextMenu(this)">
+          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+          </svg>
+        </button>
+      </div>
+      <div class="context-menu hidden absolute right-0 top-10 z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          Rename
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Space settings
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          Copy settings link
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy ID
+        </a>
+        <div class="border-t border-gray-100 my-1"></div>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Go to reports
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+          Replicate space
+        </a>
+      </div>
+      <div class="dropdown-content max-h-0 overflow-hidden opacity-0 transition-all duration-300" id="dropdown-desidia">
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-yellow-100 text-yellow-600 flex items-center justify-center text-[10px]">🚀</span> Utvikling
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">✅</span> Tasks
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-green-100 text-green-600 flex items-center justify-center text-[10px]">📝</span> DesidiaDocs
+        </a>
+      </div>
+    </div>
+
+    <!-- Dropdown - PERSONAL -->
+    <div class="dropdown-section mb-1 relative">
+      <div class="dropdown-header group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" data-dropdown="personal">
+        <span class="w-5 h-5 relative flex items-center justify-center">
+          <span class="dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          <span class="dropdown-icon w-5 h-5 rounded bg-teal-100 flex items-center justify-center text-[11px] group-hover:opacity-0 transition-all duration-200">👤</span>
+        </span>
+        <span class="flex-1">PERSONAL</span>
+        <button class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all" onclick="event.stopPropagation(); toggleContextMenu(this)">
+          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+          </svg>
+        </button>
+      </div>
+      <div class="context-menu hidden absolute right-0 top-10 z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          Rename
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Space settings
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          Copy settings link
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy ID
+        </a>
+        <div class="border-t border-gray-100 my-1"></div>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Go to reports
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+          Replicate space
+        </a>
+      </div>
+      <div class="dropdown-content max-h-0 overflow-hidden opacity-0 transition-all duration-300" id="dropdown-personal">
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">📋</span> Notes
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-purple-100 text-purple-600 flex items-center justify-center text-[10px]">⭐</span> Favorites
+        </a>
+      </div>
+    </div>
+
+    <!-- Dropdown - TEST KIA -->
+    <div class="dropdown-section mb-1 relative">
+      <div class="dropdown-header group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all" data-dropdown="testkia">
+        <span class="w-5 h-5 relative flex items-center justify-center">
+          <span class="dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          <span class="dropdown-icon w-5 h-5 rounded bg-green-100 flex items-center justify-center text-[11px] group-hover:opacity-0 transition-all duration-200">🎯</span>
+        </span>
+        <span class="flex-1">TEST KIA</span>
+        <button class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all" onclick="event.stopPropagation(); toggleContextMenu(this)">
+          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+          </svg>
+        </button>
+      </div>
+      <div class="context-menu hidden absolute right-0 top-10 z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          Rename
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Space settings
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          Copy settings link
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy ID
+        </a>
+        <div class="border-t border-gray-100 my-1"></div>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Go to reports
+        </a>
+        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+          Replicate space
+        </a>
+      </div>
+      <div class="dropdown-content max-h-0 overflow-hidden opacity-0 transition-all duration-300" id="dropdown-testkia">
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">✅</span> Tasks
+        </a>
+        <a class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all" href="#">
+          <span class="w-[18px] h-[18px] rounded bg-orange-100 text-orange-600 flex items-center justify-center text-[10px]">🧪</span> Tests
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    // Click-to-toggle dropdowns with vanilla JavaScript
+    document.querySelectorAll('.dropdown-header').forEach(header => {
+      header.addEventListener('click', function(e) {
+        // Don't toggle dropdown if clicking on menu trigger
+        if (e.target.closest('.menu-trigger')) return;
+        
+        const dropdownId = this.getAttribute('data-dropdown');
+        const content = document.getElementById('dropdown-' + dropdownId);
+        const arrow = this.querySelector('.dropdown-arrow');
+        const isOpen = content.classList.contains('open');
+
+        // Toggle current dropdown
+        if (!isOpen) {
+          content.classList.add('open');
+          content.style.maxHeight = content.scrollHeight + 'px';
+          content.style.opacity = '1';
+          arrow.style.transform = 'rotate(90deg)';
+        } else {
+          content.classList.remove('open');
+          content.style.maxHeight = '0';
+          content.style.opacity = '0';
+          arrow.style.transform = 'rotate(0deg)';
+        }
+      });
+    });
+
+    function toggleContextMenu(button) {
+      const section = button.closest('.dropdown-section');
+      const menu = section.querySelector('.context-menu');
+      const isVisible = !menu.classList.contains('hidden');
+
+      // Close all context menus first
+      document.querySelectorAll('.context-menu').forEach(m => {
+        m.classList.add('hidden');
+      });
+
+      // Toggle the clicked menu
+      if (!isVisible) {
+        menu.classList.remove('hidden');
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.menu-trigger') && !e.target.closest('.context-menu')) {
+        document.querySelectorAll('.context-menu').forEach(menu => {
+          menu.classList.add('hidden');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
