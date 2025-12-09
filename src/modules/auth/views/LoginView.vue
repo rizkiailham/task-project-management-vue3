@@ -1,17 +1,19 @@
 <script setup>
 /**
  * LoginView - User authentication page
- * 
+ *
  * Features:
  * - Email/password login
  * - Form validation with VeeValidate + Yup
  * - Remember me option
  * - Social login placeholders
+ * - Localization support (en/no)
  */
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore, useUIStore } from '@/stores'
 
 // PrimeVue
@@ -21,25 +23,26 @@ import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 
-// Form validation schema
-const validationSchema = yup.object({
+// Form validation schema with localized messages
+const validationSchema = computed(() => yup.object({
   email: yup
     .string()
-    .required('Email is required')
-    .email('Please enter a valid email'),
+    .required(t('auth.validation.emailRequired'))
+    .email(t('auth.validation.emailInvalid')),
   password: yup
     .string()
-    .required('Password is required')
-    .min(8, 'Password must be at least 8 characters')
-})
+    .required(t('auth.validation.passwordRequired'))
+    .min(8, t('auth.validation.passwordMin'))
+}))
 
 // Form setup
-const { handleSubmit, errors, meta } = useForm({
+const { handleSubmit, meta } = useForm({
   validationSchema
 })
 
@@ -58,18 +61,18 @@ const redirectPath = computed(() => route.query.redirect || '/app')
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
   serverError.value = ''
-  
+
   try {
     await authStore.login({
       email: values.email,
       password: values.password,
       rememberMe: rememberMe.value
     })
-    
-    uiStore.showSuccess('Welcome back!', 'Login successful')
+
+    uiStore.showSuccess(t('auth.login.welcomeBack'), t('auth.login.loginSuccessful'))
     router.push(redirectPath.value)
   } catch (error) {
-    serverError.value = error.message || 'Invalid email or password'
+    serverError.value = error.message || t('auth.login.invalidCredentials')
   } finally {
     isSubmitting.value = false
   }
@@ -95,9 +98,9 @@ const onSubmit = handleSubmit(async (values) => {
 
         <!-- Header -->
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">Welcome back</h1>
+          <h1 class="text-3xl font-bold text-gray-900">{{ t('auth.login.title') }}</h1>
           <p class="mt-2 text-base text-gray-600">
-            Sign in to your account to continue
+            {{ t('auth.login.subtitle') }}
           </p>
         </div>
 
@@ -111,13 +114,13 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Email Field -->
           <div class="space-y-2">
             <label for="email" class="block text-sm font-semibold text-gray-700">
-              Email address
+              {{ t('auth.login.email') }}
             </label>
             <InputText
               id="email"
               v-model="email"
               type="email"
-              placeholder="you@example.com"
+              :placeholder="t('auth.login.emailPlaceholder')"
               class="w-full"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
@@ -129,19 +132,19 @@ const onSubmit = handleSubmit(async (values) => {
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <label for="password" class="block text-sm font-semibold text-gray-700">
-                Password
+                {{ t('auth.login.password') }}
               </label>
               <router-link
                 :to="{ name: 'ForgotPassword' }"
                 class="text-sm font-medium text-primary-600 hover:text-primary-700"
               >
-                Forgot password?
+                {{ t('auth.login.forgotPassword') }}
               </router-link>
             </div>
             <Password
               id="password"
               v-model="password"
-              placeholder="Enter your password"
+              :placeholder="t('auth.login.passwordPlaceholder')"
               :class="{ 'p-invalid': passwordError }"
               :feedback="false"
               toggleMask
@@ -156,14 +159,14 @@ const onSubmit = handleSubmit(async (values) => {
           <div class="flex items-center gap-2">
             <Checkbox v-model="rememberMe" inputId="remember" :binary="true" />
             <label for="remember" class="text-sm text-gray-600 cursor-pointer">
-              Remember me for 30 days
+              {{ t('auth.login.rememberMe') }}
             </label>
           </div>
 
           <!-- Submit Button -->
           <Button
             type="submit"
-            label="Sign in"
+            :label="t('auth.login.signIn')"
             class="w-full justify-center"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
@@ -173,7 +176,7 @@ const onSubmit = handleSubmit(async (values) => {
         <!-- Divider -->
         <div class="my-6 flex items-center">
           <div class="flex-1 border-t border-gray-300"></div>
-          <span class="px-4 text-sm text-gray-500">or continue with</span>
+          <span class="px-4 text-sm text-gray-500">{{ t('auth.login.orContinueWith') }}</span>
           <div class="flex-1 border-t border-gray-300"></div>
         </div>
 
@@ -191,7 +194,7 @@ const onSubmit = handleSubmit(async (values) => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>Google</span>
+            <span>{{ t('auth.login.google') }}</span>
           </Button>
           <Button
             outlined
@@ -200,18 +203,18 @@ const onSubmit = handleSubmit(async (values) => {
             @click="uiStore.showInfo('GitHub login coming soon')"
           >
             <i class="pi pi-github mr-2 text-lg"></i>
-            <span>GitHub</span>
+            <span>{{ t('auth.login.github') }}</span>
           </Button>
         </div>
 
         <!-- Sign Up Link -->
         <p class="mt-8 text-center text-sm text-gray-600">
-          Don't have an account?
+          {{ t('auth.login.noAccount') }}
           <router-link
             :to="{ name: 'Register' }"
             class="font-semibold text-primary-600 hover:text-primary-700"
           >
-            Sign up for free
+            {{ t('auth.login.signUpFree') }}
           </router-link>
         </p>
       </div>
@@ -220,9 +223,9 @@ const onSubmit = handleSubmit(async (values) => {
     <!-- Right Panel - Illustration -->
     <div class="login-illustration-panel">
       <div class="max-w-md text-center text-white">
-        <h2 class="text-3xl font-bold">Manage your tasks with AI</h2>
+        <h2 class="text-3xl font-bold">{{ t('promo.manageWithAI') }}</h2>
         <p class="mt-4 text-lg opacity-90">
-          Desidia helps you organize, prioritize, and complete your work faster with intelligent task management.
+          {{ t('promo.promoDescription') }}
         </p>
 
         <!-- Feature highlights -->
@@ -231,19 +234,19 @@ const onSubmit = handleSubmit(async (values) => {
             <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
               <i class="pi pi-bolt"></i>
             </div>
-            <span class="text-base">AI-powered task suggestions</span>
+            <span class="text-base">{{ t('promo.features.aiPowered') }}</span>
           </div>
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
               <i class="pi pi-users"></i>
             </div>
-            <span class="text-base">Real-time team collaboration</span>
+            <span class="text-base">{{ t('promo.features.collaboration') }}</span>
           </div>
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
               <i class="pi pi-chart-line"></i>
             </div>
-            <span class="text-base">Insightful productivity analytics</span>
+            <span class="text-base">{{ t('promo.features.analytics') }}</span>
           </div>
         </div>
       </div>

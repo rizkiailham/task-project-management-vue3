@@ -1,60 +1,251 @@
 <script setup>
 /**
  * Sidebar - Main navigation sidebar based on DartAI design
- * 
+ *
  * Features:
- * - Collapsible sections
+ * - Collapsible sections with dropdown spaces
  * - Workspace/Project navigation
  * - Quick actions
  * - Responsive mobile support
+ * - Smooth animation transitions
+ * - Resizable width (min 190px, max 400px)
  */
-import { computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useUIStore, useAuthStore, useWorkspaceStore, useProjectStore, useNotificationStore } from '@/stores'
-
-// PrimeVue
-import Button from 'primevue/button'
+import { useUIStore, useWorkspaceStore, useNotificationStore, useAuthStore } from '@/stores'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Avatar from 'primevue/avatar'
-import Badge from 'primevue/badge'
-import Menu from 'primevue/menu'
 
 const router = useRouter()
 const route = useRoute()
 const uiStore = useUIStore()
-const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
-const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
+const authStore = useAuthStore()
 
-// Computed
-const isCollapsed = computed(() => uiStore.isSidebarCollapsed && !uiStore.isMobile)
+// User menu items for DropdownMenu component
+const userMenuItems = computed(() => [
+  {
+    id: 'account',
+    type: 'item',
+    label: 'Account',
+    action: goToAccount
+  },
+  {
+    id: 'invite',
+    type: 'item',
+    label: 'Invite teammates',
+    action: inviteTeammates
+  },
+  {
+    id: 'settings',
+    type: 'item',
+    label: 'Settings',
+    action: goToSettings
+  },
+  {
+    id: 'trash',
+    type: 'item',
+    label: 'Trash',
+    shortcut: 'G then R',
+    action: goToTrash
+  },
+  { type: 'divider' },
+  {
+    id: 'logout',
+    type: 'item',
+    label: 'Log out',
+    shortcut: 'Alt ↑ Q',
+    action: handleLogout
+  },
+  { type: 'divider' },
+  {
+    type: 'header',
+    label: 'Intelligence'
+  }
+])
 
-const sidebarClasses = computed(() => ({
-  'sidebar': true,
-  'sidebar--collapsed': isCollapsed.value,
-  'sidebar--mobile-open': uiStore.isSidebarMobileOpen
-}))
+// Resizable sidebar - Optimized with RAF
+const isResizing = ref(false)
+const sidebarRef = ref(null)
+let startX = 0
+let startWidth = 0
+let rafId = null
+let pendingWidth = 0
+
+function startResize(e) {
+  e.preventDefault()
+  isResizing.value = true
+  startX = e.clientX
+  startWidth = uiStore.sidebarCustomWidth
+  pendingWidth = startWidth
+  uiStore.startResizingSidebar()
+
+  // Use capture phase and passive for better performance
+  document.addEventListener('mousemove', handleResize, { passive: true })
+  document.addEventListener('mouseup', stopResize)
+
+  // Prevent text selection during resize
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+function handleResize(e) {
+  if (!isResizing.value) return
+
+  const diff = e.clientX - startX
+  const minWidth = 190
+  const maxWidth = 400
+  pendingWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff))
+
+  // Cancel previous frame to avoid stacking
+  if (rafId) cancelAnimationFrame(rafId)
+
+  // Schedule update on next frame
+  rafId = requestAnimationFrame(() => {
+    // Direct DOM update for instant feedback
+    if (sidebarRef.value) {
+      sidebarRef.value.style.width = `${pendingWidth}px`
+    }
+    // Update store (no localStorage write)
+    uiStore.setSidebarWidth(pendingWidth)
+  })
+}
+
+function stopResize() {
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+
+  isResizing.value = false
+  uiStore.stopResizingSidebar() // This will persist to localStorage
+
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
+
+onUnmounted(() => {
+  if (rafId) cancelAnimationFrame(rafId)
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+})
 
 // Navigation items
 const mainNavItems = computed(() => [
   {
     label: 'Home',
-    icon: 'pi pi-home',
+    icon: 'home',
     route: { name: 'Home' },
     active: route.name === 'Home'
   },
   {
-    label: 'My Tasks',
-    icon: 'pi pi-check-square',
+    label: 'My tasks',
+    icon: 'clock',
     route: { name: 'MyTasks' },
     active: route.name === 'MyTasks'
   },
   {
     label: 'Inbox',
-    icon: 'pi pi-inbox',
+    icon: 'bell',
     route: { name: 'Inbox' },
     active: route.name === 'Inbox',
-    badge: notificationStore.unreadCount
+    badge: notificationStore.unreadCount || 57
+  },
+  {
+    label: 'Intelligence',
+    icon: 'star',
+    route: { name: 'Home' },
+    active: false
+  }
+])
+
+// Dashboard items
+const dashboardsOpen = ref(false)
+const dashboardItems = ref([
+  { id: 'd1', name: 'Overview', emoji: '📊', color: 'bg-blue-100' },
+  { id: 'd2', name: 'Analytics', emoji: '📈', color: 'bg-green-100' },
+  { id: 'd3', name: 'Performance', emoji: '📉', color: 'bg-purple-100' }
+])
+
+// Dummy spaces data (like DartAI reference)
+const spaces = ref([
+  {
+    id: 's1',
+    name: 'VERKSTEDHAGEN',
+    emoji: '🏢',
+    color: 'bg-purple-100',
+    isOpen: false,
+    items: [
+      { id: 'v1', name: 'HMS 25/26', emoji: '🚨', color: 'bg-red-100' },
+      { id: 'v2', name: 'HMS ARKIV 2025', emoji: '📁', color: 'bg-orange-100' },
+      { id: 'v3', name: 'Serviceleverandører', emoji: '🔧', color: 'bg-yellow-100' },
+      { id: 'v4', name: 'Beboere', emoji: '👥', color: 'bg-green-100' },
+      { id: 'v5', name: 'Arkiv Verkstedhagen', emoji: '📚', color: 'bg-blue-100' },
+      { id: 'v6', name: 'DevHub', emoji: '💻', color: 'bg-teal-100' },
+      { id: 'v7', name: 'Docs', emoji: '📄', color: 'bg-green-100' },
+      { id: 'v8', name: 'Kunnskap', emoji: '📖', color: 'bg-purple-100' }
+    ]
+  },
+  {
+    id: 's2',
+    name: 'LO MEDIA',
+    emoji: '🖥️',
+    color: 'bg-blue-100',
+    isOpen: false,
+    items: [
+      { id: 'l1', name: 'Videos', emoji: '📹', color: 'bg-blue-100' },
+      { id: 'l2', name: 'Graphics', emoji: '🎨', color: 'bg-pink-100' }
+    ]
+  },
+  {
+    id: 's3',
+    name: 'PRISER',
+    emoji: '💰',
+    color: 'bg-pink-100',
+    isOpen: false,
+    items: [
+      { id: 'p1', name: 'Standard', emoji: '💵', color: 'bg-green-100' },
+      { id: 'p2', name: 'Premium', emoji: '👑', color: 'bg-purple-100' }
+    ]
+  },
+  {
+    id: 's4',
+    name: 'DESIDIA',
+    emoji: '🔥',
+    color: 'bg-orange-100',
+    isOpen: true,
+    items: [
+      { id: 'd1', name: 'Utvikling', emoji: '🚀', color: 'bg-yellow-100' },
+      { id: 'd2', name: 'Tasks', emoji: '✅', color: 'bg-blue-100' },
+      { id: 'd3', name: 'DesidiaDocs', emoji: '📝', color: 'bg-green-100' }
+    ]
+  },
+  {
+    id: 's5',
+    name: 'PERSONAL',
+    emoji: '👤',
+    color: 'bg-teal-100',
+    isOpen: false,
+    items: [
+      { id: 'pe1', name: 'Notes', emoji: '📋', color: 'bg-blue-100' },
+      { id: 'pe2', name: 'Favorites', emoji: '⭐', color: 'bg-purple-100' }
+    ]
+  },
+  {
+    id: 's6',
+    name: 'TEST KIA',
+    emoji: '🎯',
+    color: 'bg-green-100',
+    isOpen: false,
+    items: [
+      { id: 'tk1', name: 'Tasks', emoji: '✅', color: 'bg-blue-100' },
+      { id: 'tk2', name: 'Tests', emoji: '🧪', color: 'bg-orange-100' }
+    ]
   }
 ])
 
@@ -68,12 +259,20 @@ function navigateTo(item) {
   }
 }
 
-function navigateToProject(project) {
+function toggleDashboards() {
+  dashboardsOpen.value = !dashboardsOpen.value
+}
+
+function toggleSpace(space) {
+  space.isOpen = !space.isOpen
+}
+
+function navigateToItem(item) {
   router.push({
     name: 'Project',
     params: {
-      workspaceId: workspaceStore.currentWorkspaceId,
-      projectId: project.id
+      workspaceId: workspaceStore.currentWorkspaceId || 'default',
+      projectId: item.id
     }
   })
   if (uiStore.isMobile) {
@@ -81,251 +280,383 @@ function navigateToProject(project) {
   }
 }
 
+function openCreateTaskModal() {
+  uiStore.openModal('createTask')
+}
+
 function openCreateProjectModal() {
   uiStore.openModal('createProject')
 }
 
-function openCreateWorkspaceModal() {
-  uiStore.openModal('createWorkspace')
+function goToSettings() {
+  router.push({ name: 'Settings' })
+  showUserMenu.value = false
 }
 
-function openSearch() {
-  uiStore.openSearch()
+function goToAccount() {
+  router.push({ name: 'SettingsAccount' })
+  showUserMenu.value = false
 }
+
+function goToTrash() {
+  // TODO: Navigate to trash when implemented
+  showUserMenu.value = false
+}
+
+function inviteTeammates() {
+  // TODO: Open invite teammates modal when implemented
+  showUserMenu.value = false
+}
+
+async function handleLogout() {
+  showUserMenu.value = false
+  await authStore.logout()
+  router.push({ name: 'Login' })
+}
+
+// Cleanup event listeners
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
-  <aside 
-    :class="sidebarClasses"
-    class="fixed left-0 top-0 z-50 flex h-full flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
-    :style="{ width: uiStore.sidebarWidth }"
+  <!-- Overlay for mobile -->
+  <Transition name="fade">
+    <div
+      v-if="uiStore.isMobile && uiStore.isSidebarMobileOpen"
+      class="fixed inset-0 bg-black/40 z-40"
+      @click="uiStore.closeMobileSidebar"
+    ></div>
+  </Transition>
+
+  <!-- Sidebar Container -->
+  <div
+    v-show="(!uiStore.isSidebarCollapsed && !uiStore.isMobile) || (uiStore.isMobile && uiStore.isSidebarMobileOpen)"
+    class="fixed left-0 top-0 z-50 h-full flex"
+    :class="{ 'translate-x-0': uiStore.isSidebarMobileOpen || !uiStore.isMobile, '-translate-x-full': uiStore.isMobile && !uiStore.isSidebarMobileOpen }"
   >
-    <!-- Header -->
-    <div class="flex h-14 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
-      <div v-if="!isCollapsed" class="flex items-center gap-2">
-        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white font-bold">
-          D
+    <!-- Sidebar -->
+    <aside
+      ref="sidebarRef"
+      class="sidebar flex h-full flex-col border-r border-gray-200 bg-[#faf9fb] py-4 px-3 overflow-y-auto will-change-[width]"
+      :class="{ 'transition-[width] duration-150': !isResizing }"
+      :style="{ width: uiStore.isMobile ? '288px' : `${uiStore.sidebarCustomWidth}px` }"
+    >
+      <!-- Header -->
+      <div class="flex items-center justify-between px-2 mb-4">
+        <div class="flex items-center gap-2 font-semibold text-sm text-gray-900 min-w-0">
+          <div class="w-6 h-6 flex-shrink-0 bg-gradient-to-br from-orange-500 to-orange-600 rounded-md flex items-center justify-center text-white text-xs font-bold">D</div>
+          <span class="truncate">DESIDIA APP</span>
         </div>
-        <span class="font-semibold text-gray-900 dark:text-white">Desidia</span>
-      </div>
-      <div v-else class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white font-bold mx-auto">
-        D
-      </div>
-      
-      <Button 
-        v-if="!uiStore.isMobile"
-        :icon="isCollapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'"
-        text
-        rounded
-        size="small"
-        @click="uiStore.toggleSidebar"
-        class="text-gray-500"
-      />
-      <Button 
-        v-else
-        icon="pi pi-times"
-        text
-        rounded
-        size="small"
-        @click="uiStore.closeMobileSidebar"
-        class="text-gray-500"
-      />
-    </div>
 
-    <!-- Search Button -->
-    <div v-if="!isCollapsed" class="p-3">
-      <button 
-        @click="openSearch"
-        class="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
-      >
-        <i class="pi pi-search text-xs"></i>
-        <span>Search...</span>
-        <kbd class="ml-auto rounded bg-gray-200 px-1.5 py-0.5 text-xs dark:bg-gray-600">⌘K</kbd>
-      </button>
-    </div>
-    <div v-else class="p-2">
-      <Button 
-        icon="pi pi-search"
-        text
-        rounded
-        @click="openSearch"
-        class="w-full"
-        v-tooltip.right="'Search (⌘K)'"
-      />
-    </div>
-
-    <!-- Main Navigation -->
-    <nav class="flex-1 overflow-y-auto px-3 py-2">
-      <!-- Main Nav Items -->
-      <ul class="space-y-1">
-        <li v-for="item in mainNavItems" :key="item.label">
-          <button
-            @click="navigateTo(item)"
-            :class="[
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              item.active 
-                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400' 
-                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-            ]"
-            :title="isCollapsed ? item.label : ''"
-          >
-            <i :class="[item.icon, 'text-base']"></i>
-            <span v-if="!isCollapsed">{{ item.label }}</span>
-            <Badge 
-              v-if="item.badge && !isCollapsed" 
-              :value="item.badge" 
-              severity="danger" 
-              class="ml-auto"
+        <!-- User Avatar with DropdownMenu Component -->
+        <DropdownMenu :items="userMenuItems" position="left" width="13rem">
+          <template #trigger>
+            <!-- show profile picutre or dummy user icon -->
+            <Avatar 
+              :label="authStore.userInitials"
+              :image="authStore.userAvatar"
+              shape="circle"
+              size="small"
+              class="bg-primary-100 text-primary-700"
             />
+          </template>
+
+          <!-- Custom icons for menu items -->
+          <template #icon-account>
+            <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </template>
+          <template #icon-invite>
+            <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <line x1="19" y1="8" x2="19" y2="14"></line>
+              <line x1="22" y1="11" x2="16" y2="11"></line>
+            </svg>
+          </template>
+          <template #icon-settings>
+            <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </template>
+          <template #icon-trash>
+            <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </template>
+          <template #icon-logout>
+            <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </template>
+        </DropdownMenu>
+      </div>
+
+      <!-- New Task Button -->
+      <button
+        @click="openCreateTaskModal"
+        class="flex items-center gap-2 w-full py-2.5 px-3 bg-transparent border border-dashed border-gray-300 rounded-lg text-gray-500 text-sm cursor-pointer mb-5 hover:bg-gray-100 hover:border-gray-400 transition-all"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        New task
+      </button>
+
+      <!-- Main Navigation -->
+      <nav class="mb-6">
+        <button
+          v-for="item in mainNavItems"
+          :key="item.label"
+          @click="navigateTo(item)"
+          :class="[
+            'flex items-center gap-2.5 py-2 px-3 rounded-lg text-sm cursor-pointer transition-all w-full',
+            item.active
+              ? 'bg-gray-200/70 text-gray-700'
+              : 'text-gray-600 hover:bg-gray-100'
+          ]"
+        >
+          <span class="w-5 h-5 flex items-center justify-center opacity-70">
+            <svg v-if="item.icon === 'home'" class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <svg v-else-if="item.icon === 'clock'" class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <svg v-else-if="item.icon === 'bell'" class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <svg v-else-if="item.icon === 'star'" class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </span>
+          <span class="flex-1 text-left">{{ item.label }}</span>
+          <span v-if="item.badge" class="ml-auto bg-violet-500 text-white text-[11px] py-0.5 px-2 rounded-full font-medium">
+            {{ item.badge }}
+          </span>
+        </button>
+
+        <!-- Dashboards Dropdown -->
+        <div class="dropdown-section mb-1 relative">
+          <button
+            @click="toggleDashboards"
+            class="group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all w-full"
+          >
+            <span class="w-5 h-5 relative flex items-center justify-center">
+              <span :class="['dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200', dashboardsOpen ? 'rotate-90' : '']">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </span>
+              <span class="dropdown-icon opacity-70 group-hover:opacity-0 transition-all duration-200">
+                <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </span>
+            </span>
+            <span class="flex-1 text-left">Dashboards</span>
           </button>
-        </li>
-      </ul>
+
+          <!-- Dashboard Items with animation -->
+          <div
+            class="dropdown-content overflow-hidden transition-all duration-300"
+            :style="{ maxHeight: dashboardsOpen ? '200px' : '0px', opacity: dashboardsOpen ? 1 : 0 }"
+          >
+            <button
+              v-for="item in dashboardItems"
+              :key="item.id"
+              class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all w-full text-left"
+            >
+              <span :class="['w-[18px] h-[18px] rounded flex items-center justify-center text-[10px]', item.color]">{{ item.emoji }}</span>
+              {{ item.name }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Reports -->
+        <button class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all w-full">
+          <span class="w-5 h-5 flex items-center justify-center opacity-70">
+            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+          </span>
+          Reports
+        </button>
+
+        <!-- Views -->
+        <button class="flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all w-full">
+          <span class="w-5 h-5 flex items-center justify-center opacity-70">
+            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="12" cy="5" r="1"></circle>
+              <circle cx="12" cy="19" r="1"></circle>
+            </svg>
+          </span>
+          Views
+        </button>
+      </nav>
 
       <!-- Spaces Section -->
-      <div class="mt-6">
+      <div class="flex items-center justify-between px-3 py-2 mt-2">
+        <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Spaces</span>
         <button
-          v-if="!isCollapsed"
-          @click="uiStore.toggleSidebarSection('spaces')"
-          class="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+          @click="openCreateProjectModal"
+          class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+          title="Add project"
         >
-          <span>Spaces</span>
-          <i :class="['pi text-xs', uiStore.isSectionExpanded('spaces') ? 'pi-chevron-down' : 'pi-chevron-right']"></i>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
         </button>
-        
-        <Transition name="collapse">
-          <ul v-if="uiStore.isSectionExpanded('spaces') || isCollapsed" class="mt-1 space-y-1">
-            <li v-for="project in projectStore.activeProjects" :key="project.id">
-              <button
-                @click="navigateToProject(project)"
-                :class="[
-                  'sidebar-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                  projectStore.currentProjectId === project.id
-                    ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
-                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'
-                ]"
-                :title="isCollapsed ? project.name : ''"
-              >
-                <span 
-                  class="flex h-5 w-5 items-center justify-center rounded text-xs font-medium text-white"
-                  :style="{ backgroundColor: project.color || '#6366f1' }"
-                >
-                  {{ project.name.charAt(0).toUpperCase() }}
-                </span>
-                <span v-if="!isCollapsed" class="truncate">{{ project.name }}</span>
-              </button>
-            </li>
-            
-            <!-- Add Project Button -->
-            <li>
-              <button
-                @click="openCreateProjectModal"
-                class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-300"
-                :title="isCollapsed ? 'Add Project' : ''"
-              >
-                <i class="pi pi-plus text-xs"></i>
-                <span v-if="!isCollapsed">Add Project</span>
-              </button>
-            </li>
-          </ul>
-        </Transition>
       </div>
-    </nav>
 
-    <!-- Footer / User Section -->
-    <div class="border-t border-gray-200 p-3 dark:border-gray-700">
-      <div 
-        :class="[
-          'flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer',
-          isCollapsed ? 'justify-center' : ''
-        ]"
-        @click="router.push({ name: 'Settings' })"
-      >
-        <Avatar 
-          v-if="authStore.userAvatar"
-          :image="authStore.userAvatar"
-          shape="circle"
-          size="normal"
-        />
-        <Avatar 
-          v-else
-          :label="authStore.userInitials"
-          shape="circle"
-          size="normal"
-          class="bg-primary-100 text-primary-700"
-        />
-        <div v-if="!isCollapsed" class="flex-1 min-w-0">
-          <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
-            {{ authStore.userName }}
-          </p>
-          <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-            {{ authStore.userEmail }}
-          </p>
+      <!-- Space Dropdowns -->
+      <div v-for="space in spaces" :key="space.id" class="dropdown-section mb-1 relative">
+        <button
+          @click="toggleSpace(space)"
+          class="group flex items-center gap-2.5 py-2 px-3 rounded-lg text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition-all w-full"
+        >
+          <span class="w-5 h-5 relative flex items-center justify-center">
+            <span :class="['dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200', space.isOpen ? 'rotate-90' : '']">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+            <span :class="['dropdown-icon w-5 h-5 rounded flex items-center justify-center text-[11px] group-hover:opacity-0 transition-all duration-200', space.color]">{{ space.emoji }}</span>
+          </span>
+          <span class="flex-1 text-left">{{ space.name }}</span>
+          <span class="menu-trigger opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all">
+            <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+              <circle cx="12" cy="19" r="2"></circle>
+            </svg>
+          </span>
+        </button>
+
+        <!-- Space Items with animation -->
+        <div
+          class="dropdown-content overflow-hidden transition-all duration-300"
+          :style="{ maxHeight: space.isOpen ? (space.items.length * 40 + 20) + 'px' : '0px', opacity: space.isOpen ? 1 : 0 }"
+        >
+          <button
+            v-for="item in space.items"
+            :key="item.id"
+            @click="navigateToItem(item)"
+            class="submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-500 text-[13px] cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-all w-full text-left"
+          >
+            <span :class="['w-[18px] h-[18px] rounded flex items-center justify-center text-[10px]', item.color]">{{ item.emoji }}</span>
+            {{ item.name }}
+          </button>
         </div>
-        <Button 
-          v-if="!isCollapsed"
-          icon="pi pi-cog"
-          text
-          rounded
-          size="small"
-          class="text-gray-400"
-          v-tooltip="'Settings'"
-        />
       </div>
-    </div>
-  </aside>
+    </aside>
+
+    <!-- Resize Handle (desktop only) -->
+    <div
+      v-if="!uiStore.isMobile"
+      class="resize-handle w-1 h-full cursor-col-resize hover:bg-orange-400 active:bg-orange-500 transition-colors"
+      @mousedown="startResize"
+    ></div>
+  </div>
 </template>
 
 <style scoped>
-.sidebar {
-  --sidebar-bg: #ffffff;
-  --sidebar-border: #e5e7eb;
+/* Custom scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
 }
 
-.dark .sidebar {
-  --sidebar-bg: #1f2937;
-  --sidebar-border: #374151;
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Collapse transition */
-.collapse-enter-active,
-.collapse-leave-active {
-  transition: all 0.2s ease;
-  overflow: hidden;
+.sidebar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
 }
 
-.collapse-enter-from,
-.collapse-leave-to {
-  opacity: 0;
-  max-height: 0;
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
-.collapse-enter-to,
-.collapse-leave-from {
-  opacity: 1;
-  max-height: 500px;
-}
-
-/* Sidebar item with vertical line indicator */
-.sidebar-item {
+/* Submenu item with vertical line */
+.submenu-item {
   position: relative;
 }
 
-.sidebar-item::before {
+.submenu-item::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 0;
-  background-color: var(--p-primary-500);
-  border-radius: 0 2px 2px 0;
-  transition: height 0.2s ease;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: #e5e7eb;
 }
 
-.sidebar-item:hover::before,
-.sidebar-item.active::before {
-  height: 60%;
+.submenu-item:last-child::before {
+  height: 50%;
+}
+
+/* Dropdown arrow animation */
+.dropdown-arrow {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+/* Sidebar slide transition */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+
+/* Fade transition for overlay */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Dropdown menu transition */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.2s ease;
+  transform-origin: top left;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-4px);
 }
 </style>
-

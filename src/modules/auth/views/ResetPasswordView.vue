@@ -1,11 +1,13 @@
 <script setup>
 /**
  * ResetPasswordView - Set new password page
+ * With localization support (en/no)
  */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore, useUIStore } from '@/stores'
 
 // PrimeVue
@@ -13,6 +15,7 @@ import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -21,20 +24,20 @@ const uiStore = useUIStore()
 // Get token from URL
 const token = route.query.token
 
-// Form validation schema
-const validationSchema = yup.object({
+// Form validation schema with localized messages
+const validationSchema = computed(() => yup.object({
   password: yup
     .string()
-    .required('Password is required')
-    .min(8, 'Password must be at least 8 characters')
-    .matches(/[a-z]/, 'Password must contain a lowercase letter')
-    .matches(/[A-Z]/, 'Password must contain an uppercase letter')
-    .matches(/[0-9]/, 'Password must contain a number'),
+    .required(t('auth.validation.passwordRequired'))
+    .min(8, t('auth.validation.passwordMin'))
+    .matches(/[a-z]/, t('auth.validation.passwordLowercase'))
+    .matches(/[A-Z]/, t('auth.validation.passwordUppercase'))
+    .matches(/[0-9]/, t('auth.validation.passwordNumber')),
   confirmPassword: yup
     .string()
-    .required('Please confirm your password')
-    .oneOf([yup.ref('password')], 'Passwords must match')
-})
+    .required(t('auth.validation.confirmPasswordRequired'))
+    .oneOf([yup.ref('password')], t('auth.validation.passwordsMustMatch'))
+}))
 
 // Form setup
 const { handleSubmit, meta } = useForm({
@@ -51,20 +54,20 @@ const isSubmitting = ref(false)
 // Methods
 const onSubmit = handleSubmit(async (values) => {
   if (!token) {
-    serverError.value = 'Invalid or missing reset token'
+    serverError.value = t('auth.resetPassword.invalidLink')
     return
   }
-  
+
   isSubmitting.value = true
   serverError.value = ''
-  
+
   try {
     await authStore.resetPassword({
       token,
       password: values.password
     })
-    
-    uiStore.showSuccess('Password reset successfully!')
+
+    uiStore.showSuccess(t('auth.resetPassword.passwordResetSuccess'))
     router.push({ name: 'Login' })
   } catch (error) {
     serverError.value = error.message || 'Failed to reset password'
@@ -84,9 +87,9 @@ const onSubmit = handleSubmit(async (values) => {
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
-        <h1 class="mt-4 text-2xl font-bold text-gray-900">Set new password</h1>
+        <h1 class="mt-4 text-2xl font-bold text-gray-900">{{ t('auth.resetPassword.title') }}</h1>
         <p class="mt-2 text-base text-gray-600">
-          Create a strong password for your account
+          {{ t('auth.resetPassword.subtitle') }}
         </p>
       </div>
 
@@ -96,15 +99,15 @@ const onSubmit = handleSubmit(async (values) => {
           <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
             <i class="pi pi-times text-xl text-red-600"></i>
           </div>
-          <h2 class="mt-4 text-lg font-semibold text-gray-900">Invalid reset link</h2>
+          <h2 class="mt-4 text-lg font-semibold text-gray-900">{{ t('auth.resetPassword.invalidLink') }}</h2>
           <p class="mt-2 text-sm text-gray-600">
-            This password reset link is invalid or has expired.
+            {{ t('auth.resetPassword.linkExpired') }}
           </p>
           <router-link
             :to="{ name: 'ForgotPassword' }"
             class="mt-6 inline-block text-sm font-semibold text-primary-600 hover:text-primary-700"
           >
-            Request a new reset link
+            {{ t('auth.resetPassword.requestNewLink') }}
           </router-link>
         </div>
       </div>
@@ -120,12 +123,12 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Password Field -->
           <div class="space-y-2">
             <label for="password" class="block text-sm font-semibold text-gray-700">
-              New password
+              {{ t('auth.resetPassword.newPassword') }}
             </label>
             <Password
               id="password"
               v-model="password"
-              placeholder="Create a strong password"
+              :placeholder="t('auth.resetPassword.newPasswordPlaceholder')"
               :class="{ 'p-invalid': passwordError }"
               toggleMask
               autocomplete="new-password"
@@ -138,12 +141,12 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Confirm Password Field -->
           <div class="space-y-2">
             <label for="confirmPassword" class="block text-sm font-semibold text-gray-700">
-              Confirm new password
+              {{ t('auth.resetPassword.confirmPassword') }}
             </label>
             <Password
               id="confirmPassword"
               v-model="confirmPassword"
-              placeholder="Confirm your password"
+              :placeholder="t('auth.resetPassword.confirmPasswordPlaceholder')"
               :class="{ 'p-invalid': confirmPasswordError }"
               :feedback="false"
               toggleMask
@@ -157,7 +160,7 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Submit Button -->
           <Button
             type="submit"
-            label="Reset password"
+            :label="t('auth.resetPassword.resetPassword')"
             class="w-full justify-center"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"

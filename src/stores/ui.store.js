@@ -17,6 +17,8 @@ export const useUIStore = defineStore('ui', () => {
   const isSidebarCollapsed = ref(false)
   const isSidebarMobileOpen = ref(false)
   const sidebarExpandedSections = ref(['spaces', 'dashboards'])
+  const sidebarCustomWidth = ref(parseInt(localStorage.getItem('sidebarWidth') || '288', 10))
+  const isResizingSidebar = ref(false)
 
   // View state
   const currentView = ref(ViewType.LIST)
@@ -49,8 +51,9 @@ export const useUIStore = defineStore('ui', () => {
   // Getters
   // ================================
   const sidebarWidth = computed(() => {
-    if (isMobile.value) return isSidebarMobileOpen.value ? '100%' : '0'
-    return isSidebarCollapsed.value ? '64px' : '280px'
+    if (isMobile.value) return '0px'
+    if (isSidebarCollapsed.value) return '0px'
+    return `${sidebarCustomWidth.value}px`
   })
 
   const hasActiveModal = computed(() => !!activeModal.value)
@@ -91,6 +94,34 @@ export const useUIStore = defineStore('ui', () => {
 
   function isSectionExpanded(section) {
     return sidebarExpandedSections.value.includes(section)
+  }
+
+  /**
+   * Set sidebar width with clamping (called frequently during resize)
+   * Does NOT persist to localStorage - use persistSidebarWidth() for that
+   */
+  function setSidebarWidth(width) {
+    const minWidth = 190
+    const maxWidth = 400
+    const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width))
+    sidebarCustomWidth.value = clampedWidth
+  }
+
+  /**
+   * Persist sidebar width to localStorage (call once at end of resize)
+   */
+  function persistSidebarWidth() {
+    localStorage.setItem('sidebarWidth', sidebarCustomWidth.value.toString())
+  }
+
+  function startResizingSidebar() {
+    isResizingSidebar.value = true
+  }
+
+  function stopResizingSidebar() {
+    isResizingSidebar.value = false
+    // Persist to localStorage only when resize ends
+    persistSidebarWidth()
   }
 
   // ================================
@@ -290,6 +321,8 @@ export const useUIStore = defineStore('ui', () => {
     isSidebarCollapsed,
     isSidebarMobileOpen,
     sidebarExpandedSections,
+    sidebarCustomWidth,
+    isResizingSidebar,
     currentView,
     isTaskPanelOpen,
     activeModal,
@@ -314,6 +347,10 @@ export const useUIStore = defineStore('ui', () => {
     closeMobileSidebar,
     toggleSidebarSection,
     isSectionExpanded,
+    setSidebarWidth,
+    persistSidebarWidth,
+    startResizingSidebar,
+    stopResizingSidebar,
 
     // View Actions
     setView,

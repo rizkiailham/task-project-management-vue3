@@ -11,7 +11,6 @@ import * as yup from 'yup'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import Button from 'primevue/button'
 import ColorPicker from 'primevue/colorpicker'
 
 const projectStore = useProjectStore()
@@ -93,39 +92,55 @@ const presetColors = [
   <Dialog
     v-model:visible="visible"
     modal
-    header="Create New Project"
-    :style="{ width: '450px' }"
+    :style="{ width: '450px', maxWidth: '95vw' }"
     :closable="!isLoading"
     :closeOnEscape="!isLoading"
+    class="create-project-modal"
     :pt="{
-      root: { class: 'dark:bg-gray-800' },
-      header: { class: 'dark:bg-gray-800 dark:text-white' },
-      content: { class: 'dark:bg-gray-800' }
+      root: { class: 'rounded-xl overflow-hidden shadow-2xl border-0' },
+      header: { class: 'bg-white border-b border-gray-200 px-6 py-4' },
+      content: { class: 'bg-white px-6 py-5' },
+      footer: { class: 'bg-gray-50 border-t border-gray-200 px-6 py-4' },
+      mask: { class: 'bg-black/40' }
     }"
   >
-    <form @submit="onSubmit" class="space-y-4">
+    <template #header>
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
+          <svg class="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900">Create New Project</h2>
+          <p class="text-sm text-gray-500">Add a new project to your workspace</p>
+        </div>
+      </div>
+    </template>
+
+    <form @submit="onSubmit" class="space-y-5">
       <!-- Name -->
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Project Name <span class="text-red-500">*</span>
+        <label class="mb-2 block text-sm font-medium text-gray-700">
+          Project Name <span class="text-orange-500">*</span>
         </label>
-        <InputText 
-          v-model="name" 
+        <InputText
+          v-model="name"
           class="w-full"
           :class="{ 'p-invalid': nameError }"
           placeholder="Enter project name..."
           autofocus
         />
-        <small v-if="nameError" class="text-red-500">{{ nameError }}</small>
+        <small v-if="nameError" class="mt-1 block text-sm text-red-500">{{ nameError }}</small>
       </div>
 
       <!-- Description -->
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="mb-2 block text-sm font-medium text-gray-700">
           Description
         </label>
-        <Textarea 
-          v-model="description" 
+        <Textarea
+          v-model="description"
           rows="3"
           class="w-full"
           placeholder="Add a description..."
@@ -134,10 +149,10 @@ const presetColors = [
 
       <!-- Color -->
       <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="mb-2 block text-sm font-medium text-gray-700">
           Project Color
         </label>
-        
+
         <!-- Preset Colors -->
         <div class="mb-3 flex flex-wrap gap-2">
           <button
@@ -147,30 +162,30 @@ const presetColors = [
             @click="color = preset"
             :class="[
               'h-8 w-8 rounded-full transition-transform hover:scale-110',
-              color === preset ? 'ring-2 ring-offset-2 ring-gray-400' : ''
+              color === preset ? 'ring-2 ring-offset-2 ring-orange-400' : ''
             ]"
             :style="{ backgroundColor: `#${preset}` }"
           />
         </div>
-        
+
         <!-- Custom Color Picker -->
         <div class="flex items-center gap-3">
           <ColorPicker v-model="color" />
-          <span class="text-sm text-gray-500 dark:text-gray-400">#{{ color }}</span>
+          <span class="text-sm text-gray-500">#{{ color }}</span>
         </div>
       </div>
 
       <!-- Preview -->
-      <div class="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-        <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">Preview</p>
+      <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+        <p class="mb-2 text-xs text-gray-500">Preview</p>
         <div class="flex items-center gap-3">
-          <span 
+          <span
             class="flex h-10 w-10 items-center justify-center rounded-lg text-white font-medium"
             :style="{ backgroundColor: `#${color}` }"
           >
             {{ name ? name.charAt(0).toUpperCase() : 'P' }}
           </span>
-          <span class="font-medium text-gray-900 dark:text-white">
+          <span class="font-medium text-gray-900">
             {{ name || 'Project Name' }}
           </span>
         </div>
@@ -178,21 +193,69 @@ const presetColors = [
     </form>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <Button 
-          label="Cancel" 
-          text 
+      <div class="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           @click="closeModal"
           :disabled="isLoading"
-        />
-        <Button 
-          label="Create Project" 
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           @click="onSubmit"
-          :loading="isLoading"
-          :disabled="!meta.valid"
-        />
+          :disabled="!meta.valid || isLoading"
+        >
+          <svg v-if="isLoading" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          {{ isLoading ? 'Creating...' : 'Create Project' }}
+        </button>
       </div>
     </template>
   </Dialog>
 </template>
+
+<style scoped>
+.create-project-modal :deep(.p-dialog) {
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.create-project-modal :deep(.p-dialog-header-close) {
+  color: #9ca3af;
+  border-radius: 0.5rem;
+  transition: all 0.15s;
+  width: 2rem;
+  height: 2rem;
+}
+
+.create-project-modal :deep(.p-dialog-header-close:hover) {
+  color: #4b5563;
+  background-color: #f3f4f6;
+}
+
+.create-project-modal :deep(.p-inputtext),
+.create-project-modal :deep(.p-textarea) {
+  border-color: #e5e7eb;
+  background-color: #fff;
+}
+
+.create-project-modal :deep(.p-inputtext:focus),
+.create-project-modal :deep(.p-textarea:focus) {
+  border-color: #f97316;
+  box-shadow: 0 0 0 1px #f97316;
+}
+
+.create-project-modal :deep(.p-inputtext::placeholder),
+.create-project-modal :deep(.p-textarea::placeholder) {
+  color: #9ca3af;
+}
+</style>
 

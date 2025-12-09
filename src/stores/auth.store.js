@@ -55,6 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Initialize auth state on app load
+   * In development mode, restores user from localStorage if token exists
    */
   async function initialize() {
     if (isInitialized.value) return
@@ -65,8 +66,29 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       if (accessToken.value) {
         setAuthToken(accessToken.value)
-        const userData = await authApi.getCurrentUser()
-        user.value = createUser(userData)
+
+        // Development mode: Restore user from localStorage if dev token
+        if (import.meta.env.DEV && accessToken.value.startsWith('dev_')) {
+          const savedUser = localStorage.getItem('devUser')
+          if (savedUser) {
+            user.value = createUser(JSON.parse(savedUser))
+          } else {
+            // Create a default dev user if none saved
+            user.value = createUser({
+              id: 'user_dev_001',
+              email: 'demo@desidia.app',
+              name: 'Demo User',
+              avatar: null,
+              role: 'owner',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            })
+          }
+        } else {
+          // Production: Fetch user from API
+          const userData = await authApi.getCurrentUser()
+          user.value = createUser(userData)
+        }
       }
     } catch (err) {
       // Token might be expired, clear auth
@@ -79,6 +101,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Login with credentials
+   * In development mode, allows dummy login for testing
    * @param {Object} credentials
    * @param {string} credentials.email
    * @param {string} credentials.password
@@ -88,7 +111,39 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const response = await authApi.login(credentials)
+      let response
+
+      // Development mode: Allow dummy login
+      if (import.meta.env.DEV) {
+        // Check for dummy credentials
+        const isDummyLogin = credentials.email === 'demo@desidia.app' && credentials.password === 'demo1234'
+        const isAnyLogin = credentials.email && credentials.password && credentials.password.length >= 8
+
+        if (isDummyLogin || isAnyLogin) {
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+          // Create dummy response
+          response = {
+            accessToken: 'dev_access_token_' + Date.now(),
+            refreshToken: 'dev_refresh_token_' + Date.now(),
+            user: {
+              id: 'user_dev_001',
+              email: credentials.email,
+              name: credentials.email === 'demo@desidia.app' ? 'Demo User' : credentials.email.split('@')[0],
+              avatar: null,
+              role: 'owner',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          }
+        } else {
+          throw new Error('Invalid email or password')
+        }
+      } else {
+        // Production: Use real API
+        response = await authApi.login(credentials)
+      }
 
       accessToken.value = response.accessToken
       refreshToken.value = response.refreshToken
@@ -98,6 +153,11 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('accessToken', response.accessToken)
       localStorage.setItem('refreshToken', response.refreshToken)
       setAuthToken(response.accessToken)
+
+      // In dev mode, also save user data for persistence
+      if (import.meta.env.DEV) {
+        localStorage.setItem('devUser', JSON.stringify(response.user))
+      }
 
       return response
     } catch (err) {
@@ -110,6 +170,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Register a new user
+   * In development mode, allows dummy registration for testing
    * @param {Object} data
    */
   async function register(data) {
@@ -117,7 +178,31 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const response = await authApi.register(data)
+      let response
+
+      // Development mode: Allow dummy registration
+      if (import.meta.env.DEV) {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Create dummy response
+        response = {
+          accessToken: 'dev_access_token_' + Date.now(),
+          refreshToken: 'dev_refresh_token_' + Date.now(),
+          user: {
+            id: 'user_dev_' + Date.now(),
+            email: data.email,
+            name: data.name,
+            avatar: null,
+            role: 'owner',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        }
+      } else {
+        // Production: Use real API
+        response = await authApi.register(data)
+      }
 
       accessToken.value = response.accessToken
       refreshToken.value = response.refreshToken
@@ -126,6 +211,11 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('accessToken', response.accessToken)
       localStorage.setItem('refreshToken', response.refreshToken)
       setAuthToken(response.accessToken)
+
+      // In dev mode, also save user data for persistence
+      if (import.meta.env.DEV) {
+        localStorage.setItem('devUser', JSON.stringify(response.user))
+      }
 
       return response
     } catch (err) {
@@ -141,7 +231,8 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function logout() {
     try {
-      if (accessToken.value) {
+      // Only call API in production mode
+      if (accessToken.value && !import.meta.env.DEV) {
         await authApi.logout()
       }
     } catch {
@@ -155,6 +246,11 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Clear storage and headers
       clearAuth()
+
+      // In dev mode, also clear devUser
+      if (import.meta.env.DEV) {
+        localStorage.removeItem('devUser')
+      }
     }
   }
 

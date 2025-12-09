@@ -62,27 +62,21 @@ watch(
 </script>
 
 <template>
-  <div class="app-layout flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+  <div class="app-layout flex h-screen overflow-hidden bg-white">
     <!-- Sidebar -->
     <Sidebar />
-    
-    <!-- Mobile Sidebar Overlay -->
-    <div 
-      v-if="uiStore.isSidebarMobileOpen && uiStore.isMobile"
-      class="fixed inset-0 z-40 bg-black/50 lg:hidden"
-      @click="uiStore.closeMobileSidebar"
-    />
-    
+
     <!-- Main Content Area -->
-    <div 
+    <div
       class="flex flex-1 flex-col overflow-hidden transition-all duration-300"
       :style="{ marginLeft: uiStore.isMobile ? '0' : uiStore.sidebarWidth }"
+      :class="{ 'select-none': uiStore.isResizingSidebar }"
     >
       <!-- Top Bar -->
       <Topbar />
-      
+
       <!-- Page Content -->
-      <main class="flex-1 overflow-auto">
+      <main class="flex-1 overflow-auto bg-white">
         <RouterView v-slot="{ Component }">
           <Transition name="fade" mode="out-in">
             <component :is="Component" />
@@ -90,7 +84,7 @@ watch(
         </RouterView>
       </main>
     </div>
-    
+
     <!-- Task Detail Panel (Slide-over) -->
     <Transition name="slide-right">
       <TaskPanel v-if="uiStore.isTaskPanelOpen" />

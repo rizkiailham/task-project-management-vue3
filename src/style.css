@@ -7,32 +7,32 @@
 
 /* Tailwind v4 Theme Configuration */
 @theme {
-  /* Primary colors */
-  --color-primary-50: #f5f3ff;
-  --color-primary-100: #ede9fe;
-  --color-primary-200: #ddd6fe;
-  --color-primary-300: #c4b5fd;
-  --color-primary-400: #a78bfa;
-  --color-primary-500: #8b5cf6;
-  --color-primary-600: #7c3aed;
-  --color-primary-700: #6d28d9;
-  --color-primary-800: #5b21b6;
-  --color-primary-900: #4c1d95;
+  /* Primary colors - Orange theme */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #ffedd5;
+  --color-primary-200: #fed7aa;
+  --color-primary-300: #fdba74;
+  --color-primary-400: #fb923c;
+  --color-primary-500: #f97316;
+  --color-primary-600: #ea580c;
+  --color-primary-700: #c2410c;
+  --color-primary-800: #9a3412;
+  --color-primary-900: #7c2d12;
 }
 
 /* CSS Custom Properties for theming */
 :root {
-  /* Primary colors (for CSS usage) */
-  --color-primary-50: #f5f3ff;
-  --color-primary-100: #ede9fe;
-  --color-primary-200: #ddd6fe;
-  --color-primary-300: #c4b5fd;
-  --color-primary-400: #a78bfa;
-  --color-primary-500: #8b5cf6;
-  --color-primary-600: #7c3aed;
-  --color-primary-700: #6d28d9;
-  --color-primary-800: #5b21b6;
-  --color-primary-900: #4c1d95;
+  /* Primary colors - Orange theme (for CSS usage) */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #ffedd5;
+  --color-primary-200: #fed7aa;
+  --color-primary-300: #fdba74;
+  --color-primary-400: #fb923c;
+  --color-primary-500: #f97316;
+  --color-primary-600: #ea580c;
+  --color-primary-700: #c2410c;
+  --color-primary-800: #9a3412;
+  --color-primary-900: #7c2d12;
 
   /* Layout */
   --sidebar-width: 280px;
@@ -269,4 +269,214 @@ body {
 .ck-editor__editable:focus {
   border-color: var(--color-primary-500) !important;
   box-shadow: 0 0 0 2px var(--color-primary-100) !important;
+}
+
+/* ================================
+   PrimeVue Orange Theme Overrides
+   ================================ */
+
+/* Primary Button - Orange */
+.p-button:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger):not(.p-button-text):not(.p-button-outlined):not(.p-button-link) {
+  background: var(--color-primary-500) !important;
+  border-color: var(--color-primary-500) !important;
+}
+
+.p-button:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger):not(.p-button-text):not(.p-button-outlined):not(.p-button-link):hover {
+  background: var(--color-primary-600) !important;
+  border-color: var(--color-primary-600) !important;
+}
+
+.p-button:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger):not(.p-button-text):not(.p-button-outlined):not(.p-button-link):focus {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--color-primary-300) !important;
+}
+
+/* Text Button - Orange */
+.p-button-text:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger) {
+  color: var(--color-primary-600) !important;
+}
+
+.p-button-text:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger):hover {
+  background: var(--color-primary-50) !important;
+  color: var(--color-primary-700) !important;
+}
+
+/* Outlined Button - Orange */
+.p-button-outlined:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger) {
+  color: var(--color-primary-600) !important;
+  border-color: var(--color-primary-600) !important;
+}
+
+.p-button-outlined:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger):hover {
+  background: var(--color-primary-50) !important;
+}
+
+/* Checkbox - Orange */
+.p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--color-primary-500) !important;
+  border-color: var(--color-primary-500) !important;
+}
+
+.p-checkbox:not(.p-disabled):has(.p-checkbox-input:hover) .p-checkbox-box.p-highlight {
+  background: var(--color-primary-600) !important;
+  border-color: var(--color-primary-600) !important;
+}
+
+/* Input Focus - Orange */
+.p-inputtext:focus {
+  border-color: var(--color-primary-500) !important;
+  box-shadow: 0 0 0 1px var(--color-primary-500) !important;
+}
+
+/* Select/Dropdown Focus - Orange */
+.p-select:focus,
+.p-select.p-focus {
+  border-color: var(--color-primary-500) !important;
+  box-shadow: 0 0 0 1px var(--color-primary-500) !important;
+}
+
+/* DatePicker Focus - Orange */
+.p-datepicker-panel .p-datepicker-day.p-datepicker-day-selected {
+  background: var(--color-primary-500) !important;
+}
+
+/* Badge - Primary Orange */
+.p-badge.p-badge-primary {
+  background: var(--color-primary-500) !important;
+}
+
+/* Dialog improvements */
+.p-dialog {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.p-dialog .p-dialog-header {
+  padding: 1.25rem 1.5rem !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.p-dialog .p-dialog-content {
+  padding: 1.5rem !important;
+}
+
+.p-dialog .p-dialog-footer {
+  padding: 1rem 1.5rem !important;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+/* ================================
+   Tabs Component - Orange Theme
+   ================================ */
+.p-tabs .p-tablist-tab-list {
+  border-color: #e5e7eb !important;
+}
+
+.p-tabs .p-tab {
+  color: #6b7280 !important;
+  border-color: transparent !important;
+}
+
+.p-tabs .p-tab:hover {
+  color: var(--color-primary-600) !important;
+}
+
+.p-tabs .p-tab.p-tab-active {
+  color: var(--color-primary-600) !important;
+  border-color: var(--color-primary-500) !important;
+}
+
+.p-tabs .p-tab:focus-visible {
+  outline-color: var(--color-primary-500) !important;
+}
+
+/* TabMenu - Orange Theme */
+.p-tabmenu .p-tabmenu-nav .p-tabmenuitem .p-menuitem-link {
+  color: #6b7280 !important;
+  border-color: transparent !important;
+}
+
+.p-tabmenu .p-tabmenu-nav .p-tabmenuitem .p-menuitem-link:hover {
+  color: var(--color-primary-600) !important;
+}
+
+.p-tabmenu .p-tabmenu-nav .p-tabmenuitem.p-highlight .p-menuitem-link {
+  color: var(--color-primary-600) !important;
+  border-color: var(--color-primary-500) !important;
+}
+
+/* ================================
+   Toggle Switch / InputSwitch - Orange Theme
+   ================================ */
+.p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider,
+.p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
+  background: var(--color-primary-500) !important;
+}
+
+.p-toggleswitch.p-toggleswitch-checked:hover .p-toggleswitch-slider,
+.p-inputswitch.p-inputswitch-checked:hover .p-inputswitch-slider {
+  background: var(--color-primary-600) !important;
+}
+
+.p-toggleswitch:not(.p-disabled):has(.p-toggleswitch-input:focus-visible) .p-toggleswitch-slider,
+.p-inputswitch:not(.p-disabled):has(.p-inputswitch-input:focus-visible) .p-inputswitch-slider {
+  outline-color: var(--color-primary-500) !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--color-primary-300) !important;
+}
+
+/* ================================
+   Radio Button - Orange Theme
+   ================================ */
+.p-radiobutton .p-radiobutton-box.p-highlight {
+  background: var(--color-primary-500) !important;
+  border-color: var(--color-primary-500) !important;
+}
+
+.p-radiobutton:not(.p-disabled):has(.p-radiobutton-input:hover) .p-radiobutton-box.p-highlight {
+  background: var(--color-primary-600) !important;
+  border-color: var(--color-primary-600) !important;
+}
+
+/* ================================
+   Progress Bar - Orange Theme
+   ================================ */
+.p-progressbar .p-progressbar-value {
+  background: var(--color-primary-500) !important;
+}
+
+/* ================================
+   Slider - Orange Theme
+   ================================ */
+.p-slider .p-slider-range {
+  background: var(--color-primary-500) !important;
+}
+
+.p-slider .p-slider-handle {
+  border-color: var(--color-primary-500) !important;
+}
+
+.p-slider .p-slider-handle:hover {
+  background: var(--color-primary-500) !important;
+  border-color: var(--color-primary-500) !important;
+}
+
+/* ================================
+   Chip - Orange Theme
+   ================================ */
+.p-chip.p-chip-primary {
+  background: var(--color-primary-100) !important;
+  color: var(--color-primary-700) !important;
+}
+
+/* ================================
+   Link / Anchor - Orange Theme
+   ================================ */
+a.text-primary,
+.text-primary {
+  color: var(--color-primary-600) !important;
+}
+
+a.text-primary:hover,
+.text-primary:hover {
+  color: var(--color-primary-700) !important;
 }

@@ -1,11 +1,13 @@
 <script setup>
 /**
  * RegisterView - User registration page
+ * With localization support (en/no)
  */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore, useUIStore } from '@/stores'
 
 // PrimeVue
@@ -15,35 +17,36 @@ import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 
-// Form validation schema
-const validationSchema = yup.object({
+// Form validation schema with localized messages
+const validationSchema = computed(() => yup.object({
   name: yup
     .string()
-    .required('Name is required')
-    .min(2, 'Name must be at least 2 characters'),
+    .required(t('auth.validation.nameRequired'))
+    .min(2, t('auth.validation.nameMin')),
   email: yup
     .string()
-    .required('Email is required')
-    .email('Please enter a valid email'),
+    .required(t('auth.validation.emailRequired'))
+    .email(t('auth.validation.emailInvalid')),
   password: yup
     .string()
-    .required('Password is required')
-    .min(8, 'Password must be at least 8 characters')
-    .matches(/[a-z]/, 'Password must contain a lowercase letter')
-    .matches(/[A-Z]/, 'Password must contain an uppercase letter')
-    .matches(/[0-9]/, 'Password must contain a number'),
+    .required(t('auth.validation.passwordRequired'))
+    .min(8, t('auth.validation.passwordMin'))
+    .matches(/[a-z]/, t('auth.validation.passwordLowercase'))
+    .matches(/[A-Z]/, t('auth.validation.passwordUppercase'))
+    .matches(/[0-9]/, t('auth.validation.passwordNumber')),
   confirmPassword: yup
     .string()
-    .required('Please confirm your password')
-    .oneOf([yup.ref('password')], 'Passwords must match')
-})
+    .required(t('auth.validation.confirmPasswordRequired'))
+    .oneOf([yup.ref('password')], t('auth.validation.passwordsMustMatch'))
+}))
 
 // Form setup
-const { handleSubmit, errors, meta } = useForm({
+const { handleSubmit, meta } = useForm({
   validationSchema
 })
 
@@ -60,21 +63,21 @@ const isSubmitting = ref(false)
 // Methods
 const onSubmit = handleSubmit(async (values) => {
   if (!acceptTerms.value) {
-    serverError.value = 'Please accept the terms and conditions'
+    serverError.value = t('auth.validation.acceptTermsRequired')
     return
   }
-  
+
   isSubmitting.value = true
   serverError.value = ''
-  
+
   try {
     await authStore.register({
       name: values.name,
       email: values.email,
       password: values.password
     })
-    
-    uiStore.showSuccess('Account created successfully!', 'Welcome to Desidia')
+
+    uiStore.showSuccess(t('auth.register.accountCreated'), t('auth.register.welcomeTo'))
     router.push({ name: 'Home' })
   } catch (error) {
     serverError.value = error.message || 'Registration failed. Please try again.'
@@ -89,24 +92,24 @@ const onSubmit = handleSubmit(async (values) => {
     <!-- Left Panel - Illustration -->
     <div class="register-illustration-panel">
       <div class="max-w-md text-center text-white">
-        <h2 class="text-3xl font-bold">Start your productivity journey</h2>
+        <h2 class="text-3xl font-bold">{{ t('promo.startJourney') }}</h2>
         <p class="mt-4 text-lg opacity-90">
-          Join thousands of teams using Desidia to manage their work more efficiently.
+          {{ t('promo.joinTeams') }}
         </p>
 
         <!-- Stats -->
         <div class="mt-12 grid grid-cols-3 gap-6">
           <div>
             <div class="text-3xl font-bold">10K+</div>
-            <div class="text-sm opacity-75">Active Users</div>
+            <div class="text-sm opacity-75">{{ t('promo.stats.activeUsers') }}</div>
           </div>
           <div>
             <div class="text-3xl font-bold">500K+</div>
-            <div class="text-sm opacity-75">Tasks Completed</div>
+            <div class="text-sm opacity-75">{{ t('promo.stats.tasksCompleted') }}</div>
           </div>
           <div>
             <div class="text-3xl font-bold">99.9%</div>
-            <div class="text-sm opacity-75">Uptime</div>
+            <div class="text-sm opacity-75">{{ t('promo.stats.uptime') }}</div>
           </div>
         </div>
       </div>
@@ -123,15 +126,15 @@ const onSubmit = handleSubmit(async (values) => {
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
             </div>
-            <span class="text-2xl font-bold text-gray-900">Desidia</span>
+            <span class="text-2xl font-bold text-gray-900">{{ t('common.appName') }}</span>
           </div>
         </div>
 
         <!-- Header -->
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">Create your account</h1>
+          <h1 class="text-3xl font-bold text-gray-900">{{ t('auth.register.title') }}</h1>
           <p class="mt-2 text-base text-gray-600">
-            Get started with your free account
+            {{ t('auth.register.subtitle') }}
           </p>
         </div>
 
@@ -145,13 +148,13 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Name Field -->
           <div class="space-y-2">
             <label for="name" class="block text-sm font-semibold text-gray-700">
-              Full name
+              {{ t('auth.register.fullName') }}
             </label>
             <InputText
               id="name"
               v-model="name"
               type="text"
-              placeholder="John Doe"
+              :placeholder="t('auth.register.fullNamePlaceholder')"
               class="w-full"
               :class="{ 'p-invalid': nameError }"
               autocomplete="name"
@@ -162,13 +165,13 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Email Field -->
           <div class="space-y-2">
             <label for="email" class="block text-sm font-semibold text-gray-700">
-              Email address
+              {{ t('auth.register.email') }}
             </label>
             <InputText
               id="email"
               v-model="email"
               type="email"
-              placeholder="you@example.com"
+              :placeholder="t('auth.register.emailPlaceholder')"
               class="w-full"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
@@ -179,12 +182,12 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Password Field -->
           <div class="space-y-2">
             <label for="password" class="block text-sm font-semibold text-gray-700">
-              Password
+              {{ t('auth.register.password') }}
             </label>
             <Password
               id="password"
               v-model="password"
-              placeholder="Create a strong password"
+              :placeholder="t('auth.register.passwordPlaceholder')"
               :class="{ 'p-invalid': passwordError }"
               toggleMask
               autocomplete="new-password"
@@ -197,12 +200,12 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Confirm Password Field -->
           <div class="space-y-2">
             <label for="confirmPassword" class="block text-sm font-semibold text-gray-700">
-              Confirm password
+              {{ t('auth.register.confirmPassword') }}
             </label>
             <Password
               id="confirmPassword"
               v-model="confirmPassword"
-              placeholder="Confirm your password"
+              :placeholder="t('auth.register.confirmPasswordPlaceholder')"
               :class="{ 'p-invalid': confirmPasswordError }"
               :feedback="false"
               toggleMask
@@ -217,17 +220,17 @@ const onSubmit = handleSubmit(async (values) => {
           <div class="flex items-start gap-2">
             <Checkbox v-model="acceptTerms" inputId="terms" :binary="true" class="mt-0.5" />
             <label for="terms" class="text-sm text-gray-600 cursor-pointer">
-              I agree to the
-              <a href="#" class="text-primary-600 hover:underline font-medium">Terms of Service</a>
-              and
-              <a href="#" class="text-primary-600 hover:underline font-medium">Privacy Policy</a>
+              {{ t('auth.register.acceptTerms') }}
+              <a href="#" class="text-primary-600 hover:underline font-medium">{{ t('auth.register.termsOfService') }}</a>
+              {{ t('common.and') }}
+              <a href="#" class="text-primary-600 hover:underline font-medium">{{ t('auth.register.privacyPolicy') }}</a>
             </label>
           </div>
 
           <!-- Submit Button -->
           <Button
             type="submit"
-            label="Create account"
+            :label="t('auth.register.createAccount')"
             class="w-full justify-center"
             :loading="isSubmitting"
             :disabled="!meta.valid || !acceptTerms || isSubmitting"
@@ -236,12 +239,12 @@ const onSubmit = handleSubmit(async (values) => {
 
         <!-- Sign In Link -->
         <p class="mt-8 text-center text-sm text-gray-600">
-          Already have an account?
+          {{ t('auth.register.hasAccount') }}
           <router-link
             :to="{ name: 'Login' }"
             class="font-semibold text-primary-600 hover:text-primary-700"
           >
-            Sign in
+            {{ t('auth.register.signIn') }}
           </router-link>
         </p>
       </div>

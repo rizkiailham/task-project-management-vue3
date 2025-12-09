@@ -19,6 +19,9 @@ import ConfirmationService from 'primevue/confirmationservice'
 import Tooltip from 'primevue/tooltip'
 import Ripple from 'primevue/ripple'
 
+// I18n
+import i18n from './i18n'
+
 // App
 import App from './App.vue'
 import router from './router'
@@ -30,7 +33,7 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-// Configure PrimeVue
+// Configure PrimeVue with Orange theme
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
@@ -40,7 +43,17 @@ app.use(PrimeVue, {
       cssLayer: false
     }
   },
-  ripple: true
+  ripple: true,
+  pt: {
+    // Global Pass Through options to customize primary color to orange
+    button: {
+      root: ({ props }) => ({
+        class: props.severity === undefined || props.severity === 'primary'
+          ? '!bg-orange-500 hover:!bg-orange-600 !border-orange-500 hover:!border-orange-600'
+          : ''
+      })
+    }
+  }
 })
 
 // PrimeVue services
@@ -50,6 +63,9 @@ app.use(ConfirmationService)
 // PrimeVue directives
 app.directive('tooltip', Tooltip)
 app.directive('ripple', Ripple)
+
+// I18n - Internationalization
+app.use(i18n)
 
 // Vue Router
 app.use(router)

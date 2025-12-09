@@ -1,0 +1,279 @@
+{
+  "common": {
+    "appName": "Desidia",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "actions": "Actions",
+    "settings": "Settings",
+    "logout": "Logout",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "all": "All",
+    "none": "None",
+    "select": "Select",
+    "optional": "Optional",
+    "required": "Required",
+    "noResults": "No results found",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account to continue",
+      "email": "Email address",
+      "emailPlaceholder": "you{'@'}example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUpFree": "Sign up for free",
+      "orContinueWith": "or continue with",
+      "google": "Google",
+      "github": "GitHub",
+      "invalidCredentials": "Invalid email or password",
+      "welcomeBack": "Welcome back!",
+      "loginSuccessful": "Login successful"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Get started with your free account",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "John Doe",
+      "email": "Email address",
+      "emailPlaceholder": "you{'@'}example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Create a strong password",
+      "confirmPassword": "Confirm password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "acceptTerms": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "createAccount": "Create account",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "accountCreated": "Account created successfully!",
+      "welcomeTo": "Welcome to Desidia"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "email": "Email address",
+      "emailPlaceholder": "you{'@'}example.com",
+      "sendResetLink": "Send reset link",
+      "backToSignIn": "Back to sign in",
+      "checkEmail": "Check your email",
+      "resetLinkSent": "We've sent a password reset link to",
+      "failedToSend": "Failed to send reset email"
+    },
+    "resetPassword": {
+      "title": "Set new password",
+      "subtitle": "Create a strong password for your account",
+      "newPassword": "New password",
+      "newPasswordPlaceholder": "Create a strong password",
+      "confirmPassword": "Confirm new password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "resetPassword": "Reset password",
+      "invalidLink": "Invalid reset link",
+      "linkExpired": "This password reset link is invalid or has expired.",
+      "requestNewLink": "Request a new reset link",
+      "passwordResetSuccess": "Password reset successfully!"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordLowercase": "Password must contain a lowercase letter",
+      "passwordUppercase": "Password must contain an uppercase letter",
+      "passwordNumber": "Password must contain a number",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsMustMatch": "Passwords must match",
+      "nameRequired": "Name is required",
+      "nameMin": "Name must be at least 2 characters",
+      "acceptTermsRequired": "Please accept the terms and conditions"
+    }
+  },
+  "sidebar": {
+    "home": "Home",
+    "myTasks": "My Tasks",
+    "inbox": "Inbox",
+    "projects": "Projects",
+    "workspaces": "Workspaces",
+    "settings": "Settings",
+    "newProject": "New Project",
+    "newTask": "New Task",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "todaysTasks": "Today's Tasks",
+    "upcomingDeadlines": "Upcoming Deadlines",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions",
+    "aiInsights": "AI Insights",
+    "tasksDueToday": "tasks due today",
+    "tasksOverdue": "tasks overdue",
+    "projectsActive": "active projects"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "myTasks": "My Tasks",
+    "allTasks": "All Tasks",
+    "newTask": "New Task",
+    "editTask": "Edit Task",
+    "deleteTask": "Delete Task",
+    "taskName": "Task name",
+    "taskNamePlaceholder": "Enter task name",
+    "description": "Description",
+    "descriptionPlaceholder": "Add a description...",
+    "status": "Status",
+    "priority": "Priority",
+    "dueDate": "Due date",
+    "assignee": "Assignee",
+    "project": "Project",
+    "tags": "Tags",
+    "subtasks": "Subtasks",
+    "comments": "Comments",
+    "attachments": "Attachments",
+    "activity": "Activity",
+    "statusOptions": {
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "inReview": "In Review",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "priorityOptions": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "filters": {
+      "all": "All",
+      "today": "Today",
+      "upcoming": "Upcoming",
+      "overdue": "Overdue",
+      "completed": "Completed"
+    },
+    "emptyState": {
+      "title": "No tasks yet",
+      "description": "Create your first task to get started"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "newProject": "New Project",
+    "editProject": "Edit Project",
+    "deleteProject": "Delete Project",
+    "projectName": "Project name",
+    "projectNamePlaceholder": "Enter project name",
+    "description": "Description",
+    "descriptionPlaceholder": "Add a description...",
+    "color": "Color",
+    "status": "Status",
+    "members": "Members",
+    "tasks": "Tasks",
+    "views": {
+      "board": "Board",
+      "list": "List",
+      "calendar": "Calendar",
+      "timeline": "Timeline"
+    },
+    "statusOptions": {
+      "active": "Active",
+      "onHold": "On Hold",
+      "completed": "Completed",
+      "archived": "Archived"
+    },
+    "emptyState": {
+      "title": "No projects yet",
+      "description": "Create your first project to get started"
+    }
+  },
+  "workspace": {
+    "title": "Workspace",
+    "overview": "Overview",
+    "settings": "Workspace Settings",
+    "members": "Members",
+    "inviteMember": "Invite member",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member",
+      "guest": "Guest"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "inbox": "Inbox",
+    "markAllRead": "Mark all as read",
+    "markAsRead": "Mark as read",
+    "noNotifications": "No notifications",
+    "types": {
+      "taskAssigned": "Task assigned",
+      "taskCompleted": "Task completed",
+      "commentAdded": "Comment added",
+      "mention": "Mentioned you",
+      "dueDateReminder": "Due date reminder"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "account": "Account",
+    "notifications": "Notifications",
+    "appearance": "Appearance",
+    "language": "Language",
+    "theme": "Theme",
+    "themeOptions": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "languageOptions": {
+      "en": "English",
+      "no": "Norwegian"
+    },
+    "saveChanges": "Save changes",
+    "changesSaved": "Changes saved successfully"
+  },
+  "promo": {
+    "manageWithAI": "Manage your tasks with AI",
+    "promoDescription": "Desidia helps you organize, prioritize, and complete your work faster with intelligent task management.",
+    "features": {
+      "aiPowered": "AI-powered task suggestions",
+      "collaboration": "Real-time team collaboration",
+      "analytics": "Insightful productivity analytics"
+    },
+    "stats": {
+      "activeUsers": "Active Users",
+      "tasksCompleted": "Tasks Completed",
+      "uptime": "Uptime"
+    },
+    "startJourney": "Start your productivity journey",
+    "joinTeams": "Join thousands of teams using Desidia to manage their work more efficiently."
+  }
+}
+

@@ -1,10 +1,12 @@
 <script setup>
 /**
  * ForgotPasswordView - Password reset request page
+ * With localization support (en/no)
  */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore, useUIStore } from '@/stores'
 
 // PrimeVue
@@ -12,16 +14,17 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 
-// Form validation schema
-const validationSchema = yup.object({
+// Form validation schema with localized messages
+const validationSchema = computed(() => yup.object({
   email: yup
     .string()
-    .required('Email is required')
-    .email('Please enter a valid email')
-})
+    .required(t('auth.validation.emailRequired'))
+    .email(t('auth.validation.emailInvalid'))
+}))
 
 // Form setup
 const { handleSubmit, meta } = useForm({
@@ -39,13 +42,13 @@ const isSuccess = ref(false)
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
   serverError.value = ''
-  
+
   try {
     await authStore.requestPasswordReset(values.email)
     isSuccess.value = true
-    uiStore.showSuccess('Check your email for reset instructions')
+    uiStore.showSuccess(t('auth.forgotPassword.checkEmail'))
   } catch (error) {
-    serverError.value = error.message || 'Failed to send reset email'
+    serverError.value = error.message || t('auth.forgotPassword.failedToSend')
   } finally {
     isSubmitting.value = false
   }
@@ -62,9 +65,9 @@ const onSubmit = handleSubmit(async (values) => {
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
-        <h1 class="mt-4 text-2xl font-bold text-gray-900">Reset your password</h1>
+        <h1 class="mt-4 text-2xl font-bold text-gray-900">{{ t('auth.forgotPassword.title') }}</h1>
         <p class="mt-2 text-base text-gray-600">
-          Enter your email and we'll send you a reset link
+          {{ t('auth.forgotPassword.subtitle') }}
         </p>
       </div>
 
@@ -74,15 +77,15 @@ const onSubmit = handleSubmit(async (values) => {
           <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <i class="pi pi-check text-xl text-green-600"></i>
           </div>
-          <h2 class="mt-4 text-lg font-semibold text-gray-900">Check your email</h2>
+          <h2 class="mt-4 text-lg font-semibold text-gray-900">{{ t('auth.forgotPassword.checkEmail') }}</h2>
           <p class="mt-2 text-sm text-gray-600">
-            We've sent a password reset link to <strong>{{ email }}</strong>
+            {{ t('auth.forgotPassword.resetLinkSent') }} <strong>{{ email }}</strong>
           </p>
           <router-link
             :to="{ name: 'Login' }"
             class="mt-6 inline-block text-sm font-semibold text-primary-600 hover:text-primary-700"
           >
-            ← Back to sign in
+            ← {{ t('auth.forgotPassword.backToSignIn') }}
           </router-link>
         </div>
       </div>
@@ -98,13 +101,13 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Email Field -->
           <div class="space-y-2">
             <label for="email" class="block text-sm font-semibold text-gray-700">
-              Email address
+              {{ t('auth.forgotPassword.email') }}
             </label>
             <InputText
               id="email"
               v-model="email"
               type="email"
-              placeholder="you@example.com"
+              :placeholder="t('auth.forgotPassword.emailPlaceholder')"
               class="w-full"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
@@ -115,7 +118,7 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Submit Button -->
           <Button
             type="submit"
-            label="Send reset link"
+            :label="t('auth.forgotPassword.sendResetLink')"
             class="w-full justify-center"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
@@ -128,7 +131,7 @@ const onSubmit = handleSubmit(async (values) => {
             :to="{ name: 'Login' }"
             class="font-semibold text-primary-600 hover:text-primary-700"
           >
-            ← Back to sign in
+            ← {{ t('auth.forgotPassword.backToSignIn') }}
           </router-link>
         </p>
       </div>
