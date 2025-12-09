@@ -52,12 +52,12 @@ const onSubmit = handleSubmit(async (values) => {
 
 <template>
   <div class="mx-auto max-w-2xl">
-    <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-      <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Change Password</h2>
+    <div class="rounded-lg border border-gray-200 bg-white p-6 dark-edit:border-gray-700 dark-edit:bg-gray-800">
+      <h2 class="mb-6 text-lg font-semibold text-gray-900 dark-edit:text-white">Change Password</h2>
       
       <form @submit="onSubmit" class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
             Current Password
           </label>
           <Password 
@@ -72,7 +72,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
             New Password
           </label>
           <Password 
@@ -86,7 +86,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
             Confirm New Password
           </label>
           <Password 
@@ -112,20 +112,20 @@ const onSubmit = handleSubmit(async (values) => {
     </div>
 
     <!-- Sessions -->
-    <div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Active Sessions</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+    <div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 dark-edit:border-gray-700 dark-edit:bg-gray-800">
+      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">Active Sessions</h2>
+      <p class="text-sm text-gray-500 dark-edit:text-gray-400">
         Manage your active sessions across devices.
       </p>
-      <div class="mt-4 flex items-center justify-between rounded-lg border border-gray-100 p-3 dark:border-gray-700">
+      <div class="mt-4 flex items-center justify-between rounded-lg border border-gray-100 p-3 dark-edit:border-gray-700">
         <div class="flex items-center gap-3">
           <i class="pi pi-desktop text-xl text-gray-400"></i>
           <div>
-            <p class="font-medium text-gray-900 dark:text-white">Current Session</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">This device</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">Current Session</p>
+            <p class="text-xs text-gray-500 dark-edit:text-gray-400">This device</p>
           </div>
         </div>
-        <span class="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+        <span class="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark-edit:bg-green-900/20 dark-edit:text-green-400">
           Active
         </span>
       </div>

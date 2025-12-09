@@ -67,10 +67,10 @@ async function toggleTaskStatus(task) {
     <!-- Header -->
     <div class="mb-6 flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-xl font-bold text-gray-900 dark-edit:text-white">
           {{ projectStore.currentProjectName }}
         </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <p class="text-sm text-gray-500 dark-edit:text-gray-400">
           {{ taskStore.taskCount }} tasks
         </p>
       </div>
@@ -97,7 +97,7 @@ async function toggleTaskStatus(task) {
       stripedRows
       @row-click="(e) => openTaskPanel(e.data)"
       :pt="{
-        root: { class: 'border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden' }
+        root: { class: 'border border-gray-200 dark-edit:border-gray-700 rounded-lg overflow-hidden' }
       }"
     >
       <Column style="width: 40px">
@@ -118,7 +118,7 @@ async function toggleTaskStatus(task) {
             <span 
               :class="[
                 'font-medium',
-                data.status === TaskStatus.DONE ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-white'
+                data.status === TaskStatus.DONE ? 'text-gray-400 line-through' : 'text-gray-900 dark-edit:text-white'
               ]"
             >
               {{ data.title }}
@@ -155,7 +155,7 @@ async function toggleTaskStatus(task) {
               'text-sm',
               data.dueDate && new Date(data.dueDate) < new Date() && data.status !== TaskStatus.DONE
                 ? 'text-red-600 font-medium'
-                : 'text-gray-600 dark:text-gray-400'
+                : 'text-gray-600 dark-edit:text-gray-400'
             ]"
           >
             {{ formatDate(data.dueDate) }}

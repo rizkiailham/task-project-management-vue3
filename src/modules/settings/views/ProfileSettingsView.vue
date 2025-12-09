@@ -51,8 +51,8 @@ const onSubmit = handleSubmit(async (values) => {
 
 <template>
   <div class="mx-auto max-w-2xl">
-    <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-      <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Profile Information</h2>
+    <div class="rounded-lg border border-gray-200 bg-white p-6 dark-edit:border-gray-700 dark-edit:bg-gray-800">
+      <h2 class="mb-6 text-lg font-semibold text-gray-900 dark-edit:text-white">Profile Information</h2>
       
       <!-- Avatar -->
       <div class="mb-6 flex items-center gap-4">
@@ -65,7 +65,7 @@ const onSubmit = handleSubmit(async (values) => {
         />
         <div>
           <Button label="Change Avatar" outlined size="small" />
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-xs text-gray-500 dark-edit:text-gray-400">
             JPG, PNG or GIF. Max 2MB.
           </p>
         </div>
@@ -73,7 +73,7 @@ const onSubmit = handleSubmit(async (values) => {
 
       <form @submit="onSubmit" class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
             Full Name
           </label>
           <InputText 
@@ -85,7 +85,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
             Email Address
           </label>
           <InputText 

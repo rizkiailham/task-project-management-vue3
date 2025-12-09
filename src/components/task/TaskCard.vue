@@ -67,7 +67,7 @@ function handleToggle() {
 <template>
   <div
     :class="[
-      'task-card flex items-start gap-3 rounded-lg border-l-4 bg-white p-3 shadow-sm transition-all hover:shadow-md dark:bg-gray-800',
+      'task-card flex items-start gap-3 rounded-lg border-l-4 bg-white p-3 shadow-sm transition-all hover:shadow-md dark-edit:bg-gray-800',
       priorityStyle.border
     ]"
     @click="handleClick"
@@ -87,13 +87,13 @@ function handleToggle() {
       <h4 
         :class="[
           'font-medium',
-          isCompleted ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-white'
+          isCompleted ? 'text-gray-400 line-through' : 'text-gray-900 dark-edit:text-white'
         ]"
       >
         {{ task.title }}
       </h4>
       
-      <p v-if="showProject && task.projectName" class="text-xs text-gray-500 dark:text-gray-400">
+      <p v-if="showProject && task.projectName" class="text-xs text-gray-500 dark-edit:text-gray-400">
         {{ task.projectName }}
       </p>
 
@@ -107,7 +107,7 @@ function handleToggle() {
           v-if="task.dueDate"
           :class="[
             'flex items-center gap-1 text-xs',
-            isOverdue() ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'
+            isOverdue() ? 'text-red-600 font-medium' : 'text-gray-500 dark-edit:text-gray-400'
           ]"
         >
           <i class="pi pi-calendar text-[10px]"></i>
@@ -117,7 +117,7 @@ function handleToggle() {
         <!-- Subtasks -->
         <span 
           v-if="task.subtaskCount > 0"
-          class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+          class="flex items-center gap-1 text-xs text-gray-500 dark-edit:text-gray-400"
         >
           <i class="pi pi-check-square text-[10px]"></i>
           {{ task.completedSubtaskCount || 0 }}/{{ task.subtaskCount }}
@@ -126,7 +126,7 @@ function handleToggle() {
         <!-- Comments -->
         <span 
           v-if="task.commentCount > 0"
-          class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+          class="flex items-center gap-1 text-xs text-gray-500 dark-edit:text-gray-400"
         >
           <i class="pi pi-comment text-[10px]"></i>
           {{ task.commentCount }}

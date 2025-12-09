@@ -20,8 +20,6 @@ const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
 
 // Refs
-const userMenu = ref(null)
-const notificationPanel = ref(null)
 const searchQuery = ref('')
 
 // Computed
@@ -104,13 +102,6 @@ function toggleSidebar() {
   }
 }
 
-function toggleUserMenu(event) {
-  userMenu.value.toggle(event)
-}
-
-function toggleNotifications(event) {
-  notificationPanel.value.toggle(event)
-}
 
 async function handleLogout() {
   await authStore.logout()
@@ -205,57 +196,8 @@ function openAIChat() {
         </svg>
       </button>
 
-      <Menu ref="userMenu" :model="userMenuItems" popup />
     </div>
-
-    <!-- Notification Panel -->
-    <OverlayPanel ref="notificationPanel" class="w-80">
-      <div class="flex items-center justify-between border-b border-gray-200 pb-3">
-        <h3 class="font-semibold text-gray-900">Notifications</h3>
-        <button
-          v-if="notificationStore.hasUnread"
-          class="text-sm text-orange-600 hover:text-orange-700"
-          @click="notificationStore.markAllAsRead"
-        >
-          Mark all read
-        </button>
-      </div>
-
-      <div class="max-h-80 overflow-y-auto py-2">
-        <div
-          v-if="notificationStore.notifications.length === 0"
-          class="py-8 text-center text-sm text-gray-500"
-        >
-          No notifications yet
-        </div>
-
-        <div
-          v-for="notification in notificationStore.notifications.slice(0, 5)"
-          :key="notification.id"
-          :class="[
-            'flex gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50',
-            !notification.isRead ? 'bg-orange-50/50' : ''
-          ]"
-        >
-          <div class="flex-shrink-0">
-            <i :class="['pi', notification.icon || 'pi-bell', 'text-gray-400']"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm text-gray-900">{{ notification.title }}</p>
-            <p class="text-xs text-gray-500">{{ notification.message }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="border-t border-gray-200 pt-2">
-        <button
-          class="w-full text-center text-sm text-orange-600 hover:text-orange-700 py-2"
-          @click="router.push({ name: 'Inbox' }); notificationPanel.hide()"
-        >
-          View all notifications
-        </button>
-      </div>
-    </OverlayPanel>
+    
   </header>
 </template>
 

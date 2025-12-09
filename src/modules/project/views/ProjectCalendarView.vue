@@ -118,10 +118,10 @@ function getPriorityColor(priority) {
     <!-- Header -->
     <div class="mb-6 flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-xl font-bold text-gray-900 dark-edit:text-white">
           {{ projectStore.currentProjectName }}
         </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Calendar View</p>
+        <p class="text-sm text-gray-500 dark-edit:text-gray-400">Calendar View</p>
       </div>
       <Button 
         icon="pi pi-plus" 
@@ -134,7 +134,7 @@ function getPriorityColor(priority) {
     <div class="mb-4 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <Button icon="pi pi-chevron-left" text rounded @click="previousMonth" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white min-w-[180px] text-center">
+        <h2 class="text-lg font-semibold text-gray-900 dark-edit:text-white min-w-[180px] text-center">
           {{ currentMonth }}
         </h2>
         <Button icon="pi pi-chevron-right" text rounded @click="nextMonth" />
@@ -143,13 +143,13 @@ function getPriorityColor(priority) {
     </div>
 
     <!-- Calendar Grid -->
-    <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <div class="rounded-lg border border-gray-200 bg-white dark-edit:border-gray-700 dark-edit:bg-gray-800">
       <!-- Day Headers -->
-      <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
+      <div class="grid grid-cols-7 border-b border-gray-200 dark-edit:border-gray-700">
         <div 
           v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
           :key="day"
-          class="p-2 text-center text-sm font-medium text-gray-500 dark:text-gray-400"
+          class="p-2 text-center text-sm font-medium text-gray-500 dark-edit:text-gray-400"
         >
           {{ day }}
         </div>
@@ -161,9 +161,9 @@ function getPriorityColor(priority) {
           v-for="(day, index) in calendarDays"
           :key="index"
           :class="[
-            'min-h-[100px] border-b border-r border-gray-100 p-1 dark:border-gray-700',
-            !day.isCurrentMonth && 'bg-gray-50 dark:bg-gray-800/50',
-            isToday(day.date) && 'bg-primary-50 dark:bg-primary-900/10'
+            'min-h-[100px] border-b border-r border-gray-100 p-1 dark-edit:border-gray-700',
+            !day.isCurrentMonth && 'bg-gray-50 dark-edit:bg-gray-800/50',
+            isToday(day.date) && 'bg-primary-50 dark-edit:bg-primary-900/10'
           ]"
         >
           <!-- Date Number -->
@@ -173,7 +173,7 @@ function getPriorityColor(priority) {
               isToday(day.date) 
                 ? 'bg-primary-600 text-white' 
                 : day.isCurrentMonth 
-                  ? 'text-gray-900 dark:text-white' 
+                  ? 'text-gray-900 dark-edit:text-white' 
                   : 'text-gray-400'
             ]"
           >
@@ -196,7 +196,7 @@ function getPriorityColor(priority) {
             </div>
             <div 
               v-if="getTasksForDate(day.date).length > 3"
-              class="text-xs text-gray-500 dark:text-gray-400"
+              class="text-xs text-gray-500 dark-edit:text-gray-400"
             >
               +{{ getTasksForDate(day.date).length - 3 }} more
             </div>

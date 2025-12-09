@@ -268,7 +268,7 @@ function replaceSelectedText(newText) {
 
     <!-- Editor Container -->
     <div 
-      class="editor-container rounded-lg border border-gray-200 dark:border-gray-700"
+      class="editor-container rounded-lg border border-gray-200 dark-edit:border-gray-700"
       :style="{ minHeight: minHeight }"
     >
       <div ref="editorRef"></div>

@@ -29,7 +29,7 @@ function onTabChange(event) {
 
 <template>
   <div class="p-6 lg:p-8">
-    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark-edit:text-white">Settings</h1>
     
     <TabMenu 
       :model="tabs" 

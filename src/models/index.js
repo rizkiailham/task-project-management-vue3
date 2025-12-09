@@ -126,7 +126,7 @@ export function createWorkspace(data = {}) {
     slug: data.slug || '',
     description: data.description || '',
     icon: data.icon || '🏢',
-    color: data.color || '#8b5cf6',
+    color: data.color || '#f97316',
     ownerId: data.ownerId || null,
     members: data.members || [],
     settings: data.settings || {

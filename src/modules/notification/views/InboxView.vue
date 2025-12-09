@@ -102,8 +102,8 @@ async function loadMore() {
     <!-- Header -->
     <div class="mb-6 flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Inbox</h1>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <h1 class="text-2xl font-bold text-gray-900 dark-edit:text-white">Inbox</h1>
+        <p class="mt-1 text-sm text-gray-600 dark-edit:text-gray-400">
           {{ notificationStore.unreadCount }} unread notifications
         </p>
       </div>
@@ -125,9 +125,9 @@ async function loadMore() {
       v-else-if="notifications.length === 0" 
       class="flex flex-col items-center justify-center py-16"
     >
-      <i class="pi pi-inbox text-6xl text-gray-300 dark:text-gray-600"></i>
-      <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No notifications</h3>
-      <p class="mt-1 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-6xl text-gray-300 dark-edit:text-gray-600"></i>
+      <h3 class="mt-4 text-lg font-medium text-gray-900 dark-edit:text-white">No notifications</h3>
+      <p class="mt-1 text-gray-500 dark-edit:text-gray-400">
         You're all caught up!
       </p>
     </div>
@@ -141,8 +141,8 @@ async function loadMore() {
         :class="[
           'flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors',
           notification.isRead 
-            ? 'border-gray-100 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50'
-            : 'border-primary-100 bg-primary-50/50 hover:bg-primary-50 dark:border-primary-900/30 dark:bg-primary-900/10 dark:hover:bg-primary-900/20'
+            ? 'border-gray-100 bg-white hover:bg-gray-50 dark-edit:border-gray-700 dark-edit:bg-gray-800 dark-edit:hover:bg-gray-700/50'
+            : 'border-primary-100 bg-primary-50/50 hover:bg-primary-50 dark-edit:border-primary-900/30 dark-edit:bg-primary-900/10 dark-edit:hover:bg-primary-900/20'
         ]"
       >
         <!-- Icon -->
@@ -160,7 +160,7 @@ async function loadMore() {
           <p 
             :class="[
               'text-sm',
-              notification.isRead ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white font-medium'
+              notification.isRead ? 'text-gray-600 dark-edit:text-gray-400' : 'text-gray-900 dark-edit:text-white font-medium'
             ]"
           >
             {{ notification.message }}

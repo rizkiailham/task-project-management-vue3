@@ -93,9 +93,9 @@ function formatDate(date) {
 </script>
 
 <template>
-  <div class="task-panel fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+  <div class="task-panel fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-gray-200 bg-white shadow-xl dark-edit:border-gray-700 dark-edit:bg-gray-800">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+    <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark-edit:border-gray-700">
       <div class="flex items-center gap-2">
         <Button 
           icon="pi pi-times" 
@@ -104,7 +104,7 @@ function formatDate(date) {
           size="small"
           @click="closePanel"
         />
-        <span class="text-sm text-gray-500 dark:text-gray-400">Task Details</span>
+        <span class="text-sm text-gray-500 dark-edit:text-gray-400">Task Details</span>
       </div>
       <div class="flex items-center gap-1">
         <Button 
@@ -138,7 +138,7 @@ function formatDate(date) {
       <div v-else-if="task" class="space-y-6">
         <!-- Title -->
         <div>
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 class="text-xl font-semibold text-gray-900 dark-edit:text-white">
             {{ task.title }}
           </h2>
         </div>
@@ -165,10 +165,10 @@ function formatDate(date) {
 
         <!-- Description -->
         <div>
-          <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Description</h3>
+          <h3 class="mb-2 text-sm font-medium text-gray-700 dark-edit:text-gray-300">Description</h3>
           <div 
             v-if="task.description"
-            class="prose prose-sm max-w-none text-gray-600 dark:text-gray-400"
+            class="prose prose-sm max-w-none text-gray-600 dark-edit:text-gray-400"
             v-html="task.description"
           />
           <p v-else class="text-sm text-gray-400 italic">No description</p>
@@ -177,7 +177,7 @@ function formatDate(date) {
         <!-- Details -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">Assignee</span>
+            <span class="text-sm text-gray-500 dark-edit:text-gray-400">Assignee</span>
             <div class="flex items-center gap-2">
               <Avatar 
                 v-if="task.assignee"
@@ -186,22 +186,22 @@ function formatDate(date) {
                 size="small"
                 class="bg-primary-100 text-primary-700"
               />
-              <span class="text-sm text-gray-900 dark:text-white">
+              <span class="text-sm text-gray-900 dark-edit:text-white">
                 {{ task.assignee?.name || 'Unassigned' }}
               </span>
             </div>
           </div>
 
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">Due Date</span>
-            <span class="text-sm text-gray-900 dark:text-white">
+            <span class="text-sm text-gray-500 dark-edit:text-gray-400">Due Date</span>
+            <span class="text-sm text-gray-900 dark-edit:text-white">
               {{ formatDate(task.dueDate) }}
             </span>
           </div>
 
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">Project</span>
-            <span class="text-sm text-gray-900 dark:text-white">
+            <span class="text-sm text-gray-500 dark-edit:text-gray-400">Project</span>
+            <span class="text-sm text-gray-900 dark-edit:text-white">
               {{ task.projectName || 'No project' }}
             </span>
           </div>
@@ -210,7 +210,7 @@ function formatDate(date) {
         <!-- Subtasks -->
         <div>
           <div class="mb-2 flex items-center justify-between">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <h3 class="text-sm font-medium text-gray-700 dark-edit:text-gray-300">
               Subtasks ({{ subtasks.filter(s => s.isCompleted).length }}/{{ subtasks.length }})
             </h3>
             <Button 
@@ -233,7 +233,7 @@ function formatDate(date) {
             <div
               v-for="subtask in subtasks"
               :key="subtask.id"
-              class="flex items-center gap-2 rounded p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              class="flex items-center gap-2 rounded p-2 hover:bg-gray-50 dark-edit:hover:bg-gray-700/50"
             >
               <input
                 type="checkbox"
@@ -244,7 +244,7 @@ function formatDate(date) {
               <span 
                 :class="[
                   'flex-1 text-sm',
-                  subtask.isCompleted ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300'
+                  subtask.isCompleted ? 'text-gray-400 line-through' : 'text-gray-700 dark-edit:text-gray-300'
                 ]"
               >
                 {{ subtask.title }}
@@ -255,7 +255,7 @@ function formatDate(date) {
 
         <!-- Comments -->
         <div>
-          <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <h3 class="mb-3 text-sm font-medium text-gray-700 dark-edit:text-gray-300">
             Comments ({{ comments.length }})
           </h3>
           
@@ -263,7 +263,7 @@ function formatDate(date) {
             <div
               v-for="comment in comments"
               :key="comment.id"
-              class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50"
+              class="rounded-lg bg-gray-50 p-3 dark-edit:bg-gray-700/50"
             >
               <div class="mb-1 flex items-center gap-2">
                 <Avatar 
@@ -272,14 +272,14 @@ function formatDate(date) {
                   size="small"
                   class="bg-primary-100 text-primary-700"
                 />
-                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                <span class="text-sm font-medium text-gray-900 dark-edit:text-white">
                   {{ comment.author?.name || 'Unknown' }}
                 </span>
                 <span class="text-xs text-gray-400">
                   {{ new Date(comment.createdAt).toLocaleDateString() }}
                 </span>
               </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ comment.content }}</p>
+              <p class="text-sm text-gray-600 dark-edit:text-gray-400">{{ comment.content }}</p>
             </div>
           </div>
           
@@ -299,7 +299,7 @@ function formatDate(date) {
 
       <!-- No Task Selected -->
       <div v-else class="flex h-full items-center justify-center">
-        <p class="text-gray-500 dark:text-gray-400">No task selected</p>
+        <p class="text-gray-500 dark-edit:text-gray-400">No task selected</p>
       </div>
     </div>
   </div>

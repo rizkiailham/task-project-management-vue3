@@ -266,7 +266,7 @@ const onSubmit = handleSubmit(async (values) => {
   justify-content: center;
   width: 50%;
   padding: 3rem;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #f97316 0%, #6d28d9 100%);
 }
 
 @media (min-width: 1024px) {
@@ -305,7 +305,7 @@ const onSubmit = handleSubmit(async (values) => {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #f97316 0%, #7c3aed 100%);
   color: white;
 }
 

@@ -13,7 +13,7 @@ const uiStore = useUIStore()
     <Transition name="fade">
       <div 
         v-if="uiStore.globalLoading"
-        class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
+        class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm dark-edit:bg-gray-900/80"
       >
         <ProgressSpinner 
           style="width: 50px; height: 50px" 
@@ -22,7 +22,7 @@ const uiStore = useUIStore()
         />
         <p 
           v-if="uiStore.loadingMessage"
-          class="mt-4 text-sm text-gray-600 dark:text-gray-400"
+          class="mt-4 text-sm text-gray-600 dark-edit:text-gray-400"
         >
           {{ uiStore.loadingMessage }}
         </p>

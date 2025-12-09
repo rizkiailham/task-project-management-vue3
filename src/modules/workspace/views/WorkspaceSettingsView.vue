@@ -77,16 +77,16 @@ function confirmDelete() {
 <template>
   <div class="p-6 lg:p-8">
     <div class="mx-auto max-w-2xl">
-      <h1 class="mb-6 text-xl font-bold text-gray-900 dark:text-white">Workspace Settings</h1>
+      <h1 class="mb-6 text-xl font-bold text-gray-900 dark-edit:text-white">Workspace Settings</h1>
 
       <form @submit="onSubmit" class="space-y-6">
         <!-- General Settings -->
-        <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">General</h2>
+        <div class="rounded-lg border border-gray-200 bg-white p-6 dark-edit:border-gray-700 dark-edit:bg-gray-800">
+          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">General</h2>
           
           <div class="space-y-4">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
                 Workspace Name
               </label>
               <InputText 
@@ -109,13 +109,13 @@ function confirmDelete() {
         </div>
 
         <!-- Danger Zone -->
-        <div class="rounded-lg border border-red-200 bg-red-50 p-6 dark:border-red-900/30 dark:bg-red-900/10">
-          <h2 class="mb-4 text-lg font-semibold text-red-700 dark:text-red-400">Danger Zone</h2>
+        <div class="rounded-lg border border-red-200 bg-red-50 p-6 dark-edit:border-red-900/30 dark-edit:bg-red-900/10">
+          <h2 class="mb-4 text-lg font-semibold text-red-700 dark-edit:text-red-400">Danger Zone</h2>
           
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="font-medium text-gray-900 dark:text-white">Delete Workspace</h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
+              <h3 class="font-medium text-gray-900 dark-edit:text-white">Delete Workspace</h3>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">
                 Permanently delete this workspace and all its data.
               </p>
             </div>

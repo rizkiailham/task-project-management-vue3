@@ -206,7 +206,7 @@ function getItemIndex(item) {
   >
     <div class="command-palette">
       <!-- Search Input -->
-      <div class="flex items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+      <div class="flex items-center gap-3 border-b border-gray-200 px-4 py-3 dark-edit:border-gray-700">
         <i class="pi pi-search text-gray-400"></i>
         <InputText
           ref="searchInput"
@@ -215,7 +215,7 @@ function getItemIndex(item) {
           class="flex-1 border-0 bg-transparent p-0 text-base focus:ring-0"
           :pt="{ root: { class: 'shadow-none' } }"
         />
-        <kbd class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+        <kbd class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-500 dark-edit:bg-gray-700 dark-edit:text-gray-400">
           ESC
         </kbd>
       </div>
@@ -227,7 +227,7 @@ function getItemIndex(item) {
             <!-- Section Header -->
             <div 
               v-if="item.type === 'header'"
-              class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark-edit:text-gray-400"
             >
               {{ item.label }}
             </div>
@@ -239,15 +239,15 @@ function getItemIndex(item) {
               :class="[
                 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
                 getItemIndex(item) === selectedIndex
-                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
-                  : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                  ? 'bg-primary-50 text-primary-700 dark-edit:bg-primary-900/20 dark-edit:text-primary-400'
+                  : 'text-gray-700 hover:bg-gray-50 dark-edit:text-gray-300 dark-edit:hover:bg-gray-700/50'
               ]"
             >
               <i :class="[item.icon, 'text-base']"></i>
               <span class="flex-1">{{ item.label }}</span>
               <kbd 
                 v-if="item.shortcut"
-                class="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700"
+                class="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark-edit:bg-gray-700"
               >
                 {{ item.shortcut }}
               </kbd>
@@ -260,8 +260,8 @@ function getItemIndex(item) {
               :class="[
                 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
                 getItemIndex(item) === selectedIndex
-                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
-                  : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                  ? 'bg-primary-50 text-primary-700 dark-edit:bg-primary-900/20 dark-edit:text-primary-400'
+                  : 'text-gray-700 hover:bg-gray-50 dark-edit:text-gray-300 dark-edit:hover:bg-gray-700/50'
               ]"
             >
               <span 
@@ -281,8 +281,8 @@ function getItemIndex(item) {
               :class="[
                 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
                 getItemIndex(item) === selectedIndex
-                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
-                  : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                  ? 'bg-primary-50 text-primary-700 dark-edit:bg-primary-900/20 dark-edit:text-primary-400'
+                  : 'text-gray-700 hover:bg-gray-50 dark-edit:text-gray-300 dark-edit:hover:bg-gray-700/50'
               ]"
             >
               <i class="pi pi-check-square text-gray-400"></i>
@@ -295,22 +295,22 @@ function getItemIndex(item) {
         <!-- Empty State -->
         <div 
           v-else
-          class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+          class="py-8 text-center text-sm text-gray-500 dark-edit:text-gray-400"
         >
           No results found for "{{ query }}"
         </div>
       </div>
       
       <!-- Footer -->
-      <div class="flex items-center justify-between border-t border-gray-200 px-4 py-2 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+      <div class="flex items-center justify-between border-t border-gray-200 px-4 py-2 text-xs text-gray-500 dark-edit:border-gray-700 dark-edit:text-gray-400">
         <div class="flex items-center gap-4">
           <span class="flex items-center gap-1">
-            <kbd class="rounded bg-gray-100 px-1 dark:bg-gray-700">↑</kbd>
-            <kbd class="rounded bg-gray-100 px-1 dark:bg-gray-700">↓</kbd>
+            <kbd class="rounded bg-gray-100 px-1 dark-edit:bg-gray-700">↑</kbd>
+            <kbd class="rounded bg-gray-100 px-1 dark-edit:bg-gray-700">↓</kbd>
             to navigate
           </span>
           <span class="flex items-center gap-1">
-            <kbd class="rounded bg-gray-100 px-1 dark:bg-gray-700">↵</kbd>
+            <kbd class="rounded bg-gray-100 px-1 dark-edit:bg-gray-700">↵</kbd>
             to select
           </span>
         </div>

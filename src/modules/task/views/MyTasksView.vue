@@ -179,8 +179,8 @@ function formatDate(date) {
     <!-- Header -->
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">My Tasks</h1>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <h1 class="text-2xl font-bold text-gray-900 dark-edit:text-white">My Tasks</h1>
+        <p class="mt-1 text-sm text-gray-600 dark-edit:text-gray-400">
           {{ filteredTasks.length }} tasks assigned to you
         </p>
       </div>
@@ -229,9 +229,9 @@ function formatDate(date) {
       v-else-if="filteredTasks.length === 0" 
       class="flex flex-col items-center justify-center py-16"
     >
-      <i class="pi pi-inbox text-6xl text-gray-300 dark:text-gray-600"></i>
-      <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No tasks found</h3>
-      <p class="mt-1 text-gray-500 dark:text-gray-400">
+      <i class="pi pi-inbox text-6xl text-gray-300 dark-edit:text-gray-600"></i>
+      <h3 class="mt-4 text-lg font-medium text-gray-900 dark-edit:text-white">No tasks found</h3>
+      <p class="mt-1 text-gray-500 dark-edit:text-gray-400">
         {{ searchQuery || statusFilter || priorityFilter ? 'Try adjusting your filters' : 'Create your first task to get started' }}
       </p>
       <Button 
@@ -254,7 +254,7 @@ function formatDate(date) {
           <div
             v-for="task in groupedTasks.overdue"
             :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-red-100 bg-red-50/50 p-3 dark:border-red-900/30 dark:bg-red-900/10"
+            class="task-row flex items-center gap-3 rounded-lg border border-red-100 bg-red-50/50 p-3 dark-edit:border-red-900/30 dark-edit:bg-red-900/10"
           >
             <Checkbox 
               :modelValue="task.status === TaskStatus.DONE"
@@ -263,8 +263,8 @@ function formatDate(date) {
             />
             <i :class="getPriorityIcon(task.priority)"></i>
             <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.projectName }}</p>
+              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
+              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
             </div>
             <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
             <span class="text-sm text-red-600">{{ formatDate(task.dueDate) }}</span>
@@ -274,14 +274,14 @@ function formatDate(date) {
 
       <!-- Today -->
       <div v-if="groupedTasks.today.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
           Today ({{ groupedTasks.today.length }})
         </h2>
         <div class="space-y-2">
           <div
             v-for="task in groupedTasks.today"
             :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
           >
             <Checkbox 
               :modelValue="task.status === TaskStatus.DONE"
@@ -290,8 +290,8 @@ function formatDate(date) {
             />
             <i :class="getPriorityIcon(task.priority)"></i>
             <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.projectName }}</p>
+              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
+              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
             </div>
             <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
             <span class="text-sm text-gray-500">Today</span>
@@ -301,14 +301,14 @@ function formatDate(date) {
 
       <!-- Tomorrow -->
       <div v-if="groupedTasks.tomorrow.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
           Tomorrow ({{ groupedTasks.tomorrow.length }})
         </h2>
         <div class="space-y-2">
           <div
             v-for="task in groupedTasks.tomorrow"
             :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
           >
             <Checkbox 
               :modelValue="task.status === TaskStatus.DONE"
@@ -317,8 +317,8 @@ function formatDate(date) {
             />
             <i :class="getPriorityIcon(task.priority)"></i>
             <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.projectName }}</p>
+              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
+              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
             </div>
             <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
             <span class="text-sm text-gray-500">Tomorrow</span>
@@ -328,14 +328,14 @@ function formatDate(date) {
 
       <!-- This Week -->
       <div v-if="groupedTasks.thisWeek.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
           This Week ({{ groupedTasks.thisWeek.length }})
         </h2>
         <div class="space-y-2">
           <div
             v-for="task in groupedTasks.thisWeek"
             :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
           >
             <Checkbox 
               :modelValue="task.status === TaskStatus.DONE"
@@ -344,8 +344,8 @@ function formatDate(date) {
             />
             <i :class="getPriorityIcon(task.priority)"></i>
             <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.projectName }}</p>
+              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
+              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
             </div>
             <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
             <span class="text-sm text-gray-500">{{ formatDate(task.dueDate) }}</span>
@@ -355,14 +355,14 @@ function formatDate(date) {
 
       <!-- No Due Date -->
       <div v-if="groupedTasks.noDueDate.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
           No Due Date ({{ groupedTasks.noDueDate.length }})
         </h2>
         <div class="space-y-2">
           <div
             v-for="task in groupedTasks.noDueDate"
             :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
           >
             <Checkbox 
               :modelValue="task.status === TaskStatus.DONE"
@@ -371,8 +371,8 @@ function formatDate(date) {
             />
             <i :class="getPriorityIcon(task.priority)"></i>
             <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.projectName }}</p>
+              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
+              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
             </div>
             <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
           </div>

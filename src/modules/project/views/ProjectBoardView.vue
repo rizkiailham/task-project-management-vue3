@@ -107,10 +107,10 @@ function isOverdue(task) {
     <!-- Header -->
     <div class="mb-6 flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-xl font-bold text-gray-900 dark-edit:text-white">
           {{ projectStore.currentProjectName }}
         </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <p class="text-sm text-gray-500 dark-edit:text-gray-400">
           {{ taskStore.taskCount }} tasks
         </p>
       </div>
@@ -142,8 +142,8 @@ function isOverdue(task) {
         <div class="mb-3 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span :class="['h-2 w-2 rounded-full', column.color]"></span>
-            <h3 class="font-medium text-gray-700 dark:text-gray-300">{{ column.label }}</h3>
-            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+            <h3 class="font-medium text-gray-700 dark-edit:text-gray-300">{{ column.label }}</h3>
+            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark-edit:bg-gray-700 dark-edit:text-gray-400">
               {{ getColumnTasks(column.status).length }}
             </span>
           </div>
@@ -157,7 +157,7 @@ function isOverdue(task) {
         </div>
 
         <!-- Column Content -->
-        <div class="kanban-column-content min-h-[200px] space-y-2 rounded-lg bg-gray-100/50 p-2 dark:bg-gray-800/50">
+        <div class="kanban-column-content min-h-[200px] space-y-2 rounded-lg bg-gray-100/50 p-2 dark-edit:bg-gray-800/50">
           <!-- Task Cards -->
           <div
             v-for="task in getColumnTasks(column.status)"
@@ -166,12 +166,12 @@ function isOverdue(task) {
             @dragstart="onDragStart($event, task)"
             @click="openTaskPanel(task)"
             :class="[
-              'kanban-card cursor-pointer rounded-lg border-l-4 bg-white p-3 shadow-sm transition-all hover:shadow-md dark:bg-gray-800',
+              'kanban-card cursor-pointer rounded-lg border-l-4 bg-white p-3 shadow-sm transition-all hover:shadow-md dark-edit:bg-gray-800',
               getPriorityColor(task.priority)
             ]"
           >
             <!-- Task Title -->
-            <h4 class="font-medium text-gray-900 dark:text-white">
+            <h4 class="font-medium text-gray-900 dark-edit:text-white">
               {{ task.title }}
             </h4>
 
@@ -183,7 +183,7 @@ function isOverdue(task) {
                   v-if="task.dueDate"
                   :class="[
                     'flex items-center gap-1 text-xs',
-                    isOverdue(task) ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'
+                    isOverdue(task) ? 'text-red-600' : 'text-gray-500 dark-edit:text-gray-400'
                   ]"
                 >
                   <i class="pi pi-calendar text-[10px]"></i>
@@ -193,7 +193,7 @@ function isOverdue(task) {
                 <!-- Subtask Count -->
                 <span 
                   v-if="task.subtaskCount > 0"
-                  class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+                  class="flex items-center gap-1 text-xs text-gray-500 dark-edit:text-gray-400"
                 >
                   <i class="pi pi-check-square text-[10px]"></i>
                   {{ task.completedSubtaskCount }}/{{ task.subtaskCount }}
@@ -202,7 +202,7 @@ function isOverdue(task) {
                 <!-- Comment Count -->
                 <span 
                   v-if="task.commentCount > 0"
-                  class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+                  class="flex items-center gap-1 text-xs text-gray-500 dark-edit:text-gray-400"
                 >
                   <i class="pi pi-comment text-[10px]"></i>
                   {{ task.commentCount }}

@@ -111,10 +111,10 @@ function getPriorityColor(priority) {
   <div class="p-6 lg:p-8">
     <!-- Header -->
     <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-2xl font-bold text-gray-900 dark-edit:text-white">
         {{ greeting }}, {{ authStore.userName.split(' ')[0] }}!
       </h1>
-      <p class="mt-1 text-gray-600 dark:text-gray-400">
+      <p class="mt-1 text-gray-600 dark-edit:text-gray-400">
         Here's what's happening with your tasks today.
       </p>
     </div>
@@ -126,14 +126,14 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Total Tasks</p>
-              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark:text-white">
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Total Tasks</p>
+              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
                 {{ taskStats.total }}
               </p>
               <Skeleton v-else width="60px" height="32px" />
             </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20">
-              <i class="pi pi-list text-xl text-primary-600 dark:text-primary-400"></i>
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark-edit:bg-primary-900/20">
+              <i class="pi pi-list text-xl text-primary-600 dark-edit:text-primary-400"></i>
             </div>
           </div>
         </template>
@@ -144,14 +144,14 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">In Progress</p>
-              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark:text-white">
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">In Progress</p>
+              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
                 {{ taskStats.inProgress }}
               </p>
               <Skeleton v-else width="60px" height="32px" />
             </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20">
-              <i class="pi pi-spin pi-spinner text-xl text-blue-600 dark:text-blue-400"></i>
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark-edit:bg-blue-900/20">
+              <i class="pi pi-spin pi-spinner text-xl text-blue-600 dark-edit:text-blue-400"></i>
             </div>
           </div>
         </template>
@@ -162,14 +162,14 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Completed</p>
-              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark:text-white">
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Completed</p>
+              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
                 {{ taskStats.completed }}
               </p>
               <Skeleton v-else width="60px" height="32px" />
             </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-              <i class="pi pi-check text-xl text-green-600 dark:text-green-400"></i>
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark-edit:bg-green-900/20">
+              <i class="pi pi-check text-xl text-green-600 dark-edit:text-green-400"></i>
             </div>
           </div>
         </template>
@@ -180,14 +180,14 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
-              <p v-if="!isLoading" class="text-2xl font-bold" :class="taskStats.overdue > 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'">
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Overdue</p>
+              <p v-if="!isLoading" class="text-2xl font-bold" :class="taskStats.overdue > 0 ? 'text-red-600' : 'text-gray-900 dark-edit:text-white'">
                 {{ taskStats.overdue }}
               </p>
               <Skeleton v-else width="60px" height="32px" />
             </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
-              <i class="pi pi-exclamation-triangle text-xl text-red-600 dark:text-red-400"></i>
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark-edit:bg-red-900/20">
+              <i class="pi pi-exclamation-triangle text-xl text-red-600 dark-edit:text-red-400"></i>
             </div>
           </div>
         </template>
@@ -215,8 +215,8 @@ function getPriorityColor(priority) {
             </div>
             
             <div v-else-if="todayTasks.length === 0" class="py-8 text-center">
-              <i class="pi pi-check-circle text-4xl text-gray-300 dark:text-gray-600"></i>
-              <p class="mt-2 text-gray-500 dark:text-gray-400">No tasks due today</p>
+              <i class="pi pi-check-circle text-4xl text-gray-300 dark-edit:text-gray-600"></i>
+              <p class="mt-2 text-gray-500 dark-edit:text-gray-400">No tasks due today</p>
               <Button 
                 label="Create a task" 
                 text 
@@ -231,19 +231,19 @@ function getPriorityColor(priority) {
                 v-for="task in todayTasks.slice(0, 5)"
                 :key="task.id"
                 @click="navigateToTask(task)"
-                class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-100 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+                class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-100 p-3 transition-colors hover:bg-gray-50 dark-edit:border-gray-700 dark-edit:hover:bg-gray-700/50"
               >
                 <i :class="['pi pi-flag-fill', getPriorityColor(task.priority)]"></i>
                 <div class="flex-1 min-w-0">
-                  <p class="truncate font-medium text-gray-900 dark:text-white">{{ task.title }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.projectName }}</p>
+                  <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
+                  <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
                 </div>
                 <span 
                   class="rounded-full px-2 py-1 text-xs font-medium"
                   :class="{
-                    'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': task.status === TaskStatus.TODO,
-                    'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400': task.status === TaskStatus.IN_PROGRESS,
-                    'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400': task.status === TaskStatus.DONE
+                    'bg-gray-100 text-gray-700 dark-edit:bg-gray-700 dark-edit:text-gray-300': task.status === TaskStatus.TODO,
+                    'bg-blue-100 text-blue-700 dark-edit:bg-blue-900/20 dark-edit:text-blue-400': task.status === TaskStatus.IN_PROGRESS,
+                    'bg-green-100 text-green-700 dark-edit:bg-green-900/20 dark-edit:text-green-400': task.status === TaskStatus.DONE
                   }"
                 >
                   {{ task.status.replace('_', ' ') }}
@@ -270,9 +270,9 @@ function getPriorityColor(priority) {
           <template #content>
             <div class="text-center">
               <div class="text-4xl font-bold text-primary-600">{{ completionRate }}%</div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Tasks completed</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Tasks completed</p>
               <ProgressBar :value="completionRate" class="mt-4" :showValue="false" />
-              <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <p class="mt-2 text-xs text-gray-500 dark-edit:text-gray-400">
                 {{ taskStats.completed }} of {{ taskStats.total }} tasks
               </p>
             </div>
@@ -288,7 +288,7 @@ function getPriorityColor(priority) {
             </div>
             
             <div v-else-if="projectStore.projects.length === 0" class="py-4 text-center">
-              <p class="text-sm text-gray-500 dark:text-gray-400">No projects yet</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">No projects yet</p>
             </div>
             
             <div v-else class="space-y-2">
@@ -296,7 +296,7 @@ function getPriorityColor(priority) {
                 v-for="project in projectStore.projects.slice(0, 4)"
                 :key="project.id"
                 @click="navigateToProject(project)"
-                class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark-edit:hover:bg-gray-700/50"
               >
                 <span 
                   class="flex h-8 w-8 items-center justify-center rounded text-sm font-medium text-white"
@@ -304,7 +304,7 @@ function getPriorityColor(priority) {
                 >
                   {{ project.name.charAt(0).toUpperCase() }}
                 </span>
-                <span class="flex-1 truncate text-sm font-medium text-gray-900 dark:text-white">
+                <span class="flex-1 truncate text-sm font-medium text-gray-900 dark-edit:text-white">
                   {{ project.name }}
                 </span>
                 <i class="pi pi-chevron-right text-xs text-gray-400"></i>
