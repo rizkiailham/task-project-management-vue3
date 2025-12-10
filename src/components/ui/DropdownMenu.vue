@@ -58,6 +58,7 @@ const emit = defineEmits(['open', 'close', 'select'])
 const isOpen = ref(false)
 const triggerRef = ref(null)
 const menuRef = ref(null)
+const instanceId = `dropdown-${Math.random().toString(36).slice(2, 9)}`
 
 function toggle() {
   isOpen.value = !isOpen.value
@@ -108,9 +109,16 @@ function handleEscape(event) {
   }
 }
 
+function handlePeerOpen(event) {
+  if (event.detail !== instanceId) {
+    close()
+  }
+}
+
 watch(isOpen, (newVal) => {
   if (newVal) {
     emit('open')
+    window.dispatchEvent(new CustomEvent('dropdown-open', { detail: instanceId }))
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
   } else {
@@ -121,8 +129,13 @@ watch(isOpen, (newVal) => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('dropdown-open', handlePeerOpen)
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleEscape)
+})
+
+onMounted(() => {
+  window.addEventListener('dropdown-open', handlePeerOpen)
 })
 
 // Expose methods for parent component
