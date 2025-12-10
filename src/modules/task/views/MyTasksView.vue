@@ -10,14 +10,13 @@ import { useTaskStore, useUIStore, useWorkspaceStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 
 // PrimeVue
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Skeleton from 'primevue/skeleton'
 import Checkbox from 'primevue/checkbox'
+import MyTasksGrid from '@/components/task/MyTasksGrid.vue'
 
 const router = useRouter()
 const taskStore = useTaskStore()
@@ -30,6 +29,140 @@ const searchQuery = ref('')
 const statusFilter = ref(null)
 const priorityFilter = ref(null)
 const selectedTasks = ref([])
+const nestedTreeTasks = [
+  {
+    title: 'A. What is DartAI app uses for frontend?',
+    dartboard: 'Product',
+    status: TaskStatus.IN_PROGRESS,
+    assignee: 'Bridge Team',
+    tags: ['Product'],
+    dueDate: '2025-12-17',
+    children: [
+      { title: 'B. Gather current stack', dartboard: 'Product', status: TaskStatus.TODO, assignee: 'Bridge Team', tags: ['Product'], dueDate: '' },
+      {
+        title: 'C. Draft migration options',
+        dartboard: 'Engineering',
+        status: TaskStatus.TODO,
+        assignee: 'Bridge Team',
+        tags: ['Engineering'],
+        dueDate: '',
+        children: [
+          {
+            title: 'C1. Compare frameworks',
+            dartboard: 'Engineering',
+            status: TaskStatus.TODO,
+            assignee: 'Bridge Team',
+            tags: ['Engineering'],
+            dueDate: '',
+            children: [
+              { title: 'C1.a. Evaluate SSR', dartboard: 'Engineering', status: TaskStatus.BLOCKED, assignee: 'Bridge Team', tags: ['Engineering'], dueDate: '' }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    title: 'D. Create initial Desidia UI library',
+    dartboard: 'Design',
+    status: TaskStatus.DONE,
+    assignee: 'Design Squad',
+    tags: ['Design', 'Engineering'],
+    dueDate: '2025-12-21',
+    children: [
+      {
+        title: 'E. Buttons',
+        dartboard: 'Engineering',
+        status: TaskStatus.IN_PROGRESS,
+        assignee: 'Design Squad',
+        tags: ['Engineering'],
+        dueDate: '',
+        children: [
+          {
+            title: 'F. States & interactions',
+            dartboard: 'Engineering',
+            status: TaskStatus.TODO,
+            assignee: 'Design Squad',
+            tags: ['Engineering'],
+            dueDate: '',
+            children: [
+              { title: 'G. Accessibility sweep', dartboard: 'Engineering', status: TaskStatus.TODO, assignee: 'Design Squad', tags: ['Engineering'], dueDate: '' }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
+
+const placeholderTasks = [
+  {
+    id: 'd1',
+    title: 'Audit current Desidia tech stack and hosting setup',
+    description: 'Review infra components and dependency licensing.',
+    projectName: 'Desidia Platform',
+    status: TaskStatus.IN_PROGRESS,
+    priority: TaskPriority.HIGH,
+    assignee: 'Demo User',
+    tags: ['Engineering'],
+    dueDate: '2025-12-21'
+  },
+  {
+    id: 'd2',
+    title: 'Define Desidia product vision and target users',
+    description: 'Clarify personas and value statements.',
+    projectName: 'Product Strategy',
+    status: TaskStatus.TODO,
+    priority: TaskPriority.MEDIUM,
+    assignee: 'Product Team',
+    tags: ['Product'],
+    dueDate: '2025-12-22'
+  },
+  {
+    id: 'd3',
+    title: 'Research DartAI backend architecture and services',
+    description: 'Map existing services and performance.',
+    projectName: 'Research',
+    status: TaskStatus.TODO,
+    priority: TaskPriority.MEDIUM,
+    assignee: 'Research Crew',
+    tags: ['Engineering'],
+    dueDate: '2025-12-25'
+  },
+  {
+    id: 'd4',
+    title: 'What is DartAI app uses for frontend?',
+    description: 'Document front-end stack and choices.',
+    projectName: 'Product Strategy',
+    status: TaskStatus.TODO,
+    priority: TaskPriority.LOW,
+    assignee: 'Bridge Team',
+    tags: ['Design', 'Product'],
+    dueDate: '2025-12-17'
+  },
+  {
+    id: 'd5',
+    title: 'Create initial Desidia frontend UI component library',
+    description: 'Scaffold shareable component repo.',
+    projectName: 'Design System',
+    status: TaskStatus.BLOCKED,
+    priority: TaskPriority.URGENT,
+    assignee: 'Design Squad',
+    tags: ['Design', 'Engineering'],
+    dueDate: ''
+  },
+  {
+    id: 'd6',
+    title: 'Draft Desidia core frontend user journeys',
+    description: 'Capture flows on onboarding and inbox.',
+    projectName: 'Design System',
+    status: TaskStatus.BLOCKED,
+    priority: TaskPriority.HIGH,
+    assignee: 'Product Team',
+    tags: ['Product', 'Design'],
+    dueDate: ''
+  }
+]
 
 // Filter options
 const statusOptions = [
@@ -51,7 +184,8 @@ const priorityOptions = [
 
 // Computed
 const filteredTasks = computed(() => {
-  let tasks = [...taskStore.myTasks]
+  const sourceTasks = taskStore.myTasks.length > 0 ? taskStore.myTasks : placeholderTasks
+  let tasks = [...sourceTasks]
   
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -177,7 +311,7 @@ function formatDate(date) {
 <template>
   <div class="p-6 lg:p-8">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div v-if="false" class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark-edit:text-white">My Tasks</h1>
         <p class="mt-1 text-sm text-gray-600 dark-edit:text-gray-400">
@@ -192,7 +326,7 @@ function formatDate(date) {
     </div>
 
     <!-- Filters -->
-    <div class="mb-6 flex flex-wrap items-center gap-3">
+    <div v-if="false" class="mb-6 flex flex-wrap items-center gap-3">
       <div class="relative flex-1 sm:max-w-xs">
         <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
         <InputText
@@ -219,6 +353,10 @@ function formatDate(date) {
       />
     </div>
 
+    <div class="mb-8">
+      <MyTasksGrid :tasks="nestedTreeTasks" />
+    </div>
+
     <!-- Loading State -->
     <div v-if="isLoading" class="space-y-4">
       <Skeleton v-for="i in 5" :key="i" height="60px" />
@@ -242,143 +380,7 @@ function formatDate(date) {
       />
     </div>
 
-    <!-- Task Groups -->
-    <div v-else class="space-y-6">
-      <!-- Overdue -->
-      <div v-if="groupedTasks.overdue.length > 0">
-        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-red-600">
-          <i class="pi pi-exclamation-triangle"></i>
-          Overdue ({{ groupedTasks.overdue.length }})
-        </h2>
-        <div class="space-y-2">
-          <div
-            v-for="task in groupedTasks.overdue"
-            :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-red-100 bg-red-50/50 p-3 dark-edit:border-red-900/30 dark-edit:bg-red-900/10"
-          >
-            <Checkbox 
-              :modelValue="task.status === TaskStatus.DONE"
-              @update:modelValue="toggleTaskStatus(task)"
-              :binary="true"
-            />
-            <i :class="getPriorityIcon(task.priority)"></i>
-            <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
-            </div>
-            <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
-            <span class="text-sm text-red-600">{{ formatDate(task.dueDate) }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Today -->
-      <div v-if="groupedTasks.today.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
-          Today ({{ groupedTasks.today.length }})
-        </h2>
-        <div class="space-y-2">
-          <div
-            v-for="task in groupedTasks.today"
-            :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
-          >
-            <Checkbox 
-              :modelValue="task.status === TaskStatus.DONE"
-              @update:modelValue="toggleTaskStatus(task)"
-              :binary="true"
-            />
-            <i :class="getPriorityIcon(task.priority)"></i>
-            <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
-            </div>
-            <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
-            <span class="text-sm text-gray-500">Today</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tomorrow -->
-      <div v-if="groupedTasks.tomorrow.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
-          Tomorrow ({{ groupedTasks.tomorrow.length }})
-        </h2>
-        <div class="space-y-2">
-          <div
-            v-for="task in groupedTasks.tomorrow"
-            :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
-          >
-            <Checkbox 
-              :modelValue="task.status === TaskStatus.DONE"
-              @update:modelValue="toggleTaskStatus(task)"
-              :binary="true"
-            />
-            <i :class="getPriorityIcon(task.priority)"></i>
-            <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
-            </div>
-            <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
-            <span class="text-sm text-gray-500">Tomorrow</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- This Week -->
-      <div v-if="groupedTasks.thisWeek.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
-          This Week ({{ groupedTasks.thisWeek.length }})
-        </h2>
-        <div class="space-y-2">
-          <div
-            v-for="task in groupedTasks.thisWeek"
-            :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
-          >
-            <Checkbox 
-              :modelValue="task.status === TaskStatus.DONE"
-              @update:modelValue="toggleTaskStatus(task)"
-              :binary="true"
-            />
-            <i :class="getPriorityIcon(task.priority)"></i>
-            <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
-            </div>
-            <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
-            <span class="text-sm text-gray-500">{{ formatDate(task.dueDate) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- No Due Date -->
-      <div v-if="groupedTasks.noDueDate.length > 0">
-        <h2 class="mb-3 text-sm font-semibold text-gray-700 dark-edit:text-gray-300">
-          No Due Date ({{ groupedTasks.noDueDate.length }})
-        </h2>
-        <div class="space-y-2">
-          <div
-            v-for="task in groupedTasks.noDueDate"
-            :key="task.id"
-            class="task-row flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark-edit:border-gray-700 dark-edit:bg-gray-800"
-          >
-            <Checkbox 
-              :modelValue="task.status === TaskStatus.DONE"
-              @update:modelValue="toggleTaskStatus(task)"
-              :binary="true"
-            />
-            <i :class="getPriorityIcon(task.priority)"></i>
-            <div class="flex-1 min-w-0 cursor-pointer" @click="navigateToTask(task)">
-              <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
-              <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
-            </div>
-            <Tag :value="task.status.replace('_', ' ')" :severity="getStatusSeverity(task.status)" />
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -392,4 +394,3 @@ function formatDate(date) {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 </style>
-
