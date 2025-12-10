@@ -5,6 +5,7 @@ import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-communi
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import StatusEditorDropdown from '@/components/task/StatusEditorDropdown.vue'
 import AssigneeEditorDropdown from '@/components/task/AssigneeEditorDropdown.vue'
+import DartboardCell from '@/components/task/DartboardCell.vue'
 
 const props = defineProps({
   tasks: {
@@ -109,7 +110,12 @@ const rowData = computed(() => {
 })
 
 const columnDefs = [
-  { field: 'dartboard', headerName: 'Dartboard', flex: 1 },
+  {
+    field: 'dartboard',
+    headerName: 'Dartboard',
+    flex: 1,
+    cellRenderer: 'DartboardCell'
+  },
   {
     field: 'status',
     headerName: 'Status',
@@ -206,7 +212,8 @@ const gridOptions = ref({
   },
   components: {
     StatusEditorDropdown,
-    AssigneeEditorDropdown
+    AssigneeEditorDropdown,
+    DartboardCell
   }
 })
 </script>
@@ -259,5 +266,19 @@ const gridOptions = ref({
 :deep(.ag-theme-quartz .ag-group-leaf-indent),
 :deep(.ag-theme-quartz .ag-group-child-indent) {
   width: 12px;
+}
+
+:deep(.ag-theme-quartz .ag-row-hover) {
+  background-color: #f3f4f6 !important;
+  opacity: 1!important;
+}
+
+:deep(.ag-theme-quartz .ag-cell),
+:deep(.ag-theme-quartz .ag-cell:focus),
+:deep(.ag-theme-quartz .ag-cell:focus-within),
+:deep(.ag-theme-quartz .ag-cell-focus) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 </style>
