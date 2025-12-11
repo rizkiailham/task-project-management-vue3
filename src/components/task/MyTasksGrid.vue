@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
@@ -19,7 +19,21 @@ const props = defineProps({
   }
 })
 
-const fallbackTasks = [
+const createNodeId = (prefix = 'node') => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${prefix}-${crypto.randomUUID()}`
+  }
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+const addIdsToTree = (nodes, prefix = 'node') =>
+  nodes.map((node) => ({
+    ...node,
+    id: node.id || createNodeId(prefix),
+    children: node.children ? addIdsToTree(node.children, prefix) : []
+  }))
+
+const fallbackTasks = addIdsToTree([
   {
     title: 'Draft Desidia core frontend journey',
     dartboard: 'Product',
@@ -96,27 +110,121 @@ const fallbackTasks = [
       }
     ]
   }
-]
+])
 
-function flattenTree(nodes, parentPath = []) {
-  return nodes.flatMap((node) => {
+const treeData = ref([])
+const rowData = ref([])
+const focusKey = ref(null)
+const gridApi = ref(null)
+
+function deepClone(val) {
+  return JSON.parse(JSON.stringify(val))
+}
+
+function syncTree(source) {
+  treeData.value = deepClone(source.length ? source : fallbackTasks)
+  rowData.value = flattenTree(treeData.value)
+}
+
+watch(
+  () => props.tasks,
+  (val) => syncTree(val),
+  { immediate: true, deep: true }
+)
+
+function flattenTree(nodes, parentPath = [], parentIdx = []) {
+  return nodes.flatMap((node, index) => {
     const { children = [], ...rest } = node
     const path = [...parentPath, node.title]
-    const current = { ...rest, path }
-    const nested = flattenTree(children, path)
+    const pathKeyParts = [...parentIdx, index]
+    const pathKey = pathKeyParts.join('-')
+    const current = { ...rest, path, pathKey }
+    const nested = flattenTree(children, path, pathKeyParts)
     return [current, ...nested]
   })
 }
 
-// Generates path arrays so ag-Grid can show infinite nesting
-const rowData = computed(() => {
-  const source = props.tasks.length ? props.tasks : fallbackTasks
-  return flattenTree(source)
-})
-
-const getRowId = (params) => (params.data?.path || []).join(' / ') || params.data?.id || params.data?.title || Math.random().toString(36).slice(2)
+const getRowId = (params) => params.data?.id || params.data?.pathKey || (params.data?.path || []).join(' / ') || params.data?.title || Math.random().toString(36).slice(2)
 
 const getDataPath = (data) => data.path || []
+
+function findNodeByKey(key, nodes = treeData.value) {
+  if (!key) return null
+  const keyParts = Array.isArray(key) ? key : key.split('-')
+  const [head, ...rest] = keyParts
+  const idx = Number(head)
+  const node = nodes[idx]
+  if (!node) return null
+  if (rest.length === 0) return node
+  return findNodeByKey(rest, node.children || [])
+}
+
+function updateTitle(key, title) {
+  const node = findNodeByKey(key)
+  if (node) node.title = title
+  const row = rowData.value.find(r => r.pathKey === key)
+  if (row) row.title = title
+}
+
+function removeEmptyNode(key) {
+  const parts = key.split('-').map((p) => Number(p))
+  const last = parts.pop()
+  let cursor = treeData.value
+  for (const idx of parts) {
+    if (!cursor[idx] || !cursor[idx].children) return
+    cursor = cursor[idx].children
+  }
+  cursor.splice(last, 1)
+  rowData.value = flattenTree(treeData.value)
+}
+
+function handleCommit(key) {
+  const node = findNodeByKey(key)
+  if (!node) return
+  const title = (node.title || '').trim()
+  if (node.isNew && title === '' && (!node.children || node.children.length === 0)) {
+    removeEmptyNode(key)
+  } else if (title !== '') {
+    node.isNew = false
+  }
+}
+
+function expandNodeByKey(key, expanded = true) {
+  if (!gridApi.value) return
+  gridApi.value.forEachNode((node) => {
+    if (node.data?.pathKey === key) {
+      node.setExpanded(expanded)
+    }
+  })
+}
+
+function addSubtask(key) {
+  const node = findNodeByKey(key)
+  if (!node) return
+  if (!node.children) node.children = []
+  const nextIndex = node.children.length
+  const newKey = `${key}-${nextIndex}`
+  node.children.push({
+    id: createNodeId('subtask'),
+    title: '',
+    isNew: true,
+    checked: true,
+    dartboard: node.dartboard || 'Product',
+    status: node.status || 'To Do',
+    assignee: node.assignee || 'Unassigned',
+    tags: node.tags || [],
+    dueDate: '',
+    children: []
+  })
+  // Force reactivity for tree and rowData so grid sees new child immediately
+  treeData.value = deepClone(treeData.value)
+  rowData.value = flattenTree(treeData.value)
+  focusKey.value = newKey
+  nextTick(() => {
+    expandNodeByKey(key, true)
+    gridApi.value?.refreshClientSideRowModel?.('expandPivots')
+  })
+}
 
 const columnDefs = [
   {
@@ -184,24 +292,34 @@ ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
 const autoGroupColumnDef = {
   headerName: 'Title',
   minWidth: 320,
+  suppressHeaderMenuButton: true,
   cellRendererParams: {
     suppressCount: true,
+    suppressDoubleClickExpand: true,
+    suppressEnterExpand: true,
     innerRenderer: 'DartboardCell'
-  }
+  },
+  cellRenderer: 'agGroupCellRenderer'
 }
 
 const gridOptions = ref({
   columnDefs,
   defaultColDef,
   animateRows: true,
-  theme: myTheme,
   deltaRowDataMode: true,
+  theme: myTheme,
+  context: {
+    addSubtask,
+    updateTitle,
+    handleCommit,
+    focusKey
+  },
   rowSelection: {
     mode: 'multiRow',
-    multiSelectWithClick: true,
-    checkboxes: true,
     headerCheckbox: true,
-    suppressRowClickSelection: true
+    checkboxes: true,
+    enableSelectionWithoutKeys: true,
+    enableClickSelection: false
   },
   components: {
     StatusEditorDropdown,
@@ -209,10 +327,14 @@ const gridOptions = ref({
     DartboardCell
   }
 })
+
+function onGridReady(params) {
+  gridApi.value = params.api
+}
 </script>
 
 <template>
-  <div class="my-tasks-grid rounded-lg border border-dashed border-gray-200 bg-white p-0 shadow-sm">
+  <div class="my-tasks-grid rounded-lg bg-white p-0 shadow-sm">
     <ag-grid-vue
       class="ag-theme-quartz w-full"
       :gridOptions="gridOptions"
@@ -224,12 +346,14 @@ const gridOptions = ref({
       :getRowId="getRowId"
       :groupDefaultExpanded="0"
       groupDisplayType="singleColumn"
-      rowModelType="clientSide"
-      :defaultColDef="defaultColDef"
-      :animateRows="true"
-      :rowHeight="48"
-      :domLayout="'autoHeight'"
-    />
+  rowModelType="clientSide"
+  :defaultColDef="defaultColDef"
+  :animateRows="true"
+  :rowHeight="36"
+  :domLayout="'autoHeight'"
+  :groupDisplayType="'singleColumn'"
+  @grid-ready="onGridReady"
+/>
   </div>
 </template>
 
@@ -287,5 +411,19 @@ const gridOptions = ref({
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
+}
+
+:deep(.ag-theme-quartz .ag-selection-checkbox) {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+:deep(.ag-theme-quartz .ag-row-hover .ag-selection-checkbox),
+:deep(.ag-theme-quartz .ag-row-selected .ag-selection-checkbox) {
+  opacity: 1;
+}
+
+:deep(.ag-theme-quartz .ag-header-select-all) {
+  opacity: 1;
 }
 </style>

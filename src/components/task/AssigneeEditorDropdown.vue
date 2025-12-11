@@ -35,7 +35,7 @@ const currentAssignee = computed(() => props.params.data.assignee || teamOptions
 <template>
   <DropdownMenu :items="teamOptions" position="left" width="12rem">
     <template #trigger>
-      <button class="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-700 shadow-sm">
+      <button class="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-xs text-gray-700 shadow-sm">
         <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-700">
           {{ currentAssignee.charAt(0) }}
         </span>

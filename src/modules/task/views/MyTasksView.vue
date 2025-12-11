@@ -30,7 +30,21 @@ const statusFilter = ref(null)
 const priorityFilter = ref(null)
 const selectedTasks = ref([])
 const simulatedAiTasks = ref([])
-const nestedTreeTasks = [
+const generateId = (prefix = 'tree') => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${prefix}-${crypto.randomUUID()}`
+  }
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+const addIdsToTree = (nodes, prefix = 'tree') =>
+  nodes.map(node => ({
+    ...node,
+    id: node.id || generateId(prefix),
+    children: node.children ? addIdsToTree(node.children, prefix) : []
+  }))
+
+const nestedTreeTasks = addIdsToTree([
   {
     title: 'A. What is DartAI app uses for frontend?',
     dartboard: 'Product',
@@ -94,7 +108,7 @@ const nestedTreeTasks = [
       }
     ]
   }
-]
+])
 
 const treeTasks = ref([...nestedTreeTasks])
 
@@ -282,6 +296,7 @@ onMounted(async () => {
 
         treeTasks.value = [
           {
+            id: generateId('ai-tree'),
             title: `AI Draft: Suggested task ${i + 1}`,
             dartboard: 'Product',
             status: TaskStatus.TODO,

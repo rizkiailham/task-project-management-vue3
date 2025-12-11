@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import InputText from 'primevue/inputtext'
 import { ChevronsLeft } from 'lucide-vue-next'
 
@@ -13,7 +13,9 @@ const props = defineProps({
 const inputValue = ref(props.params.value ?? '')
 const isFocused = ref(false)
 const isHovered = ref(false)
-const hasChildren = computed(() => props.params?.node?.hasChildren?.() ?? false)
+const level = computed(() => props.params?.node?.level || 0)
+const pathKey = computed(() => props.params?.data?.pathKey || props.params?.data?.id || props.params?.data?.title)
+const focusKey = computed(() => props.params?.context?.focusKey?.value || null)
 
 watch(
   () => props.params.value,
@@ -24,10 +26,23 @@ watch(
   }
 )
 
+watch(
+  () => props.params?.data?.title,
+  (next) => {
+    if (next !== undefined && next !== inputValue.value) {
+      inputValue.value = next ?? ''
+    }
+  }
+)
+
 function onInput(event) {
   const newValue = event.target.value
   inputValue.value = newValue
-  props.params.setValue?.(newValue)
+  if (props.params?.context?.updateTitle) {
+    props.params.context.updateTitle(pathKey.value, newValue)
+  } else {
+    props.params.setValue?.(newValue)
+  }
 }
 
 const inputStyle = computed(() => {
@@ -44,6 +59,35 @@ function onKeydown(event) {
     event.stopPropagation()
   }
 }
+
+function toggleExpand() {
+  if (hasChildren.value) {
+    props.params.node.setExpanded(!props.params.node.expanded)
+    return
+  }
+  props.params?.context?.addSubtask?.(pathKey.value)
+}
+
+function toggleSelect() {
+  const selected = props.params.node.isSelected?.()
+  props.params.node.setSelected?.(!selected)
+}
+
+function handleBlur() {
+  props.params?.context?.handleCommit?.(pathKey.value)
+}
+
+function tryFocus() {
+  if (focusKey.value && focusKey.value === pathKey.value) {
+    nextTick(() => {
+      const input = document.getElementById(`dartboard-input-${pathKey.value}`)
+      input?.focus()
+      input?.select?.()
+    })
+  }
+}
+
+watch(focusKey, tryFocus, { immediate: true })
 
 function openSidebar() {
   props.params.api?.dispatchEvent?.({
@@ -66,31 +110,34 @@ defineExpose({ refresh })
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
+    <span class="indent" :style="{ width: `${Math.max(0, level.value) * 12}px` }"></span>
     <InputText
       v-model="inputValue"
       :style="inputStyle"
+      :id="`dartboard-input-${pathKey.value}`"
       class="dartboard-input h-7 px-2 py-1 w-auto min-w-0 text-left mr-2"
       @focus="isFocused = true"
       @blur="isFocused = false"
       @input="onInput"
       @keydown="onKeydown"
+      @blur.capture="handleBlur"
     />
-    <div class="icon-button mr-1">
-    <svg
-      class="h-4 w-4 text-gray-500"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
+    <button class="icon-button mr-1" type="button" aria-label="Add subtask" @click.stop="() => props.params?.context?.addSubtask?.(pathKey.value)">
+      <svg
+        class="h-4 w-4 text-gray-500"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
     >
       <path
-        d="M3 3v10.2c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 18 6.12 18 7.8 18H15m0 0a3 3 0 1 0 6 0 3 3 0 0 0-6 0ZM3 8h12m0 0a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z"
+        d="M12 5v14m7-7H5"
         stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
     </svg>
-    </div>
+    </button>
     <button class="icon-button" type="button" aria-label="Open details" @click.stop="openSidebar">
       <ChevronsLeft class="h-4 w-4" />
     </button>
@@ -144,8 +191,8 @@ defineExpose({ refresh })
   padding: 0;
   height: 24px;
   min-height: 24px;
-  width: 24px;
-  min-width: 24px;
+  width: 26px;
+  min-width: 26px;
 }
 
 .icon-button svg {
@@ -162,5 +209,9 @@ defineExpose({ refresh })
   gap: 6px;
   height: 100%;
   width: 100%;
+}
+
+.indent {
+  flex: 0 0 auto;
 }
 </style>
