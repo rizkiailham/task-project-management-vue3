@@ -138,9 +138,21 @@ function flattenTree(nodes, parentPath = [], parentIdx = []) {
     const path = [...parentPath, node.title]
     const pathKeyParts = [...parentIdx, index]
     const pathKey = pathKeyParts.join('-')
-    const current = { ...rest, path, pathKey }
+    const hasChildren = (children || []).length > 0
+    const current = { ...rest, path, pathKey, hasChildren }
     const nested = flattenTree(children, path, pathKeyParts)
-    return [current, ...nested]
+    const placeholder = !hasChildren
+      ? [
+          {
+            title: '',
+            path: [...path, '__placeholder__'],
+            pathKey: `${pathKey}-placeholder`,
+            isPlaceholder: true,
+            hasChildren: false
+          }
+        ]
+      : []
+    return [current, ...nested, ...placeholder]
   })
 }
 
@@ -198,6 +210,76 @@ function expandNodeByKey(key, expanded = true) {
   })
 }
 
+function focusOnPathKey(key) {
+  // Clear first so re-focusing the same key still triggers watchers in the cell
+  focusKey.value = null
+  nextTick(() => {
+    focusKey.value = key
+  })
+  nextTick(() => {
+    if (!gridApi.value) return
+    const findInput = () => {
+      const escapedKey =
+        typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key.replace(/([^a-zA-Z0-9_-])/g, '\\$1')
+      const selector = `#dartboard-input-${escapedKey}`
+      // Prefer scoped search inside the cell renderer to avoid missing elements during virtualisation
+      const node = findNode()
+      if (gridApi.value && node) {
+        const renderers = gridApi.value.getCellRendererInstances({ rowNodes: [node] }) || []
+        for (const renderer of renderers) {
+          const gui = renderer?.getGui?.() || renderer?.eGui
+          if (gui) {
+            const found = gui.querySelector(selector) || gui.querySelector('.dartboard-input')
+            if (found) return found
+          }
+        }
+      }
+      return document.querySelector(selector) || document.getElementById(`dartboard-input-${key}`)
+    }
+    const findNode = () => {
+      let targetNode = null
+      gridApi.value.forEachNode((node) => {
+        if (node.data?.pathKey === key) {
+          targetNode = node
+        }
+      })
+      return targetNode
+    }
+    let targetNode = findNode()
+    if (targetNode) {
+      gridApi.value.ensureNodeVisible(targetNode)
+      targetNode.setSelected(true, true)
+    }
+    // Retry focusing the input a few times to catch async row renders
+    let attempts = 0
+    const attemptFocus = () => {
+      targetNode = targetNode || findNode()
+      if (targetNode) {
+        targetNode.setSelected(true, true)
+        gridApi.value.ensureNodeVisible(targetNode)
+      }
+      const input = findInput()
+      if (input) {
+        input.focus()
+        input.select?.()
+        return
+      }
+      attempts += 1
+      if (attempts < 40) {
+        // Slightly longer delay to outlast expand animation/render
+        setTimeout(attemptFocus, 40)
+      }
+
+      console.log('Attempts:', attempts, input)
+    }
+    // Run attempts across multiple frames to catch async renders
+    setTimeout(attemptFocus, 0)
+    setTimeout(attemptFocus, 120)
+    setTimeout(attemptFocus, 260)
+    setTimeout(attemptFocus, 420)
+  })
+}
+
 function addSubtask(key) {
   const node = findNodeByKey(key)
   if (!node) return
@@ -219,10 +301,13 @@ function addSubtask(key) {
   // Force reactivity for tree and rowData so grid sees new child immediately
   treeData.value = deepClone(treeData.value)
   rowData.value = flattenTree(treeData.value)
-  focusKey.value = newKey
   nextTick(() => {
     expandNodeByKey(key, true)
     gridApi.value?.refreshClientSideRowModel?.('expandPivots')
+    // After expand/refresh, focus the new subtask title input
+    nextTick(() => {
+      focusOnPathKey(newKey)
+    })
   })
 }
 
@@ -248,7 +333,10 @@ const columnDefs = [
     field: 'tags',
     headerName: 'Tags',
     flex: 1,
-    valueGetter: (params) => params.data.tags.join(', ')
+    valueGetter: (params) => {
+      const tags = params.data?.tags
+      return Array.isArray(tags) ? tags.join(', ') : ''
+    }
   },
   { field: 'dueDate', headerName: 'Due date', flex: 0.8 }
 ]
@@ -306,7 +394,6 @@ const gridOptions = ref({
   columnDefs,
   defaultColDef,
   animateRows: true,
-  deltaRowDataMode: true,
   theme: myTheme,
   context: {
     addSubtask,
@@ -314,12 +401,31 @@ const gridOptions = ref({
     handleCommit,
     focusKey
   },
+  getRowClass: (params) => {
+    if (params.data?.isPlaceholder) return 'row-placeholder'
+    if (params.data?.hasChildren) return 'row-has-children'
+    return 'row-leaf'
+  },
   rowSelection: {
     mode: 'multiRow',
     headerCheckbox: true,
     checkboxes: true,
     enableSelectionWithoutKeys: true,
     enableClickSelection: false
+  },
+  onRowClicked: (params) => {
+    if (!params?.node || params.data?.isPlaceholder) return
+    const currentlySelected = params.node.isSelected?.()
+    params.node.setSelected?.(!currentlySelected, true)
+  },
+  onRowGroupOpened: (event) => {
+    const node = event.node
+    const data = node?.data
+    if (!data) return
+    const firstChild = node.childrenAfterGroup?.[0]
+    if (firstChild?.data?.isPlaceholder) {
+      addSubtask(data.pathKey)
+    }
   },
   components: {
     StatusEditorDropdown,
@@ -334,7 +440,7 @@ function onGridReady(params) {
 </script>
 
 <template>
-  <div class="my-tasks-grid rounded-lg bg-white p-0 shadow-sm">
+  <div class="">
     <ag-grid-vue
       class="ag-theme-quartz w-full"
       :gridOptions="gridOptions"
@@ -346,14 +452,14 @@ function onGridReady(params) {
       :getRowId="getRowId"
       :groupDefaultExpanded="0"
       groupDisplayType="singleColumn"
-  rowModelType="clientSide"
-  :defaultColDef="defaultColDef"
-  :animateRows="true"
-  :rowHeight="36"
-  :domLayout="'autoHeight'"
-  :groupDisplayType="'singleColumn'"
-  @grid-ready="onGridReady"
-/>
+      rowModelType="clientSide"
+      :defaultColDef="defaultColDef"
+      :animateRows="true"
+      :rowHeight="36"
+      domLayout="autoHeight"
+      @row-clicked="gridOptions.onRowClicked"
+      @grid-ready="onGridReady"
+    />
   </div>
 </template>
 
@@ -374,6 +480,32 @@ function onGridReady(params) {
 :deep(.ag-theme-quartz .ag-group-contracted .ag-icon-tree-closed) {
   color: #4b5563;
   opacity: 0.9;
+}
+
+:deep(.ag-theme-quartz .ag-group-contracted) {
+  color: #4b5563;
+  opacity: 0.9;
+}
+
+:deep(.row-placeholder) {
+  display: none !important;
+}
+
+:deep(.row-leaf .ag-group-contracted .ag-icon-tree-closed) {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+:deep(.row-leaf:hover .ag-group-contracted .ag-icon-tree-closed) {
+  opacity: 1;
+}
+
+:deep(.row-placeholder) {
+  display: none !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
 }
 
 :deep(.ag-theme-quartz .ag-group-value) {

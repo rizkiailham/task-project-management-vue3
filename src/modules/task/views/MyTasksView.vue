@@ -274,7 +274,7 @@ onMounted(async () => {
   } catch (error) {
     uiStore.showError('Failed to load tasks')
   } finally {
-    const aiCount = 10
+    const aiCount = 3
     const delayMs = 500
 
     for (let i = 0; i < aiCount; i += 1) {

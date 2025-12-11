@@ -79,10 +79,21 @@ function handleBlur() {
 
 function tryFocus() {
   if (focusKey.value && focusKey.value === pathKey.value) {
-    nextTick(() => {
+    let attempts = 0
+    const attemptFocus = () => {
       const input = document.getElementById(`dartboard-input-${pathKey.value}`)
-      input?.focus()
-      input?.select?.()
+      if (input) {
+        input.focus()
+        input.select?.()
+        return
+      }
+      attempts += 1
+      if (attempts < 5) {
+        requestAnimationFrame(attemptFocus)
+      }
+    }
+    nextTick(() => {
+      requestAnimationFrame(attemptFocus)
     })
   }
 }
@@ -106,16 +117,15 @@ defineExpose({ refresh })
 
 <template>
   <div
-    class="dartboard-cell w-full h-full flex items-center"
+    class="dartboard-cell w-full h-full flex items-center gap-1"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <span class="indent" :style="{ width: `${Math.max(0, level.value) * 12}px` }"></span>
     <InputText
       v-model="inputValue"
       :style="inputStyle"
       :id="`dartboard-input-${pathKey.value}`"
-      class="dartboard-input h-7 px-2 py-1 w-auto min-w-0 text-left mr-2"
+      class="dartboard-input h-7 px-1.5 py-1 w-auto min-w-0 text-left min-w-[100px]"
       @focus="isFocused = true"
       @blur="isFocused = false"
       @input="onInput"
@@ -211,7 +221,4 @@ defineExpose({ refresh })
   width: 100%;
 }
 
-.indent {
-  flex: 0 0 auto;
-}
 </style>
