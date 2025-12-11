@@ -4,7 +4,7 @@
  * 
  * Shows all tasks assigned to the current user across all projects
  */
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTaskStore, useUIStore, useWorkspaceStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
@@ -29,6 +29,7 @@ const searchQuery = ref('')
 const statusFilter = ref(null)
 const priorityFilter = ref(null)
 const selectedTasks = ref([])
+const simulatedAiTasks = ref([])
 const nestedTreeTasks = [
   {
     title: 'A. What is DartAI app uses for frontend?',
@@ -94,6 +95,8 @@ const nestedTreeTasks = [
     ]
   }
 ]
+
+const treeTasks = ref([...nestedTreeTasks])
 
 const placeholderTasks = [
   {
@@ -185,7 +188,7 @@ const priorityOptions = [
 // Computed
 const filteredTasks = computed(() => {
   const sourceTasks = taskStore.myTasks.length > 0 ? taskStore.myTasks : placeholderTasks
-  let tasks = [...sourceTasks]
+  let tasks = [...sourceTasks, ...simulatedAiTasks.value]
   
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -257,6 +260,40 @@ onMounted(async () => {
   } catch (error) {
     uiStore.showError('Failed to load tasks')
   } finally {
+    const aiCount = 10
+    const delayMs = 500
+
+    for (let i = 0; i < aiCount; i += 1) {
+      setTimeout(() => {
+        const now = new Date()
+        now.setDate(now.getDate() + i)
+
+        simulatedAiTasks.value.push({
+          id: `ai-${Date.now()}-${i}`,
+          title: `AI-drafted: Suggested task ${i + 1}`,
+          description: 'Auto-suggested by AI on page mount for demo purposes.',
+          projectName: 'Strategy Ops',
+          status: i % 3 === 0 ? TaskStatus.TODO : TaskStatus.IN_PROGRESS,
+          priority: i % 2 === 0 ? TaskPriority.HIGH : TaskPriority.MEDIUM,
+          assignee: 'Dart AI',
+          tags: ['AI-suggested'],
+          dueDate: now.toISOString().slice(0, 10)
+        })
+
+        treeTasks.value = [
+          {
+            title: `AI Draft: Suggested task ${i + 1}`,
+            dartboard: 'Product',
+            status: TaskStatus.TODO,
+            assignee: 'Dart AI',
+            tags: ['AI-suggested', 'Product'],
+            dueDate: '',
+            children: []
+          },
+          ...treeTasks.value
+        ]
+      }, delayMs * (i + 1))
+    }
     isLoading.value = false
   }
 })
@@ -354,7 +391,7 @@ function formatDate(date) {
     </div>
 
     <div class="mb-8">
-      <MyTasksGrid :tasks="nestedTreeTasks" />
+      <MyTasksGrid :tasks="treeTasks" />
     </div>
 
     <!-- Loading State -->

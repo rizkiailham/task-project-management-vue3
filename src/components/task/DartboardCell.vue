@@ -69,7 +69,7 @@ defineExpose({ refresh })
     <InputText
       v-model="inputValue"
       :style="inputStyle"
-      class="dartboard-input h-8 px-2 py-1 w-auto min-w-0 text-left mr-2"
+      class="dartboard-input h-7 px-2 py-1 w-auto min-w-0 text-left mr-2"
       @focus="isFocused = true"
       @blur="isFocused = false"
       @input="onInput"
@@ -102,8 +102,9 @@ defineExpose({ refresh })
   border: 1px solid transparent!important;
   box-shadow: none!important;
   font-size: 12px!important;
-  padding: 4px 2px!important;
-  height: 26px!important;
+  padding: 2px 8px!important;
+  height: 24px!important;
+  line-height: 20px!important;
   background-color: transparent!important;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -140,10 +141,26 @@ defineExpose({ refresh })
   background: transparent;
   color: #6b7280;
   cursor: pointer;
-  padding: 1px;
+  padding: 0;
+  height: 24px;
+  min-height: 24px;
+  width: 24px;
+  min-width: 24px;
+}
+
+.icon-button svg {
+  display: block;
 }
 
 .icon-button:hover {
   color: #374151;
+}
+
+.dartboard-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  width: 100%;
 }
 </style>

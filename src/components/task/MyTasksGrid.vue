@@ -2,10 +2,15 @@
 import { computed, ref } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
+import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import StatusEditorDropdown from '@/components/task/StatusEditorDropdown.vue'
 import AssigneeEditorDropdown from '@/components/task/AssigneeEditorDropdown.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
+
+LicenseManager.setLicenseKey(
+  '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
+)
 
 const props = defineProps({
   tasks: {
@@ -109,12 +114,15 @@ const rowData = computed(() => {
   return flattenTree(source)
 })
 
+const getRowId = (params) => (params.data?.path || []).join(' / ') || params.data?.id || params.data?.title || Math.random().toString(36).slice(2)
+
+const getDataPath = (data) => data.path || []
+
 const columnDefs = [
   {
     field: 'dartboard',
     headerName: 'Dartboard',
-    flex: 1,
-    cellRenderer: 'DartboardCell'
+    flex: 1
   },
   {
     field: 'status',
@@ -171,30 +179,14 @@ const myTheme = themeQuartz.withParams({
   wrapperBorderRadius: 2
 })
 
-ModuleRegistry.registerModules([AllCommunityModule])
+ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
 
 const autoGroupColumnDef = {
   headerName: 'Title',
   minWidth: 320,
   cellRendererParams: {
     suppressCount: true,
-    innerRenderer: (params) => {
-      const wrapper = document.createElement('span')
-      wrapper.className = 'flex items-center gap-2'
-
-      const dot = document.createElement('span')
-      dot.className = 'task-level-dot'
-      dot.textContent = '•'
-      dot.style.opacity = params.node.hasChildren() ? '0.9' : '0.6'
-
-      const text = document.createElement('span')
-      text.textContent = params.data?.title || params.value
-      text.style.fontWeight = params.node.hasChildren() ? '600' : '500'
-
-      wrapper.appendChild(dot)
-      wrapper.appendChild(text)
-      return wrapper
-    }
+    innerRenderer: 'DartboardCell'
   }
 }
 
@@ -203,6 +195,7 @@ const gridOptions = ref({
   defaultColDef,
   animateRows: true,
   theme: myTheme,
+  deltaRowDataMode: true,
   rowSelection: {
     mode: 'multiRow',
     multiSelectWithClick: true,
@@ -221,19 +214,21 @@ const gridOptions = ref({
 <template>
   <div class="my-tasks-grid rounded-lg border border-dashed border-gray-200 bg-white p-0 shadow-sm">
     <ag-grid-vue
-      class="ag-theme-quartz w-full h-[460px]"
+      class="ag-theme-quartz w-full"
       :gridOptions="gridOptions"
       :rowData="rowData"
       :columnDefs="columnDefs"
       :autoGroupColumnDef="autoGroupColumnDef"
       :treeData="true"
       :getDataPath="getDataPath"
+      :getRowId="getRowId"
       :groupDefaultExpanded="0"
       groupDisplayType="singleColumn"
       rowModelType="clientSide"
       :defaultColDef="defaultColDef"
       :animateRows="true"
       :rowHeight="48"
+      :domLayout="'autoHeight'"
     />
   </div>
 </template>
@@ -261,6 +256,18 @@ const gridOptions = ref({
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 100%;
+  line-height: 1;
+}
+
+:deep(.ag-theme-quartz .ag-group-value .dartboard-cell) {
+  height: 100%;
+  align-items: center;
+  line-height: 1;
+}
+
+:deep(.ag-theme-quartz .ag-cell .ag-cell-wrapper) {
+  align-items: center;
 }
 
 :deep(.ag-theme-quartz .ag-group-leaf-indent),
