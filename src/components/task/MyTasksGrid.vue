@@ -19,6 +19,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['update:tasks', 'change'])
+
 const createNodeId = (prefix = 'node') => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return `${prefix}-${crypto.randomUUID()}`
@@ -121,9 +123,16 @@ function deepClone(val) {
   return JSON.parse(JSON.stringify(val))
 }
 
+function emitState() {
+  const snapshot = deepClone(treeData.value)
+  emit('change', snapshot)
+  emit('update:tasks', snapshot)
+}
+
 function syncTree(source) {
   treeData.value = deepClone(source.length ? source : fallbackTasks)
   rowData.value = flattenTree(treeData.value)
+  emitState()
 }
 
 watch(
@@ -144,6 +153,7 @@ function flattenTree(nodes, parentPath = [], parentIdx = []) {
     const placeholder = !hasChildren
       ? [
           {
+            id: `${pathKey}-placeholder-id`,
             title: '',
             path: [...path, '__placeholder__'],
             pathKey: `${pathKey}-placeholder`,
@@ -156,7 +166,12 @@ function flattenTree(nodes, parentPath = [], parentIdx = []) {
   })
 }
 
-const getRowId = (params) => params.data?.id || params.data?.pathKey || (params.data?.path || []).join(' / ') || params.data?.title || Math.random().toString(36).slice(2)
+const getRowId = (params) =>
+  params.data?.id ||
+  params.data?.pathKey ||
+  (params.data?.path || []).join(' / ') ||
+  params.data?.title ||
+  Math.random().toString(36).slice(2)
 
 const getDataPath = (data) => data.path || []
 
@@ -173,9 +188,16 @@ function findNodeByKey(key, nodes = treeData.value) {
 
 function updateTitle(key, title) {
   const node = findNodeByKey(key)
-  if (node) node.title = title
+  if (node) {
+    node.title = title
+    if ((title || '').trim() !== '') {
+      node._edited = true
+    }
+  }
   const row = rowData.value.find(r => r.pathKey === key)
   if (row) row.title = title
+  // Emit live so UI/state consumers stay in sync while typing
+  emitState()
 }
 
 function removeEmptyNode(key) {
@@ -188,16 +210,35 @@ function removeEmptyNode(key) {
   }
   cursor.splice(last, 1)
   rowData.value = flattenTree(treeData.value)
+  emitState()
 }
 
 function handleCommit(key) {
   const node = findNodeByKey(key)
   if (!node) return
   const title = (node.title || '').trim()
-  if (node.isNew && title === '' && (!node.children || node.children.length === 0)) {
-    removeEmptyNode(key)
-  } else if (title !== '') {
-    node.isNew = false
+  // Persist even empty subtasks so users can nest infinitely without typing
+  node.isNew = false
+  node.title = title
+  if (title !== '') {
+    node._edited = true
+  }
+  rowData.value = flattenTree(treeData.value)
+  emitState()
+}
+
+function removeEmptyChildren(key) {
+  const node = findNodeByKey(key)
+  if (!node || !Array.isArray(node.children)) return
+  const before = node.children.length
+  node.children = node.children.filter((child) => {
+    const title = (child.title || '').trim()
+    return !(child.isNew && !child._edited && title === '' && (!child.children || child.children.length === 0))
+  })
+  if (node.children.length !== before) {
+    treeData.value = deepClone(treeData.value)
+    rowData.value = flattenTree(treeData.value)
+    emitState()
   }
 }
 
@@ -285,6 +326,7 @@ function addSubtask(key) {
   if (!node) return
   if (!node.children) node.children = []
   const nextIndex = node.children.length
+  node.hasChildren = true
   const newKey = `${key}-${nextIndex}`
   node.children.push({
     id: createNodeId('subtask'),
@@ -301,8 +343,24 @@ function addSubtask(key) {
   // Force reactivity for tree and rowData so grid sees new child immediately
   treeData.value = deepClone(treeData.value)
   rowData.value = flattenTree(treeData.value)
+  emitState()
   nextTick(() => {
     expandNodeByKey(key, true)
+    // Refresh parent row to update hasChildren flag and row class
+    if (gridApi.value) {
+      // Find and refresh the parent row to update its cell renderers and row class
+      gridApi.value.forEachNode((gridNode) => {
+        if (gridNode.data?.pathKey === key) {
+          // Refresh cells for this specific row to update subtask count icon
+          gridApi.value.refreshCells({
+            rowNodes: [gridNode],
+            force: true
+          })
+          // Redraw the row to apply updated row class (row-has-children instead of row-leaf)
+          gridApi.value.redrawRows({ rowNodes: [gridNode] })
+        }
+      })
+    }
     gridApi.value?.refreshClientSideRowModel?.('expandPivots')
     // After expand/refresh, focus the new subtask title input
     nextTick(() => {
@@ -403,8 +461,13 @@ const gridOptions = ref({
   },
   getRowClass: (params) => {
     if (params.data?.isPlaceholder) return 'row-placeholder'
-    if (params.data?.hasChildren) return 'row-has-children'
-    return 'row-leaf'
+    const hasChild =
+      params.data?.hasChildren ||
+      (params.node?.childrenAfterGroup || []).some((child) => !child.data?.isPlaceholder)
+    const classes = []
+    if (params.data?.isNew) classes.push('row-new')
+    classes.push(hasChild ? 'row-has-children' : 'row-leaf')
+    return classes.join(' ')
   },
   rowSelection: {
     mode: 'multiRow',
@@ -422,10 +485,17 @@ const gridOptions = ref({
     const node = event.node
     const data = node?.data
     if (!data) return
-    const firstChild = node.childrenAfterGroup?.[0]
-    if (firstChild?.data?.isPlaceholder) {
-      addSubtask(data.pathKey)
+    const key = data.pathKey
+    if (event.expanded) {
+      const firstChild = node.childrenAfterGroup?.[0]
+      if (firstChild?.data?.isPlaceholder) {
+        addSubtask(key)
+        return
+      }
+      focusOnPathKey(key)
+      return
     }
+    // No-op on collapse to keep empty subtasks around
   },
   components: {
     StatusEditorDropdown,
@@ -500,6 +570,12 @@ function onGridReady(params) {
   opacity: 1;
 }
 
+/* Ensure caret is always visible for rows with children (not just on hover) */
+:deep(.row-has-children .ag-group-contracted .ag-icon-tree-closed),
+:deep(.row-has-children .ag-group-expanded .ag-icon-tree-open) {
+  opacity: 1 !important;
+}
+
 :deep(.row-placeholder) {
   display: none !important;
   height: 0 !important;
@@ -555,7 +631,26 @@ function onGridReady(params) {
   opacity: 1;
 }
 
+:deep(.row-new) {
+  animation: rowPulse 0.8s ease;
+}
+
+@keyframes rowPulse {
+  0% {
+    background-color: #e6f4ff;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 :deep(.ag-theme-quartz .ag-header-select-all) {
   opacity: 1;
+}
+
+/* Ensure caret is always visible for rows with children (not just on hover) show when there is subtask */ 
+:deep(.row-has-children .ag-group-contracted .ag-icon-tree-closed),
+:deep(.row-has-children .ag-group-expanded .ag-icon-tree-open) {
+  opacity: 1 !important;
 }
 </style>

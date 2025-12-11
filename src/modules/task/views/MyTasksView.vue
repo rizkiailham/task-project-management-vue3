@@ -29,7 +29,6 @@ const searchQuery = ref('')
 const statusFilter = ref(null)
 const priorityFilter = ref(null)
 const selectedTasks = ref([])
-const simulatedAiTasks = ref([])
 const generateId = (prefix = 'tree') => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return `${prefix}-${crypto.randomUUID()}`
@@ -111,6 +110,24 @@ const nestedTreeTasks = addIdsToTree([
 ])
 
 const treeTasks = ref([...nestedTreeTasks])
+const sampleTitles = [
+  'Draft roadmap spike',
+  'Write integration tests',
+  'Align with design on CTA',
+  'Refine success metrics',
+  'Document API contracts'
+]
+const sampleTags = [['Product'], ['Engineering'], ['Design'], ['Product', 'Engineering'], []]
+const rootCounter = ref(0)
+function randomPick(list) {
+  return list[Math.floor(Math.random() * list.length)]
+}
+function randomDueDate() {
+  const dayOffset = Math.floor(Math.random() * 10) // within next 10 days
+  const d = new Date()
+  d.setDate(d.getDate() + dayOffset)
+  return d.toISOString().slice(0, 10)
+}
 
 const placeholderTasks = [
   {
@@ -202,7 +219,7 @@ const priorityOptions = [
 // Computed
 const filteredTasks = computed(() => {
   const sourceTasks = taskStore.myTasks.length > 0 ? taskStore.myTasks : placeholderTasks
-  let tasks = [...sourceTasks, ...simulatedAiTasks.value]
+  let tasks = [...sourceTasks]
   
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -274,41 +291,6 @@ onMounted(async () => {
   } catch (error) {
     uiStore.showError('Failed to load tasks')
   } finally {
-    const aiCount = 3
-    const delayMs = 500
-
-    for (let i = 0; i < aiCount; i += 1) {
-      setTimeout(() => {
-        const now = new Date()
-        now.setDate(now.getDate() + i)
-
-        simulatedAiTasks.value.push({
-          id: `ai-${Date.now()}-${i}`,
-          title: `AI-drafted: Suggested task ${i + 1}`,
-          description: 'Auto-suggested by AI on page mount for demo purposes.',
-          projectName: 'Strategy Ops',
-          status: i % 3 === 0 ? TaskStatus.TODO : TaskStatus.IN_PROGRESS,
-          priority: i % 2 === 0 ? TaskPriority.HIGH : TaskPriority.MEDIUM,
-          assignee: 'Dart AI',
-          tags: ['AI-suggested'],
-          dueDate: now.toISOString().slice(0, 10)
-        })
-
-        treeTasks.value = [
-          {
-            id: generateId('ai-tree'),
-            title: `AI Draft: Suggested task ${i + 1}`,
-            dartboard: 'Product',
-            status: TaskStatus.TODO,
-            assignee: 'Dart AI',
-            tags: ['AI-suggested', 'Product'],
-            dueDate: '',
-            children: []
-          },
-          ...treeTasks.value
-        ]
-      }, delayMs * (i + 1))
-    }
     isLoading.value = false
   }
 })
@@ -319,6 +301,25 @@ function navigateToTask(task) {
 
 function openCreateTaskModal() {
   uiStore.openModal('createTask')
+}
+
+function addRootTask() {
+  const idSuffix = rootCounter.value++
+  const indexLabel = rootCounter.value
+  treeTasks.value = [
+    {
+      id: `${generateId('manual-root')}-${idSuffix}`,
+      title: `${randomPick(sampleTitles)} #${indexLabel}`,
+      dartboard: 'Product',
+      status: TaskStatus.TODO,
+      assignee: 'Dart AI',
+      tags: randomPick(sampleTags),
+      dueDate: randomDueDate(),
+      children: [],
+      isNew: true
+    },
+    ...treeTasks.value
+  ]
 }
 
 async function toggleTaskStatus(task) {
@@ -403,6 +404,10 @@ function formatDate(date) {
         placeholder="Priority"
         class="w-40"
       />
+    </div>
+
+    <div class="mb-3 flex justify-end">
+      <Button label="Add task" icon="pi pi-plus" size="small" @click="addRootTask" />
     </div>
 
     <div class="mb-8">
