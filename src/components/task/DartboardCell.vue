@@ -232,9 +232,9 @@ defineExpose({ refresh })
       </svg>
       <div class="pl-1">{{ childCount }}</div>
     </button>
-    <!-- open detail -->
+    <!-- open detail - always show on hover for all tasks -->
     <button
-      v-if="showSubtaskSummary"
+      v-show="isHovered || showSubtaskSummary"
       class="icon-button"
       type="button"
       aria-label="Open details"

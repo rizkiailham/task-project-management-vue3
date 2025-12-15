@@ -7,6 +7,10 @@ import 'ag-grid-community/styles/ag-theme-quartz.css'
 import StatusEditorDropdown from '@/components/task/StatusEditorDropdown.vue'
 import AssigneeEditorDropdown from '@/components/task/AssigneeEditorDropdown.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
+import { useTaskStore, useUIStore } from '@/stores'
+
+const taskStore = useTaskStore()
+const uiStore = useUIStore()
 
 LicenseManager.setLicenseKey(
   '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
@@ -119,6 +123,17 @@ const rowData = ref([])
 const focusKey = ref(null)
 const gridApi = ref(null)
 
+function findGridRowNodes(pathKey) {
+  if (!gridApi.value) return []
+  const matches = []
+  gridApi.value.forEachNode((node) => {
+    if (node.data?.pathKey === pathKey) {
+      matches.push(node)
+    }
+  })
+  return matches
+}
+
 function deepClone(val) {
   return JSON.parse(JSON.stringify(val))
 }
@@ -186,18 +201,34 @@ function findNodeByKey(key, nodes = treeData.value) {
   return findNodeByKey(rest, node.children || [])
 }
 
-function updateTitle(key, title) {
-  const node = findNodeByKey(key)
+function updateField(pathKey, field, value, { markEdited = true, emit = true } = {}) {
+  console.log('updateField', pathKey, field, value)
+  if (!pathKey) return
+  const node = findNodeByKey(pathKey)
   if (node) {
-    node.title = title
-    if ((title || '').trim() !== '') {
-      node._edited = true
-    }
+    node[field] = value
+    if (markEdited) node._edited = true
   }
-  const row = rowData.value.find(r => r.pathKey === key)
-  if (row) row.title = title
-  // Emit live so UI/state consumers stay in sync while typing
-  emitState()
+  const row = rowData.value.find((r) => r.pathKey === pathKey)
+  if (row) {
+    row[field] = value
+  }
+  const targets = findGridRowNodes(pathKey)
+  if (gridApi.value && targets.length) {
+    targets.forEach((target) => {
+      target.setDataValue?.(field, value)
+    })
+    gridApi.value.refreshCells({
+      rowNodes: targets,
+      columns: [field],
+      force: true
+    })
+  }
+  if (emit) emitState()
+}
+
+function updateTitle(key, title) {
+  updateField(key, 'title', title, { markEdited: (title || '').trim() !== '' })
 }
 
 function removeEmptyNode(key) {
@@ -373,7 +404,12 @@ const columnDefs = [
   {
     field: 'dartboard',
     headerName: 'Dartboard',
-    flex: 1
+    flex: 1,
+    editable: true,
+    valueSetter: (params) => {
+      updateField(params.data?.pathKey, 'dartboard', params.newValue)
+      return false
+    }
   },
   {
     field: 'status',
@@ -391,12 +427,29 @@ const columnDefs = [
     field: 'tags',
     headerName: 'Tags',
     flex: 1,
+    editable: true,
     valueGetter: (params) => {
       const tags = params.data?.tags
       return Array.isArray(tags) ? tags.join(', ') : ''
+    },
+    valueSetter: (params) => {
+      const nextTags = typeof params.newValue === 'string'
+        ? params.newValue.split(',').map((tag) => tag.trim()).filter(Boolean)
+        : Array.isArray(params.newValue) ? params.newValue : []
+      updateField(params.data?.pathKey, 'tags', nextTags)
+      return false
     }
   },
-  { field: 'dueDate', headerName: 'Due date', flex: 0.8 }
+  {
+    field: 'dueDate',
+    headerName: 'Due date',
+    flex: 0.8,
+    editable: true,
+    valueSetter: (params) => {
+      updateField(params.data?.pathKey, 'dueDate', params.newValue)
+      return false
+    }
+  }
 ]
 
 const defaultColDef = {
@@ -457,7 +510,8 @@ const gridOptions = ref({
     addSubtask,
     updateTitle,
     handleCommit,
-    focusKey
+    focusKey,
+    updateField
   },
   getRowClass: (params) => {
     if (params.data?.isPlaceholder) return 'row-placeholder'
@@ -504,8 +558,39 @@ const gridOptions = ref({
   }
 })
 
+/**
+ * Handle opening task detail sidebar when user clicks the detail button
+ * @param {Object} taskData - The task data from the grid row
+ */
+function handleOpenTaskDetail(taskData) {
+  if (!taskData) return
+
+  // Transform grid data to task format for the store
+  const task = {
+    id: taskData.id || taskData.pathKey,
+    title: taskData.title,
+    description: taskData.description || '',
+    status: taskData.status,
+    priority: taskData.priority || 'medium',
+    dueDate: taskData.dueDate,
+    projectName: taskData.dartboard,
+    assignee: taskData.assignee ? { name: taskData.assignee } : null,
+    tags: taskData.tags || [],
+    children: taskData.children || []
+  }
+
+  // Set the current task in the store and open the panel
+  taskStore.setCurrentTask(task)
+  uiStore.openTaskPanel()
+}
+
 function onGridReady(params) {
   gridApi.value = params.api
+
+  // Listen for custom openDartboardSidebar event from DartboardCell
+  params.api.addEventListener('openDartboardSidebar', (event) => {
+    handleOpenTaskDetail(event.data)
+  })
 }
 </script>
 

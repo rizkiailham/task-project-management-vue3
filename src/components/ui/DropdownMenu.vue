@@ -184,18 +184,20 @@ defineExpose({ open, close, toggle, isOpen })
                   : 'text-gray-700 hover:bg-gray-50'
               ]"
             >
-              <div class="flex items-center gap-3">
-                <!-- Custom Icon Slot or SVG -->
-                <slot :name="`icon-${item.id || index}`" :item="item">
-                  <component 
-                    v-if="item.icon" 
-                    :is="item.icon" 
-                    class="w-4 h-4 text-gray-500"
-                  />
-                </slot>
-                <span>{{ item.label }}</span>
-              </div>
-              <span v-if="item.shortcut" class="text-xs text-gray-400">{{ item.shortcut }}</span>
+              <slot name="item" :item="item" :index="index">
+                <div class="flex items-center gap-3">
+                  <!-- Custom Icon Slot or SVG -->
+                  <slot :name="`icon-${item.id || index}`" :item="item">
+                    <component 
+                      v-if="item.icon" 
+                      :is="item.icon" 
+                      class="w-4 h-4 text-gray-500"
+                    />
+                  </slot>
+                  <span>{{ item.label }}</span>
+                </div>
+                <span v-if="item.shortcut" class="text-xs text-gray-400">{{ item.shortcut }}</span>
+              </slot>
             </button>
           </template>
           

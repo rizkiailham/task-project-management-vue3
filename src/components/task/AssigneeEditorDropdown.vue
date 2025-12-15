@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 
 const props = defineProps({
@@ -21,19 +21,34 @@ const teamOptions = computed(() => props.options.length ? props.options : [
   { label: 'studio@lomedia.no', value: 'studio@lomedia.no', avatar: 'SL' }
 ])
 
+const selectedAssignee = ref(props.params.data.assignee || teamOptions.value[0].value)
+
+const menuItems = computed(() =>
+  teamOptions.value.map((option) => ({
+    ...option,
+    action: () => selectAssignee(option)
+  }))
+)
+
 function selectAssignee(option) {
+  const pathKey = props.params?.data?.pathKey
+  selectedAssignee.value = option.value
   props.params.data.assignee = option.value
-  props.params.api.refreshCells({
-    rowNodes: [props.params.node],
-    columns: ['assignee']
-  })
+  props.params.context?.updateField?.(pathKey, 'assignee', option.value)
 }
 
-const currentAssignee = computed(() => props.params.data.assignee || teamOptions.value[0].value)
+const currentAssignee = computed(() => selectedAssignee.value || teamOptions.value[0].value)
+
+function refresh(nextParams) {
+  selectedAssignee.value = nextParams?.data?.assignee || teamOptions.value[0].value
+  return true
+}
+
+defineExpose({ refresh })
 </script>
 
 <template>
-  <DropdownMenu :items="teamOptions" position="left" width="12rem">
+  <DropdownMenu :items="menuItems" position="left" width="12rem">
     <template #trigger>
       <button class="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-xs text-gray-700 shadow-sm">
         <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-700">
