@@ -235,7 +235,7 @@ defineExpose({ focus, handleSend })
 <template>
   <div class="tiptap-chat-editor">
     <!-- Editor Content -->
-    <div class="editor-wrapper bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all">
+    <div class="editor-wrapper bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100 transition-all">
       <EditorContent :editor="editor" />
     </div>
     
@@ -272,7 +272,7 @@ defineExpose({ focus, handleSend })
       <button
         @click="handleSend"
         :disabled="disabled"
-        class="flex items-center justify-center w-9 h-9 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+        class="flex items-center justify-center w-9 h-9 bg-gradient-to-r from-primary-500 to-purple-600 text-white rounded-lg hover:from-primary-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
         title="Send message"
       >
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

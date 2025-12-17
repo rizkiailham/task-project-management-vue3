@@ -192,7 +192,7 @@ body {
 
 /* AI feature highlight */
 .ai-feature {
-  @apply bg-gradient-to-r from-violet-500 to-purple-600;
+  @apply bg-gradient-to-r from-primary-500 to-purple-600;
 }
 
 /* Kanban column styles */

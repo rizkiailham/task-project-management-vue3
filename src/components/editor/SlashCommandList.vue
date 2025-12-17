@@ -172,15 +172,15 @@ defineExpose({ onKeyDown })
       :key="cmd.id"
       @click="selectItem(index)"
       class="flex items-center gap-3 w-full px-3 py-2 text-left transition-colors"
-      :class="selectedIndex === index ? 'bg-violet-50' : 'hover:bg-gray-50'"
+      :class="selectedIndex === index ? 'bg-primary-50' : 'hover:bg-gray-50'"
     >
       <div 
         class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center"
-        :class="selectedIndex === index ? 'border-violet-300 bg-violet-50' : 'bg-white'"
+        :class="selectedIndex === index ? 'border-primary-300 bg-primary-50' : 'bg-white'"
       >
         <svg 
           class="w-5 h-5" 
-          :class="selectedIndex === index ? 'text-violet-600' : 'text-gray-500'"
+          :class="selectedIndex === index ? 'text-primary-600' : 'text-gray-500'"
           viewBox="0 0 24 24" 
           fill="none" 
           stroke="currentColor" 
@@ -193,7 +193,7 @@ defineExpose({ onKeyDown })
       <div class="flex-1 min-w-0">
         <p 
           class="text-sm font-medium truncate"
-          :class="selectedIndex === index ? 'text-violet-700' : 'text-gray-700'"
+          :class="selectedIndex === index ? 'text-primary-700' : 'text-gray-700'"
         >
           {{ cmd.title }}
         </p>

@@ -72,7 +72,7 @@ function openSkillsSettings() {
       <!-- Main AI Chat Button -->
       <button
         @click="openChat"
-        class="flex items-center gap-2 h-9 pl-3 pr-2 rounded-l-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-700 transition-all shadow-sm"
+        class="flex items-center gap-2 h-9 pl-3 pr-2 rounded-l-lg bg-gradient-to-r from-primary-500 to-purple-600 text-white text-sm font-medium hover:from-primary-600 hover:to-purple-700 transition-all shadow-sm"
       >
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>

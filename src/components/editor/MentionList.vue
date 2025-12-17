@@ -113,7 +113,7 @@ defineExpose({ onKeyDown })
             :key="skill.id"
             @click="selectItem(index)"
             class="flex items-center gap-3 w-full px-3 py-2 text-sm transition-colors text-left"
-            :class="selectedIndex === index ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-50'"
+            :class="selectedIndex === index ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'"
           >
             <span class="text-lg flex-shrink-0">{{ skill.icon || '⚡' }}</span>
             <div class="flex-1 min-w-0">
@@ -141,7 +141,7 @@ defineExpose({ onKeyDown })
             :key="task.id"
             @click="selectItem(skills.length + taskIndex)"
             class="flex items-center gap-3 w-full px-3 py-2 text-sm transition-colors text-left"
-            :class="selectedIndex === skills.length + taskIndex ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-50'"
+            :class="selectedIndex === skills.length + taskIndex ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'"
           >
             <span :class="['text-sm flex-shrink-0', getStatusColor(task.status)]">
               {{ getStatusIcon(task.status) }}

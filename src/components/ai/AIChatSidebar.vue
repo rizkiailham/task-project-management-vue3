@@ -125,7 +125,7 @@ onUnmounted(() => {
     >
       <!-- Resize Handle -->
       <div
-        class="resize-handle absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400 transition-colors z-10"
+        class="resize-handle absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors z-10"
         @mousedown="startResize"
       ></div>
       
@@ -171,7 +171,7 @@ onUnmounted(() => {
           <span v-if="index > 0" class="text-gray-300">›</span>
           <button
             class="hover:text-gray-700 transition-colors"
-            :class="{ 'text-violet-600': crumb.type === 'task' }"
+            :class="{ 'text-primary-600': crumb.type === 'task' }"
           >
             {{ crumb.label }}
           </button>
@@ -182,8 +182,8 @@ onUnmounted(() => {
       <div ref="chatContainerRef" class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         <!-- Empty State -->
         <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
-          <div class="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-            <svg class="w-10 h-10 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <div class="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-primary-100 to-purple-100 flex items-center justify-center">
+            <svg class="w-10 h-10 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
           </div>
@@ -194,14 +194,14 @@ onUnmounted(() => {
         <div v-for="message in messages" :key="message.id" class="message-item">
           <!-- User Message -->
           <div v-if="message.role === 'user'" class="flex justify-end">
-            <div class="max-w-[80%] bg-violet-500 text-white rounded-2xl rounded-br-md px-4 py-2">
+            <div class="max-w-[80%] bg-primary-500 text-white rounded-2xl rounded-br-md px-4 py-2">
               <p class="text-sm">{{ message.content }}</p>
             </div>
           </div>
           
           <!-- AI Message -->
           <div v-else class="flex gap-3">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
               <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
@@ -214,7 +214,7 @@ onUnmounted(() => {
         
         <!-- Typing Indicator -->
         <div v-if="isGenerating" class="flex gap-3">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
             <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
@@ -289,11 +289,11 @@ onUnmounted(() => {
 
 /* Resize handle hover effect */
 .resize-handle:hover {
-  background-color: #8b5cf6;
+  background-color: #e5e7eb;
 }
 
 .resize-handle:active {
-  background-color: #7c3aed;
+  background-color: #e5e7eb;
 }
 
 /* Custom scrollbar */

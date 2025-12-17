@@ -91,10 +91,6 @@ function toggleUnderline() {
   props.editor.chain().focus().toggleUnderline().run()
 }
 
-function toggleStrike() {
-  props.editor.chain().focus().toggleStrike().run()
-}
-
 function toggleCode() {
   props.editor.chain().focus().toggleCode().run()
 }
@@ -218,7 +214,7 @@ function toggleColorDropdown() {
     <!-- Ask AI Button -->
     <button
       @click="askAI"
-      class="flex items-center gap-1.5 px-2 py-1 text-xs text-violet-400 hover:bg-gray-800 rounded transition-colors whitespace-nowrap"
+      class="flex items-center gap-1.5 px-2 py-1 text-xs text-primary-400 hover:bg-gray-800 rounded transition-colors whitespace-nowrap"
       :title="t('editor.bubble.askAI')"
     >
       <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -259,7 +255,7 @@ function toggleColorDropdown() {
             <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
           </svg>
           <span>{{ t('editor.bubble.text') }}</span>
-          <svg v-if="currentBlockType === 'text'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'text'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -271,7 +267,7 @@ function toggleColorDropdown() {
         >
           <span class="w-3.5 h-3.5 flex items-center justify-center text-[10px] font-bold flex-shrink-0">H1</span>
           <span>{{ t('editor.bubble.heading1') }}</span>
-          <svg v-if="currentBlockType === 'h1'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'h1'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -283,7 +279,7 @@ function toggleColorDropdown() {
         >
           <span class="w-3.5 h-3.5 flex items-center justify-center text-[10px] font-semibold flex-shrink-0">H2</span>
           <span>{{ t('editor.bubble.heading2') }}</span>
-          <svg v-if="currentBlockType === 'h2'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'h2'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -295,7 +291,7 @@ function toggleColorDropdown() {
         >
           <span class="w-3.5 h-3.5 flex items-center justify-center text-[10px] font-medium flex-shrink-0">H3</span>
           <span>{{ t('editor.bubble.heading3') }}</span>
-          <svg v-if="currentBlockType === 'h3'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'h3'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -310,7 +306,7 @@ function toggleColorDropdown() {
             <path d="M9 12l2 2 4-4"></path>
           </svg>
           <span>{{ t('editor.bubble.todoList') }}</span>
-          <svg v-if="currentBlockType === 'todo'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'todo'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -329,7 +325,7 @@ function toggleColorDropdown() {
             <circle cx="4" cy="18" r="1" fill="currentColor"></circle>
           </svg>
           <span>{{ t('editor.bubble.bulletList') }}</span>
-          <svg v-if="currentBlockType === 'bullet'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'bullet'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -348,7 +344,7 @@ function toggleColorDropdown() {
             <text x="2" y="20" font-size="7" fill="currentColor">3</text>
           </svg>
           <span>{{ t('editor.bubble.numberedList') }}</span>
-          <svg v-if="currentBlockType === 'numbered'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'numbered'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -363,7 +359,7 @@ function toggleColorDropdown() {
             <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v4"></path>
           </svg>
           <span>{{ t('editor.bubble.quote') }}</span>
-          <svg v-if="currentBlockType === 'quote'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'quote'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -378,7 +374,7 @@ function toggleColorDropdown() {
             <polyline points="8 6 2 12 8 18"></polyline>
           </svg>
           <span>{{ t('editor.bubble.codeBlock') }}</span>
-          <svg v-if="currentBlockType === 'codeBlock'" class="w-3.5 h-3.5 ml-auto text-violet-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="currentBlockType === 'codeBlock'" class="w-3.5 h-3.5 ml-auto text-primary-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
@@ -393,7 +389,7 @@ function toggleColorDropdown() {
       <button
         @click="openLinkInput"
         class="flex items-center gap-1 px-2 py-1 text-xs text-gray-200 hover:bg-gray-800 rounded transition-colors whitespace-nowrap"
-        :class="{ 'bg-violet-600 text-white': editor.isActive('link') || showLinkInput }"
+        :class="{ 'bg-primary-600 text-white': editor.isActive('link') || showLinkInput }"
         :title="t('editor.bubble.link')"
       >
         <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -414,7 +410,7 @@ function toggleColorDropdown() {
             v-model="linkUrl"
             type="text"
             :placeholder="t('editor.bubble.pasteLink')"
-            class="flex-1 bg-gray-800 text-xs text-gray-200 placeholder-gray-500 outline-none px-3 py-2 rounded border border-gray-700 focus:border-violet-500 transition-colors"
+            class="flex-1 bg-gray-800 text-xs text-gray-200 placeholder-gray-500 outline-none px-3 py-2 rounded border border-gray-700 focus:border-primary-500 transition-colors"
             @keydown="handleLinkKeydown"
           />
           <button
@@ -433,22 +429,11 @@ function toggleColorDropdown() {
     <!-- Divider -->
     <div class="w-px h-4 bg-gray-700 mx-1 flex-shrink-0"></div>
 
-    <!-- Math/Formula Button (Σ) -->
-    <button
-      class="w-6 h-6 flex items-center justify-center text-gray-200 hover:bg-gray-800 rounded transition-colors text-sm font-serif flex-shrink-0"
-      :title="t('editor.bubble.math')"
-    >
-      Σ
-    </button>
-
-    <!-- Divider -->
-    <div class="w-px h-4 bg-gray-700 mx-1 flex-shrink-0"></div>
-
     <!-- Bold -->
     <button
       @click="toggleBold"
       class="w-6 h-6 flex items-center justify-center text-gray-200 hover:bg-gray-800 rounded transition-colors text-xs font-bold flex-shrink-0"
-      :class="{ 'bg-violet-600 text-white': editor.isActive('bold') }"
+      :class="{ 'bg-primary-600 text-white': editor.isActive('bold') }"
       :title="t('editor.bubble.bold')"
     >
       B
@@ -458,7 +443,7 @@ function toggleColorDropdown() {
     <button
       @click="toggleItalic"
       class="w-6 h-6 flex items-center justify-center text-gray-200 hover:bg-gray-800 rounded transition-colors text-xs italic flex-shrink-0"
-      :class="{ 'bg-violet-600 text-white': editor.isActive('italic') }"
+      :class="{ 'bg-primary-600 text-white': editor.isActive('italic') }"
       :title="t('editor.bubble.italic')"
     >
       I
@@ -468,20 +453,10 @@ function toggleColorDropdown() {
     <button
       @click="toggleUnderline"
       class="w-6 h-6 flex items-center justify-center text-gray-200 hover:bg-gray-800 rounded transition-colors text-xs underline flex-shrink-0"
-      :class="{ 'bg-violet-600 text-white': editor.isActive('underline') }"
+      :class="{ 'bg-primary-600 text-white': editor.isActive('underline') }"
       :title="t('editor.bubble.underline')"
     >
       U
-    </button>
-
-    <!-- Strikethrough -->
-    <button
-      @click="toggleStrike"
-      class="w-6 h-6 flex items-center justify-center text-gray-200 hover:bg-gray-800 rounded transition-colors text-xs line-through flex-shrink-0"
-      :class="{ 'bg-violet-600 text-white': editor.isActive('strike') }"
-      :title="t('editor.bubble.strikethrough')"
-    >
-      S
     </button>
 
     <!-- Divider -->
@@ -491,7 +466,7 @@ function toggleColorDropdown() {
     <button
       @click="toggleCode"
       class="w-6 h-6 flex items-center justify-center text-gray-200 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
-      :class="{ 'bg-violet-600 text-white': editor.isActive('code') }"
+      :class="{ 'bg-primary-600 text-white': editor.isActive('code') }"
       :title="t('editor.bubble.code')"
     >
       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -560,4 +535,3 @@ function toggleColorDropdown() {
   }
 }
 </style>
-

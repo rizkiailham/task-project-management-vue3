@@ -69,8 +69,10 @@ const aiChatStore = useAIChatStore()
 const slashSuggestion = {
   char: '/',
   command: ({ editor, range, props }) => {
-    props.action(editor)
+    // Delete the slash trigger text first; some commands (e.g. lists) change the doc structure
+    // which can make deleting the original range unreliable if done after the action.
     editor.chain().focus().deleteRange(range).run()
+    props.action?.(editor)
   },
   items: ({ query }) => {
     return [query]
@@ -223,7 +225,7 @@ const editor = useEditor({
     Underline,
     Link.configure({
       openOnClick: false,
-      HTMLAttributes: { class: 'text-violet-600 underline cursor-pointer' }
+      HTMLAttributes: { class: 'text-primary-600 underline cursor-pointer' }
     }),
     Highlight.configure({ multicolor: true }),
     Typography,
@@ -287,18 +289,40 @@ function updateBubbleMenuPosition() {
         return { top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, x: 0, y: 0 }
       }
 
+      // For very large selections (e.g. Ctrl+A), anchor the bubble to the editor container
+      // so it stays stable and doesn't compute a massive off-screen selection rect.
+      if (to - from > 2000) {
+        const editorRect = view.dom.getBoundingClientRect()
+        const x = editorRect.left + editorRect.width / 2
+        const y = editorRect.top + 8
+        return {
+          top: y,
+          bottom: y,
+          left: x,
+          right: x,
+          width: 0,
+          height: 0,
+          x,
+          y
+        }
+      }
+
       const start = view.coordsAtPos(from)
       const end = view.coordsAtPos(to)
+      const left = Math.min(start.left, end.left)
+      const right = Math.max(start.right, end.right)
+      const top = Math.min(start.top, end.top)
+      const bottom = Math.max(start.bottom, end.bottom)
 
       return {
-        top: start.top,
-        left: start.left,
-        bottom: end.bottom,
-        right: end.right,
-        width: end.right - start.left,
-        height: end.bottom - start.top,
-        x: start.left,
-        y: start.top
+        top,
+        left,
+        bottom,
+        right,
+        width: Math.max(0, right - left),
+        height: Math.max(0, bottom - top),
+        x: left,
+        y: top
       }
     }
   })
@@ -313,6 +337,18 @@ onMounted(() => {
         trigger: 'manual',
         interactive: true,
         placement: 'top',
+        popperOptions: {
+          modifiers: [
+            {
+              name: 'preventOverflow',
+              options: { boundary: 'viewport', padding: 8 }
+            },
+            {
+              name: 'flip',
+              options: { fallbackPlacements: ['top', 'bottom', 'right', 'left'] }
+            }
+          ]
+        },
         animation: 'shift-away',
         duration: 100,
         appendTo: () => document.body,
@@ -413,7 +449,7 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 /* Notion Editor Styles */
 .notion-editor-wrapper {
   @apply rounded-lg border border-gray-200 bg-white;
-  @apply hover:border-gray-300 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100;
+  @apply hover:border-gray-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100;
   @apply transition-all;
 }
 
@@ -457,7 +493,7 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 }
 
 .notion-editor ul[data-type="taskList"] li > label input[type="checkbox"] {
-  @apply w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500;
+  @apply w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500;
 }
 
 .notion-editor ul[data-type="taskList"] li > div {
@@ -494,12 +530,12 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 
 /* Mentions */
 .notion-editor .mention {
-  @apply bg-violet-100 text-violet-700 rounded px-1 py-0.5 font-medium;
+  @apply bg-primary-100 text-primary-700 rounded px-1 py-0.5 font-medium;
 }
 
 /* Links */
 .notion-editor a {
-  @apply text-violet-600 underline;
+  @apply text-primary-600 underline;
 }
 
 /* Highlight */
@@ -521,4 +557,3 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
   padding: 0;
 }
 </style>
-
