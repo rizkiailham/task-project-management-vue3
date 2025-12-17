@@ -225,7 +225,7 @@ const editor = useEditor({
     Underline,
     Link.configure({
       openOnClick: false,
-      HTMLAttributes: { class: 'text-primary-600 underline cursor-pointer' }
+      HTMLAttributes: { class: 'text-violet-600 underline cursor-pointer' }
     }),
     Highlight.configure({ multicolor: true }),
     Typography,
@@ -449,7 +449,7 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 /* Notion Editor Styles */
 .notion-editor-wrapper {
   @apply rounded-lg border border-gray-200 bg-white;
-  @apply hover:border-gray-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100;
+  @apply hover:border-gray-300 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100;
   @apply transition-all;
 }
 
@@ -493,7 +493,7 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 }
 
 .notion-editor ul[data-type="taskList"] li > label input[type="checkbox"] {
-  @apply w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500;
+  @apply w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500;
 }
 
 .notion-editor ul[data-type="taskList"] li > div {
@@ -530,12 +530,12 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 
 /* Mentions */
 .notion-editor .mention {
-  @apply bg-primary-100 text-primary-700 rounded px-1 py-0.5 font-medium;
+  @apply bg-violet-100 text-violet-700 rounded px-1 py-0.5 font-medium;
 }
 
 /* Links */
 .notion-editor a {
-  @apply text-primary-600 underline;
+  @apply text-violet-600 underline;
 }
 
 /* Highlight */

@@ -416,7 +416,7 @@ function formatDate(date) {
 
     <!-- Loading State -->
     <div v-if="isLoading" class="space-y-4">
-      <Skeleton v-for="i in 5" :key="i" height="60px" />
+      <!-- <Skeleton v-for="i in 5" :key="i" height="60px" /> -->
     </div>
 
     <!-- Empty State -->

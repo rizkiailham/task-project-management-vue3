@@ -7,6 +7,7 @@ import 'ag-grid-community/styles/ag-theme-quartz.css'
 import StatusEditorDropdown from '@/components/task/StatusEditorDropdown.vue'
 import AssigneeEditorDropdown from '@/components/task/AssigneeEditorDropdown.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
+import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import { useTaskStore, useUIStore } from '@/stores'
 
 const taskStore = useTaskStore()
@@ -424,6 +425,15 @@ const columnDefs = [
     cellRenderer: 'AssigneeEditorDropdown'
   },
   {
+    field: 'trackingTime',
+    headerName: 'Tracking time',
+    flex: 0.9,
+    sortable: false,
+    filter: false,
+    editable: false,
+    cellRenderer: 'TrackingTimeCell'
+  },
+  {
     field: 'tags',
     headerName: 'Tags',
     flex: 1,
@@ -554,7 +564,8 @@ const gridOptions = ref({
   components: {
     StatusEditorDropdown,
     AssigneeEditorDropdown,
-    DartboardCell
+    DartboardCell,
+    TrackingTimeCell
   }
 })
 
