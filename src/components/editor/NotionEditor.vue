@@ -13,6 +13,7 @@
 import { ref, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useEditor, EditorContent, VueRenderer } from '@tiptap/vue-3'
+import { Node } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
@@ -60,10 +61,34 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'blur', 'focus'])
+const emit = defineEmits(['update:modelValue', 'blur', 'focus', 'ai-suggestion'])
 
 const { t } = useI18n()
 const aiChatStore = useAIChatStore()
+
+const AiSuggestionWrapper = Node.create({
+  name: 'aiSuggestionWrapper',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  isolating: true,
+  addAttributes() {
+    return {
+      'data-ai-suggestion': {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-ai-suggestion') || null,
+        renderHTML: (attributes) =>
+          attributes['data-ai-suggestion'] ? { 'data-ai-suggestion': attributes['data-ai-suggestion'] } : {}
+      }
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-ai-suggestion]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', HTMLAttributes, 0]
+  }
+})
 
 // Slash command suggestion configuration
 const slashSuggestion = {
@@ -72,6 +97,14 @@ const slashSuggestion = {
     // Delete the slash trigger text first; some commands (e.g. lists) change the doc structure
     // which can make deleting the original range unreliable if done after the action.
     editor.chain().focus().deleteRange(range).run()
+    if (props?.draftHtml) {
+      emit('ai-suggestion', {
+        id: props.id,
+        title: props.title,
+        html: props.draftHtml
+      })
+      return
+    }
     props.action?.(editor)
   },
   items: ({ query }) => {
@@ -213,13 +246,15 @@ const editor = useEditor({
   content: props.modelValue,
   editable: props.editable,
   autofocus: props.autofocus,
-  extensions: [
-    StarterKit.configure({
-      heading: { levels: [1, 2, 3] }
-    }),
-    Placeholder.configure({
-      placeholder: props.placeholder || t('editor.placeholder')
-    }),
+	  extensions: [
+	    StarterKit.configure({
+	      heading: { levels: [1, 2, 3] },
+	      blockquote: true
+	    }),
+	    AiSuggestionWrapper,
+	    Placeholder.configure({
+	      placeholder: props.placeholder || t('editor.placeholder')
+	    }),
     TaskList,
     TaskItem.configure({ nested: true }),
     Underline,
@@ -242,7 +277,7 @@ const editor = useEditor({
   ],
   editorProps: {
     attributes: {
-      class: 'notion-editor prose prose-sm max-w-none focus:outline-none'
+      class: 'notion-editor prose prose-sm max-w-none focus:outline-none text-[13px]'
     }
   },
   onUpdate: ({ editor }) => {
@@ -547,6 +582,47 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 /* Highlight */
 .notion-editor mark {
   @apply bg-yellow-200 px-0.5 rounded;
+}
+
+/* AI suggestion wrapper (used by TaskDetailSidebar slash recommendations) */
+.notion-editor div[data-ai-suggestion="true"] {
+  position: relative;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-primary-400);
+  /* More visible orange tint */
+  background-color: rgba(249, 115, 22, 0.14); /* primary-500 @ 14% */
+  padding: 0.75rem;
+  font-style: normal;
+  color: var(--color-primary-800);
+  margin: 0.75rem 0;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.08);
+}
+
+.notion-editor div[data-ai-suggestion="true"] h1,
+.notion-editor div[data-ai-suggestion="true"] h2,
+.notion-editor div[data-ai-suggestion="true"] h3,
+.notion-editor div[data-ai-suggestion="true"] strong,
+.notion-editor div[data-ai-suggestion="true"] a {
+  color: var(--color-primary-900);
+}
+
+.notion-editor div[data-ai-suggestion="true"] a {
+  text-decoration: underline;
+}
+
+.notion-editor div[data-ai-suggestion="true"]::before {
+  content: 'AI';
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-primary-700);
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--color-primary-200);
+  padding: 0.125rem 0.375rem;
+  border-radius: 999px;
 }
 
 /* Tippy themes */

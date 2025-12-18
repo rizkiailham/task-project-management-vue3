@@ -17,6 +17,7 @@ import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
 import Skeleton from 'primevue/skeleton'
 import NotionEditor from '@/components/editor/NotionEditor.vue'
+import { Sparkles } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const taskStore = useTaskStore()
@@ -37,6 +38,11 @@ const isPropertiesOpen = ref(true)
 const isDescriptionOpen = ref(true)
 const isSubtasksOpen = ref(true)
 const isActivityOpen = ref(true)
+const isAiDescriptionPending = ref(false)
+const pendingAiDescription = ref('')
+const descriptionBeforeAi = ref('')
+const aiInjectedIntoEditor = ref(false)
+const aiReplaceMode = computed(() => !isRichTextEmpty(descriptionBeforeAi.value))
 
 // Computed
 const isOpen = computed(() => uiStore.isTaskPanelOpen)
@@ -188,8 +194,75 @@ function saveDescription() {
   }
 }
 
+function extractAiDraftFromHtml(html) {
+  const raw = String(html || '')
+  try {
+    const doc = new DOMParser().parseFromString(raw, 'text/html')
+    const block = doc.querySelector('[data-ai-suggestion="true"]')
+    return (block?.innerHTML || '').trim()
+  } catch {
+    return ''
+  }
+}
+
+function stripAiMarkerFromHtml(html) {
+  const raw = String(html || '')
+  try {
+    const doc = new DOMParser().parseFromString(raw, 'text/html')
+    for (const el of doc.querySelectorAll('[data-ai-suggestion]')) {
+      el.removeAttribute('data-ai-suggestion')
+    }
+    return (doc.body?.innerHTML || '').trim()
+  } catch {
+    return raw.trim()
+  }
+}
+
+function handleAiSuggestion(payload) {
+  if (!payload?.html) return
+  // Stage suggestion inside the editor (preview), but don't save until accepted.
+  const current = (localDescription.value || task.value?.description || '').trim()
+  descriptionBeforeAi.value = isRichTextEmpty(current) ? '' : current
+  pendingAiDescription.value = String(payload.html).trim()
+  aiInjectedIntoEditor.value = true
+
+  const aiBlock = `<div data-ai-suggestion="true">${pendingAiDescription.value}</div>`
+  localDescription.value = current ? `${current}${aiBlock}` : aiBlock
+  isAiDescriptionPending.value = true
+  isDescriptionOpen.value = true
+  isEditingDescription.value = true
+}
+
+function acceptAiDescription() {
+  if (!isAiDescriptionPending.value) return
+  // If there was existing content, "Replace" means keep only the AI draft (including any edits inside it).
+  if (aiReplaceMode.value) {
+    const aiOnly = extractAiDraftFromHtml(localDescription.value) || pendingAiDescription.value
+    localDescription.value = String(aiOnly || '').trim()
+  } else {
+    // Otherwise, accept the draft in-place and keep everything the user edited.
+    localDescription.value = stripAiMarkerFromHtml(localDescription.value)
+  }
+  pendingAiDescription.value = ''
+  descriptionBeforeAi.value = ''
+  aiInjectedIntoEditor.value = false
+  isAiDescriptionPending.value = false
+  isEditingDescription.value = true
+  saveDescription()
+}
+
+function declineAiDescription() {
+  if (!isAiDescriptionPending.value) return
+  if (aiInjectedIntoEditor.value) localDescription.value = descriptionBeforeAi.value
+  pendingAiDescription.value = ''
+  descriptionBeforeAi.value = ''
+  aiInjectedIntoEditor.value = false
+  isAiDescriptionPending.value = false
+}
+
 function handleClickOutside(event) {
   if (!isEditingDescription.value) return
+  if (isAiDescriptionPending.value) return
 
   const wrapper = descriptionWrapperRef.value
   if (!wrapper) return
@@ -456,28 +529,58 @@ function toggleSection(section) {
                 :autofocus="true"
                 min-height="120px"
                 @update:model-value="handleDescriptionUpdate"
+                @ai-suggestion="handleAiSuggestion"
               />
             </div>
 
-            <!-- Display Mode (click to edit) -->
-            <div
-              v-else
-              @click="startEditingDescription"
-              class="description-display cursor-pointer rounded-lg border border-transparent hover:border-gray-200 transition-colors"
-            >
+              <!-- Display Mode (click to edit) -->
               <div
-                v-if="!isDescriptionEmpty"
-                class="notion-editor prose prose-sm max-w-none text-gray-600 bg-gray-50 rounded-lg p-3"
-                v-html="localDescription"
-              />
-              <div v-else class="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
-                <p class="text-sm text-gray-400 italic">{{ t('taskDetail.addDescription') }}</p>
+                v-else
+                @click="startEditingDescription"
+                class="description-editor-wrapper cursor-pointer min-h-[120px]"
+              >
+                <div
+                  v-if="!isDescriptionEmpty"
+                  class="notion-editor prose prose-sm max-w-none focus:outline-none text-[13px] bg-white px-3 py-2 min-h-[120px]"
+                  v-html="localDescription"
+                />
+                <div v-else class="bg-white px-3 py-2 min-h-[120px]">
+                  <p class="text-[13px] text-gray-400 italic">{{ t('taskDetail.addDescription') }}</p>
+                </div>
               </div>
             </div>
+
+            <div
+              v-if="isAiDescriptionPending"
+              class="mt-2 rounded-lg border border-primary-300 bg-primary-50 px-3 py-2 ai-pending-border"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                  <Sparkles class="w-4 h-4 text-primary-600" />
+                  <span class="text-xs font-semibold text-primary-800 truncate">AI suggestion ready</span>
+                  <span v-if="aiReplaceMode" class="text-xs text-primary-800/70 truncate">Edit the draft in-place, then replace or decline.</span>
+                  <span v-else class="text-xs text-primary-800/70 truncate">Edit if needed, then accept or decline.</span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    class="h-8 px-2.5 rounded-md border border-primary-200 bg-white text-xs font-semibold text-primary-700 hover:bg-primary-50"
+                    @click.stop="declineAiDescription"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    type="button"
+                    class="h-8 px-2.5 rounded-md bg-primary-600 text-xs font-semibold text-white hover:bg-primary-700"
+                    @click.stop="acceptAiDescription"
+                  >
+                    {{ aiReplaceMode ? 'Replace' : 'Accept' }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           
-
           <!-- Subtasks Section -->
           <div>
             <div class="flex items-center justify-between mb-3">
@@ -715,4 +818,33 @@ function toggleSection(section) {
 .task-detail-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.65);
 }
+
+/* Description editor should look clean (no outer border). */
+.description-editor-wrapper :deep(.notion-editor-wrapper) {
+  border: 0;
+  box-shadow: none;
+}
+
+.description-editor-wrapper :deep(.notion-editor-wrapper:hover),
+.description-editor-wrapper :deep(.notion-editor-wrapper:focus-within) {
+  border: 0;
+  box-shadow: none;
+}
+
+@keyframes aiBorderPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.ai-pending-border {
+  animation: aiBorderPulse 1.4s ease-in-out infinite;
+}
+
 </style>
