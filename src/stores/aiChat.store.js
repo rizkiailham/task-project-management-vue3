@@ -41,8 +41,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
   
   // Recent tasks - Dummy data
   const recentTasks = ref([
-    { id: 'task-1', title: 'Confirm asdKia asdasdasdasdasdasd...', status: 'in-progress', statusIcon: '○' },
-    { id: 'task-2', title: 'Review existing documentation and agreeme...', status: 'todo', statusIcon: '○' },
+    { id: 'task-1', title: 'Confirm task example', status: 'in-progress', statusIcon: '○' },
+    { id: 'task-2', title: 'Review existing documentation and agreement', status: 'todo', statusIcon: '○' },
     { id: 'task-3', title: 'Define success metrics for Test Kia initiative', status: 'todo', statusIcon: '○' },
     { id: 'task-4', title: 'Reference', status: 'done', statusIcon: '✓' },
     { id: 'task-5', title: 'Preoject reference VueJS', status: 'todo', statusIcon: '○' }

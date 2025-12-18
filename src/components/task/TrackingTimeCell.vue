@@ -495,6 +495,12 @@ const pickerOptions = computed(() => {
   return ['AM', 'PM']
 })
 
+function isEditingField(entry, kind, field) {
+  const p = activeTimePicker.value
+  if (!p || !entry?.id) return false
+  return p.entryId === entry.id && p.kind === kind && p.field === field
+}
+
 function pickerLabel(opt) {
   const p = activeTimePicker.value
   if (!p) return String(opt)
@@ -591,7 +597,7 @@ if (running.value) startTicking()
             title="Start timer"
             @click="play"
           >
-            <svg class="w-4 h-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="w-4 h-4 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="9 7 19 12 9 17 9 7"></polygon>
             </svg>
           </button>
@@ -673,6 +679,7 @@ if (running.value) startTicking()
                 <button
                   type="button"
                   class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'start', 'hour') ? 'text-primary-600 font-semibold' : ''"
                   title="Edit start hour"
                   @click.stop="openTimePicker(entry, 'start', 'hour', $event.currentTarget)"
                 >
@@ -682,6 +689,7 @@ if (running.value) startTicking()
                 <button
                   type="button"
                   class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'start', 'minute') ? 'text-primary-600 font-semibold' : ''"
                   title="Edit start minute"
                   @click.stop="openTimePicker(entry, 'start', 'minute', $event.currentTarget)"
                 >
@@ -691,6 +699,7 @@ if (running.value) startTicking()
                 <button
                   type="button"
                   class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'start', 'ampm') ? 'text-primary-600 font-semibold' : ''"
                   title="Edit start AM/PM"
                   @click.stop="openTimePicker(entry, 'start', 'ampm', $event.currentTarget)"
                 >
@@ -705,6 +714,7 @@ if (running.value) startTicking()
                 <button
                   type="button"
                   class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'end', 'hour') ? 'text-primary-600 font-semibold' : ''"
                   title="Edit end hour"
                   @click.stop="openTimePicker(entry, 'end', 'hour', $event.currentTarget)"
                 >
@@ -714,6 +724,7 @@ if (running.value) startTicking()
                 <button
                   type="button"
                   class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'end', 'minute') ? 'text-primary-600 font-semibold' : ''"
                   title="Edit end minute"
                   @click.stop="openTimePicker(entry, 'end', 'minute', $event.currentTarget)"
                 >
@@ -723,6 +734,7 @@ if (running.value) startTicking()
                 <button
                   type="button"
                   class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'end', 'ampm') ? 'text-primary-600 font-semibold' : ''"
                   title="Edit end AM/PM"
                   @click.stop="openTimePicker(entry, 'end', 'ampm', $event.currentTarget)"
                 >

@@ -194,7 +194,7 @@ const onSubmit = handleSubmit(async (values) => {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #f97316 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #f97316 0%, #F97316 100%);
   color: white;
 }
 

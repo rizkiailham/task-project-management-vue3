@@ -302,7 +302,7 @@ defineExpose({ focus, handleSend })
 
 .tiptap-chat-editor .mention {
   background-color: #ede9fe;
-  color: #7c3aed;
+  color: #F97316;
   border-radius: 4px;
   padding: 0 4px;
   font-weight: 500;
@@ -326,7 +326,7 @@ defineExpose({ focus, handleSend })
   height: 1rem;
   border-radius: 0.25rem;
   border: 1px solid #d1d5db;
-  accent-color: #7c3aed;
+  accent-color: #F97316;
 }
 
 .tiptap-chat-editor ul[data-type="taskList"] li[data-checked="true"] > div {

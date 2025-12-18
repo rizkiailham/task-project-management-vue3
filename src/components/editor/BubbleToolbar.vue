@@ -64,7 +64,7 @@ const blockTypeLabel = computed(() => {
 // Background colors with labels
 const bgColors = [
   { name: 'default', value: null, label: t('editor.bubble.bgDefault'), color: 'transparent' },
-  { name: 'purple', value: '#7c3aed', label: t('editor.bubble.bgPurple'), color: '#7c3aed' },
+  { name: 'purple', value: '#F97316', label: t('editor.bubble.bgPurple'), color: '#F97316' },
   { name: 'red', value: '#dc2626', label: t('editor.bubble.bgRed'), color: '#dc2626' },
   { name: 'yellow', value: '#ca8a04', label: t('editor.bubble.bgYellow'), color: '#ca8a04' },
   { name: 'blue', value: '#2563eb', label: t('editor.bubble.bgBlue'), color: '#2563eb' },
