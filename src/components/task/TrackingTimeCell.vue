@@ -25,9 +25,11 @@ function formatDurationCompact(seconds) {
   const s = Math.max(0, Math.floor(seconds || 0))
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  if (h === 0 && m === 0) return `${ss}s`
   if (h > 0 && m === 0) return `${h}h`
-  if (h > 0) return `${h}h ${m}m`
-  return `${m}m`
+  if (h > 0) return ss ? `${h}h ${m}m ${ss}s` : `${h}h ${m}m`
+  return ss ? `${m}m ${ss}s` : `${m}m`
 }
 
 function safeJsonParse(raw, fallback) {
@@ -78,7 +80,13 @@ function load() {
   if (!taskId.value) return
   const parsed = safeJsonParse(localStorage.getItem(storageKey()) || 'null', null)
   if (!parsed) return
-  totalSeconds.value = Number(parsed.totalSeconds) || 0
+  // Migration: older versions double-counted by both storing `totalSeconds` and adding entries on stop.
+  // If we already have entries, treat `totalSeconds` as legacy and clear it once.
+  if (Array.isArray(parsed.entries) && parsed.entries.length > 0 && !parsed.migratedV2) {
+    totalSeconds.value = 0
+  } else {
+    totalSeconds.value = Number(parsed.totalSeconds) || 0
+  }
   running.value = Boolean(parsed.running)
   startedAtMs.value = parsed.startedAtMs ?? null
   baseSessionSeconds.value = Number(parsed.baseSessionSeconds) || 0
@@ -97,6 +105,7 @@ function save() {
     sessionUserId: sessionUserId.value,
     sessionStartIso: sessionStartIso.value,
     entries: entries.value,
+    migratedV2: true,
     assignee: assigneeName.value
   }
   try {
@@ -113,7 +122,8 @@ function currentSessionSeconds() {
 }
 
 const liveSessionSeconds = ref(0)
-const liveTotalSeconds = computed(() => totalSeconds.value + liveSessionSeconds.value)
+const totalEntriesSeconds = computed(() => entries.value.reduce((acc, e) => acc + durationSeconds(e), 0))
+const liveTotalSeconds = computed(() => totalSeconds.value + totalEntriesSeconds.value + (running.value ? liveSessionSeconds.value : 0))
 
 const defaultUsers = [
   { id: 'u1', name: 'Erik Olsvik' },
@@ -183,7 +193,33 @@ function toDateTime(dateISO, minutes) {
   return d
 }
 
+function entryIsoToDates(entry) {
+  if (!entry) return { startDt: null, endDt: null }
+  const startDt = entry.startIso ? new Date(entry.startIso) : null
+  const endDt = entry.endIso ? new Date(entry.endIso) : null
+  return {
+    startDt: startDt && !Number.isNaN(startDt.getTime()) ? startDt : null,
+    endDt: endDt && !Number.isNaN(endDt.getTime()) ? endDt : null
+  }
+}
+
+function syncEntryIsoFromParts(entry) {
+  if (!entry) return
+  const startMinutes = minutesFromParts(entry.start)
+  const endMinutes = minutesFromParts(entry.end)
+  const startDt = toDateTime(entry.date, startMinutes)
+  const endDt = toDateTime(entry.date, endMinutes)
+  if (!startDt || !endDt) return
+  entry.startIso = startDt.toISOString()
+  entry.endIso = endDt.toISOString()
+}
+
 function durationSeconds(entry) {
+  const { startDt: startIsoDt, endDt: endIsoDt } = entryIsoToDates(entry)
+  if (startIsoDt && endIsoDt) {
+    const diff = (endIsoDt.getTime() - startIsoDt.getTime()) / 1000
+    return Math.max(0, diff)
+  }
   const startMinutes = minutesFromParts(entry.start)
   const endMinutes = minutesFromParts(entry.end)
   const startDt = toDateTime(entry.date, startMinutes)
@@ -194,6 +230,17 @@ function durationSeconds(entry) {
 }
 
 function ensureValid(entry) {
+  const { startDt: startIsoDt, endDt: endIsoDt } = entryIsoToDates(entry)
+  if (startIsoDt && endIsoDt) {
+    if (endIsoDt <= startIsoDt) {
+      const next = new Date(startIsoDt)
+      next.setSeconds(next.getSeconds() + 1)
+      entry.endIso = next.toISOString()
+      entry.end = partsFromDate(next)
+    }
+    return
+  }
+
   const startMinutes = minutesFromParts(entry.start)
   const endMinutes = minutesFromParts(entry.end)
   const startDt = toDateTime(entry.date, startMinutes)
@@ -201,26 +248,42 @@ function ensureValid(entry) {
   if (!startDt || !endDt) return
   if (endDt <= startDt) {
     endDt = new Date(startDt)
-    endDt.setMinutes(endDt.getMinutes() + 1)
+    endDt.setSeconds(endDt.getSeconds() + 1)
     entry.end = partsFromDate(endDt)
   }
+  syncEntryIsoFromParts(entry)
 }
 
 const totalsByUser = computed(() => {
   const totals = new Map()
   for (const u of users.value) totals.set(u.id, 0)
   for (const e of entries.value) totals.set(e.userId, (totals.get(e.userId) || 0) + durationSeconds(e))
-  // Add accumulated totalSeconds into the assignee bucket for the simple 1-user view
+  // Legacy totals (pre-entry model) live on the assignee.
   totals.set(assigneeUserId.value, (totals.get(assigneeUserId.value) || 0) + totalSeconds.value)
+  // Live running session belongs to the user that started the timer.
+  if (running.value) {
+    const uid = sessionUserId.value || assigneeUserId.value
+    totals.set(uid, (totals.get(uid) || 0) + liveSessionSeconds.value)
+  }
   return totals
 })
 
 const visibleUsers = computed(() => {
-  const id = assigneeUserId.value
-  const u = users.value.find((x) => x.id === id) || { id, name: assigneeName.value }
-  const total = totalsByUser.value.get(id) || 0
-  const show = running.value || totalSeconds.value > 0 || entries.value.some((e) => e.userId === id)
-  return show ? [{ ...u, total }] : []
+  const ids = new Set()
+  ids.add(assigneeUserId.value)
+  for (const e of entries.value) ids.add(e.userId)
+  if (running.value) ids.add(sessionUserId.value || assigneeUserId.value)
+
+  const list = []
+  for (const id of ids) {
+    const u = users.value.find((x) => x.id === id) || { id, name: id === assigneeUserId.value ? assigneeName.value : String(id) }
+    const total = totalsByUser.value.get(id) || 0
+    const hasEntries = entries.value.some((e) => e.userId === id)
+    if (total > 0 || hasEntries || (running.value && (sessionUserId.value || assigneeUserId.value) === id)) list.push({ ...u, total })
+  }
+
+  list.sort((a, b) => (b.total || 0) - (a.total || 0))
+  return list
 })
 
 function tick() {
@@ -319,7 +382,6 @@ function stop() {
   if (!running.value) return
   const session = currentSessionSeconds()
   const sessionSeconds = Math.max(0, Math.floor(session))
-  totalSeconds.value += sessionSeconds
   // Create an entry from the last run
   const startDate = sessionStartIso.value ? new Date(sessionStartIso.value) : new Date(Date.now() - sessionSeconds * 1000)
   const endDate = new Date()
@@ -329,7 +391,9 @@ function stop() {
     userId: sessionUserId.value || assigneeUserId.value,
     date: dateISO,
     start: partsFromDate(startDate),
-    end: partsFromDate(endDate)
+    end: partsFromDate(endDate),
+    startIso: startDate.toISOString(),
+    endIso: endDate.toISOString()
   }
   ensureValid(entry)
   entries.value.unshift(entry)
@@ -357,7 +421,9 @@ function selectUserForEntry(user) {
     userId: user.id,
     date: toDateInputValue(now),
     start: partsFromDate(start),
-    end: partsFromDate(now)
+    end: partsFromDate(now),
+    startIso: start.toISOString(),
+    endIso: now.toISOString()
   }
   ensureValid(entry)
   entries.value.unshift(entry)
@@ -398,6 +464,7 @@ function applyEditingDate() {
   if (!entry || !editingDateValue.value) return
   entry.date = toDateInputValue(editingDateValue.value)
   ensureValid(entry)
+  syncEntryIsoFromParts(entry)
   save()
   closeEntryEditor()
 }
@@ -408,6 +475,7 @@ function setTimePart(kind, part, value) {
   if (!entry[kind]) return
   entry[kind][part] = value
   ensureValid(entry)
+  syncEntryIsoFromParts(entry)
   save()
 }
 
