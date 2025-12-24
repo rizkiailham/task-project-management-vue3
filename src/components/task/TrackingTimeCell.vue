@@ -1,7 +1,8 @@
 ﻿<script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Avatar from 'primevue/avatar'
-import DatePicker from 'primevue/datepicker'
+import { DatePicker as VDatePicker } from 'v-calendar'
+import 'v-calendar/style.css'
 
 const props = defineProps({
   params: { type: Object, required: true }
@@ -66,6 +67,7 @@ const editingKind = ref(null) // 'date' | 'start' | 'end'
 const editingDateValue = ref(null)
 const editorStyle = ref({})
 const editorRef = ref(null)
+const datePickerRef = ref(null)
 const activeTimePicker = ref(null) // { entryId, kind: 'start'|'end', field: 'hour'|'minute'|'ampm' }
 const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1)
 const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
@@ -124,6 +126,7 @@ function currentSessionSeconds() {
 const liveSessionSeconds = ref(0)
 const totalEntriesSeconds = computed(() => entries.value.reduce((acc, e) => acc + durationSeconds(e), 0))
 const liveTotalSeconds = computed(() => totalSeconds.value + totalEntriesSeconds.value + (running.value ? liveSessionSeconds.value : 0))
+const hasTrackingTime = computed(() => liveTotalSeconds.value > 0)
 
 const defaultUsers = [
   { id: 'u1', name: 'Erik Olsvik' },
@@ -271,7 +274,7 @@ const totalsByUser = computed(() => {
 const visibleUsers = computed(() => {
   const ids = new Set()
   ids.add(assigneeUserId.value)
-  for (const e of entries.value) ids.add(e.userId)
+  for (const e of [...entries.value].reverse()) ids.add(e.userId)
   if (running.value) ids.add(sessionUserId.value || assigneeUserId.value)
 
   const list = []
@@ -282,7 +285,6 @@ const visibleUsers = computed(() => {
     if (total > 0 || hasEntries || (running.value && (sessionUserId.value || assigneeUserId.value) === id)) list.push({ ...u, total })
   }
 
-  list.sort((a, b) => (b.total || 0) - (a.total || 0))
   return list
 })
 
@@ -446,7 +448,7 @@ function openEntryEditor(entryId, kind, anchorEl) {
   if (kind === 'date') {
     const entry = entries.value.find((e) => e.id === entryId)
     editingDateValue.value = entry?.date ? new Date(entry.date) : new Date()
-    if (anchorEl) updateInlineEditorPosition(anchorEl, 360)
+    if (anchorEl) updateInlineEditorPosition(anchorEl, 340)
   }
 }
 
@@ -459,14 +461,25 @@ function closeEntryEditor() {
 
 const editingEntry = computed(() => entries.value.find((e) => e.id === editingEntryId.value) || null)
 
-function applyEditingDate() {
+function commitEditingDate({ close = true } = {}) {
   const entry = editingEntry.value
   if (!entry || !editingDateValue.value) return
   entry.date = toDateInputValue(editingDateValue.value)
   ensureValid(entry)
   syncEntryIsoFromParts(entry)
   save()
-  closeEntryEditor()
+  if (close) closeEntryEditor()
+}
+
+function selectToday() {
+  editingDateValue.value = new Date()
+  commitEditingDate({ close: false })
+}
+
+function moveEditingMonth(delta) {
+  const picker = datePickerRef.value
+  if (!picker?.moveBy) return
+  picker.moveBy(delta)
 }
 
 function setTimePart(kind, part, value) {
@@ -566,15 +579,19 @@ if (running.value) startTicking()
 </script>
 
 <template>
-  <div class="relative flex items-center justify-center">
+  <div class="relative flex items-center justify-start pt-1">
     <button
       type="button"
       ref="buttonRef"
-      class="w-7 h-7 rounded-full flex items-center justify-center border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+      class="rounded-full flex items-center justify-center border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+      :class="hasTrackingTime ? 'px-2 h-7 min-w-[3.5rem]' : 'w-7 h-7'"
       title="Tracking time"
       @click.stop="toggleOpen"
     >
-      <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <span v-if="hasTrackingTime" class="text-xs font-medium text-gray-600 tabular-nums">
+        {{ formatHMS(liveTotalSeconds) }}
+      </span>
+      <svg v-else class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M12 6v6l4 2"></path>
       </svg>
@@ -796,15 +813,20 @@ if (running.value) startTicking()
       <div
         v-if="isOpen && editingEntryId && editingKind === 'date' && editingEntry"
         ref="editorRef"
-        class="fixed z-[10002] rounded-xl border border-gray-200 bg-white shadow-xl p-3"
+        class="fixed z-[10002] bg-transparent"
         :style="editorStyle"
       >
-        <DatePicker
+        <VDatePicker
+          ref="datePickerRef"
           v-model="editingDateValue"
-          inline
+          is-inline
+          :first-day-of-week="2"
+          title-position="left"
+          :masks="{ title: 'MMM YYYY' }"
           class="w-full desidia-inline-datepicker"
-          @update:modelValue="applyEditingDate"
-        />
+          @update:modelValue="commitEditingDate()"
+        >
+        </VDatePicker>
       </div>
     </Teleport>
 
@@ -834,7 +856,87 @@ if (running.value) startTicking()
 </template>
 
 <style scoped>
-:deep(.desidia-inline-datepicker .p-datepicker) {
+:deep(.desidia-inline-datepicker .vc-container) {
   width: 340px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+:deep(.desidia-inline-datepicker .vc-prev),
+:deep(.desidia-inline-datepicker .vc-next) {
+  display: none;
+}
+
+:deep(.desidia-inline-datepicker .vc-title) {
+  width: 100%;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+:deep(.desidia-inline-datepicker .vc-weekday) {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+:deep(.desidia-inline-datepicker .vc-day-content) {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+  color: #111827;
+}
+
+:deep(.desidia-inline-datepicker .vc-day.is-not-in-month .vc-day-content) {
+  color: #cbd5e1;
+}
+
+:deep(.desidia-inline-datepicker .vc-day.is-today .vc-day-content) {
+  font-weight: 600;
+}
+
+:deep(.desidia-inline-datepicker .vc-day.is-selected .vc-day-content) {
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 8px;
+}
+
+.desidia-calendar-titlebar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.desidia-calendar-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.desidia-calendar-today {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.desidia-calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #6b7280;
+  border-radius: 6px;
+}
+
+.desidia-calendar-nav svg {
+  width: 14px;
+  height: 14px;
 }
 </style>

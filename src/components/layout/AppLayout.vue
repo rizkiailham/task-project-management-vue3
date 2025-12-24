@@ -86,7 +86,8 @@ watch(
 
     <!-- Topbar - Fixed at top, spans from left sidebar to right edge -->
     <Topbar
-      class="fixed top-0 z-50 transition-all duration-300"
+      class="fixed top-0 z-50"
+      :class="uiStore.isResizingSidebar ? 'transition-none' : 'transition-all duration-300'"
       :style="{
         left: uiStore.isMobile ? '0' : uiStore.sidebarWidth,
         right: '0'
@@ -95,14 +96,17 @@ watch(
 
     <!-- Main Content Area - Below topbar, between sidebars -->
     <main
-      class="fixed overflow-auto bg-white transition-all duration-300"
+      class="fixed overflow-auto bg-white"
+      :class="[
+        uiStore.isResizingSidebar ? 'transition-none' : 'transition-all duration-300',
+        { 'select-none': uiStore.isResizingSidebar || aiChatStore.isResizingChatSidebar || uiStore.isResizingTaskDetailSidebar }
+      ]"
       :style="{
         top: '56px',
         left: uiStore.isMobile ? '0' : uiStore.sidebarWidth,
         right: `${totalRightSidebarsWidth}px`,
         bottom: '0'
       }"
-      :class="{ 'select-none': uiStore.isResizingSidebar || aiChatStore.isResizingChatSidebar || uiStore.isResizingTaskDetailSidebar }"
     >
       <RouterView v-slot="{ Component }">
         <Transition name="fade" mode="out-in">

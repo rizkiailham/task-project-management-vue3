@@ -253,7 +253,8 @@ const editor = useEditor({
 	    }),
 	    AiSuggestionWrapper,
 	    Placeholder.configure({
-	      placeholder: props.placeholder || t('editor.placeholder')
+	      placeholder: props.placeholder || t('editor.placeholder'),
+        showOnlyWhenEditable: false
 	    }),
     TaskList,
     TaskItem.configure({ nested: true }),
@@ -587,15 +588,27 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 /* AI suggestion wrapper (used by TaskDetailSidebar slash recommendations) */
 .notion-editor div[data-ai-suggestion="true"] {
   position: relative;
+  z-index: 0;
   border-radius: 0.75rem;
-  border: 1px solid var(--color-primary-400);
-  /* More visible orange tint */
-  background-color: rgba(249, 115, 22, 0.14); /* primary-500 @ 14% */
-  padding: 0.75rem;
   font-style: normal;
   color: var(--color-primary-800);
-  margin: 0.75rem 0;
-  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.08);
+  margin: 0.5rem 0;
+  padding: 0.5rem 0;
+}
+
+.notion-editor div[data-ai-suggestion="true"]::before {
+  content: '';
+  position: absolute;
+  /* Extend into the editor padding so text alignment stays identical to non-AI content */
+  top: 0;
+  bottom: 0;
+  left: -0.75rem; /* matches .notion-editor px-3 */
+  right: -0.75rem;
+  border-radius: 0.75rem;
+  background-color: rgba(249, 115, 22, 0.14); /* primary-500 @ 14% */
+  box-shadow: inset 0 0 0 1px var(--color-primary-400), inset 0 0 0 2px rgba(249, 115, 22, 0.08);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .notion-editor div[data-ai-suggestion="true"] h1,
@@ -608,21 +621,6 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 
 .notion-editor div[data-ai-suggestion="true"] a {
   text-decoration: underline;
-}
-
-.notion-editor div[data-ai-suggestion="true"]::before {
-  content: 'AI';
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--color-primary-700);
-  background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid var(--color-primary-200);
-  padding: 0.125rem 0.375rem;
-  border-radius: 999px;
 }
 
 /* Tippy themes */
