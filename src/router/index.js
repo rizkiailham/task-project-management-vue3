@@ -90,6 +90,15 @@ const routes = [
           title: 'Inbox'
         }
       },
+      // Users route
+      {
+        path: 'users',
+        name: 'Users',
+        component: () => import('@/modules/user/views/UsersView.vue'),
+        meta: {
+          title: 'Users'
+        }
+      },
       // Workspace routes
       {
         path: 'workspaces/:workspaceId',

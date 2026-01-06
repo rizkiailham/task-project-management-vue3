@@ -514,7 +514,7 @@ async function handleLogout() {
               <button
                 type="button"
                 class="w-full flex items-center gap-2.5 py-2 rounded-md text-sm text-gray-900 hover:bg-white/70 transition-colors"
-                @click="notify('Users')"
+                @click="router.push({ name: 'Users' })"
               >
                 <svg class="w-[18px] h-[18px] opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>

@@ -516,6 +516,9 @@ const gridOptions = ref({
   defaultColDef,
   animateRows: true,
   theme: myTheme,
+  pagination: true,
+  paginationPageSize: 50,
+  paginationPageSizeSelector: [50, 100, 500, 1000],
   context: {
     addSubtask,
     updateTitle,
@@ -622,6 +625,9 @@ function onGridReady(params) {
       :defaultColDef="defaultColDef"
       :animateRows="true"
       :rowHeight="36"
+      :pagination="true"
+      :paginationPageSize="50"
+      :paginationPageSizeSelector="[50, 100, 500, 1000]"
       domLayout="autoHeight"
       @row-clicked="gridOptions.onRowClicked"
       @grid-ready="onGridReady"

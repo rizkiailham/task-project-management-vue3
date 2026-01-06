@@ -8,6 +8,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTaskStore, useUIStore, useWorkspaceStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
+import ColorPicker from '@/components/ui/ColorPicker.vue'
 
 // PrimeVue
 import Button from 'primevue/button'
@@ -110,6 +111,9 @@ const nestedTreeTasks = addIdsToTree([
 ])
 
 const treeTasks = ref([...nestedTreeTasks])
+const baseTreeSnapshot = () => (typeof structuredClone === 'function' ? structuredClone(nestedTreeTasks) : JSON.parse(JSON.stringify(nestedTreeTasks)))
+const statusPool = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.IN_REVIEW, TaskStatus.DONE, TaskStatus.BLOCKED]
+const priorityPool = [TaskPriority.URGENT, TaskPriority.HIGH, TaskPriority.MEDIUM, TaskPriority.LOW]
 const sampleTitles = [
   'Draft roadmap spike',
   'Write integration tests',
@@ -118,6 +122,18 @@ const sampleTitles = [
   'Document API contracts'
 ]
 const sampleTags = [['Product'], ['Engineering'], ['Design'], ['Product', 'Engineering'], []]
+const stressSeed = [
+  'Review cross-team dependencies and update timelines',
+  'Investigate memory overhead for large datasets in grid view',
+  'Prepare rollout notes for the next release',
+  'Coordinate with QA on regression checks',
+  'Follow up on feedback from stakeholders'
+]
+const stressWords = [
+  'dashboard', 'payload', 'pipeline', 'telemetry', 'render', 'virtualize',
+  'cache', 'snapshot', 'profiling', 'latency', 'throughput', 'bandwidth',
+  'handoff', 'milestone', 'deliverable', 'backlog', 'refactor', 'baseline'
+]
 const rootCounter = ref(0)
 function randomPick(list) {
   return list[Math.floor(Math.random() * list.length)]
@@ -127,6 +143,41 @@ function randomDueDate() {
   const d = new Date()
   d.setDate(d.getDate() + dayOffset)
   return d.toISOString().slice(0, 10)
+}
+
+function randomSentence(wordCount = 8) {
+  const words = []
+  for (let i = 0; i < wordCount; i += 1) words.push(randomPick(stressWords))
+  return words.join(' ')
+}
+
+function buildStressTasks(count) {
+  const tasks = []
+  for (let i = 0; i < count; i += 1) {
+    const id = `stress-${i}-${Math.random().toString(36).slice(2, 8)}`
+    tasks.push({
+      id,
+      title: `${randomPick(sampleTitles)} #${i + 1}`,
+      description: `${randomPick(stressSeed)}. ${randomSentence(12)}.`,
+      projectName: `Stress Project ${1 + (i % 12)}`,
+      status: randomPick(statusPool),
+      priority: randomPick(priorityPool),
+      assignee: `User ${1 + (i % 50)}`,
+      tags: randomPick(sampleTags),
+      dueDate: randomDueDate(),
+      children: [],
+      isNew: false
+    })
+  }
+  return tasks
+}
+
+function generateStressData() {
+  treeTasks.value = buildStressTasks(1000)
+}
+
+function resetStressData() {
+  treeTasks.value = baseTreeSnapshot()
 }
 
 const placeholderTasks = [
@@ -407,7 +458,11 @@ function formatDate(date) {
     </div>
 
     <div class="mb-3 flex justify-end">
-      <Button label="Add task" icon="pi pi-plus" size="small" @click="addRootTask" />
+      <div class="flex items-center gap-2">
+        <Button label="Add task" icon="pi pi-plus" size="small" @click="addRootTask" />
+        <Button label="Generate 1k" icon="pi pi-bolt" size="small" severity="secondary" @click="generateStressData" />
+        <Button label="Reset data" icon="pi pi-refresh" size="small" severity="secondary" @click="resetStressData" />
+      </div>
     </div>
 
     <div class="mb-8">
@@ -437,7 +492,7 @@ function formatDate(date) {
       />
     </div>
 
-
+  <ColorPicker />
   </div>
 </template>
 

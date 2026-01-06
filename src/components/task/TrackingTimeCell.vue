@@ -326,14 +326,30 @@ function updatePopoverPosition() {
 }
 
 function updateAddEntryMenuPosition() {
+  const panel = panelRef.value
   const btn = addEntryButtonRef.value
-  if (!btn) return
-  const rect = btn.getBoundingClientRect()
+  if (!panel || !btn) return
+  
+  const panelRect = panel.getBoundingClientRect()
+  const btnRect = btn.getBoundingClientRect()
   const width = 260
-  const gap = 6
+  const gap = 0
   const viewportWidth = window.innerWidth || document.documentElement.clientWidth
-  const left = Math.max(8, Math.min(viewportWidth - width - 8, rect.right - width + 18))
-  const top = rect.top - gap
+  
+  // Position to the right of the panel
+  let left = panelRect.right + gap
+  
+  // If not enough space on the right, position to the left
+  if (left + width > viewportWidth - 8) {
+    left = panelRect.left - width - gap
+  }
+  
+  // Ensure it doesn't go off screen
+  left = Math.max(8, Math.min(viewportWidth - width - 8, left))
+  
+  // Align with the button vertically
+  const top = btnRect.top
+  
   addEntryMenuStyle.value = { left: `${left}px`, top: `${top}px`, width: `${width}px` }
 }
 
@@ -642,16 +658,16 @@ if (running.value) startTicking()
         class="border-b border-gray-100"
       >
         <div
-          class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50"
+          class="flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-gray-50"
           @mouseenter="hoveredUserId = user.id"
           @mouseleave="hoveredUserId = null"
           @click="toggleUserExpanded(user.id)"
         >
           <div class="flex items-center gap-2 min-w-0">
-            <div class="w-[22px] h-[22px] flex items-center justify-center">
+            <div class="w-[18px] h-[18px] flex items-center justify-center">
               <svg
                 v-if="hoveredUserId === user.id"
-                class="w-4 h-4 text-gray-400"
+                class="w-3.5 h-3.5 text-gray-400"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -666,12 +682,12 @@ if (running.value) startTicking()
                 shape="circle"
                 size="small"
                 class="bg-orange-100 text-orange-700"
-                style="width: 22px; height: 22px; font-size: 10px;"
+                style="width: 18px; height: 18px; font-size: 9px;"
               />
             </div>
-            <span class="text-sm text-gray-700 truncate">{{ user.name }}</span>
+            <span class="text-xs text-gray-700 truncate">{{ user.name }}</span>
           </div>
-          <span class="text-sm text-gray-500 tabular-nums">{{ formatHMS(user.total) }}</span>
+          <span class="text-xs text-gray-500 tabular-nums">{{ formatHMS(user.total) }}</span>
         </div>
 
         <div v-if="expandedUserId === user.id" class="bg-gray-50">
@@ -797,13 +813,13 @@ if (running.value) startTicking()
             v-for="u in users"
             :key="u.id"
             type="button"
-            class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
             @click="selectUserForEntry(u)"
           >
-            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-800">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] font-semibold text-gray-800">
               {{ u.name.charAt(0).toUpperCase() }}
             </span>
-            <span class="truncate">{{ u.name }}</span>
+            <span class="truncate text-xs">{{ u.name }}</span>
           </button>
         </div>
       </div>
