@@ -26,16 +26,6 @@ const routes = [
     }
   },
   {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/modules/auth/views/RegisterView.vue'),
-    meta: {
-      requiresAuth: false,
-      layout: 'auth',
-      title: 'Create Account'
-    }
-  },
-  {
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: () => import('@/modules/auth/views/ForgotPasswordView.vue'),
@@ -88,6 +78,15 @@ const routes = [
         component: () => import('@/modules/notification/views/InboxView.vue'),
         meta: {
           title: 'Inbox'
+        }
+      },
+      // Users route
+      {
+        path: 'users',
+        name: 'Users',
+        component: () => import('@/modules/user/views/UsersView.vue'),
+        meta: {
+          title: 'Users'
         }
       },
       // Workspace routes
@@ -242,12 +241,14 @@ router.beforeEach(async (to, from, next) => {
   // Check if route requires authentication
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)
 
-  if (requiresAuth && !authStore.isAuthenticated) {
-    // Redirect to login with return URL
-    return next({
-      name: 'Login',
-      query: { redirect: to.fullPath }
-    })
+  if (requiresAuth) {
+    const hasSession = await authStore.ensureSession()
+    if (!hasSession) {
+      return next({
+        name: 'Login',
+        query: { redirect: to.fullPath }
+      })
+    }
   }
 
   // If authenticated and trying to access auth pages, redirect to app

@@ -39,7 +39,11 @@ const { value: confirmPassword, errorMessage: confirmPasswordError } = useField(
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
-    await authStore.changePassword(values.currentPassword, values.newPassword)
+    await authStore.changePassword({
+      currentPassword: values.currentPassword,
+      newPassword: values.newPassword,
+      confirmPassword: values.confirmPassword
+    })
     uiStore.showSuccess('Password changed successfully')
     resetForm()
   } catch (error) {
@@ -132,4 +136,3 @@ const onSubmit = handleSubmit(async (values) => {
     </div>
   </div>
 </template>
-

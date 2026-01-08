@@ -295,6 +295,15 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   /**
+   * Update task description
+   * @param {string} taskId
+   * @param {string} description - HTML content from NotionEditor
+   */
+  async function updateTaskDescription(taskId, description) {
+    return updateTask(taskId, { description })
+  }
+
+  /**
    * Reorder tasks (for drag & drop)
    * @param {string} taskId
    * @param {string} targetStatus
@@ -484,6 +493,19 @@ export const useTaskStore = defineStore('task', () => {
     return tasks.value.find(t => t.id === taskId)
   }
 
+  function setCurrentTask(task) {
+    currentTask.value = task
+    // Reset related data when setting a new task
+    subtasks.value = task?.children?.map((child, index) => ({
+      id: child.id || `subtask-${index}`,
+      title: child.title,
+      isCompleted: child.status === 'Done' || child.status === 'done',
+      assignee: child.assignee ? { name: child.assignee } : null
+    })) || []
+    comments.value = []
+    activityLog.value = []
+  }
+
   function clearCurrentTask() {
     currentTask.value = null
     subtasks.value = []
@@ -536,6 +558,7 @@ export const useTaskStore = defineStore('task', () => {
     deleteTask,
     changeTaskStatus,
     changeTaskAssignee,
+    updateTaskDescription,
     reorderTask,
     fetchMyTasks,
 
@@ -560,6 +583,7 @@ export const useTaskStore = defineStore('task', () => {
 
     // Utility Actions
     getTask,
+    setCurrentTask,
     clearCurrentTask,
     clearState
   }

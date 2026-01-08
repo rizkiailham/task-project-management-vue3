@@ -58,6 +58,7 @@ const emit = defineEmits(['open', 'close', 'select'])
 const isOpen = ref(false)
 const triggerRef = ref(null)
 const menuRef = ref(null)
+const instanceId = `dropdown-${Math.random().toString(36).slice(2, 9)}`
 
 function toggle() {
   isOpen.value = !isOpen.value
@@ -108,9 +109,16 @@ function handleEscape(event) {
   }
 }
 
+function handlePeerOpen(event) {
+  if (event.detail !== instanceId) {
+    close()
+  }
+}
+
 watch(isOpen, (newVal) => {
   if (newVal) {
     emit('open')
+    window.dispatchEvent(new CustomEvent('dropdown-open', { detail: instanceId }))
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
   } else {
@@ -121,8 +129,13 @@ watch(isOpen, (newVal) => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('dropdown-open', handlePeerOpen)
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleEscape)
+})
+
+onMounted(() => {
+  window.addEventListener('dropdown-open', handlePeerOpen)
 })
 
 // Expose methods for parent component
@@ -171,18 +184,20 @@ defineExpose({ open, close, toggle, isOpen })
                   : 'text-gray-700 hover:bg-gray-50'
               ]"
             >
-              <div class="flex items-center gap-3">
-                <!-- Custom Icon Slot or SVG -->
-                <slot :name="`icon-${item.id || index}`" :item="item">
-                  <component 
-                    v-if="item.icon" 
-                    :is="item.icon" 
-                    class="w-4 h-4 text-gray-500"
-                  />
-                </slot>
-                <span>{{ item.label }}</span>
-              </div>
-              <span v-if="item.shortcut" class="text-xs text-gray-400">{{ item.shortcut }}</span>
+              <slot name="item" :item="item" :index="index">
+                <div class="flex items-center gap-3">
+                  <!-- Custom Icon Slot or SVG -->
+                  <slot :name="`icon-${item.id || index}`" :item="item">
+                    <component 
+                      v-if="item.icon" 
+                      :is="item.icon" 
+                      class="w-4 h-4 text-gray-500"
+                    />
+                  </slot>
+                  <span>{{ item.label }}</span>
+                </div>
+                <span v-if="item.shortcut" class="text-xs text-gray-400">{{ item.shortcut }}</span>
+              </slot>
             </button>
           </template>
           
@@ -213,4 +228,3 @@ defineExpose({ open, close, toggle, isOpen })
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 </style>
-

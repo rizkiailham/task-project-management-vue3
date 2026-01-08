@@ -24,7 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
   // ================================
   // Getters
   // ================================
-  const isAuthenticated = computed(() => !!accessToken.value && !!user.value)
+  const isAuthenticated = computed(() => !!accessToken.value)
 
   const userName = computed(() => user.value?.name || '')
 
@@ -49,6 +49,50 @@ export const useAuthStore = defineStore('auth', () => {
     user.value?.role === UserRole.OWNER || user.value?.role === UserRole.ADMIN
   )
 
+  // Normalize API user payload to app user model
+  function normalizeUser(apiUser = {}) {
+    const firstName = apiUser.firstName || ''
+    const lastName = apiUser.lastName || ''
+    const nameFromParts = [firstName, lastName].filter(Boolean).join(' ').trim()
+    const name = apiUser.name || nameFromParts || apiUser.email || ''
+    const roleName = apiUser.role?.name || apiUser.role || UserRole.MEMBER
+
+    const normalized = createUser({
+      id: apiUser.id,
+      email: apiUser.email,
+      name,
+      avatar: apiUser.avatar ?? null,
+      role: roleName,
+      createdAt: apiUser.createdAt,
+      updatedAt: apiUser.updatedAt
+    })
+
+    normalized.firstName = firstName
+    normalized.lastName = lastName
+    normalized.roleDetail = apiUser.role || null
+    normalized.isActive = apiUser.isActive
+
+    return normalized
+  }
+
+  function decodeJwtPayload(token) {
+    try {
+      const [, payload] = token.split('.')
+      if (!payload) return null
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+      const json = atob(normalized)
+      return JSON.parse(json)
+    } catch {
+      return null
+    }
+  }
+
+  function isTokenExpired(token) {
+    const payload = decodeJwtPayload(token)
+    if (!payload?.exp) return false
+    return Date.now() >= payload.exp * 1000
+  }
+
   // ================================
   // Actions
   // ================================
@@ -65,6 +109,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       if (accessToken.value) {
+        if (isTokenExpired(accessToken.value)) {
+          await logout()
+          return
+        }
+
         setAuthToken(accessToken.value)
 
         // Development mode: Restore user from localStorage if dev token
@@ -87,7 +136,7 @@ export const useAuthStore = defineStore('auth', () => {
         } else {
           // Production: Fetch user from API
           const userData = await authApi.getCurrentUser()
-          user.value = createUser(userData)
+          user.value = normalizeUser(userData)
         }
       }
     } catch (err) {
@@ -113,8 +162,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       let response
 
-      // Development mode: Allow dummy login
-      if (import.meta.env.DEV) {
+      // Development mode: Allow dummy login only when explicitly enabled
+      const allowDummyAuth = import.meta.env.VITE_ALLOW_DUMMY_AUTH === 'true'
+      if (import.meta.env.DEV && allowDummyAuth) {
         // Check for dummy credentials
         const isDummyLogin = credentials.email === 'demo@desidia.app' && credentials.password === 'demo1234'
         const isAnyLogin = credentials.email && credentials.password && credentials.password.length >= 8
@@ -146,13 +196,23 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       accessToken.value = response.accessToken
-      refreshToken.value = response.refreshToken
-      user.value = createUser(response.user)
+      refreshToken.value = response.refreshToken || null
 
-      // Store tokens
+      // Store tokens and set auth header before fetching profile
       localStorage.setItem('accessToken', response.accessToken)
-      localStorage.setItem('refreshToken', response.refreshToken)
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken)
+      } else {
+        localStorage.removeItem('refreshToken')
+      }
       setAuthToken(response.accessToken)
+
+      if (response.user) {
+        user.value = normalizeUser(response.user)
+      } else {
+        const userData = await authApi.getCurrentUser()
+        user.value = normalizeUser(userData)
+      }
 
       // In dev mode, also save user data for persistence
       if (import.meta.env.DEV) {
@@ -180,8 +240,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       let response
 
-      // Development mode: Allow dummy registration
-      if (import.meta.env.DEV) {
+      // Development mode: Allow dummy registration only when explicitly enabled
+      const allowDummyAuth = import.meta.env.VITE_ALLOW_DUMMY_AUTH === 'true'
+      if (import.meta.env.DEV && allowDummyAuth) {
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500))
 
@@ -255,6 +316,33 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Ensure token is valid and user is loaded
+   * @returns {Promise<boolean>}
+   */
+  async function ensureSession() {
+    if (!accessToken.value) return false
+
+    if (isTokenExpired(accessToken.value)) {
+      await logout()
+      return false
+    }
+
+    setAuthToken(accessToken.value)
+
+    if (!user.value && !import.meta.env.DEV) {
+      try {
+        const userData = await authApi.getCurrentUser()
+        user.value = normalizeUser(userData)
+      } catch {
+        await logout()
+        return false
+      }
+    }
+
+    return true
+  }
+
+  /**
    * Update user profile
    * @param {Object} data
    */
@@ -264,7 +352,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const updatedUser = await authApi.updateProfile(data)
-      user.value = createUser(updatedUser)
+      user.value = normalizeUser(updatedUser)
       return updatedUser
     } catch (err) {
       error.value = err.message || 'Profile update failed'
@@ -416,8 +504,8 @@ export const useAuthStore = defineStore('auth', () => {
     changePassword,
     requestPasswordReset,
     resetPassword,
+    ensureSession,
     hasPermission,
     hasRole
   }
 })
-

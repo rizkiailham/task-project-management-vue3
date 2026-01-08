@@ -1,0 +1,958 @@
+﻿<script setup>
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import Avatar from 'primevue/avatar'
+import { DatePicker as VDatePicker } from 'v-calendar'
+import 'v-calendar/style.css'
+
+const props = defineProps({
+  params: { type: Object, required: true }
+})
+
+const STORAGE_PREFIX = 'desidia:tracking-time:'
+
+function pad2(n) {
+  return String(n).padStart(2, '0')
+}
+
+function formatHMS(seconds) {
+  const s = Math.max(0, Math.floor(seconds || 0))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  return `${h}:${pad2(m)}:${pad2(ss)}`
+}
+
+function formatDurationCompact(seconds) {
+  const s = Math.max(0, Math.floor(seconds || 0))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  if (h === 0 && m === 0) return `${ss}s`
+  if (h > 0 && m === 0) return `${h}h`
+  if (h > 0) return ss ? `${h}h ${m}m ${ss}s` : `${h}h ${m}m`
+  return ss ? `${m}m ${ss}s` : `${m}m`
+}
+
+function safeJsonParse(raw, fallback) {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return fallback
+  }
+}
+
+const taskId = computed(() => props.params?.data?.id || props.params?.data?.pathKey)
+const assigneeName = computed(() => props.params?.data?.assignee || 'Unassigned')
+
+const isOpen = ref(false)
+const buttonRef = ref(null)
+const popoverStyle = ref({})
+const panelRef = ref(null)
+const addEntryButtonRef = ref(null)
+const addEntryMenuRef = ref(null)
+const addEntryMenuStyle = ref({})
+const isAddEntryMenuOpen = ref(false)
+
+const totalSeconds = ref(0)
+const running = ref(false)
+const startedAtMs = ref(null)
+const baseSessionSeconds = ref(0)
+const sessionUserId = ref(null)
+const sessionStartIso = ref(null)
+const entries = ref([])
+const expandedUserId = ref(null)
+const hoveredUserId = ref(null)
+const editingEntryId = ref(null)
+const editingKind = ref(null) // 'date' | 'start' | 'end'
+const editingDateValue = ref(null)
+const editorStyle = ref({})
+const editorRef = ref(null)
+const datePickerRef = ref(null)
+const activeTimePicker = ref(null) // { entryId, kind: 'start'|'end', field: 'hour'|'minute'|'ampm' }
+const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1)
+const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
+
+let intervalId = null
+
+function storageKey() {
+  return `${STORAGE_PREFIX}${taskId.value}`
+}
+
+function load() {
+  if (!taskId.value) return
+  const parsed = safeJsonParse(localStorage.getItem(storageKey()) || 'null', null)
+  if (!parsed) return
+  // Migration: older versions double-counted by both storing `totalSeconds` and adding entries on stop.
+  // If we already have entries, treat `totalSeconds` as legacy and clear it once.
+  if (Array.isArray(parsed.entries) && parsed.entries.length > 0 && !parsed.migratedV2) {
+    totalSeconds.value = 0
+  } else {
+    totalSeconds.value = Number(parsed.totalSeconds) || 0
+  }
+  running.value = Boolean(parsed.running)
+  startedAtMs.value = parsed.startedAtMs ?? null
+  baseSessionSeconds.value = Number(parsed.baseSessionSeconds) || 0
+  sessionUserId.value = parsed.sessionUserId ?? null
+  sessionStartIso.value = parsed.sessionStartIso ?? null
+  entries.value = Array.isArray(parsed.entries) ? parsed.entries : []
+}
+
+function save() {
+  if (!taskId.value) return
+  const payload = {
+    totalSeconds: totalSeconds.value,
+    running: running.value,
+    startedAtMs: startedAtMs.value,
+    baseSessionSeconds: baseSessionSeconds.value,
+    sessionUserId: sessionUserId.value,
+    sessionStartIso: sessionStartIso.value,
+    entries: entries.value,
+    migratedV2: true,
+    assignee: assigneeName.value
+  }
+  try {
+    localStorage.setItem(storageKey(), JSON.stringify(payload))
+  } catch {
+    // ignore
+  }
+}
+
+function currentSessionSeconds() {
+  if (!running.value || !startedAtMs.value) return baseSessionSeconds.value
+  const elapsed = (Date.now() - startedAtMs.value) / 1000
+  return baseSessionSeconds.value + Math.max(0, elapsed)
+}
+
+const liveSessionSeconds = ref(0)
+const totalEntriesSeconds = computed(() => entries.value.reduce((acc, e) => acc + durationSeconds(e), 0))
+const liveTotalSeconds = computed(() => totalSeconds.value + totalEntriesSeconds.value + (running.value ? liveSessionSeconds.value : 0))
+const hasTrackingTime = computed(() => liveTotalSeconds.value > 0)
+
+const defaultUsers = [
+  { id: 'u1', name: 'Erik Olsvik' },
+  { id: 'u2', name: 'Hari W' },
+  { id: 'u3', name: 'studio@lomedia.no' }
+]
+
+const users = computed(() => {
+  const fromGrid = []
+  const raw = props.params?.context?.teamOptions
+  if (Array.isArray(raw)) {
+    for (const u of raw) {
+      if (!u) continue
+      const id = u.id ?? u.value ?? u.name
+      const name = u.name ?? u.label ?? String(u.value ?? '')
+      if (id && name) fromGrid.push({ id, name })
+    }
+  }
+  const merged = [...fromGrid]
+  for (const u of defaultUsers) if (!merged.some((m) => m.id === u.id)) merged.push(u)
+  return merged
+})
+
+const assigneeUserId = computed(() => {
+  const name = assigneeName.value
+  const hit = users.value.find((u) => u.name === name)
+  return hit?.id || (users.value[0]?.id ?? 'u1')
+})
+
+function dateLabelFromIso(iso) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function toDateInputValue(date) {
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
+function partsFromDate(d) {
+  const hour24 = d.getHours()
+  const minute = d.getMinutes()
+  const ampm = hour24 >= 12 ? 'PM' : 'AM'
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12
+  return { hour: hour12, minute, ampm }
+}
+
+function minutesFromParts(parts) {
+  const h = Math.max(1, Math.min(12, Number(parts?.hour) || 12))
+  const m = Math.max(0, Math.min(59, Number(parts?.minute) || 0))
+  const isPm = (parts?.ampm || 'AM') === 'PM'
+  const hour24 = (h % 12) + (isPm ? 12 : 0)
+  return hour24 * 60 + m
+}
+
+function formatTime(parts) {
+  return `${pad2(parts.hour)}:${pad2(parts.minute)} ${parts.ampm}`
+}
+
+function toDateTime(dateISO, minutes) {
+  const [year, month, day] = (dateISO || '').split('-').map(Number)
+  if (!year || !month || !day) return null
+  const d = new Date(year, month - 1, day, 0, 0, 0, 0)
+  d.setMinutes(minutes)
+  return d
+}
+
+function entryIsoToDates(entry) {
+  if (!entry) return { startDt: null, endDt: null }
+  const startDt = entry.startIso ? new Date(entry.startIso) : null
+  const endDt = entry.endIso ? new Date(entry.endIso) : null
+  return {
+    startDt: startDt && !Number.isNaN(startDt.getTime()) ? startDt : null,
+    endDt: endDt && !Number.isNaN(endDt.getTime()) ? endDt : null
+  }
+}
+
+function syncEntryIsoFromParts(entry) {
+  if (!entry) return
+  const startMinutes = minutesFromParts(entry.start)
+  const endMinutes = minutesFromParts(entry.end)
+  const startDt = toDateTime(entry.date, startMinutes)
+  const endDt = toDateTime(entry.date, endMinutes)
+  if (!startDt || !endDt) return
+  entry.startIso = startDt.toISOString()
+  entry.endIso = endDt.toISOString()
+}
+
+function durationSeconds(entry) {
+  const { startDt: startIsoDt, endDt: endIsoDt } = entryIsoToDates(entry)
+  if (startIsoDt && endIsoDt) {
+    const diff = (endIsoDt.getTime() - startIsoDt.getTime()) / 1000
+    return Math.max(0, diff)
+  }
+  const startMinutes = minutesFromParts(entry.start)
+  const endMinutes = minutesFromParts(entry.end)
+  const startDt = toDateTime(entry.date, startMinutes)
+  const endDt = toDateTime(entry.date, endMinutes)
+  if (!startDt || !endDt) return 0
+  const diff = (endDt.getTime() - startDt.getTime()) / 1000
+  return Math.max(0, diff)
+}
+
+function ensureValid(entry) {
+  const { startDt: startIsoDt, endDt: endIsoDt } = entryIsoToDates(entry)
+  if (startIsoDt && endIsoDt) {
+    if (endIsoDt <= startIsoDt) {
+      const next = new Date(startIsoDt)
+      next.setSeconds(next.getSeconds() + 1)
+      entry.endIso = next.toISOString()
+      entry.end = partsFromDate(next)
+    }
+    return
+  }
+
+  const startMinutes = minutesFromParts(entry.start)
+  const endMinutes = minutesFromParts(entry.end)
+  const startDt = toDateTime(entry.date, startMinutes)
+  let endDt = toDateTime(entry.date, endMinutes)
+  if (!startDt || !endDt) return
+  if (endDt <= startDt) {
+    endDt = new Date(startDt)
+    endDt.setSeconds(endDt.getSeconds() + 1)
+    entry.end = partsFromDate(endDt)
+  }
+  syncEntryIsoFromParts(entry)
+}
+
+const totalsByUser = computed(() => {
+  const totals = new Map()
+  for (const u of users.value) totals.set(u.id, 0)
+  for (const e of entries.value) totals.set(e.userId, (totals.get(e.userId) || 0) + durationSeconds(e))
+  // Legacy totals (pre-entry model) live on the assignee.
+  totals.set(assigneeUserId.value, (totals.get(assigneeUserId.value) || 0) + totalSeconds.value)
+  // Live running session belongs to the user that started the timer.
+  if (running.value) {
+    const uid = sessionUserId.value || assigneeUserId.value
+    totals.set(uid, (totals.get(uid) || 0) + liveSessionSeconds.value)
+  }
+  return totals
+})
+
+const visibleUsers = computed(() => {
+  const ids = new Set()
+  ids.add(assigneeUserId.value)
+  for (const e of [...entries.value].reverse()) ids.add(e.userId)
+  if (running.value) ids.add(sessionUserId.value || assigneeUserId.value)
+
+  const list = []
+  for (const id of ids) {
+    const u = users.value.find((x) => x.id === id) || { id, name: id === assigneeUserId.value ? assigneeName.value : String(id) }
+    const total = totalsByUser.value.get(id) || 0
+    const hasEntries = entries.value.some((e) => e.userId === id)
+    if (total > 0 || hasEntries || (running.value && (sessionUserId.value || assigneeUserId.value) === id)) list.push({ ...u, total })
+  }
+
+  return list
+})
+
+function tick() {
+  liveSessionSeconds.value = Math.floor(currentSessionSeconds())
+}
+
+function startTicking() {
+  stopTicking()
+  tick()
+  intervalId = window.setInterval(tick, 250)
+}
+
+function stopTicking() {
+  if (intervalId) {
+    window.clearInterval(intervalId)
+    intervalId = null
+  }
+}
+
+function toggleOpen() {
+  isOpen.value = !isOpen.value
+}
+
+function close() {
+  isOpen.value = false
+}
+
+function updatePopoverPosition() {
+  const btn = buttonRef.value
+  if (!btn) return
+  const rect = btn.getBoundingClientRect()
+  const width = 320
+  const gap = 8
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth
+  const left = Math.max(8, Math.min(viewportWidth - width - 8, rect.right - width))
+  const top = rect.bottom + gap
+  popoverStyle.value = { left: `${left}px`, top: `${top}px`, width: `${width}px` }
+}
+
+function updateAddEntryMenuPosition() {
+  const panel = panelRef.value
+  const btn = addEntryButtonRef.value
+  if (!panel || !btn) return
+  
+  const panelRect = panel.getBoundingClientRect()
+  const btnRect = btn.getBoundingClientRect()
+  const width = 260
+  const gap = 0
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth
+  
+  // Position to the right of the panel
+  let left = panelRect.right + gap
+  
+  // If not enough space on the right, position to the left
+  if (left + width > viewportWidth - 8) {
+    left = panelRect.left - width - gap
+  }
+  
+  // Ensure it doesn't go off screen
+  left = Math.max(8, Math.min(viewportWidth - width - 8, left))
+  
+  // Align with the button vertically
+  const top = btnRect.top
+  
+  addEntryMenuStyle.value = { left: `${left}px`, top: `${top}px`, width: `${width}px` }
+}
+
+function updateInlineEditorPosition(anchorEl, width = 96) {
+  if (!anchorEl) return
+  const rect = anchorEl.getBoundingClientRect()
+  const gap = 6
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth
+  const left = Math.max(8, Math.min(viewportWidth - width - 8, rect.left))
+  const top = rect.bottom + gap
+  editorStyle.value = { left: `${left}px`, top: `${top}px`, width: `${width}px` }
+}
+
+function onDocumentMouseDown(e) {
+  if (!isOpen.value) return
+  if (isAddEntryMenuOpen.value) {
+    const menu = addEntryMenuRef.value
+    const btn = addEntryButtonRef.value
+    if (menu && menu.contains(e.target)) return
+    if (btn && btn.contains(e.target)) return
+    isAddEntryMenuOpen.value = false
+  }
+  const el = panelRef.value
+  if (!el) return
+  const menu = addEntryMenuRef.value
+  if (menu && menu.contains(e.target)) return
+  const editor = editorRef.value
+  if (editor && editor.contains(e.target)) return
+  activeTimePicker.value = null
+  editingEntryId.value = null
+  editingKind.value = null
+  if (!el.contains(e.target)) close()
+}
+
+function play() {
+  if (running.value) return
+  running.value = true
+  startedAtMs.value = Date.now()
+  baseSessionSeconds.value = 0
+  sessionUserId.value = assigneeUserId.value
+  sessionStartIso.value = new Date().toISOString()
+  expandedUserId.value = assigneeUserId.value
+  startTicking()
+  save()
+}
+
+function stop() {
+  if (!running.value) return
+  const session = currentSessionSeconds()
+  const sessionSeconds = Math.max(0, Math.floor(session))
+  // Create an entry from the last run
+  const startDate = sessionStartIso.value ? new Date(sessionStartIso.value) : new Date(Date.now() - sessionSeconds * 1000)
+  const endDate = new Date()
+  const dateISO = toDateInputValue(startDate)
+  const entry = {
+    id: `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    userId: sessionUserId.value || assigneeUserId.value,
+    date: dateISO,
+    start: partsFromDate(startDate),
+    end: partsFromDate(endDate),
+    startIso: startDate.toISOString(),
+    endIso: endDate.toISOString()
+  }
+  ensureValid(entry)
+  entries.value.unshift(entry)
+  running.value = false
+  startedAtMs.value = null
+  baseSessionSeconds.value = 0
+  sessionUserId.value = null
+  sessionStartIso.value = null
+  liveSessionSeconds.value = 0
+  stopTicking()
+  save()
+}
+
+function toggleAddEntryMenu() {
+  isAddEntryMenuOpen.value = !isAddEntryMenuOpen.value
+  if (isAddEntryMenuOpen.value) updateAddEntryMenuPosition()
+}
+
+function selectUserForEntry(user) {
+  const now = new Date()
+  const start = new Date(now)
+  start.setMinutes(start.getMinutes() - 1)
+  const entry = {
+    id: `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    userId: user.id,
+    date: toDateInputValue(now),
+    start: partsFromDate(start),
+    end: partsFromDate(now),
+    startIso: start.toISOString(),
+    endIso: now.toISOString()
+  }
+  ensureValid(entry)
+  entries.value.unshift(entry)
+  expandedUserId.value = user.id
+  isAddEntryMenuOpen.value = false
+  save()
+}
+
+function toggleUserExpanded(userId) {
+  expandedUserId.value = expandedUserId.value === userId ? null : userId
+}
+
+function userEntries(userId) {
+  return entries.value.filter((e) => e.userId === userId)
+}
+
+function openEntryEditor(entryId, kind, anchorEl) {
+  editingEntryId.value = entryId
+  editingKind.value = kind
+  if (kind === 'date') {
+    const entry = entries.value.find((e) => e.id === entryId)
+    editingDateValue.value = entry?.date ? new Date(entry.date) : new Date()
+    if (anchorEl) updateInlineEditorPosition(anchorEl, 340)
+  }
+}
+
+function closeEntryEditor() {
+  activeTimePicker.value = null
+  editingEntryId.value = null
+  editingKind.value = null
+  editingDateValue.value = null
+}
+
+const editingEntry = computed(() => entries.value.find((e) => e.id === editingEntryId.value) || null)
+
+function commitEditingDate({ close = true } = {}) {
+  const entry = editingEntry.value
+  if (!entry || !editingDateValue.value) return
+  entry.date = toDateInputValue(editingDateValue.value)
+  ensureValid(entry)
+  syncEntryIsoFromParts(entry)
+  save()
+  if (close) closeEntryEditor()
+}
+
+function selectToday() {
+  editingDateValue.value = new Date()
+  commitEditingDate({ close: false })
+}
+
+function moveEditingMonth(delta) {
+  const picker = datePickerRef.value
+  if (!picker?.moveBy) return
+  picker.moveBy(delta)
+}
+
+function setTimePart(kind, part, value) {
+  const entry = editingEntry.value
+  if (!entry || (kind !== 'start' && kind !== 'end')) return
+  if (!entry[kind]) return
+  entry[kind][part] = value
+  ensureValid(entry)
+  syncEntryIsoFromParts(entry)
+  save()
+}
+
+function openTimePicker(entry, kind, field, anchorEl) {
+  if (!entry?.id) return
+  editingEntryId.value = entry.id
+  editingKind.value = kind
+  activeTimePicker.value = { entryId: entry.id, kind, field }
+  if (anchorEl) updateInlineEditorPosition(anchorEl, 96)
+}
+
+const pickerOptions = computed(() => {
+  const p = activeTimePicker.value
+  if (!p) return []
+  if (p.field === 'hour') return hourOptions
+  if (p.field === 'minute') return minuteOptions
+  return ['AM', 'PM']
+})
+
+function isEditingField(entry, kind, field) {
+  const p = activeTimePicker.value
+  if (!p || !entry?.id) return false
+  return p.entryId === entry.id && p.kind === kind && p.field === field
+}
+
+function pickerLabel(opt) {
+  const p = activeTimePicker.value
+  if (!p) return String(opt)
+  if (p.field === 'minute') return pad2(opt)
+  return String(opt)
+}
+
+function isPickerSelected(opt) {
+  const p = activeTimePicker.value
+  const entry = editingEntry.value
+  if (!p || !entry) return false
+  const cur = entry?.[p.kind]?.[p.field]
+  return cur === opt
+}
+
+function selectPickerOption(opt) {
+  const p = activeTimePicker.value
+  if (!p) return
+  setTimePart(p.kind, p.field, opt)
+  activeTimePicker.value = null
+}
+
+watch(taskId, () => {
+  load()
+  if (running.value) startTicking()
+  else {
+    liveSessionSeconds.value = 0
+    stopTicking()
+  }
+})
+
+	watch(isOpen, (open) => {
+	  if (open) {
+	    updatePopoverPosition()
+	    document.addEventListener('mousedown', onDocumentMouseDown)
+	    window.addEventListener('resize', updatePopoverPosition)
+	    // Capture scroll from any scrollable parent (grid body, etc.)
+	    window.addEventListener('scroll', updatePopoverPosition, true)
+	    window.addEventListener('resize', updateAddEntryMenuPosition)
+	    window.addEventListener('scroll', updateAddEntryMenuPosition, true)
+	  } else {
+	    document.removeEventListener('mousedown', onDocumentMouseDown)
+	    window.removeEventListener('resize', updatePopoverPosition)
+	    window.removeEventListener('scroll', updatePopoverPosition, true)
+	    window.removeEventListener('resize', updateAddEntryMenuPosition)
+	    window.removeEventListener('scroll', updateAddEntryMenuPosition, true)
+	    isAddEntryMenuOpen.value = false
+	    closeEntryEditor()
+	  }
+	})
+
+	onBeforeUnmount(() => {
+	  document.removeEventListener('mousedown', onDocumentMouseDown)
+	  window.removeEventListener('resize', updatePopoverPosition)
+	  window.removeEventListener('scroll', updatePopoverPosition, true)
+	  window.removeEventListener('resize', updateAddEntryMenuPosition)
+	  window.removeEventListener('scroll', updateAddEntryMenuPosition, true)
+	  stopTicking()
+	})
+
+load()
+if (running.value) startTicking()
+</script>
+
+<template>
+  <div class="relative flex items-center justify-start pt-1">
+    <button
+      type="button"
+      ref="buttonRef"
+      class="rounded-full flex items-center justify-center border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+      :class="hasTrackingTime ? 'px-2 h-7 min-w-[3.5rem]' : 'w-7 h-7'"
+      title="Tracking time"
+      @click.stop="toggleOpen"
+    >
+      <span v-if="hasTrackingTime" class="text-xs font-medium text-gray-600 tabular-nums">
+        {{ formatHMS(liveTotalSeconds) }}
+      </span>
+      <svg v-else class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 6v6l4 2"></path>
+      </svg>
+    </button>
+
+    <Teleport to="body">
+      <div
+        v-if="isOpen"
+        ref="panelRef"
+        class="fixed z-[10000] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden"
+        :style="popoverStyle"
+      >
+      <!-- Header row -->
+      <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+        <div class="flex items-center gap-2 min-w-0">
+          <button
+            v-if="!running"
+            type="button"
+            class="w-7 h-7 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center"
+            title="Start timer"
+            @click="play"
+          >
+            <svg class="w-4 h-4 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="9 7 19 12 9 17 9 7"></polygon>
+            </svg>
+          </button>
+          <button
+            v-else
+            type="button"
+            class="w-7 h-7 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center"
+            title="Stop timer"
+            @click="stop"
+          >
+            <svg class="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="7" y="7" width="10" height="10" rx="1"></rect>
+            </svg>
+          </button>
+
+          <span class="text-sm font-medium text-gray-700 tabular-nums">{{ formatHMS(liveSessionSeconds) }}</span>
+        </div>
+        <span class="text-sm text-gray-500 tabular-nums">{{ formatHMS(liveTotalSeconds) }}</span>
+      </div>
+
+      <!-- User row (only after first run or if running) -->
+      <div
+        v-for="user in visibleUsers"
+        :key="user.id"
+        class="border-b border-gray-100"
+      >
+        <div
+          class="flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-gray-50"
+          @mouseenter="hoveredUserId = user.id"
+          @mouseleave="hoveredUserId = null"
+          @click="toggleUserExpanded(user.id)"
+        >
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-[18px] h-[18px] flex items-center justify-center">
+              <svg
+                v-if="hoveredUserId === user.id"
+                class="w-3.5 h-3.5 text-gray-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline v-if="expandedUserId === user.id" points="6 9 12 15 18 9"></polyline>
+                <polyline v-else points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <Avatar
+                v-else
+                :label="user.name.charAt(0).toUpperCase()"
+                shape="circle"
+                size="small"
+                class="bg-orange-100 text-orange-700"
+                style="width: 18px; height: 18px; font-size: 9px;"
+              />
+            </div>
+            <span class="text-xs text-gray-700 truncate">{{ user.name }}</span>
+          </div>
+          <span class="text-xs text-gray-500 tabular-nums">{{ formatHMS(user.total) }}</span>
+        </div>
+
+        <div v-if="expandedUserId === user.id" class="bg-gray-50">
+          <div
+            v-for="entry in userEntries(user.id)"
+            :key="entry.id"
+            class="px-3 py-1.5 border-t border-gray-100"
+          >
+            <!-- Tight single-line entry row -->
+            <div class="flex items-center gap-2 whitespace-nowrap w-full">
+              <button
+                type="button"
+                class="text-xs text-gray-500 tabular-nums hover:text-gray-700 flex-shrink-0"
+                title="Edit date"
+                @click.stop="openEntryEditor(entry.id, 'date', $event.currentTarget)"
+              >
+                {{ dateLabelFromIso(entry.date) }}
+              </button>
+
+
+              <span class="h-6 inline-flex items-center text-xs font-medium text-gray-600 tabular-nums flex-shrink-0">
+                <button
+                  type="button"
+                  class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'start', 'hour') ? 'text-primary-600 font-semibold' : ''"
+                  title="Edit start hour"
+                  @click.stop="openTimePicker(entry, 'start', 'hour', $event.currentTarget)"
+                >
+                  {{ pad2(entry.start.hour) }}
+                </button>
+                <span class="text-gray-400">:</span>
+                <button
+                  type="button"
+                  class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'start', 'minute') ? 'text-primary-600 font-semibold' : ''"
+                  title="Edit start minute"
+                  @click.stop="openTimePicker(entry, 'start', 'minute', $event.currentTarget)"
+                >
+                  {{ pad2(entry.start.minute) }}
+                </button>
+                <span class="text-gray-400">&nbsp;</span>
+                <button
+                  type="button"
+                  class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'start', 'ampm') ? 'text-primary-600 font-semibold' : ''"
+                  title="Edit start AM/PM"
+                  @click.stop="openTimePicker(entry, 'start', 'ampm', $event.currentTarget)"
+                >
+                  {{ entry.start.ampm }}
+                </button>
+              </span>
+
+              <span class="text-xs text-gray-400 flex-shrink-0">→</span>
+
+              <!-- total count per data -->
+              <span class="h-6 inline-flex items-center text-xs font-medium text-gray-600 tabular-nums flex-shrink-0">
+                <button
+                  type="button"
+                  class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'end', 'hour') ? 'text-primary-600 font-semibold' : ''"
+                  title="Edit end hour"
+                  @click.stop="openTimePicker(entry, 'end', 'hour', $event.currentTarget)"
+                >
+                  {{ pad2(entry.end.hour) }}
+                </button>
+                <span class="text-gray-400">:</span>
+                <button
+                  type="button"
+                  class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'end', 'minute') ? 'text-primary-600 font-semibold' : ''"
+                  title="Edit end minute"
+                  @click.stop="openTimePicker(entry, 'end', 'minute', $event.currentTarget)"
+                >
+                  {{ pad2(entry.end.minute) }}
+                </button>
+                <span class="text-gray-400">&nbsp;</span>
+                <button
+                  type="button"
+                  class="hover:text-gray-800"
+                  :class="isEditingField(entry, 'end', 'ampm') ? 'text-primary-600 font-semibold' : ''"
+                  title="Edit end AM/PM"
+                  @click.stop="openTimePicker(entry, 'end', 'ampm', $event.currentTarget)"
+                >
+                  {{ entry.end.ampm }}
+                </button>
+              </span>
+
+              <span class="ml-auto text-xs text-gray-500 tabular-nums text-right flex-shrink-0 w-14">
+                {{ formatDurationCompact(durationSeconds(entry)) }}
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+        @click.stop="toggleAddEntryMenu"
+        ref="addEntryButtonRef"
+      >
+        <span class="flex items-center gap-2">
+          <span class="text-gray-400">+</span>
+          <span>Add entry</span>
+        </span>
+        <svg class="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="isOpen && isAddEntryMenuOpen"
+        ref="addEntryMenuRef"
+        class="fixed z-[10001] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden"
+        :style="addEntryMenuStyle"
+      >
+        <div class="py-1">
+          <button
+            v-for="u in users"
+            :key="u.id"
+            type="button"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            @click="selectUserForEntry(u)"
+          >
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] font-semibold text-gray-800">
+              {{ u.name.charAt(0).toUpperCase() }}
+            </span>
+            <span class="truncate text-xs">{{ u.name }}</span>
+          </button>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="isOpen && editingEntryId && editingKind === 'date' && editingEntry"
+        ref="editorRef"
+        class="fixed z-[10002] bg-transparent"
+        :style="editorStyle"
+      >
+        <VDatePicker
+          ref="datePickerRef"
+          v-model="editingDateValue"
+          is-inline
+          :first-day-of-week="2"
+          title-position="left"
+          :masks="{ title: 'MMM YYYY' }"
+          class="w-full desidia-inline-datepicker"
+          @update:modelValue="commitEditingDate()"
+        >
+        </VDatePicker>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="isOpen && activeTimePicker && editingEntry"
+        ref="editorRef"
+        class="fixed z-[10002] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden"
+        :style="editorStyle"
+      >
+        <div class="max-h-[220px] overflow-auto py-1">
+          <button
+            v-for="opt in pickerOptions"
+            :key="String(opt)"
+            type="button"
+            class="w-full px-3 py-1.5 text-left text-xs tabular-nums hover:bg-gray-50"
+            :class="isPickerSelected(opt) ? 'bg-gray-100 text-gray-900' : 'text-gray-700'"
+            @click.stop="selectPickerOption(opt)"
+          >
+            {{ pickerLabel(opt) }}
+          </button>
+        </div>
+      </div>
+    </Teleport>
+
+  </div>
+</template>
+
+<style scoped>
+:deep(.desidia-inline-datepicker .vc-container) {
+  width: 340px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+:deep(.desidia-inline-datepicker .vc-prev),
+:deep(.desidia-inline-datepicker .vc-next) {
+  display: none;
+}
+
+:deep(.desidia-inline-datepicker .vc-title) {
+  width: 100%;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+:deep(.desidia-inline-datepicker .vc-weekday) {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+:deep(.desidia-inline-datepicker .vc-day-content) {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+  color: #111827;
+}
+
+:deep(.desidia-inline-datepicker .vc-day.is-not-in-month .vc-day-content) {
+  color: #cbd5e1;
+}
+
+:deep(.desidia-inline-datepicker .vc-day.is-today .vc-day-content) {
+  font-weight: 600;
+}
+
+:deep(.desidia-inline-datepicker .vc-day.is-selected .vc-day-content) {
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 8px;
+}
+
+.desidia-calendar-titlebar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.desidia-calendar-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.desidia-calendar-today {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.desidia-calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #6b7280;
+  border-radius: 6px;
+}
+
+.desidia-calendar-nav svg {
+  width: 14px;
+  height: 14px;
+}
+</style>

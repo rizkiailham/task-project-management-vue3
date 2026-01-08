@@ -11,6 +11,9 @@ import { ViewType } from '@/models'
 import Menu from 'primevue/menu'
 import OverlayPanel from 'primevue/overlaypanel'
 
+// Components
+import AIChatButton from '@/components/ai/AIChatButton.vue'
+
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUIStore()
@@ -129,14 +132,11 @@ function setView(view) {
   }
 }
 
-function openAIChat() {
-  // TODO: Implement AI chat modal/panel
-  uiStore.openModal('aiChat')
-}
+
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 flex h-14 items-center border-b border-gray-200 bg-white px-4">
+  <header class="flex h-14 items-center border-b border-gray-200 bg-white px-4">
     <!-- Left Section -->
     <div class="flex items-center gap-3">
       <!-- Hamburger Menu Toggle -->
@@ -182,20 +182,8 @@ function openAIChat() {
 
     <!-- Right Section -->
     <div class="flex items-center gap-2">
-      <!-- AI Chat Button -->
-      <button
-        @click="openAIChat"
-        class="flex items-center gap-2 h-9 px-4 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-700 transition-all shadow-sm"
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-        </svg>
-        AI chat
-        <svg class="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-
+      <!-- AI Chat Button with Dropdown -->
+      <AIChatButton />
     </div>
     
   </header>

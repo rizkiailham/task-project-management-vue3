@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore, useUIStore } from '@/stores'
 
 // PrimeVue
+import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
@@ -26,6 +27,10 @@ const token = route.query.token
 
 // Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
+  email: yup
+    .string()
+    .required(t('auth.validation.emailRequired'))
+    .email(t('auth.validation.emailInvalid')),
   password: yup
     .string()
     .required(t('auth.validation.passwordRequired'))
@@ -44,6 +49,7 @@ const { handleSubmit, meta } = useForm({
   validationSchema
 })
 
+const { value: email, errorMessage: emailError } = useField('email')
 const { value: password, errorMessage: passwordError } = useField('password')
 const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword')
 
@@ -63,8 +69,10 @@ const onSubmit = handleSubmit(async (values) => {
 
   try {
     await authStore.resetPassword({
+      email: values.email,
       token,
-      password: values.password
+      password: values.password,
+      confirmPassword: values.confirmPassword
     })
 
     uiStore.showSuccess(t('auth.resetPassword.passwordResetSuccess'))
@@ -78,52 +86,54 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div class="reset-password-page">
-    <div class="reset-password-container">
-      <!-- Logo -->
-      <div class="mb-8 text-center">
-        <div class="logo-icon mx-auto">
-          <svg viewBox="0 0 24 24" class="h-6 w-6" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24" class="auth-logo-icon" fill="currentColor">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">{{ t('auth.resetPassword.title') }}</h1>
+      <p class="auth-subtitle">{{ t('auth.resetPassword.subtitle') }}</p>
+
+      <div v-if="!token" class="auth-success">
+        <div class="auth-error-icon">
+          <i class="pi pi-times"></i>
         </div>
-        <h1 class="mt-4 text-2xl font-bold text-gray-900">{{ t('auth.resetPassword.title') }}</h1>
-        <p class="mt-2 text-base text-gray-600">
-          {{ t('auth.resetPassword.subtitle') }}
+        <h2 class="auth-success-title">{{ t('auth.resetPassword.invalidLink') }}</h2>
+        <p class="auth-success-text">
+          {{ t('auth.resetPassword.linkExpired') }}
         </p>
+        <router-link :to="{ name: 'ForgotPassword' }" class="auth-link">
+          {{ t('auth.resetPassword.requestNewLink') }}
+        </router-link>
       </div>
 
-      <!-- Invalid Token State -->
-      <div v-if="!token" class="form-card">
-        <div class="text-center">
-          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <i class="pi pi-times text-xl text-red-600"></i>
-          </div>
-          <h2 class="mt-4 text-lg font-semibold text-gray-900">{{ t('auth.resetPassword.invalidLink') }}</h2>
-          <p class="mt-2 text-sm text-gray-600">
-            {{ t('auth.resetPassword.linkExpired') }}
-          </p>
-          <router-link
-            :to="{ name: 'ForgotPassword' }"
-            class="mt-6 inline-block text-sm font-semibold text-primary-600 hover:text-primary-700"
-          >
-            {{ t('auth.resetPassword.requestNewLink') }}
-          </router-link>
-        </div>
-      </div>
-
-      <!-- Form -->
-      <div v-else class="form-card">
-        <!-- Error Message -->
+      <div v-else>
         <Message v-if="serverError" severity="error" :closable="false" class="mb-4">
           {{ serverError }}
         </Message>
 
-        <form @submit="onSubmit" class="space-y-5">
-          <!-- Password Field -->
-          <div class="space-y-2">
-            <label for="password" class="block text-sm font-semibold text-gray-700">
-              {{ t('auth.resetPassword.newPassword') }}
+        <form @submit="onSubmit" class="auth-form">
+          <div class="auth-field">
+            <label for="email" class="auth-label">
+              {{ t('auth.resetPassword.email') }} <span class="auth-required">*</span>
+            </label>
+            <InputText
+              id="email"
+              v-model="email"
+              type="email"
+              :placeholder="t('auth.resetPassword.emailPlaceholder')"
+              class="auth-input"
+              :class="{ 'p-invalid': emailError }"
+              autocomplete="email"
+            />
+            <small v-if="emailError" class="auth-error">{{ emailError }}</small>
+          </div>
+
+          <div class="auth-field">
+            <label for="password" class="auth-label">
+              {{ t('auth.resetPassword.newPassword') }} <span class="auth-required">*</span>
             </label>
             <Password
               id="password"
@@ -132,16 +142,15 @@ const onSubmit = handleSubmit(async (values) => {
               :class="{ 'p-invalid': passwordError }"
               toggleMask
               autocomplete="new-password"
-              inputClass="w-full"
-              class="password-input-full"
+              inputClass="auth-input"
+              class="auth-password"
             />
-            <small v-if="passwordError" class="text-red-500">{{ passwordError }}</small>
+            <small v-if="passwordError" class="auth-error">{{ passwordError }}</small>
           </div>
 
-          <!-- Confirm Password Field -->
-          <div class="space-y-2">
-            <label for="confirmPassword" class="block text-sm font-semibold text-gray-700">
-              {{ t('auth.resetPassword.confirmPassword') }}
+          <div class="auth-field">
+            <label for="confirmPassword" class="auth-label">
+              {{ t('auth.resetPassword.confirmPassword') }} <span class="auth-required">*</span>
             </label>
             <Password
               id="confirmPassword"
@@ -151,17 +160,16 @@ const onSubmit = handleSubmit(async (values) => {
               :feedback="false"
               toggleMask
               autocomplete="new-password"
-              inputClass="w-full"
-              class="password-input-full"
+              inputClass="auth-input"
+              class="auth-password"
             />
-            <small v-if="confirmPasswordError" class="text-red-500">{{ confirmPasswordError }}</small>
+            <small v-if="confirmPasswordError" class="auth-error">{{ confirmPasswordError }}</small>
           </div>
 
-          <!-- Submit Button -->
           <Button
             type="submit"
             :label="t('auth.resetPassword.resetPassword')"
-            class="w-full justify-center"
+            class="auth-primary"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
           />
@@ -172,54 +180,151 @@ const onSubmit = handleSubmit(async (values) => {
 </template>
 
 <style scoped>
-.reset-password-page {
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
+
+.auth-page {
+  min-height: 100svh;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 2rem 1rem;
-  background-color: #f9fafb;
-  overflow: hidden;
+  padding: 2.5rem 1.5rem;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(37, 99, 235, 0.08), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.12), transparent 45%),
+    #f3f6fb;
+  font-family: 'Manrope', sans-serif;
 }
 
-.reset-password-container {
+.auth-card {
   width: 100%;
   max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2.25rem 2.25rem 2rem;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+  border: 1px solid #e5eaf3;
+  text-align: center;
 }
 
-.logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.auth-logo {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #2563eb;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.05));
+}
+
+.auth-logo-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.auth-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.3rem;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1.1rem;
+  text-align: left;
+}
+
+.auth-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.auth-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-required {
+  color: #2563eb;
+}
+
+.auth-input,
+.auth-password :deep(input) {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-input:focus,
+.auth-password :deep(input:focus) {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.auth-password {
+  width: 100%;
+}
+
+.auth-error {
+  color: #ef4444;
+  font-size: 0.8rem;
+}
+
+.auth-primary {
+  width: 100%;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: none;
+  color: #ffffff;
+}
+
+.auth-link {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.auth-success {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.auth-error-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f97316 0%, #7c3aed 100%);
-  color: white;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 1.2rem;
 }
 
-.form-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.auth-success-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
 }
 
-/* Fix password input width */
-.password-input-full {
-  width: 100%;
-}
-
-.password-input-full :deep(input) {
-  width: 100%;
-}
-
-.password-input-full :deep(.p-password) {
-  width: 100%;
-}
-
-.password-input-full :deep(.p-inputtext) {
-  width: 100%;
+.auth-success-text {
+  font-size: 0.88rem;
+  color: #6b7280;
 }
 </style>
-

@@ -2,14 +2,14 @@
  * Desidia v2 - Authentication API
  */
 
-import { post, get } from './httpClient'
+import { post, get, patch } from './httpClient'
 
 /**
  * Login with email and password
  * @param {Object} credentials
  * @param {string} credentials.email
  * @param {string} credentials.password
- * @returns {Promise<{user: User, accessToken: string, refreshToken: string}>}
+ * @returns {Promise<{accessToken: string, refreshToken?: string, user?: User}>}
  */
 export async function login(credentials) {
   return post('/auth/login', credentials)
@@ -21,7 +21,7 @@ export async function login(credentials) {
  * @param {string} data.email
  * @param {string} data.password
  * @param {string} data.name
- * @returns {Promise<{user: User, accessToken: string, refreshToken: string}>}
+ * @returns {Promise<{accessToken: string, refreshToken?: string, user?: User}>}
  */
 export async function register(data) {
   return post('/auth/register', data)
@@ -40,16 +40,18 @@ export async function logout() {
  * @returns {Promise<User>}
  */
 export async function getCurrentUser() {
-  return get('/auth/me')
+  return get('/auth/profile')
 }
 
 /**
  * Update current user profile
  * @param {Object} data
+ * @param {string} data.firstName
+ * @param {string} data.lastName
  * @returns {Promise<User>}
  */
 export async function updateProfile(data) {
-  return post('/auth/profile', data)
+  return patch('/auth/profile', data)
 }
 
 /**
@@ -57,6 +59,7 @@ export async function updateProfile(data) {
  * @param {Object} data
  * @param {string} data.currentPassword
  * @param {string} data.newPassword
+ * @param {string} data.confirmPassword
  * @returns {Promise<void>}
  */
 export async function changePassword(data) {
@@ -75,8 +78,10 @@ export async function requestPasswordReset(email) {
 /**
  * Reset password with token
  * @param {Object} data
+ * @param {string} data.email
  * @param {string} data.token
- * @param {string} data.newPassword
+ * @param {string} data.password
+ * @param {string} data.confirmPassword
  * @returns {Promise<void>}
  */
 export async function resetPassword(data) {
@@ -99,4 +104,3 @@ export async function verifyEmail(token) {
 export async function resendVerificationEmail() {
   return post('/auth/resend-verification')
 }
-

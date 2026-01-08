@@ -24,6 +24,10 @@ export const useUIStore = defineStore('ui', () => {
   const currentView = ref(ViewType.LIST)
   const isTaskPanelOpen = ref(false)
 
+  // Task Detail Sidebar state
+  const taskDetailSidebarWidth = ref(parseInt(localStorage.getItem('taskDetailSidebarWidth') || '420', 10))
+  const isResizingTaskDetailSidebar = ref(false)
+
   // Modal state
   const activeModal = ref(null)
   const modalData = ref(null)
@@ -145,6 +149,32 @@ export const useUIStore = defineStore('ui', () => {
 
   function toggleTaskPanel() {
     isTaskPanelOpen.value = !isTaskPanelOpen.value
+  }
+
+  /**
+   * Set task detail sidebar width with clamping
+   */
+  function setTaskDetailSidebarWidth(width) {
+    const minWidth = 320
+    const maxWidth = 600
+    const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width))
+    taskDetailSidebarWidth.value = clampedWidth
+  }
+
+  /**
+   * Persist task detail sidebar width to localStorage
+   */
+  function persistTaskDetailSidebarWidth() {
+    localStorage.setItem('taskDetailSidebarWidth', taskDetailSidebarWidth.value.toString())
+  }
+
+  function startResizingTaskDetailSidebar() {
+    isResizingTaskDetailSidebar.value = true
+  }
+
+  function stopResizingTaskDetailSidebar() {
+    isResizingTaskDetailSidebar.value = false
+    persistTaskDetailSidebarWidth()
   }
 
   // ================================
@@ -325,6 +355,8 @@ export const useUIStore = defineStore('ui', () => {
     isResizingSidebar,
     currentView,
     isTaskPanelOpen,
+    taskDetailSidebarWidth,
+    isResizingTaskDetailSidebar,
     activeModal,
     modalData,
     globalLoading,
@@ -357,6 +389,10 @@ export const useUIStore = defineStore('ui', () => {
     openTaskPanel,
     closeTaskPanel,
     toggleTaskPanel,
+    setTaskDetailSidebarWidth,
+    persistTaskDetailSidebarWidth,
+    startResizingTaskDetailSidebar,
+    stopResizingTaskDetailSidebar,
 
     // Modal Actions
     openModal,

@@ -1,3 +1,4 @@
+@config "../tailwind.config.js";
 @import "tailwindcss";
 
 /* ================================
@@ -7,32 +8,32 @@
 
 /* Tailwind v4 Theme Configuration */
 @theme {
-  /* Primary colors - Orange theme */
-  --color-primary-50: #fff7ed;
-  --color-primary-100: #ffedd5;
-  --color-primary-200: #fed7aa;
-  --color-primary-300: #fdba74;
-  --color-primary-400: #fb923c;
-  --color-primary-500: #f97316;
-  --color-primary-600: #ea580c;
-  --color-primary-700: #c2410c;
-  --color-primary-800: #9a3412;
-  --color-primary-900: #7c2d12;
+  /* Primary colors - Blue theme */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
 }
 
 /* CSS Custom Properties for theming */
 :root {
-  /* Primary colors - Orange theme (for CSS usage) */
-  --color-primary-50: #fff7ed;
-  --color-primary-100: #ffedd5;
-  --color-primary-200: #fed7aa;
-  --color-primary-300: #fdba74;
-  --color-primary-400: #fb923c;
-  --color-primary-500: #f97316;
-  --color-primary-600: #ea580c;
-  --color-primary-700: #c2410c;
-  --color-primary-800: #9a3412;
-  --color-primary-900: #7c2d12;
+  /* Primary colors - Blue theme (for CSS usage) */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
 
   /* Layout */
   --sidebar-width: 280px;
@@ -192,7 +193,7 @@ body {
 
 /* AI feature highlight */
 .ai-feature {
-  @apply bg-gradient-to-r from-violet-500 to-purple-600;
+  @apply bg-gradient-to-r from-primary-500 to-purple-600;
 }
 
 /* Kanban column styles */
@@ -272,10 +273,10 @@ body {
 }
 
 /* ================================
-   PrimeVue Orange Theme Overrides
+   PrimeVue Blue Theme Overrides
    ================================ */
 
-/* Primary Button - Orange */
+/* Primary Button - Blue */
 .p-button:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger):not(.p-button-text):not(.p-button-outlined):not(.p-button-link) {
   background: var(--color-primary-500) !important;
   border-color: var(--color-primary-500) !important;
@@ -290,7 +291,7 @@ body {
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--color-primary-300) !important;
 }
 
-/* Text Button - Orange */
+/* Text Button - Blue */
 .p-button-text:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger) {
   color: var(--color-primary-600) !important;
 }
@@ -300,7 +301,7 @@ body {
   color: var(--color-primary-700) !important;
 }
 
-/* Outlined Button - Orange */
+/* Outlined Button - Blue */
 .p-button-outlined:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-danger) {
   color: var(--color-primary-600) !important;
   border-color: var(--color-primary-600) !important;
@@ -310,7 +311,7 @@ body {
   background: var(--color-primary-50) !important;
 }
 
-/* Checkbox - Orange */
+/* Checkbox - Blue */
 .p-checkbox .p-checkbox-box.p-highlight {
   background: var(--color-primary-500) !important;
   border-color: var(--color-primary-500) !important;
@@ -321,25 +322,33 @@ body {
   border-color: var(--color-primary-600) !important;
 }
 
-/* Input Focus - Orange */
+/* Input accent color */
+.p-checkbox-input,
+.p-radiobutton-input,
+.p-toggleswitch-input,
+.p-inputswitch-input {
+  accent-color: var(--color-primary-600);
+}
+
+/* Input Focus - Blue */
 .p-inputtext:focus {
   border-color: var(--color-primary-500) !important;
   box-shadow: 0 0 0 1px var(--color-primary-500) !important;
 }
 
-/* Select/Dropdown Focus - Orange */
+/* Select/Dropdown Focus - Blue */
 .p-select:focus,
 .p-select.p-focus {
   border-color: var(--color-primary-500) !important;
   box-shadow: 0 0 0 1px var(--color-primary-500) !important;
 }
 
-/* DatePicker Focus - Orange */
+/* DatePicker Focus - Blue */
 .p-datepicker-panel .p-datepicker-day.p-datepicker-day-selected {
   background: var(--color-primary-500) !important;
 }
 
-/* Badge - Primary Orange */
+/* Badge - Primary Blue */
 .p-badge.p-badge-primary {
   background: var(--color-primary-500) !important;
 }
@@ -366,7 +375,7 @@ body {
 }
 
 /* ================================
-   Tabs Component - Orange Theme
+   Tabs Component - Blue Theme
    ================================ */
 .p-tabs .p-tablist-tab-list {
   border-color: #e5e7eb !important;
@@ -390,7 +399,7 @@ body {
   outline-color: var(--color-primary-500) !important;
 }
 
-/* TabMenu - Orange Theme */
+/* TabMenu - Blue Theme */
 .p-tabmenu .p-tabmenu-nav .p-tabmenuitem .p-menuitem-link {
   color: #6b7280 !important;
   border-color: transparent !important;
@@ -406,7 +415,7 @@ body {
 }
 
 /* ================================
-   Toggle Switch / InputSwitch - Orange Theme
+   Toggle Switch / InputSwitch - Blue Theme
    ================================ */
 .p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider,
 .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
@@ -425,7 +434,7 @@ body {
 }
 
 /* ================================
-   Radio Button - Orange Theme
+   Radio Button - Blue Theme
    ================================ */
 .p-radiobutton .p-radiobutton-box.p-highlight {
   background: var(--color-primary-500) !important;
@@ -438,14 +447,14 @@ body {
 }
 
 /* ================================
-   Progress Bar - Orange Theme
+   Progress Bar - Blue Theme
    ================================ */
 .p-progressbar .p-progressbar-value {
   background: var(--color-primary-500) !important;
 }
 
 /* ================================
-   Slider - Orange Theme
+   Slider - Blue Theme
    ================================ */
 .p-slider .p-slider-range {
   background: var(--color-primary-500) !important;
@@ -461,7 +470,7 @@ body {
 }
 
 /* ================================
-   Chip - Orange Theme
+   Chip - Blue Theme
    ================================ */
 .p-chip.p-chip-primary {
   background: var(--color-primary-100) !important;
@@ -469,7 +478,7 @@ body {
 }
 
 /* ================================
-   Link / Anchor - Orange Theme
+   Link / Anchor - Blue Theme
    ================================ */
 a.text-primary,
 .text-primary {

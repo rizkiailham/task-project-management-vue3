@@ -75,6 +75,9 @@ httpClient.interceptors.response.use(
           // Retry the original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`
           return httpClient(originalRequest)
+        } else {
+          clearAuth()
+          window.dispatchEvent(new CustomEvent('auth:logout'))
         }
       } catch (refreshError) {
         // Refresh failed - clear tokens and redirect to login
@@ -220,4 +223,3 @@ export async function upload(url, formData, onProgress = null) {
 }
 
 export default httpClient
-
