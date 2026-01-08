@@ -6,6 +6,7 @@ import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import StatusEditorDropdown from '@/components/task/StatusEditorDropdown.vue'
 import AssigneeEditorDropdown from '@/components/task/AssigneeEditorDropdown.vue'
+import TagEditorDropdown from '@/components/task/TagEditorDropdown.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
 import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import { useTaskStore, useUIStore } from '@/stores'
@@ -437,17 +438,15 @@ const columnDefs = [
     field: 'tags',
     headerName: 'Tags',
     flex: 1,
-    editable: true,
+    minWidth: 230,
+    cellRenderer: 'TagEditorDropdown',
     valueGetter: (params) => {
       const tags = params.data?.tags
-      return Array.isArray(tags) ? tags.join(', ') : ''
-    },
-    valueSetter: (params) => {
-      const nextTags = typeof params.newValue === 'string'
-        ? params.newValue.split(',').map((tag) => tag.trim()).filter(Boolean)
-        : Array.isArray(params.newValue) ? params.newValue : []
-      updateField(params.data?.pathKey, 'tags', nextTags)
-      return false
+      if (!Array.isArray(tags)) return ''
+      return tags
+        .map((tag) => (typeof tag === 'string' ? tag : tag?.name || tag?.label || tag?.value || tag?.id || ''))
+        .filter(Boolean)
+        .join(', ')
     }
   },
   {
@@ -524,7 +523,8 @@ const gridOptions = ref({
     updateTitle,
     handleCommit,
     focusKey,
-    updateField
+    updateField,
+    tagOptions: ref([])
   },
   getRowClass: (params) => {
     if (params.data?.isPlaceholder) return 'row-placeholder'
@@ -567,6 +567,7 @@ const gridOptions = ref({
   components: {
     StatusEditorDropdown,
     AssigneeEditorDropdown,
+    TagEditorDropdown,
     DartboardCell,
     TrackingTimeCell
   }

@@ -8,7 +8,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTaskStore, useUIStore, useWorkspaceStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
-import ColorPicker from '@/components/ui/ColorPicker.vue'
 
 // PrimeVue
 import Button from 'primevue/button'
@@ -492,7 +491,6 @@ function formatDate(date) {
       />
     </div>
 
-  <ColorPicker />
   </div>
 </template>
 
