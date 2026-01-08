@@ -49,6 +49,7 @@
       "orContinueWith": "eller fortsett med",
       "google": "Google",
       "github": "GitHub",
+      "microsoft": "Microsoft",
       "invalidCredentials": "Ugyldig e-post eller passord",
       "welcomeBack": "Velkommen tilbake!",
       "loginSuccessful": "Innlogging vellykket"
@@ -87,6 +88,8 @@
     "resetPassword": {
       "title": "Sett nytt passord",
       "subtitle": "Opprett et sterkt passord for kontoen din",
+      "email": "E-postadresse",
+      "emailPlaceholder": "deg{'@'}eksempel.no",
       "newPassword": "Nytt passord",
       "newPasswordPlaceholder": "Opprett et sterkt passord",
       "confirmPassword": "Bekreft nytt passord",

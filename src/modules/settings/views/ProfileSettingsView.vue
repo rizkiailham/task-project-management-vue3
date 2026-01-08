@@ -21,25 +21,28 @@ const isLoading = ref(false)
 
 // Form validation
 const validationSchema = yup.object({
-  name: yup.string().required('Name is required').min(2, 'Name must be at least 2 characters'),
-  email: yup.string().required('Email is required').email('Invalid email format')
+  firstName: yup.string().required('First name is required').min(2, 'First name must be at least 2 characters'),
+  lastName: yup.string().required('Last name is required').min(2, 'Last name must be at least 2 characters')
 })
 
 const { handleSubmit, meta } = useForm({
   validationSchema,
   initialValues: {
-    name: user.value?.name || '',
-    email: user.value?.email || ''
+    firstName: user.value?.firstName || user.value?.name?.split(' ')[0] || '',
+    lastName: user.value?.lastName || user.value?.name?.split(' ').slice(1).join(' ') || ''
   }
 })
 
-const { value: name, errorMessage: nameError } = useField('name')
-const { value: email, errorMessage: emailError } = useField('email')
+const { value: firstName, errorMessage: firstNameError } = useField('firstName')
+const { value: lastName, errorMessage: lastNameError } = useField('lastName')
 
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
-    await authStore.updateProfile(values)
+    await authStore.updateProfile({
+      firstName: values.firstName,
+      lastName: values.lastName
+    })
     uiStore.showSuccess('Profile updated successfully')
   } catch (error) {
     uiStore.showError('Failed to update profile')
@@ -74,14 +77,26 @@ const onSubmit = handleSubmit(async (values) => {
       <form @submit="onSubmit" class="space-y-4">
         <div>
           <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-            Full Name
+            First Name
           </label>
           <InputText 
-            v-model="name" 
+            v-model="firstName" 
             class="w-full"
-            :class="{ 'p-invalid': nameError }"
+            :class="{ 'p-invalid': firstNameError }"
           />
-          <small v-if="nameError" class="text-red-500">{{ nameError }}</small>
+          <small v-if="firstNameError" class="text-red-500">{{ firstNameError }}</small>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
+            Last Name
+          </label>
+          <InputText 
+            v-model="lastName" 
+            class="w-full"
+            :class="{ 'p-invalid': lastNameError }"
+          />
+          <small v-if="lastNameError" class="text-red-500">{{ lastNameError }}</small>
         </div>
 
         <div>
@@ -89,12 +104,11 @@ const onSubmit = handleSubmit(async (values) => {
             Email Address
           </label>
           <InputText 
-            v-model="email" 
+            :model-value="user?.email || ''"
             type="email"
             class="w-full"
-            :class="{ 'p-invalid': emailError }"
+            disabled
           />
-          <small v-if="emailError" class="text-red-500">{{ emailError }}</small>
         </div>
 
         <div class="flex justify-end pt-4">
@@ -109,4 +123,3 @@ const onSubmit = handleSubmit(async (values) => {
     </div>
   </div>
 </template>
-

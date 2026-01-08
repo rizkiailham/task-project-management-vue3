@@ -56,121 +56,214 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div class="forgot-password-page">
-    <div class="forgot-password-container">
-      <!-- Logo -->
-      <div class="mb-8 text-center">
-        <div class="logo-icon mx-auto">
-          <svg viewBox="0 0 24 24" class="h-6 w-6" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24" class="auth-logo-icon" fill="currentColor">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">{{ t('auth.forgotPassword.title') }}</h1>
+      <p class="auth-subtitle">{{ t('auth.forgotPassword.subtitle') }}</p>
+
+      <div v-if="isSuccess" class="auth-success">
+        <div class="auth-success-icon">
+          <i class="pi pi-check"></i>
         </div>
-        <h1 class="mt-4 text-2xl font-bold text-gray-900">{{ t('auth.forgotPassword.title') }}</h1>
-        <p class="mt-2 text-base text-gray-600">
-          {{ t('auth.forgotPassword.subtitle') }}
+        <h2 class="auth-success-title">{{ t('auth.forgotPassword.checkEmail') }}</h2>
+        <p class="auth-success-text">
+          {{ t('auth.forgotPassword.resetLinkSent') }} <strong>{{ email }}</strong>
         </p>
+        <router-link :to="{ name: 'Login' }" class="auth-link">
+          {{ t('auth.forgotPassword.backToSignIn') }}
+        </router-link>
       </div>
 
-      <!-- Success State -->
-      <div v-if="isSuccess" class="form-card">
-        <div class="text-center">
-          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <i class="pi pi-check text-xl text-green-600"></i>
-          </div>
-          <h2 class="mt-4 text-lg font-semibold text-gray-900">{{ t('auth.forgotPassword.checkEmail') }}</h2>
-          <p class="mt-2 text-sm text-gray-600">
-            {{ t('auth.forgotPassword.resetLinkSent') }} <strong>{{ email }}</strong>
-          </p>
-          <router-link
-            :to="{ name: 'Login' }"
-            class="mt-6 inline-block text-sm font-semibold text-primary-600 hover:text-primary-700"
-          >
-            ← {{ t('auth.forgotPassword.backToSignIn') }}
-          </router-link>
-        </div>
-      </div>
-
-      <!-- Form -->
-      <div v-else class="form-card">
-        <!-- Error Message -->
+      <div v-else>
         <Message v-if="serverError" severity="error" :closable="false" class="mb-4">
           {{ serverError }}
         </Message>
 
-        <form @submit="onSubmit" class="space-y-5">
-          <!-- Email Field -->
-          <div class="space-y-2">
-            <label for="email" class="block text-sm font-semibold text-gray-700">
-              {{ t('auth.forgotPassword.email') }}
+        <form @submit="onSubmit" class="auth-form">
+          <div class="auth-field">
+            <label for="email" class="auth-label">
+              {{ t('auth.forgotPassword.email') }} <span class="auth-required">*</span>
             </label>
             <InputText
               id="email"
               v-model="email"
               type="email"
               :placeholder="t('auth.forgotPassword.emailPlaceholder')"
-              class="w-full"
+              class="auth-input"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
             />
-            <small v-if="emailError" class="text-red-500">{{ emailError }}</small>
+            <small v-if="emailError" class="auth-error">{{ emailError }}</small>
           </div>
 
-          <!-- Submit Button -->
           <Button
             type="submit"
             :label="t('auth.forgotPassword.sendResetLink')"
-            class="w-full justify-center"
+            class="auth-primary"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
           />
         </form>
 
-        <!-- Back Link -->
-        <p class="mt-6 text-center text-sm text-gray-600">
-          <router-link
-            :to="{ name: 'Login' }"
-            class="font-semibold text-primary-600 hover:text-primary-700"
-          >
-            ← {{ t('auth.forgotPassword.backToSignIn') }}
+        <div class="auth-footer">
+          <router-link :to="{ name: 'Login' }" class="auth-link">
+            {{ t('auth.forgotPassword.backToSignIn') }}
           </router-link>
-        </p>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.forgot-password-page {
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
+
+.auth-page {
+  min-height: 100svh;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 2rem 1rem;
-  background-color: #f9fafb;
-  overflow: hidden;
+  padding: 2.5rem 1.5rem;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(37, 99, 235, 0.08), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.12), transparent 45%),
+    #f3f6fb;
+  font-family: 'Manrope', sans-serif;
 }
 
-.forgot-password-container {
+.auth-card {
   width: 100%;
   max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2.25rem 2.25rem 2rem;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+  border: 1px solid #e5eaf3;
+  text-align: center;
 }
 
-.logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.auth-logo {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #2563eb;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.05));
+}
+
+.auth-logo-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.auth-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.3rem;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1.1rem;
+  text-align: left;
+}
+
+.auth-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.auth-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-required {
+  color: #2563eb;
+}
+
+.auth-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.auth-error {
+  color: #ef4444;
+  font-size: 0.8rem;
+}
+
+.auth-primary {
+  width: 100%;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: none;
+  color: #ffffff;
+}
+
+.auth-footer {
+  margin-top: 1.25rem;
+}
+
+.auth-link {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.auth-success {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.auth-success-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f97316 0%, #F97316 100%);
-  color: white;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  font-size: 1.2rem;
 }
 
-.form-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.auth-success-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.auth-success-text {
+  font-size: 0.88rem;
+  color: #6b7280;
 }
 </style>
-

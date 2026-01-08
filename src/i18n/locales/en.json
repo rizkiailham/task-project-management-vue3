@@ -49,6 +49,7 @@
       "orContinueWith": "or continue with",
       "google": "Google",
       "github": "GitHub",
+      "microsoft": "Microsoft",
       "invalidCredentials": "Invalid email or password",
       "welcomeBack": "Welcome back!",
       "loginSuccessful": "Login successful"
@@ -87,6 +88,8 @@
     "resetPassword": {
       "title": "Set new password",
       "subtitle": "Create a strong password for your account",
+      "email": "Email address",
+      "emailPlaceholder": "you{'@'}example.com",
       "newPassword": "New password",
       "newPasswordPlaceholder": "Create a strong password",
       "confirmPassword": "Confirm new password",
