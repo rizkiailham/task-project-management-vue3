@@ -126,6 +126,10 @@ function selectPresetColor(color) {
   selectedColor.value = color
 }
 
+function isSelectedColor(color) {
+  return selectedColor.value.toLowerCase() === color.toLowerCase()
+}
+
 function toggleCustom() {
   customExpanded.value = !customExpanded.value
 }
@@ -251,12 +255,18 @@ async function pickColorFromScreen() {
         v-for="color in presetColors"
         :key="color"
         type="button"
-        class="w-6 h-6 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        :class="selectedColor.toLowerCase() === color.toLowerCase() ? 'ring-2 ring-offset-2 ring-gray-900' : ''"
+        class="relative w-6 h-6 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        :class="isSelectedColor(color) ? 'ring-2 ring-offset-2 ring-gray-900' : ''"
         :style="{ backgroundColor: color }"
         :title="color"
         @click="selectPresetColor(color)"
-      />
+      >
+        <slot v-if="isSelectedColor(color)" name="selected-item" :color="color">
+          <span class="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white drop-shadow">
+            &#10003;
+          </span>
+        </slot>
+      </button>
     </div>
 
     <!-- Custom Section -->
