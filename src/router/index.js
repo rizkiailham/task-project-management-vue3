@@ -45,6 +45,17 @@ const routes = [
       title: 'Set New Password'
     }
   },
+  {
+    path: '/invite',
+    name: 'InviteAccept',
+    component: () => import('@/modules/auth/views/InviteAcceptView.vue'),
+    meta: {
+      requiresAuth: false,
+      layout: 'auth',
+      title: 'Complete Registration'
+    }
+  },
+
 
   // ================================
   // Protected App Routes

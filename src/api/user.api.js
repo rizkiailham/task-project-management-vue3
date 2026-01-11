@@ -71,6 +71,33 @@ export async function exportUsersExcel(roleId = null) {
     return get('/users/export/excel', params)
 }
 
+/**
+ * Invite a user by email to join project(s)
+ * @param {Object} data - { email, projectIds }
+ * @returns {Promise<Object>} Invitation result
+ */
+export async function inviteUser(data) {
+    return post('/users/invite', data)
+}
+
+/**
+ * Get invitation details by token (public, no auth required)
+ * @param {string} token - Invitation token
+ * @returns {Promise<Object>} Invitation details (email, projectName)
+ */
+export async function getInvitation(token) {
+    return get(`/users/invite/${token}`)
+}
+
+/**
+ * Complete registration from invitation
+ * @param {Object} data - Registration data (token, firstName, lastName, email, password, etc.)
+ * @returns {Promise<Object>} Registration result
+ */
+export async function registerFromInvite(data) {
+    return post('/users/register', data)
+}
+
 export default {
     getUsers,
     getUser,
@@ -78,5 +105,9 @@ export default {
     updateUser,
     deleteUser,
     resendInvite,
-    exportUsersExcel
+    exportUsersExcel,
+    inviteUser,
+    getInvitation,
+    registerFromInvite
 }
+

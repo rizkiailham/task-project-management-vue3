@@ -12,6 +12,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useUserStore, useUIStore } from '@/stores'
 import UsersGrid from '@/modules/user/components/UsersGrid.vue'
 import UserFormModal from '@/components/modals/UserFormModal.vue'
+import InviteUserModal from '@/components/modals/InviteUserModal.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import { Search, Plus, UserPlus, Sparkles, ChevronDown, SlidersHorizontal } from 'lucide-vue-next'
 
@@ -32,6 +33,7 @@ const isLoading = ref(true)
 
 // Modal states
 const showUserFormModal = ref(false)
+const showInviteModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedUser = ref(null)
 const isDeleting = ref(false)
@@ -139,6 +141,15 @@ async function handleResendInvite(user) {
 function handleUserSaved() {
   // Grid will auto-update via reactive store
 }
+
+function openInviteModal() {
+  showInviteModal.value = true
+}
+
+function handleUserInvited() {
+  // Optionally refresh users list
+  userStore.fetchUsers()
+}
 </script>
 
 <template>
@@ -185,6 +196,7 @@ function handleUserSaved() {
 
         <!-- Invite User Button -->
         <Button
+          @click="openInviteModal"
           severity="secondary"
           class="!bg-green-600 hover:!bg-green-700 !border-green-600 !text-white"
         >
@@ -286,6 +298,12 @@ function handleUserSaved() {
       :loading="isDeleting"
       @confirm="handleDeleteUser"
       @cancel="showDeleteModal = false"
+    />
+
+    <!-- Invite User Modal -->
+    <InviteUserModal
+      v-model:visible="showInviteModal"
+      @invited="handleUserInvited"
     />
   </div>
 </template>
