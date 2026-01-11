@@ -4,12 +4,10 @@
  */
 import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useProjectStore, useTaskStore, useWorkspaceStore, useUIStore } from '@/stores'
+import { useProjectStore, useUIStore } from '@/stores'
 
 const route = useRoute()
 const projectStore = useProjectStore()
-const taskStore = useTaskStore()
-const workspaceStore = useWorkspaceStore()
 const uiStore = useUIStore()
 
 // Load project data when route changes
@@ -19,8 +17,8 @@ watch(
     if (projectId) {
       try {
         await projectStore.selectProject(projectId)
-        await taskStore.fetchTasks()
       } catch (error) {
+        console.error('Failed to load project:', error)
         uiStore.showError('Failed to load project')
       }
     }

@@ -3,7 +3,7 @@
  * CreateProjectModal - Modal for creating new projects
  */
 import { ref, computed, watch } from 'vue'
-import { useProjectStore, useWorkspaceStore, useUIStore } from '@/stores'
+import { useProjectStore, useUIStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
@@ -11,10 +11,8 @@ import * as yup from 'yup'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import ColorPicker from 'primevue/colorpicker'
 
 const projectStore = useProjectStore()
-const workspaceStore = useWorkspaceStore()
 const uiStore = useUIStore()
 
 // Modal visibility
@@ -56,10 +54,11 @@ const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
     await projectStore.createNewProject({
-      ...values,
-      color: `#${color.value}`,
-      workspaceId: workspaceStore.currentWorkspaceId
+      name: values.name,
+      description: values.description
     })
+    // Refresh the projects list to ensure sidebar updates
+    await projectStore.fetchProjects()
     uiStore.showSuccess('Project created successfully')
     uiStore.closeModal()
   } catch (error) {

@@ -10,9 +10,9 @@
  * - Smooth animation transitions
  * - Resizable width (min 190px, max 400px)
  */
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useUIStore, useWorkspaceStore, useNotificationStore, useAuthStore } from '@/stores'
+import { useUIStore, useWorkspaceStore, useNotificationStore, useAuthStore, useProjectStore } from '@/stores'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Avatar from 'primevue/avatar'
 import {
@@ -32,6 +32,7 @@ import {
   FileText,
   Flame,
   Folder,
+  FolderOpen,
   LayoutDashboard,
   LogOut,
   Monitor,
@@ -56,6 +57,7 @@ const uiStore = useUIStore()
 const workspaceStore = useWorkspaceStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
+const projectStore = useProjectStore()
 
 // User menu items for DropdownMenu component
 const userMenuItems = computed(() => [
@@ -197,82 +199,32 @@ const dashboardItems = ref([
   { id: 'd3', name: 'Performance', icon: Activity, color: 'bg-purple-100' }
 ])
 
-// Dummy spaces data (like DartAI reference)
-const spaces = ref([
-  {
-    id: 's1',
-    name: 'VERKSTEDHAGEN',
-    icon: Building2,
-    color: 'bg-purple-100',
-    isOpen: false,
-    items: [
-      { id: 'v1', name: 'HMS 25/26', icon: TriangleAlert, color: 'bg-red-100' },
-      { id: 'v2', name: 'HMS ARKIV 2025', icon: Folder, color: 'bg-orange-100' },
-      { id: 'v3', name: 'Serviceleverandører', icon: Wrench, color: 'bg-yellow-100' },
-      { id: 'v4', name: 'Beboere', icon: Users, color: 'bg-green-100' },
-      { id: 'v5', name: 'Arkiv Verkstedhagen', icon: Book, color: 'bg-blue-100' },
-      { id: 'v6', name: 'DevHub', icon: Code, color: 'bg-teal-100' },
-      { id: 'v7', name: 'Docs', icon: FileText, color: 'bg-green-100' },
-      { id: 'v8', name: 'Kunnskap', icon: BookOpen, color: 'bg-purple-100' }
-    ]
-  },
-  {
-    id: 's2',
-    name: 'LO MEDIA',
-    icon: Monitor,
-    color: 'bg-blue-100',
-    isOpen: false,
-    items: [
-      { id: 'l1', name: 'Videos', icon: Video, color: 'bg-blue-100' },
-      { id: 'l2', name: 'Graphics', icon: Palette, color: 'bg-pink-100' }
-    ]
-  },
-  {
-    id: 's3',
-    name: 'PRISER',
-    icon: Wallet,
-    color: 'bg-pink-100',
-    isOpen: false,
-    items: [
-      { id: 'p1', name: 'Standard', icon: Wallet, color: 'bg-green-100' },
-      { id: 'p2', name: 'Premium', icon: Crown, color: 'bg-purple-100' }
-    ]
-  },
-  {
-    id: 's4',
-    name: 'DESIDIA',
-    icon: Flame,
-    color: 'bg-orange-100',
-    isOpen: true,
-    items: [
-      { id: 'd1', name: 'Utvikling', icon: Rocket, color: 'bg-yellow-100' },
-      { id: 'd2', name: 'Tasks', icon: CheckSquare, color: 'bg-blue-100' },
-      { id: 'd3', name: 'DesidiaDocs', icon: FilePenLine, color: 'bg-green-100' }
-    ]
-  },
-  {
-    id: 's5',
-    name: 'PERSONAL',
-    icon: Users,
-    color: 'bg-teal-100',
-    isOpen: false,
-    items: [
-      { id: 'pe1', name: 'Notes', icon: FileText, color: 'bg-blue-100' },
-      { id: 'pe2', name: 'Favorites', icon: Star, color: 'bg-purple-100' }
-    ]
-  },
-  {
-    id: 's6',
-    name: 'TEST KIA',
-    icon: TestTube2,
-    color: 'bg-green-100',
-    isOpen: false,
-    items: [
-      { id: 'tk1', name: 'Tasks', icon: CheckSquare, color: 'bg-blue-100' },
-      { id: 'tk2', name: 'Tests', icon: TestTube2, color: 'bg-orange-100' }
-    ]
+// Projects from backend - computed from store
+const projects = computed(() => projectStore.projects)
+
+// Track which projects are expanded
+const expandedProjects = ref(new Set())
+
+function isProjectExpanded(projectId) {
+  return expandedProjects.value.has(projectId)
+}
+
+function toggleProject(projectId) {
+  if (expandedProjects.value.has(projectId)) {
+    expandedProjects.value.delete(projectId)
+  } else {
+    expandedProjects.value.add(projectId)
   }
-])
+}
+
+// Fetch projects on mount
+onMounted(async () => {
+  try {
+    await projectStore.fetchProjects()
+  } catch (error) {
+    console.error('Failed to fetch projects:', error)
+  }
+})
 
 // Methods
 function navigateTo(item) {
@@ -288,16 +240,11 @@ function toggleDashboards() {
   dashboardsOpen.value = !dashboardsOpen.value
 }
 
-function toggleSpace(space) {
-  space.isOpen = !space.isOpen
-}
-
-function navigateToItem(item) {
+function navigateToProject(project) {
   router.push({
     name: 'Project',
     params: {
-      workspaceId: workspaceStore.currentWorkspaceId || 'default',
-      projectId: item.id
+      projectId: project.id
     }
   })
   if (uiStore.isMobile) {
@@ -458,42 +405,30 @@ async function handleLogout() {
             </button>
           </div>
 
-          <!-- Space Dropdowns -->
-          <div v-for="space in spaces" :key="space.id" class="dropdown-section mb-1 relative">
-            <button
-              @click="toggleSpace(space)"
-              class="group flex items-center gap-2.5 py-2 px-3 rounded-md text-gray-900 text-sm cursor-pointer hover:bg-white/70 transition-colors w-full min-w-0"
-            >
-              <span class="w-5 h-5 relative flex items-center justify-center">
-                <span :class="['dropdown-arrow absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-all duration-200 rounded hover:bg-gray-200', space.isOpen ? 'rotate-90' : '']">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </span>
-                <span :class="['dropdown-icon w-5 h-5 rounded flex items-center justify-center group-hover:opacity-0 transition-all duration-200']">
-                  <component :is="space.icon" class="w-4 h-4 text-gray-800" />
-                </span>
-              </span>
-              <span class="flex-1 text-left truncate">{{ space.name }}</span>
-            </button>
-
-            <!-- Space Items with animation -->
-            <div
-              class="dropdown-content overflow-hidden transition-all duration-300"
-              :style="{ maxHeight: space.isOpen ? (space.items.length * 40 + 20) + 'px' : '0px', opacity: space.isOpen ? 1 : 0 }"
-            >
+          <!-- Projects from Backend -->
+          <div v-if="projects.length > 0">
+            <div v-for="project in projects" :key="project.id" class="dropdown-section mb-1 relative">
               <button
-                v-for="item in space.items"
-                :key="item.id"
-                @click="navigateToItem(item)"
-                class="submenu-item group flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-gray-800 text-[13px] cursor-pointer hover:bg-white/70 hover:text-gray-900 transition-colors w-full text-left min-w-0"
+                @click="navigateToProject(project)"
+                class="group flex items-center gap-2.5 py-2 px-3 rounded-md text-gray-900 text-sm cursor-pointer hover:bg-white/70 transition-colors w-full min-w-0"
               >
-                <span :class="['w-[18px] h-[18px] rounded flex items-center justify-center']">
-                  <component :is="item.icon" class="w-3.5 h-3.5 text-gray-800" />
+                <span class="w-5 h-5 flex items-center justify-center">
+                  <FolderOpen class="w-4 h-4 text-gray-600" />
                 </span>
-                <span class="flex-1 truncate">{{ item.name }}</span>
+                <span class="flex-1 text-left truncate">{{ project.name }}</span>
               </button>
             </div>
+          </div>
+
+          <!-- Empty state when no projects -->
+          <div v-else class="px-3 py-4 text-center">
+            <p class="text-xs text-gray-500">No projects yet</p>
+            <button
+              @click="openCreateProjectModal"
+              class="mt-2 text-xs text-blue-600 hover:text-blue-700"
+            >
+              Create your first project
+            </button>
           </div>
 
           <!-- System Options -->

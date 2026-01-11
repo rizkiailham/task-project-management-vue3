@@ -127,7 +127,7 @@ const routes = [
       },
       // Project routes
       {
-        path: 'workspaces/:workspaceId/projects/:projectId',
+        path: 'projects/:projectId',
         name: 'Project',
         component: () => import('@/modules/project/views/ProjectView.vue'),
         meta: {
