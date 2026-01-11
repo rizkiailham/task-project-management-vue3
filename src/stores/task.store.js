@@ -105,7 +105,7 @@ export const useTaskStore = defineStore('task', () => {
   const subtaskProgress = computed(() => {
     if (!currentTask.value) return 0
     const total = currentTask.value.subtaskCount || subtasks.value.length
-    const completed = currentTask.value.completedSubtaskCount || 
+    const completed = currentTask.value.completedSubtaskCount ||
       subtasks.value.filter(s => s.isCompleted).length
     return total > 0 ? Math.round((completed / total) * 100) : 0
   })
@@ -160,7 +160,7 @@ export const useTaskStore = defineStore('task', () => {
       })
 
       tasks.value = (response.tasks || response).map(t => createTask(t))
-      
+
       if (response.total !== undefined) {
         pagination.value.total = response.total
       }
@@ -337,19 +337,26 @@ export const useTaskStore = defineStore('task', () => {
    * @param {Object} params
    */
   async function fetchMyTasks(params = {}) {
-    isLoading.value = true
-    error.value = null
+    // TODO: Re-enable when backend implements GET /tasks/my-tasks endpoint
+    // Currently disabled to prevent 404 errors in the frontend
+    console.warn('[task.store] fetchMyTasks disabled - backend not implemented yet')
+    myTasks.value = []
+    return myTasks.value
 
-    try {
-      const response = await taskApi.getMyTasks(params)
-      myTasks.value = (response.tasks || response).map(t => createTask(t))
-      return myTasks.value
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch my tasks'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    // Original implementation:
+    // isLoading.value = true
+    // error.value = null
+
+    // try {
+    //   const response = await taskApi.getMyTasks(params)
+    //   myTasks.value = (response.tasks || response).map(t => createTask(t))
+    //   return myTasks.value
+    // } catch (err) {
+    //   error.value = err.message || 'Failed to fetch my tasks'
+    //   throw err
+    // } finally {
+    //   isLoading.value = false
+    // }
   }
 
   // ================================

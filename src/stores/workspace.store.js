@@ -62,25 +62,32 @@ export const useWorkspaceStore = defineStore('workspace', () => {
    * Fetch all workspaces for current user
    */
   async function fetchWorkspaces() {
-    isLoading.value = true
-    error.value = null
+    // TODO: Re-enable when backend implements GET /workspaces endpoint
+    // Currently disabled to prevent 404 errors in the frontend
+    console.warn('[workspace.store] fetchWorkspaces disabled - backend not implemented yet')
+    workspaces.value = []
+    return workspaces.value
 
-    try {
-      const data = await workspaceApi.getWorkspaces()
-      workspaces.value = data.map(w => createWorkspace(w))
+    // Original implementation:
+    // isLoading.value = true
+    // error.value = null
 
-      // Auto-select first workspace if none selected
-      if (!currentWorkspace.value && workspaces.value.length > 0) {
-        await selectWorkspace(workspaces.value[0].id)
-      }
+    // try {
+    //   const data = await workspaceApi.getWorkspaces()
+    //   workspaces.value = data.map(w => createWorkspace(w))
 
-      return workspaces.value
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch workspaces'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    //   // Auto-select first workspace if none selected
+    //   if (!currentWorkspace.value && workspaces.value.length > 0) {
+    //     await selectWorkspace(workspaces.value[0].id)
+    //   }
+
+    //   return workspaces.value
+    // } catch (err) {
+    //   error.value = err.message || 'Failed to fetch workspaces'
+    //   throw err
+    // } finally {
+    //   isLoading.value = false
+    // }
   }
 
   /**

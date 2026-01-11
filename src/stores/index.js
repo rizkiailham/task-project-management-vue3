@@ -13,5 +13,5 @@ export { useNotificationStore } from './notification.store'
 export { useAIStore } from './ai.store'
 export { useAIChatStore } from './aiChat.store'
 export { useUserStore } from './user.store'
-
-
+export { useRoleStore } from './role.store'
+export { useGroupStore } from './group.store'

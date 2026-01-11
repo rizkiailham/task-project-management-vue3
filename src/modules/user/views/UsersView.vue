@@ -127,6 +127,15 @@ async function handleDeleteUser() {
   }
 }
 
+async function handleResendInvite(user) {
+  try {
+    await userStore.resendInvite(user.id)
+    uiStore.showSuccess('Invitation email resent successfully')
+  } catch (error) {
+    uiStore.showError('Failed to resend invitation')
+  }
+}
+
 function handleUserSaved() {
   // Grid will auto-update via reactive store
 }
@@ -203,6 +212,7 @@ function handleUserSaved() {
           :users="filteredUsers"
           @edit="openEditUserModal"
           @delete="openDeleteModal"
+          @resendInvite="handleResendInvite"
         />
       </div>
 

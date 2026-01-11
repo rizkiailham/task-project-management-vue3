@@ -24,7 +24,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits(['edit', 'delete', 'resendInvite'])
 
 const gridApi = ref(null)
 const rowData = ref([])
@@ -37,6 +37,8 @@ watch(
       ...user,
       rowIndex: index + 1,
       fullName: `${user.firstName} ${user.lastName}`,
+      // Compute status from isActive field
+      status: user.isActive ? 'Active' : 'Invited',
       projectsDisplay: formatProjects(user.projects)
     }))
   },
@@ -87,7 +89,8 @@ const columnDefs = [
     cellRenderer: 'NameCellRenderer',
     cellRendererParams: {
       onEdit: (user) => emit('edit', user),
-      onDelete: (user) => emit('delete', user)
+      onDelete: (user) => emit('delete', user),
+      onResendInvite: (user) => emit('resendInvite', user)
     }
   },
   {
@@ -161,6 +164,17 @@ const NameCellRenderer = {
       </div>
       <div class="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
         <button
+          v-if="!params.data.isActive"
+          @click.stop="onResendInvite"
+          class="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200 bg-white"
+        >
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 2L11 13"></path>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+          </svg>
+          Resend Invite
+        </button>
+        <button
           @click.stop="onEdit"
           class="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded border border-gray-200 bg-white"
         >
@@ -190,6 +204,9 @@ const NameCellRenderer = {
     },
     onDelete() {
       this.params.onDelete(this.params.data)
+    },
+    onResendInvite() {
+      this.params.onResendInvite(this.params.data)
     }
   }
 }

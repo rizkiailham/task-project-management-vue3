@@ -7,8 +7,8 @@
  * - Project & Access settings
  * - Custom fields section
  */
-import { ref, computed, watch } from 'vue'
-import { useUserStore, useUIStore } from '@/stores'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useUserStore, useUIStore, useProjectStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -23,6 +23,7 @@ import Password from 'primevue/password'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
+const projectStore = useProjectStore()
 
 const props = defineProps({
   visible: {
@@ -65,8 +66,9 @@ const validationSchema = computed(() => {
     phone: yup.string(),
     language: yup.string(),
     organization: yup.string(),
-    projects: yup.array(),
-    groups: yup.array(),
+    roleId: yup.string().required('Role is required'),
+    projectIds: yup.array(),
+    groupIds: yup.array(),
     isActive: yup.boolean(),
     unit: yup.string()
   }
@@ -97,8 +99,9 @@ const { handleSubmit, meta, resetForm, setValues } = useForm({
     organization: '',
     password: '',
     confirmPassword: '',
-    projects: [],
-    groups: [],
+    roleId: '',
+    projectIds: [],
+    groupIds: [],
     isActive: true,
     unit: ''
   }
@@ -112,14 +115,29 @@ const { value: language } = useField('language')
 const { value: organization } = useField('organization')
 const { value: password, errorMessage: passwordError } = useField('password')
 const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword')
-const { value: projects } = useField('projects')
-const { value: groups } = useField('groups')
+const { value: roleId, errorMessage: roleError } = useField('roleId')
+const { value: projectIds } = useField('projectIds')
+const { value: groupIds } = useField('groupIds')
 const { value: isActive } = useField('isActive')
 const { value: unit } = useField('unit')
 
+// Computed options for dropdowns
+const roleOptions = computed(() => 
+  userStore.availableRoles.map(r => ({ label: r.name, value: r.id }))
+)
+const groupOptions = computed(() => 
+  userStore.availableGroups.map(g => ({ label: g.name, value: g.id }))
+)
+const projectOptions = computed(() => 
+  userStore.availableProjects.map(p => ({ label: p.name, value: p.id }))
+)
+
 // Watch for modal opening and populate form
-watch(() => props.visible, (isVisible) => {
+watch(() => props.visible, async (isVisible) => {
   if (isVisible) {
+    // Fetch dropdown options
+    await userStore.initializeOptions()
+    
     if (props.user) {
       // Edit mode - populate form with user data
       setValues({
@@ -131,10 +149,11 @@ watch(() => props.visible, (isVisible) => {
         organization: props.user.organization || '',
         password: '',
         confirmPassword: '',
-        projects: props.user.projects || [],
-        groups: props.user.groups || [],
+        roleId: props.user.roleId || props.user.role?.id || '',
+        projectIds: props.user.projects?.map(p => p.id || p) || [],
+        groupIds: props.user.groups?.map(g => g.id || g) || [],
         isActive: props.user.isActive ?? true,
-        unit: props.user.unit || ''
+        unit: props.user.customValues?.unit || ''
       })
       avatarColor.value = props.user.avatarColor || '#3b82f6'
     } else {
@@ -163,11 +182,16 @@ const onSubmit = handleSubmit(async (values) => {
       phone: values.phone,
       language: values.language,
       organization: values.organization,
-      projects: values.projects,
-      groups: values.groups,
+      roleId: values.roleId,
+      groupIds: values.groupIds,
+      projectIds: values.projectIds,
       isActive: values.isActive,
-      unit: values.unit,
-      avatarColor: avatarColor.value
+      customValues: values.unit ? { unit: values.unit } : {}
+    }
+
+    // Only send password if provided
+    if (values.password) {
+      userData.password = values.password
     }
 
     if (isEditMode.value) {
@@ -177,6 +201,9 @@ const onSubmit = handleSubmit(async (values) => {
       await userStore.createUser(userData)
       uiStore.showSuccess('User created successfully')
     }
+    
+    // Refresh users list
+    await userStore.fetchUsers()
     
     emit('saved')
     dialogVisible.value = false
@@ -368,13 +395,32 @@ const avatarInitial = computed(() => {
         </button>
         
         <div v-show="projectAccessExpanded" class="p-4 space-y-4">
+          <!-- Role Row -->
+          <div>
+            <label class="mb-1.5 block text-xs font-medium text-gray-700">
+              Role <span class="text-red-500">*</span>
+            </label>
+            <Select
+              v-model="roleId"
+              :options="roleOptions"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full"
+              :class="{ 'p-invalid': roleError }"
+              placeholder="Select role..."
+            />
+            <small v-if="roleError" class="mt-1 block text-xs text-red-500">{{ roleError }}</small>
+          </div>
+
           <!-- Project & Group Row -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="mb-1.5 block text-xs font-medium text-gray-700">Project</label>
               <MultiSelect
-                v-model="projects"
-                :options="userStore.availableProjects"
+                v-model="projectIds"
+                :options="projectOptions"
+                optionLabel="label"
+                optionValue="value"
                 class="w-full"
                 placeholder="Select project(s)..."
                 :maxSelectedLabels="2"
@@ -383,8 +429,10 @@ const avatarInitial = computed(() => {
             <div>
               <label class="mb-1.5 block text-xs font-medium text-gray-700">Group</label>
               <MultiSelect
-                v-model="groups"
-                :options="userStore.availableGroups"
+                v-model="groupIds"
+                :options="groupOptions"
+                optionLabel="label"
+                optionValue="value"
                 class="w-full"
                 placeholder="Select group(s)..."
                 filter
