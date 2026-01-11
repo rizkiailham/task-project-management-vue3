@@ -5,9 +5,10 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { io } from 'socket.io-client'
 import { useAuthStore } from './auth.store'
+import * as aiChatApi from '@/api/aiChat.api'
 
 export const useAIChatStore = defineStore('aiChat', () => {
   // ================================
@@ -25,6 +26,10 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const chatHistory = ref([])
   const isTyping = ref(false)
   const isGenerating = ref(false)
+
+  // Persistence state
+  const conversations = ref([])
+  const isLoadingConversation = ref(false)
   
   // WebSocket state
   const connectionStatus = ref('disconnected') // 'connecting' | 'connected' | 'disconnected' | 'error'
@@ -71,9 +76,9 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const hasActiveChat = computed(() => chatMessages.value.length > 0)
   const isConnected = computed(() => connectionStatus.value === 'connected')
   
-  const lastMessage = computed(() => 
-    chatMessages.value.length > 0 
-      ? chatMessages.value[chatMessages.value.length - 1] 
+  const lastMessage = computed(() =>
+    chatMessages.value.length > 0
+      ? chatMessages.value[chatMessages.value.length - 1]
       : null
   )
 
@@ -92,7 +97,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
     
     connectionStatus.value = 'connecting'
     
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3333'
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3333'
     
     socket = io(`${apiUrl}/ai`, {
       transports: ['websocket'],
@@ -219,8 +224,9 @@ export const useAIChatStore = defineStore('aiChat', () => {
   // Sidebar Actions
   // ================================
   
-  function openChatSidebar() {
+  async function openChatSidebar() {
     isChatSidebarOpen.value = true
+    await loadLatestConversation()
     // Connect to WebSocket when sidebar opens
     if (connectionStatus.value === 'disconnected') {
       connect()
@@ -263,15 +269,69 @@ export const useAIChatStore = defineStore('aiChat', () => {
   // Chat Actions
   // ================================
   
-  function startNewChat() {
-    currentChatId.value = `chat-${Date.now()}`
-    chatMessages.value = []
-    chatHistory.value = []
-    currentPlan.value = []
-    currentChecks.value = []
-    currentToolCalls.value = []
-    currentToolResults.value = []
-    chatBreadcrumbs.value = [{ id: 'my-tasks', label: 'My tasks', type: 'project' }]
+  async function startNewChat() {
+    await createNewConversation()
+  }
+
+  async function createNewConversation() {
+    isLoadingConversation.value = true
+    try {
+      const response = await aiChatApi.createConversation()
+      const conversation = response.conversation || response
+      currentChatId.value = conversation.id
+      chatMessages.value = []
+      chatHistory.value = []
+      currentPlan.value = []
+      currentChecks.value = []
+      currentToolCalls.value = []
+      currentToolResults.value = []
+      chatBreadcrumbs.value = [{ id: 'my-tasks', label: 'My tasks', type: 'project' }]
+      conversations.value = [conversation, ...conversations.value]
+    } finally {
+      isLoadingConversation.value = false
+    }
+  }
+
+  async function loadLatestConversation() {
+    if (isLoadingConversation.value) return
+    isLoadingConversation.value = true
+    try {
+      const response = await aiChatApi.listConversations()
+      const list = response.conversations || response || []
+      conversations.value = list
+
+      if (list.length > 0) {
+        await loadConversation(list[0].id)
+      } else {
+        await createNewConversation()
+      }
+    } finally {
+      isLoadingConversation.value = false
+    }
+  }
+
+  async function loadConversation(conversationId) {
+    if (!conversationId) return
+    isLoadingConversation.value = true
+    try {
+      const response = await aiChatApi.getConversation(conversationId)
+      const conversation = response.conversation || response
+      const messages = response.messages || []
+      currentChatId.value = conversation.id
+      chatMessages.value = messages.map((message) => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        timestamp: message.createdAt,
+        metadata: message.metadata || {}
+      }))
+      currentPlan.value = []
+      currentChecks.value = []
+      currentToolCalls.value = []
+      currentToolResults.value = []
+    } finally {
+      isLoadingConversation.value = false
+    }
   }
   
   /**
@@ -279,7 +339,11 @@ export const useAIChatStore = defineStore('aiChat', () => {
    */
   async function sendMessage(content, mention = null) {
     if (!content.trim()) return
-    
+
+    if (!currentChatId.value) {
+      await createNewConversation()
+    }
+
     const userMessage = {
       id: `msg-${Date.now()}`,
       role: 'user',
@@ -310,6 +374,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
     if (socket?.connected) {
       socket.emit('ai:message', {
         requestId: currentRequestId.value,
+        conversationId: currentChatId.value,
         message: content.trim(),
         history: history.slice(0, -1), // Exclude current message
         context: {},
@@ -325,29 +390,14 @@ export const useAIChatStore = defineStore('aiChat', () => {
    * HTTP fallback for sending messages
    */
   async function sendMessageHttp(content, history) {
-    const authStore = useAuthStore()
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3333'
-    
     try {
-      const response = await fetch(`${apiUrl}/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.accessToken}`
-        },
-        body: JSON.stringify({
-          message: content,
-          history,
-          context: {},
-          mode: 'execute'
-        })
+      const data = await aiChatApi.sendChatMessage({
+        conversationId: currentChatId.value,
+        message: content,
+        history,
+        context: {},
+        mode: 'execute'
       })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      
-      const data = await response.json()
       
       // Update state with response
       currentPlan.value = data.plan || []
@@ -441,6 +491,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
     chatHistory,
     isTyping,
     isGenerating,
+    conversations,
+    isLoadingConversation,
     skills,
     recentTasks,
     chatBreadcrumbs,
@@ -472,6 +524,9 @@ export const useAIChatStore = defineStore('aiChat', () => {
     
     // Chat Actions
     startNewChat,
+    createNewConversation,
+    loadLatestConversation,
+    loadConversation,
     sendMessage,
     executeSkill,
     addTaskToBreadcrumbs,

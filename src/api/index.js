@@ -9,6 +9,7 @@ export * as workspaceApi from './workspace.api'
 export * as projectApi from './project.api'
 export * as taskApi from './task.api'
 export * as aiApi from './ai.api'
+export * as aiChatApi from './aiChat.api'
 export * as notificationApi from './notification.api'
 
 export {

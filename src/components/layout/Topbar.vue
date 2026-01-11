@@ -28,6 +28,7 @@ const searchQuery = ref('')
 // Computed
 const pageTitle = computed(() => {
   if (route.name === 'Home') return 'Home'
+  if (route.name === 'Users') return 'Users'
   if (route.name === 'MyTasks') return 'My Tasks'
   if (route.name === 'Inbox') return 'Inbox'
   if (projectStore.currentProject) return projectStore.currentProject.name

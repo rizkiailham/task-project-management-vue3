@@ -6,6 +6,7 @@
  */
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useUIStore, useWorkspaceStore, useProjectStore, useNotificationStore, useAIChatStore } from '@/stores'
 
 import Sidebar from './Sidebar.vue'
@@ -21,8 +22,11 @@ const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
 const aiChatStore = useAIChatStore()
 
+// Extract reactive refs from aiChatStore for proper reactivity in computed
+const { isChatSidebarOpen, chatSidebarWidth, isResizingChatSidebar } = storeToRefs(aiChatStore)
+
 // Pages that have their own custom header (no global topbar)
-const pagesWithCustomHeader = ['Users']
+const pagesWithCustomHeader = []
 
 const showGlobalTopbar = computed(() => {
   return !pagesWithCustomHeader.includes(route.name)
@@ -35,8 +39,8 @@ const taskDetailWidth = computed(() => {
 })
 
 const aiChatWidth = computed(() => {
-  if (!aiChatStore.isChatSidebarOpen) return 0
-  return aiChatStore.chatSidebarWidth
+  if (!isChatSidebarOpen.value) return 0
+  return chatSidebarWidth.value
 })
 
 // Total right sidebars width for main content adjustment
@@ -91,7 +95,7 @@ watch(
     <!-- Left Sidebar -->
     <Sidebar />
 
-    <!-- Topbar - Fixed at top, spans from left sidebar to right edge (hidden for pages with custom header) -->
+    <!-- Topbar - Fixed at top, full width (AI Chat overlays on top) -->
     <Topbar
       v-if="showGlobalTopbar"
       class="fixed top-0 z-50"
@@ -104,10 +108,10 @@ watch(
 
     <!-- Main Content Area - Below topbar, between sidebars -->
     <main
-      class="fixed overflow-auto bg-white"
+      class="fixed overflow-hidden bg-white"
       :class="[
         uiStore.isResizingSidebar ? 'transition-none' : 'transition-all duration-300',
-        { 'select-none': uiStore.isResizingSidebar || aiChatStore.isResizingChatSidebar || uiStore.isResizingTaskDetailSidebar }
+        { 'select-none': uiStore.isResizingSidebar || isResizingChatSidebar || uiStore.isResizingTaskDetailSidebar }
       ]"
       :style="{
         top: showGlobalTopbar ? '56px' : '0',
@@ -116,18 +120,20 @@ watch(
         bottom: '0'
       }"
     >
-      <RouterView v-slot="{ Component }">
-        <Transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </Transition>
-      </RouterView>
+      <div class="h-full w-full overflow-auto">
+        <RouterView v-slot="{ Component }">
+          <Transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </Transition>
+        </RouterView>
+      </div>
     </main>
 
     <!-- Task Detail Sidebar (positioned to the left of AI Chat) -->
     <TaskDetailSidebar />
 
     <!-- AI Chat Sidebar (always on far right) -->
-    <AIChatSidebar />
+    <AIChatSidebar :top-offset="showGlobalTopbar ? 56 : 0" />
   </div>
 </template>
 
@@ -147,4 +153,3 @@ watch(
   opacity: 0;
 }
 </style>
-

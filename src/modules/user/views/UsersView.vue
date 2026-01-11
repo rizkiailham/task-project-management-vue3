@@ -2,13 +2,8 @@
 /**
  * UsersView - Main users management page
  * 
- * Features:
- * - Custom header with hamburger, home icon, tabs
- * - Tab navigation (Users, Groups, Role) with blue underline
- * - Search and filter controls
- * - AG Grid table for users list
- * - Add/Edit/Delete user modals
- * - Role management with permissions
+ * Now uses global Topbar from AppLayout for consistent AI Chat sidebar handling.
+ * Contains sub-header with tabs, search, and action buttons.
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore, useUIStore, useRoleStore } from '@/stores'
@@ -18,7 +13,7 @@ import UserFormModal from '@/components/modals/UserFormModal.vue'
 import InviteUserModal from '@/components/modals/InviteUserModal.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import RoleFormModal from '@/components/modals/RoleFormModal.vue'
-import { Search, Plus, UserPlus, Sparkles, ChevronDown, SlidersHorizontal, Settings, Users, Menu, Home } from 'lucide-vue-next'
+import { Search, Plus, UserPlus, SlidersHorizontal, Settings, Users } from 'lucide-vue-next'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -78,15 +73,6 @@ const filteredUsers = computed(() => {
   return users
 })
 
-// Methods
-function toggleSidebar() {
-  if (uiStore.isMobile) {
-    uiStore.openMobileSidebar()
-  } else {
-    uiStore.toggleSidebar()
-  }
-}
-
 // Watch for tab changes to fetch data
 watch(activeTab, async (newTab) => {
   if (newTab === 'role' && roleStore.roles.length === 0) {
@@ -102,7 +88,6 @@ watch(activeTab, async (newTab) => {
 onMounted(async () => {
   try {
     await userStore.fetchUsers()
-    console.log('Fetched users:', JSON.stringify(userStore.users, null, 2))
   } catch (error) {
     console.error('Error fetching users:', error)
     uiStore.showError('Failed to load users')
@@ -202,45 +187,29 @@ function handleRoleSaved() {
 
 <template>
   <div class="users-view h-full flex flex-col">
-    <!-- Single Row Header -->
-    <header class="bg-white border-b border-gray-200 flex-shrink-0">
-      <div class="flex items-center h-14 px-4">
-        <!-- Left: Hamburger + Home Icon + Tabs -->
+    <!-- Sub-header with Tabs and Actions (below global Topbar) -->
+    <div class="bg-white border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-center h-12 px-4">
+        <!-- Left: Tabs -->
         <div class="flex items-center gap-4 h-full">
           <button
-            @click="toggleSidebar"
-            class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 transition-colors"
-            title="Toggle sidebar"
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            :class="[
+              'relative h-full px-1 text-sm font-semibold transition-colors',
+              activeTab === tab.id
+                ? 'text-blue-600'
+                : 'text-gray-400 hover:text-gray-600'
+            ]"
           >
-            <Menu class="w-5 h-5" />
+            {{ tab.label }}
+            <!-- Blue underline indicator -->
+            <span
+              v-if="activeTab === tab.id"
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+            ></span>
           </button>
-          
-          <div class="flex items-center gap-2 text-gray-600">
-            <Home class="w-5 h-5" />
-            <span class="text-sm font-medium">Users</span>
-          </div>
-
-          <!-- Tabs -->
-          <div class="flex items-center gap-4 h-full ml-4">
-            <button
-              v-for="tab in tabs"
-              :key="tab.id"
-              @click="activeTab = tab.id"
-              :class="[
-                'relative h-full px-1 text-sm font-semibold transition-colors',
-                activeTab === tab.id
-                  ? 'text-blue-600'
-                  : 'text-gray-400 hover:text-gray-600'
-              ]"
-            >
-              {{ tab.label }}
-              <!-- Blue underline indicator -->
-              <span
-                v-if="activeTab === tab.id"
-                class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-              ></span>
-            </button>
-          </div>
         </div>
 
         <!-- Right: Search + Actions -->
@@ -262,7 +231,6 @@ function handleRoleSaved() {
             class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
           >
             <Plus class="w-4 h-4" />
-            New User
           </button>
 
           <!-- Invite User Button -->
@@ -271,26 +239,16 @@ function handleRoleSaved() {
             class="inline-flex items-center gap-1.5 h-8 px-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
           >
             <UserPlus class="w-4 h-4" />
-            Invite User
-          </button>
-
-          <!-- Ask AI Button -->
-          <button
-            class="inline-flex items-center gap-1.5 h-8 px-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md transition-colors"
-          >
-            <Sparkles class="w-4 h-4" />
-            Ask AI
-            <ChevronDown class="w-3 h-3 ml-0.5" />
           </button>
         </div>
       </div>
-    </header>
+    </div>
 
     <!-- Content Area -->
     <div class="flex-1 overflow-auto bg-white">
       <!-- Users Tab Content -->
       <div v-if="activeTab === 'users'" class="flex flex-col h-full">
-        <!-- Grid - No container, flows directly -->
+        <!-- Grid -->
         <div class="flex-1">
           <UsersGrid
             :users="filteredUsers"

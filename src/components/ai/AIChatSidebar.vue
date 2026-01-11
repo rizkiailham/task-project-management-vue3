@@ -14,12 +14,18 @@ import { useI18n } from 'vue-i18n'
 import { useAIChatStore } from '@/stores'
 import TipTapChatEditor from './TipTapChatEditor.vue'
 import Avatar from 'primevue/avatar'
+import MarkdownIt from 'markdown-it'
+import DOMPurify from 'dompurify'
+
+const props = defineProps({
+  topOffset: {
+    type: Number,
+    default: 56
+  }
+})
 
 const { t } = useI18n()
 const aiChatStore = useAIChatStore()
-
-// Topbar height constant
-const TOPBAR_HEIGHT = 56
 
 // Refs
 const sidebarRef = ref(null)
@@ -39,11 +45,36 @@ const connectionStatus = computed(() => aiChatStore.connectionStatus)
 const currentPlan = computed(() => aiChatStore.currentPlan)
 const currentChecks = computed(() => aiChatStore.currentChecks)
 
+// Markdown renderer for AI responses
+const markdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true
+})
+
+function renderMarkdown(content = '') {
+  if (!content) return ''
+  const rawHtml = markdown.render(content)
+  const sanitized = DOMPurify.sanitize(rawHtml)
+
+  if (typeof window === 'undefined') {
+    return sanitized
+  }
+
+  const wrapper = document.createElement('div')
+  wrapper.innerHTML = sanitized
+  wrapper.querySelectorAll('a').forEach((anchor) => {
+    anchor.setAttribute('target', '_blank')
+    anchor.setAttribute('rel', 'noopener noreferrer')
+  })
+  return wrapper.innerHTML
+}
+
 // Calculate sidebar style with proper positioning below topbar
 const sidebarStyle = computed(() => ({
   width: `${sidebarWidth.value}px`,
-  top: `${TOPBAR_HEIGHT}px`,
-  height: `calc(100vh - ${TOPBAR_HEIGHT}px)`
+  top: `${props.topOffset}px`,
+  height: `calc(100vh - ${props.topOffset}px)`
 }))
 
 // Resize handlers
@@ -122,7 +153,7 @@ onUnmounted(() => {
     <div
       v-if="isOpen"
       ref="sidebarRef"
-      class="ai-chat-sidebar fixed right-0 bg-white border-l border-gray-200 shadow-xl z-40 flex flex-col"
+      class="ai-chat-sidebar fixed right-0 bg-white border-l border-gray-200 shadow-xl z-[1000] flex flex-col"
       :style="sidebarStyle"
       :class="{ 'select-none': isResizing }"
     >
@@ -227,7 +258,7 @@ onUnmounted(() => {
               </svg>
             </div>
             <div class="max-w-[80%] bg-gray-100 text-gray-800 rounded-2xl rounded-tl-md px-4 py-2">
-              <p class="text-sm">{{ message.content }}</p>
+              <div class="ai-markdown text-sm" v-html="renderMarkdown(message.content)"></div>
             </div>
           </div>
         </div>
@@ -370,6 +401,62 @@ onUnmounted(() => {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* AI markdown rendering */
+.ai-markdown :deep(p) {
+  margin: 0;
+}
+
+.ai-markdown :deep(p + p) {
+  margin-top: 0.5rem;
+}
+
+.ai-markdown :deep(ul),
+.ai-markdown :deep(ol) {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.ai-markdown :deep(li) {
+  margin: 0.25rem 0;
+}
+
+.ai-markdown :deep(strong) {
+  font-weight: 600;
+}
+
+.ai-markdown :deep(a) {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.ai-markdown :deep(code) {
+  background: #e5e7eb;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 0.85em;
+}
+
+.ai-markdown :deep(pre) {
+  background: #111827;
+  color: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.ai-markdown :deep(pre code) {
+  background: transparent;
+  padding: 0;
+}
+
+.ai-markdown :deep(blockquote) {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 0.75rem;
+  color: #6b7280;
+  margin: 0.5rem 0;
 }
 </style>
 
