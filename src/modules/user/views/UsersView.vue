@@ -3,7 +3,8 @@
  * UsersView - Main users management page
  * 
  * Features:
- * - Tab navigation (Users, Groups, Role)
+ * - Custom header with hamburger, home icon, tabs
+ * - Tab navigation (Users, Groups, Role) with yellow underline
  * - Search and filter controls
  * - AG Grid table for users list
  * - Add/Edit/Delete user modals
@@ -14,12 +15,7 @@ import UsersGrid from '@/modules/user/components/UsersGrid.vue'
 import UserFormModal from '@/components/modals/UserFormModal.vue'
 import InviteUserModal from '@/components/modals/InviteUserModal.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
-import { Search, Plus, UserPlus, Sparkles, ChevronDown, SlidersHorizontal } from 'lucide-vue-next'
-
-// PrimeVue
-import InputText from 'primevue/inputtext'
-import Button from 'primevue/button'
-import Select from 'primevue/select'
+import { Search, Plus, UserPlus, Sparkles, ChevronDown, SlidersHorizontal, Settings, Users, Menu, Home } from 'lucide-vue-next'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -43,21 +39,6 @@ const tabs = [
   { id: 'users', label: 'Users' },
   { id: 'groups', label: 'Groups' },
   { id: 'role', label: 'Role' }
-]
-
-// Filter options
-const statusOptions = [
-  { label: 'All Status', value: null },
-  { label: 'Active', value: 'Active' },
-  { label: 'Invited', value: 'Invited' },
-  { label: 'Inactive', value: 'Inactive' }
-]
-
-const roleOptions = [
-  { label: 'All Roles', value: null },
-  { label: 'Administrator', value: 'Administrators' },
-  { label: 'Project Manager', value: 'Project Managers' },
-  { label: 'Team Member', value: 'Team' }
 ]
 
 // Computed
@@ -88,10 +69,20 @@ const filteredUsers = computed(() => {
 })
 
 // Methods
+function toggleSidebar() {
+  if (uiStore.isMobile) {
+    uiStore.openMobileSidebar()
+  } else {
+    uiStore.toggleSidebar()
+  }
+}
+
 onMounted(async () => {
   try {
     await userStore.fetchUsers()
+    console.log('Fetched users:', JSON.stringify(userStore.users, null, 2))
   } catch (error) {
+    console.error('Error fetching users:', error)
     uiStore.showError('Failed to load users')
   } finally {
     isLoading.value = false
@@ -147,141 +138,206 @@ function openInviteModal() {
 }
 
 function handleUserInvited() {
-  // Optionally refresh users list
   userStore.fetchUsers()
 }
 </script>
 
 <template>
-  <div class="users-view p-6 lg:p-8">
-    <!-- Header with Tabs and Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-      <!-- Tabs -->
-      <div class="flex items-center gap-1">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          :class="[
-            'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-            activeTab === tab.id
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-          ]"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+  <div class="users-view h-full flex flex-col">
+    <!-- Single Row Header -->
+    <header class="bg-white border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-center h-14 px-4">
+        <!-- Left: Hamburger + Home Icon + Tabs -->
+        <div class="flex items-center gap-4 h-full">
+          <button
+            @click="toggleSidebar"
+            class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 transition-colors"
+            title="Toggle sidebar"
+          >
+            <Menu class="w-5 h-5" />
+          </button>
+          
+          <div class="flex items-center gap-2 text-gray-600">
+            <Home class="w-5 h-5" />
+            <span class="text-sm font-medium">Users</span>
+          </div>
 
-      <!-- Actions -->
-      <div class="flex items-center gap-3">
-        <!-- Search -->
-        <div class="relative">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <InputText
-            v-model="searchQuery"
-            placeholder="Search user"
-            class="pl-9 w-48"
+          <!-- Tabs -->
+          <div class="flex items-center gap-4 h-full ml-4">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              :class="[
+                'relative h-full px-1 text-sm font-semibold transition-colors',
+                activeTab === tab.id
+                  ? 'text-blue-600'
+                  : 'text-gray-400 hover:text-gray-600'
+              ]"
+            >
+              {{ tab.label }}
+              <!-- Blue underline indicator -->
+              <span
+                v-if="activeTab === tab.id"
+                class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+              ></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Search + Actions -->
+        <div class="flex items-center gap-3 ml-auto">
+          <!-- Search User -->
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search user"
+              class="h-8 pl-9 pr-4 w-40 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+          </div>
+
+          <!-- New User Button -->
+          <button
+            @click="openAddUserModal"
+            class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+          >
+            <Plus class="w-4 h-4" />
+            New User
+          </button>
+
+          <!-- Invite User Button -->
+          <button
+            @click="openInviteModal"
+            class="inline-flex items-center gap-1.5 h-8 px-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+          >
+            <UserPlus class="w-4 h-4" />
+            Invite User
+          </button>
+
+          <!-- Ask AI Button -->
+          <button
+            class="inline-flex items-center gap-1.5 h-8 px-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md transition-colors"
+          >
+            <Sparkles class="w-4 h-4" />
+            Ask AI
+            <ChevronDown class="w-3 h-3 ml-0.5" />
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-auto bg-white">
+      <!-- Users Tab Content -->
+      <div v-if="activeTab === 'users'" class="flex flex-col h-full">
+        <!-- Grid - No container, flows directly -->
+        <div class="flex-1">
+          <UsersGrid
+            :users="filteredUsers"
+            @edit="openEditUserModal"
+            @delete="openDeleteModal"
+            @resendInvite="handleResendInvite"
           />
         </div>
 
-        <!-- New User Button -->
-        <Button
-          @click="openAddUserModal"
-          class="!bg-blue-600 hover:!bg-blue-700 !border-blue-600"
-        >
-          <Plus class="w-4 h-4 mr-1" />
-          New User
-        </Button>
+        <!-- Bottom Bar: Filters on left, Pagination on right -->
+        <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white">
+          <!-- Left: Filters -->
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-500">Filter by</span>
+            <button
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              <Settings class="w-4 h-4 text-gray-400" />
+              Status
+            </button>
+            <button
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              <Users class="w-4 h-4 text-gray-400" />
+              Role
+            </button>
+            <button
+              class="inline-flex items-center p-1.5 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              <SlidersHorizontal class="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
 
-        <!-- Invite User Button -->
-        <Button
-          @click="openInviteModal"
-          severity="secondary"
-          class="!bg-green-600 hover:!bg-green-700 !border-green-600 !text-white"
-        >
-          <UserPlus class="w-4 h-4 mr-1" />
-          Invite User
-        </Button>
+          <!-- Right: Custom Pagination -->
+          <div class="flex items-center gap-2">
+            <!-- First/Prev -->
+            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
+              </svg>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
 
-        <!-- Ask AI Button -->
-        <Button
-          severity="secondary"
-          class="!bg-purple-600 hover:!bg-purple-700 !border-purple-600 !text-white"
-        >
-          <Sparkles class="w-4 h-4 mr-1" />
-          Ask AI
-          <ChevronDown class="w-3 h-3 ml-1" />
-        </Button>
+            <!-- Page Numbers -->
+            <div class="flex items-center gap-1">
+              <button class="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-900 bg-gray-100 rounded">1</button>
+              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">2</button>
+              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">3</button>
+              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">4</button>
+              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">5</button>
+            </div>
+
+            <!-- Next/Last -->
+            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
+              </svg>
+            </button>
+
+            <!-- Page Size -->
+            <div class="ml-2 flex items-center">
+              <select class="h-8 px-2 pr-7 text-sm text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer">
+                <option>20</option>
+                <option>50</option>
+                <option>100</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Users Tab Content -->
-    <div v-if="activeTab === 'users'">
-      <!-- Grid -->
-      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <UsersGrid
-          :users="filteredUsers"
-          @edit="openEditUserModal"
-          @delete="openDeleteModal"
-          @resendInvite="handleResendInvite"
-        />
+      <!-- Groups Tab Content (Placeholder) -->
+      <div v-else-if="activeTab === 'groups'" class="flex items-center justify-center h-full bg-white">
+        <div class="text-center">
+          <div class="text-gray-400 mb-2">
+            <Users class="w-12 h-12 mx-auto" />
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-1">Groups Management</h3>
+          <p class="text-sm text-gray-500">Coming soon - Manage user groups and permissions</p>
+        </div>
       </div>
 
-      <!-- Bottom Filters -->
-      <div class="flex items-center gap-3 mt-4">
-        <span class="text-sm text-gray-500">Filter by</span>
-        <button
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-        >
-          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-          Status
-        </button>
-        <button
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-        >
-          <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          Role
-        </button>
-        <button
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-        >
-          <SlidersHorizontal class="w-4 h-4 text-gray-500" />
-        </button>
+      <!-- Role Tab Content (Placeholder) -->
+      <div v-else-if="activeTab === 'role'" class="flex items-center justify-center h-full bg-white">
+        <div class="text-center">
+          <div class="text-gray-400 mb-2">
+            <svg class="w-12 h-12 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-1">Role Management</h3>
+          <p class="text-sm text-gray-500">Coming soon - Define roles and access controls</p>
+        </div>
       </div>
-    </div>
-
-    <!-- Groups Tab Content (Placeholder) -->
-    <div v-else-if="activeTab === 'groups'" class="bg-white rounded-lg border border-gray-200 p-12 text-center">
-      <div class="text-gray-400 mb-2">
-        <svg class="w-12 h-12 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-      </div>
-      <h3 class="text-lg font-medium text-gray-900 mb-1">Groups Management</h3>
-      <p class="text-sm text-gray-500">Coming soon - Manage user groups and permissions</p>
-    </div>
-
-    <!-- Role Tab Content (Placeholder) -->
-    <div v-else-if="activeTab === 'role'" class="bg-white rounded-lg border border-gray-200 p-12 text-center">
-      <div class="text-gray-400 mb-2">
-        <svg class="w-12 h-12 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-        </svg>
-      </div>
-      <h3 class="text-lg font-medium text-gray-900 mb-1">Role Management</h3>
-      <p class="text-sm text-gray-500">Coming soon - Define roles and access controls</p>
     </div>
 
     <!-- User Form Modal -->
@@ -310,7 +366,6 @@ function handleUserInvited() {
 
 <style scoped>
 .users-view {
-  min-height: calc(100vh - 64px);
-  background-color: #f9fafb;
+  background-color: #ffffff;
 }
 </style>

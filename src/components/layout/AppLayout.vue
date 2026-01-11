@@ -21,6 +21,13 @@ const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
 const aiChatStore = useAIChatStore()
 
+// Pages that have their own custom header (no global topbar)
+const pagesWithCustomHeader = ['Users']
+
+const showGlobalTopbar = computed(() => {
+  return !pagesWithCustomHeader.includes(route.name)
+})
+
 // Computed values for responsive sidebar widths
 const taskDetailWidth = computed(() => {
   if (!uiStore.isTaskPanelOpen) return 0
@@ -84,8 +91,9 @@ watch(
     <!-- Left Sidebar -->
     <Sidebar />
 
-    <!-- Topbar - Fixed at top, spans from left sidebar to right edge -->
+    <!-- Topbar - Fixed at top, spans from left sidebar to right edge (hidden for pages with custom header) -->
     <Topbar
+      v-if="showGlobalTopbar"
       class="fixed top-0 z-50"
       :class="uiStore.isResizingSidebar ? 'transition-none' : 'transition-all duration-300'"
       :style="{
@@ -102,7 +110,7 @@ watch(
         { 'select-none': uiStore.isResizingSidebar || aiChatStore.isResizingChatSidebar || uiStore.isResizingTaskDetailSidebar }
       ]"
       :style="{
-        top: '56px',
+        top: showGlobalTopbar ? '56px' : '0',
         left: uiStore.isMobile ? '0' : uiStore.sidebarWidth,
         right: `${totalRightSidebarsWidth}px`,
         bottom: '0'
