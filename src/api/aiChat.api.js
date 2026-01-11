@@ -19,9 +19,14 @@ export async function sendChatMessage(payload) {
   return post('/ai/chat', payload)
 }
 
+export async function clearConversation(conversationId) {
+  return post(`/ai/conversations/${conversationId}/clear`)
+}
+
 export default {
   listConversations,
   getConversation,
   createConversation,
-  sendChatMessage
+  sendChatMessage,
+  clearConversation
 }

@@ -281,6 +281,11 @@
   "aiChat": {
     "title": "AI Chat",
     "newChat": "Ny chat",
+    "history": "Historikk",
+    "noHistory": "Ingen historikk ennå",
+    "noMessages": "Ingen meldinger ennå",
+    "clearChat": "Tøm chat",
+    "clearChatConfirm": "Tømme denne chatten? Dette fjerner alle meldinger i den gjeldende samtalen.",
     "skills": "Ferdigheter",
     "skillsSettings": "Ferdighetsinnstillinger",
     "recentTasks": "Nylige oppgaver",

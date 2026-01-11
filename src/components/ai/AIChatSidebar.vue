@@ -9,13 +9,13 @@
  * - Skills section at bottom
  * - Breadcrumb navigation
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAIChatStore } from '@/stores'
 import TipTapChatEditor from './TipTapChatEditor.vue'
-import Avatar from 'primevue/avatar'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 
 const props = defineProps({
   topOffset: {
@@ -38,12 +38,18 @@ const startWidth = ref(0)
 const isOpen = computed(() => aiChatStore.isChatSidebarOpen)
 const sidebarWidth = computed(() => aiChatStore.chatSidebarWidth)
 const messages = computed(() => aiChatStore.chatMessages)
+const conversations = computed(() => aiChatStore.conversations)
+const currentChatId = computed(() => aiChatStore.currentChatId)
+const isLoadingConversation = computed(() => aiChatStore.isLoadingConversation)
 const isGenerating = computed(() => aiChatStore.isGenerating)
 const breadcrumbs = computed(() => aiChatStore.chatBreadcrumbs)
 const featuredSkills = computed(() => aiChatStore.featuredSkills)
 const connectionStatus = computed(() => aiChatStore.connectionStatus)
 const currentPlan = computed(() => aiChatStore.currentPlan)
 const currentChecks = computed(() => aiChatStore.currentChecks)
+const canClearChat = computed(() => !isGenerating.value && messages.value.length > 0)
+
+const historyMenuRef = ref(null)
 
 // Markdown renderer for AI responses
 const markdown = new MarkdownIt({
@@ -118,6 +124,25 @@ function newChat() {
   aiChatStore.startNewChat()
 }
 
+function handleHistoryOpen() {
+  aiChatStore.refreshConversations()
+}
+
+function selectConversation(conversationId) {
+  if (!conversationId) return
+  aiChatStore.loadConversation(conversationId)
+  historyMenuRef.value?.close()
+}
+
+function clearCurrentChat() {
+  if (!canClearChat.value) return
+  const confirmMessage = t('aiChat.clearChatConfirm')
+  if (confirmMessage && !window.confirm(confirmMessage)) {
+    return
+  }
+  aiChatStore.clearConversation()
+}
+
 function handleSend({ content, mentions }) {
   const mention = mentions.length > 0 ? mentions[0] : null
   aiChatStore.sendMessage(content, mention)
@@ -134,8 +159,21 @@ function executeSkill(skill) {
   aiChatStore.executeSkill(skill.id)
 }
 
-function formatTime(timestamp) {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
+function formatConversationTitle(conversation) {
+  if (!conversation) return t('aiChat.newChat')
+  const title = conversation.title?.trim()
+  return title && title.length ? title : t('aiChat.newChat')
+}
+
+function formatConversationMeta(conversation) {
+  if (!conversation?.lastMessageAt) {
+    return t('aiChat.noMessages')
+  }
+
+  const date = new Date(conversation.lastMessageAt)
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
     hour: 'numeric',
     minute: '2-digit'
   })
@@ -194,11 +232,69 @@ onUnmounted(() => {
         </div>
         
         <div class="flex items-center gap-2">
-          <button class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+          <DropdownMenu
+            ref="historyMenuRef"
+            :items="[]"
+            position="right"
+            width="20rem"
+            :close-on-select="false"
+            @open="handleHistoryOpen"
+          >
+            <template #trigger>
+              <button
+                class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                :title="t('aiChat.history')"
+                aria-label="History"
+              >
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="M12 7v5l3 3"></path>
+                </svg>
+              </button>
+            </template>
+            <template #content>
+              <div class="px-3 py-2 border-b border-gray-100">
+                <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                  {{ t('aiChat.history') }}
+                </span>
+              </div>
+              <div class="history-scroll max-h-72 overflow-y-auto py-1">
+                <div v-if="isLoadingConversation" class="px-3 py-2 text-xs text-gray-400">
+                  {{ t('common.loading') }}
+                </div>
+                <button
+                  v-for="conversation in conversations"
+                  :key="conversation.id"
+                  @click="selectConversation(conversation.id)"
+                  class="flex flex-col gap-0.5 w-full px-3 py-2 text-left transition-colors"
+                  :class="conversation.id === currentChatId ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'"
+                >
+                  <span class="text-sm font-medium truncate">{{ formatConversationTitle(conversation) }}</span>
+                  <span class="text-xs text-gray-400">{{ formatConversationMeta(conversation) }}</span>
+                </button>
+                <div
+                  v-if="!isLoadingConversation && conversations.length === 0"
+                  class="px-3 py-2 text-xs text-gray-400"
+                >
+                  {{ t('aiChat.noHistory') }}
+                </div>
+              </div>
+            </template>
+          </DropdownMenu>
+          <button
+            @click="clearCurrentChat"
+            :disabled="!canClearChat"
+            class="p-1.5 rounded transition-colors"
+            :class="canClearChat ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'"
+            :title="t('aiChat.clearChat')"
+            aria-label="Clear chat"
+          >
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="19" cy="12" r="1"></circle>
-              <circle cx="5" cy="12" r="1"></circle>
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M8 6v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"></path>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
           </button>
           <button
@@ -457,6 +553,24 @@ onUnmounted(() => {
   padding-left: 0.75rem;
   color: #6b7280;
   margin: 0.5rem 0;
+}
+
+/* History dropdown scrollbar */
+.history-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.history-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 </style>
 

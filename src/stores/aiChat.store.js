@@ -310,6 +310,20 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
   }
 
+  async function refreshConversations() {
+    if (isLoadingConversation.value) return
+    isLoadingConversation.value = true
+    try {
+      const response = await aiChatApi.listConversations()
+      const list = response.conversations || response || []
+      conversations.value = list
+    } catch (error) {
+      console.error('Failed to refresh conversations:', error)
+    } finally {
+      isLoadingConversation.value = false
+    }
+  }
+
   async function loadConversation(conversationId) {
     if (!conversationId) return
     isLoadingConversation.value = true
@@ -471,6 +485,30 @@ export const useAIChatStore = defineStore('aiChat', () => {
     currentPlan.value = []
     currentChecks.value = []
   }
+
+  async function clearConversation(conversationId = currentChatId.value) {
+    if (!conversationId) return
+    if (isGenerating.value) return
+    isLoadingConversation.value = true
+    try {
+      await aiChatApi.clearConversation(conversationId)
+      if (conversationId === currentChatId.value) {
+        chatMessages.value = []
+        currentPlan.value = []
+        currentChecks.value = []
+        currentToolCalls.value = []
+        currentToolResults.value = []
+        chatBreadcrumbs.value = [{ id: 'my-tasks', label: 'My tasks', type: 'project' }]
+      }
+      const response = await aiChatApi.listConversations()
+      const list = response.conversations || response || []
+      conversations.value = list
+    } catch (error) {
+      console.error('Failed to clear conversation:', error)
+    } finally {
+      isLoadingConversation.value = false
+    }
+  }
   
   function clearState() {
     chatMessages.value = []
@@ -526,11 +564,13 @@ export const useAIChatStore = defineStore('aiChat', () => {
     startNewChat,
     createNewConversation,
     loadLatestConversation,
+    refreshConversations,
     loadConversation,
     sendMessage,
     executeSkill,
     addTaskToBreadcrumbs,
     clearChat,
+    clearConversation,
     clearState
   }
 })

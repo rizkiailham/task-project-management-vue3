@@ -281,6 +281,11 @@
   "aiChat": {
     "title": "AI Chat",
     "newChat": "New chat",
+    "history": "History",
+    "noHistory": "No history yet",
+    "noMessages": "No messages yet",
+    "clearChat": "Clear chat",
+    "clearChatConfirm": "Clear this chat? This will remove all messages in the current conversation.",
     "skills": "Skills",
     "skillsSettings": "Skills settings",
     "recentTasks": "Recent Tasks",
