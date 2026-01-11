@@ -1,11 +1,13 @@
 /**
  * Desidia v2 - AI Chat Store
  * 
- * Manages AI chat sidebar state, chat messages, skills, and recent tasks
+ * Manages AI chat sidebar state, chat messages, skills, and WebSocket connection
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { io } from 'socket.io-client'
+import { useAuthStore } from './auth.store'
 
 export const useAIChatStore = defineStore('aiChat', () => {
   // ================================
@@ -24,28 +26,35 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const isTyping = ref(false)
   const isGenerating = ref(false)
   
+  // WebSocket state
+  const connectionStatus = ref('disconnected') // 'connecting' | 'connected' | 'disconnected' | 'error'
+  const currentRequestId = ref(null)
+  const currentPlan = ref([])
+  const currentChecks = ref([])
+  const currentToolCalls = ref([])
+  const currentToolResults = ref([])
+  
+  // Socket instance
+  let socket = null
+  let reconnectAttempts = 0
+  const maxReconnectAttempts = 3
+  
   // Skills - Dummy data for production-ready appearance
   const skills = ref([
+    { id: 'find-users', name: 'Find users', icon: '👥', description: 'Search for users in projects' },
+    { id: 'active-users', name: 'Active users', icon: '📊', description: 'Find users active in a time period' },
+    { id: 'project-members', name: 'Project members', icon: '📋', description: 'List members of a project' },
     { id: 'enkel-pris', name: 'Enkel pris', icon: '🪙', description: 'Calculate simple pricing' },
     { id: 'new-report', name: 'New report', icon: '📝', description: 'Generate a new report' },
     { id: 'board-report', name: 'Board report', icon: '📋', description: 'Create a board meeting report' },
     { id: 'agenda', name: 'Agenda', icon: '📅', description: 'Create meeting agenda' },
-    { id: 'booking-reply', name: 'Svare på booking henvendelser', icon: '💬', description: 'Reply to booking inquiries' },
-    { id: 'price-inquiry', name: 'Price Inquiry Handler', icon: '💰', description: 'Handle price inquiry requests' },
-    { id: 'extract-email', name: 'Extract newest email query', icon: '📧', description: 'Extract data from emails' },
-    { id: 'brainstorm', name: 'Brainstorm new tasks', icon: '💡', description: 'Brainstorm and create new tasks that complement the project' },
-    { id: 'plan-project', name: 'Plan this project', icon: '📆', description: 'Update all of the tasks in this dartboard to make them complete' },
-    { id: 'standup-report', name: 'Standup report', icon: '📊', description: 'Write and save a doc that is a per-person standup report' },
-    { id: 'changelog', name: 'Write a changelog', icon: '📜', description: 'Generate a changelog for the project' }
+    { id: 'brainstorm', name: 'Brainstorm new tasks', icon: '💡', description: 'Brainstorm and create new tasks' },
   ])
   
   // Recent tasks - Dummy data
   const recentTasks = ref([
     { id: 'task-1', title: 'Confirm task example', status: 'in-progress', statusIcon: '○' },
-    { id: 'task-2', title: 'Review existing documentation and agreement', status: 'todo', statusIcon: '○' },
-    { id: 'task-3', title: 'Define success metrics for Test Kia initiative', status: 'todo', statusIcon: '○' },
-    { id: 'task-4', title: 'Reference', status: 'done', statusIcon: '✓' },
-    { id: 'task-5', title: 'Preoject reference VueJS', status: 'todo', statusIcon: '○' }
+    { id: 'task-2', title: 'Review existing documentation', status: 'todo', statusIcon: '○' },
   ])
   
   // Chat breadcrumbs
@@ -58,10 +67,9 @@ export const useAIChatStore = defineStore('aiChat', () => {
   // ================================
   
   const chatSidebarWidthPx = computed(() => `${chatSidebarWidth.value}px`)
-  
   const featuredSkills = computed(() => skills.value.slice(0, 3))
-  
   const hasActiveChat = computed(() => chatMessages.value.length > 0)
+  const isConnected = computed(() => connectionStatus.value === 'connected')
   
   const lastMessage = computed(() => 
     chatMessages.value.length > 0 
@@ -70,11 +78,153 @@ export const useAIChatStore = defineStore('aiChat', () => {
   )
 
   // ================================
+  // WebSocket Connection
+  // ================================
+  
+  function connect() {
+    if (socket?.connected) return
+    
+    const authStore = useAuthStore()
+    if (!authStore.accessToken) {
+      console.warn('Cannot connect to AI WebSocket: no auth token')
+      return
+    }
+    
+    connectionStatus.value = 'connecting'
+    
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3333'
+    
+    socket = io(`${apiUrl}/ai`, {
+      transports: ['websocket'],
+      auth: {
+        token: authStore.accessToken
+      },
+      query: {
+        token: authStore.accessToken
+      },
+      reconnection: false, // We handle reconnection manually
+    })
+    
+    socket.on('connect', () => {
+      console.log('AI WebSocket connected')
+      // Send auth message for browsers that can't set headers
+      socket.emit('ai:auth', { token: authStore.accessToken })
+    })
+    
+    socket.on('ai:ready', (data) => {
+      console.log('AI WebSocket ready:', data)
+      connectionStatus.value = 'connected'
+      reconnectAttempts = 0
+    })
+    
+    socket.on('ai:plan', (data) => {
+      console.log('AI plan:', data)
+      if (data.requestId === currentRequestId.value) {
+        currentPlan.value = data.plan
+      }
+    })
+    
+    socket.on('ai:check', (data) => {
+      console.log('AI check:', data)
+      if (data.requestId === currentRequestId.value) {
+        currentChecks.value.push(data.check)
+      }
+    })
+    
+    socket.on('ai:tool_call', (data) => {
+      console.log('AI tool call:', data)
+      if (data.requestId === currentRequestId.value) {
+        currentToolCalls.value.push(data.toolCall)
+      }
+    })
+    
+    socket.on('ai:tool_result', (data) => {
+      console.log('AI tool result:', data)
+      if (data.requestId === currentRequestId.value) {
+        currentToolResults.value.push(data.toolResult)
+      }
+    })
+    
+    socket.on('ai:final', (data) => {
+      console.log('AI final:', data)
+      if (data.requestId === currentRequestId.value) {
+        // Add AI response to messages
+        const aiMessage = {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: data.answer,
+          plan: data.plan,
+          checks: data.checks,
+          timestamp: new Date().toISOString()
+        }
+        chatMessages.value.push(aiMessage)
+        isGenerating.value = false
+        currentRequestId.value = null
+      }
+    })
+    
+    socket.on('ai:error', (data) => {
+      console.error('AI error:', data)
+      if (!data.requestId || data.requestId === currentRequestId.value) {
+        const errorMessage = {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: `Error: ${data.error?.message || 'An error occurred'}`,
+          isError: true,
+          timestamp: new Date().toISOString()
+        }
+        chatMessages.value.push(errorMessage)
+        isGenerating.value = false
+        currentRequestId.value = null
+      }
+    })
+    
+    socket.on('disconnect', () => {
+      console.log('AI WebSocket disconnected')
+      connectionStatus.value = 'disconnected'
+      attemptReconnect()
+    })
+    
+    socket.on('connect_error', (error) => {
+      console.error('AI WebSocket connection error:', error)
+      connectionStatus.value = 'error'
+      attemptReconnect()
+    })
+  }
+  
+  function disconnect() {
+    if (socket) {
+      socket.disconnect()
+      socket = null
+    }
+    connectionStatus.value = 'disconnected'
+  }
+  
+  function attemptReconnect() {
+    if (reconnectAttempts >= maxReconnectAttempts) {
+      console.log('Max reconnect attempts reached, falling back to HTTP')
+      return
+    }
+    
+    reconnectAttempts++
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 8000)
+    
+    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`)
+    setTimeout(() => {
+      connect()
+    }, delay)
+  }
+
+  // ================================
   // Sidebar Actions
   // ================================
   
   function openChatSidebar() {
     isChatSidebarOpen.value = true
+    // Connect to WebSocket when sidebar opens
+    if (connectionStatus.value === 'disconnected') {
+      connect()
+    }
   }
   
   function closeChatSidebar() {
@@ -82,12 +232,13 @@ export const useAIChatStore = defineStore('aiChat', () => {
   }
   
   function toggleChatSidebar() {
-    isChatSidebarOpen.value = !isChatSidebarOpen.value
+    if (isChatSidebarOpen.value) {
+      closeChatSidebar()
+    } else {
+      openChatSidebar()
+    }
   }
   
-  /**
-   * Set sidebar width with clamping
-   */
   function setChatSidebarWidth(width) {
     const minWidth = 320
     const maxWidth = 600
@@ -95,9 +246,6 @@ export const useAIChatStore = defineStore('aiChat', () => {
     chatSidebarWidth.value = clampedWidth
   }
   
-  /**
-   * Persist sidebar width to localStorage
-   */
   function persistChatSidebarWidth() {
     localStorage.setItem('aiChatSidebarWidth', chatSidebarWidth.value.toString())
   }
@@ -118,13 +266,16 @@ export const useAIChatStore = defineStore('aiChat', () => {
   function startNewChat() {
     currentChatId.value = `chat-${Date.now()}`
     chatMessages.value = []
+    chatHistory.value = []
+    currentPlan.value = []
+    currentChecks.value = []
+    currentToolCalls.value = []
+    currentToolResults.value = []
     chatBreadcrumbs.value = [{ id: 'my-tasks', label: 'My tasks', type: 'project' }]
   }
   
   /**
    * Send a message to the AI
-   * @param {string} content - Message content
-   * @param {Object|null} mention - Optional mention data (skill or task)
    */
   async function sendMessage(content, mention = null) {
     if (!content.trim()) return
@@ -140,34 +291,91 @@ export const useAIChatStore = defineStore('aiChat', () => {
     chatMessages.value.push(userMessage)
     isGenerating.value = true
     
-    // Simulate AI response (replace with actual API call later)
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      const aiMessage = {
-        id: `msg-${Date.now()}`,
-        role: 'assistant',
-        content: getSimulatedResponse(content, mention),
-        timestamp: new Date().toISOString()
-      }
-      
-      chatMessages.value.push(aiMessage)
-    } finally {
-      isGenerating.value = false
+    // Reset current state
+    currentPlan.value = []
+    currentChecks.value = []
+    currentToolCalls.value = []
+    currentToolResults.value = []
+    
+    // Generate request ID
+    currentRequestId.value = crypto.randomUUID()
+    
+    // Build history for context
+    const history = chatMessages.value
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .slice(-10) // Last 10 messages for context
+      .map(m => ({ role: m.role, content: m.content }))
+    
+    // Try WebSocket first
+    if (socket?.connected) {
+      socket.emit('ai:message', {
+        requestId: currentRequestId.value,
+        message: content.trim(),
+        history: history.slice(0, -1), // Exclude current message
+        context: {},
+        mode: 'execute'
+      })
+    } else {
+      // Fallback to HTTP
+      await sendMessageHttp(content.trim(), history.slice(0, -1))
     }
   }
   
   /**
-   * Get simulated AI response based on input
+   * HTTP fallback for sending messages
    */
-  function getSimulatedResponse(content, mention) {
-    if (mention?.type === 'skill') {
-      return `I'll help you with "${mention.name}". Let me analyze the current context and provide relevant suggestions based on your project data.`
+  async function sendMessageHttp(content, history) {
+    const authStore = useAuthStore()
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3333'
+    
+    try {
+      const response = await fetch(`${apiUrl}/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authStore.accessToken}`
+        },
+        body: JSON.stringify({
+          message: content,
+          history,
+          context: {},
+          mode: 'execute'
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      // Update state with response
+      currentPlan.value = data.plan || []
+      currentChecks.value = data.checks || []
+      
+      const aiMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: data.answer,
+        plan: data.plan,
+        checks: data.checks,
+        timestamp: new Date().toISOString()
+      }
+      chatMessages.value.push(aiMessage)
+    } catch (error) {
+      console.error('HTTP fallback error:', error)
+      const errorMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: `Error: ${error.message || 'Failed to get response'}`,
+        isError: true,
+        timestamp: new Date().toISOString()
+      }
+      chatMessages.value.push(errorMessage)
+    } finally {
+      isGenerating.value = false
+      currentRequestId.value = null
     }
-    if (mention?.type === 'task') {
-      return `Looking at the task "${mention.title}", I can see it's currently ${mention.status}. How would you like me to help with this task?`
-    }
-    return `I understand you're asking about: "${content}". Let me help you with that. Is there anything specific about your project tasks you'd like me to focus on?`
   }
   
   /**
@@ -177,28 +385,25 @@ export const useAIChatStore = defineStore('aiChat', () => {
     const skill = skills.value.find(s => s.id === skillId)
     if (!skill) return
     
-    isGenerating.value = true
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const message = {
-        id: `msg-${Date.now()}`,
-        role: 'assistant',
-        content: `Executing "${skill.name}"... ${skill.description}`,
-        skillExecution: true,
-        timestamp: new Date().toISOString()
-      }
-      
-      chatMessages.value.push(message)
-    } finally {
-      isGenerating.value = false
+    // Map skill to a message
+    let message = ''
+    switch (skillId) {
+      case 'find-users':
+        message = 'Show me all users in the system'
+        break
+      case 'active-users':
+        message = 'Find users who were active last week'
+        break
+      case 'project-members':
+        message = 'List all projects and their members'
+        break
+      default:
+        message = `Execute skill: ${skill.name}`
     }
+    
+    await sendMessage(message)
   }
   
-  /**
-   * Add a task reference to breadcrumbs
-   */
   function addTaskToBreadcrumbs(task) {
     const exists = chatBreadcrumbs.value.some(b => b.id === task.id)
     if (!exists) {
@@ -210,21 +415,20 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
   }
   
-  /**
-   * Clear chat
-   */
   function clearChat() {
     chatMessages.value = []
     currentChatId.value = null
+    currentPlan.value = []
+    currentChecks.value = []
   }
   
-  /**
-   * Clear all state
-   */
   function clearState() {
     chatMessages.value = []
     currentChatId.value = null
+    currentPlan.value = []
+    currentChecks.value = []
     chatBreadcrumbs.value = [{ id: 'my-tasks', label: 'My tasks', type: 'project' }]
+    disconnect()
   }
 
   return {
@@ -240,12 +444,22 @@ export const useAIChatStore = defineStore('aiChat', () => {
     skills,
     recentTasks,
     chatBreadcrumbs,
+    connectionStatus,
+    currentPlan,
+    currentChecks,
+    currentToolCalls,
+    currentToolResults,
     
     // Getters
     chatSidebarWidthPx,
     featuredSkills,
     hasActiveChat,
     lastMessage,
+    isConnected,
+    
+    // WebSocket Actions
+    connect,
+    disconnect,
     
     // Sidebar Actions
     openChatSidebar,
@@ -265,4 +479,3 @@ export const useAIChatStore = defineStore('aiChat', () => {
     clearState
   }
 })
-

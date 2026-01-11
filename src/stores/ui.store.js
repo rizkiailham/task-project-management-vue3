@@ -48,8 +48,8 @@ export const useUIStore = defineStore('ui', () => {
   const isDarkMode = ref(localStorage.getItem('darkMode') === 'true')
 
   // Responsive state
-  const isMobile = ref(window.innerWidth < 768)
-  const isTablet = ref(window.innerWidth >= 768 && window.innerWidth < 1024)
+  const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const isTablet = ref(typeof window !== 'undefined' ? (window.innerWidth >= 768 && window.innerWidth < 1024) : false)
 
   // ================================
   // Getters

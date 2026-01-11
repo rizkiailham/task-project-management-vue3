@@ -35,6 +35,9 @@ const messages = computed(() => aiChatStore.chatMessages)
 const isGenerating = computed(() => aiChatStore.isGenerating)
 const breadcrumbs = computed(() => aiChatStore.chatBreadcrumbs)
 const featuredSkills = computed(() => aiChatStore.featuredSkills)
+const connectionStatus = computed(() => aiChatStore.connectionStatus)
+const currentPlan = computed(() => aiChatStore.currentPlan)
+const currentChecks = computed(() => aiChatStore.currentChecks)
 
 // Calculate sidebar style with proper positioning below topbar
 const sidebarStyle = computed(() => ({
@@ -131,16 +134,33 @@ onUnmounted(() => {
       
       <!-- Header -->
       <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <button
-          @click="newChat"
-          class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>{{ t('aiChat.newChat') }}</span>
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            @click="newChat"
+            class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>{{ t('aiChat.newChat') }}</span>
+          </button>
+          <!-- Connection Status -->
+          <div class="flex items-center gap-1.5">
+            <span 
+              class="w-2 h-2 rounded-full"
+              :class="{
+                'bg-green-500': connectionStatus === 'connected',
+                'bg-yellow-500 animate-pulse': connectionStatus === 'connecting',
+                'bg-gray-400': connectionStatus === 'disconnected',
+                'bg-red-500': connectionStatus === 'error'
+              }"
+            ></span>
+            <span class="text-xs text-gray-400">
+              {{ connectionStatus === 'connected' ? 'Live' : connectionStatus === 'connecting' ? 'Connecting...' : '' }}
+            </span>
+          </div>
+        </div>
         
         <div class="flex items-center gap-2">
           <button class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
@@ -212,18 +232,56 @@ onUnmounted(() => {
           </div>
         </div>
         
-        <!-- Typing Indicator -->
-        <div v-if="isGenerating" class="flex gap-3">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
+        <!-- Typing Indicator with Plan/Checks -->
+        <div v-if="isGenerating" class="space-y-3">
+          <!-- Plan Steps -->
+          <div v-if="currentPlan.length > 0" class="bg-blue-50 rounded-lg p-3">
+            <div class="text-xs font-medium text-blue-700 mb-2">Plan</div>
+            <div class="space-y-1">
+              <div 
+                v-for="step in currentPlan" 
+                :key="step.id"
+                class="flex items-center gap-2 text-sm"
+              >
+                <span v-if="step.status === 'completed'" class="text-green-500">✓</span>
+                <span v-else-if="step.status === 'in_progress'" class="text-blue-500 animate-pulse">●</span>
+                <span v-else-if="step.status === 'blocked'" class="text-red-500">✗</span>
+                <span v-else class="text-gray-400">○</span>
+                <span :class="step.status === 'completed' ? 'text-gray-600' : 'text-gray-800'">
+                  {{ step.title }}
+                </span>
+              </div>
+            </div>
           </div>
-          <div class="bg-gray-100 rounded-2xl rounded-tl-md px-4 py-3">
-            <div class="flex gap-1">
-              <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
-              <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
-              <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+          
+          <!-- Checks -->
+          <div v-if="currentChecks.length > 0" class="bg-green-50 rounded-lg p-3">
+            <div class="text-xs font-medium text-green-700 mb-2">Checks</div>
+            <div class="space-y-1">
+              <div 
+                v-for="(check, idx) in currentChecks" 
+                :key="idx"
+                class="flex items-start gap-2 text-sm text-gray-700"
+              >
+                <span class="text-green-500 mt-0.5">✓</span>
+                <span>{{ check }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Typing dots -->
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </div>
+            <div class="bg-gray-100 rounded-2xl rounded-tl-md px-4 py-3">
+              <div class="flex gap-1">
+                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+              </div>
             </div>
           </div>
         </div>

@@ -23,6 +23,18 @@ const dropdownRef = ref(null)
 // Skills with emojis matching the reference design
 const skillsList = computed(() => aiChatStore.skills)
 
+// Dropdown position computed
+const dropdownStyle = computed(() => {
+  if (!buttonRef.value || typeof window === 'undefined') {
+    return { top: '0', right: '0' }
+  }
+  const rect = buttonRef.value.getBoundingClientRect()
+  return {
+    top: `${rect.bottom + 8}px`,
+    right: `${window.innerWidth - rect.right}px`
+  }
+})
+
 // Methods
 function openChat() {
   aiChatStore.openChatSidebar()
@@ -105,10 +117,7 @@ function openSkillsSettings() {
           v-if="isDropdownOpen"
           ref="dropdownRef"
           class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999] w-64"
-          :style="{
-            top: buttonRef ? `${buttonRef.getBoundingClientRect().bottom + 8}px` : '0',
-            right: buttonRef ? `${window.innerWidth - buttonRef.getBoundingClientRect().right}px` : '0'
-          }"
+          :style="dropdownStyle"
         >
           <!-- Skills Header -->
           <div class="px-3 py-1.5">
