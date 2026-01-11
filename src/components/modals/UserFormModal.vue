@@ -7,23 +7,22 @@
  * - Project & Access settings
  * - Custom fields section
  */
-import { ref, computed, watch, onMounted } from 'vue'
-import { useUserStore, useUIStore, useProjectStore } from '@/stores'
+import { ref, computed, watch } from 'vue'
+import { useUserStore, useUIStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import { User, Pencil, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { Pencil, ChevronDown } from 'lucide-vue-next'
 
 // PrimeVue
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import MultiSelect from 'primevue/multiselect'
 import Checkbox from 'primevue/checkbox'
 import Password from 'primevue/password'
+import InputNumber from 'primevue/inputnumber'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
-const projectStore = useProjectStore()
 
 const props = defineProps({
   visible: {
@@ -49,7 +48,7 @@ const modalTitle = computed(() => isEditMode.value ? 'Edit user' : 'Add user')
 // Section expand state
 const userInfoExpanded = ref(true)
 const projectAccessExpanded = ref(true)
-const customFieldsExpanded = ref(false)
+const customFieldsExpanded = ref(true)
 
 // Loading state
 const isLoading = ref(false)
@@ -66,11 +65,11 @@ const validationSchema = computed(() => {
     phone: yup.string(),
     language: yup.string(),
     organization: yup.string(),
-    roleId: yup.string().required('Role is required'),
-    projectIds: yup.array(),
-    groupIds: yup.array(),
+    projectId: yup.string().nullable(),
+    groupId: yup.string().nullable(),
     isActive: yup.boolean(),
-    unit: yup.string()
+    unit: yup.number().nullable(),
+    department: yup.string()
   }
 
   // Only require password for new users
@@ -88,7 +87,7 @@ const validationSchema = computed(() => {
   return yup.object(baseSchema)
 })
 
-const { handleSubmit, meta, resetForm, setValues } = useForm({
+const { handleSubmit, resetForm, setValues } = useForm({
   validationSchema,
   initialValues: {
     firstName: '',
@@ -99,11 +98,11 @@ const { handleSubmit, meta, resetForm, setValues } = useForm({
     organization: '',
     password: '',
     confirmPassword: '',
-    roleId: '',
-    projectIds: [],
-    groupIds: [],
+    projectId: null,
+    groupId: null,
     isActive: true,
-    unit: ''
+    unit: null,
+    department: ''
   }
 })
 
@@ -115,22 +114,31 @@ const { value: language } = useField('language')
 const { value: organization } = useField('organization')
 const { value: password, errorMessage: passwordError } = useField('password')
 const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword')
-const { value: roleId, errorMessage: roleError } = useField('roleId')
-const { value: projectIds } = useField('projectIds')
-const { value: groupIds } = useField('groupIds')
+const { value: projectId } = useField('projectId')
+const { value: groupId } = useField('groupId')
 const { value: isActive } = useField('isActive')
 const { value: unit } = useField('unit')
+const { value: department } = useField('department')
 
 // Computed options for dropdowns
-const roleOptions = computed(() => 
-  userStore.availableRoles.map(r => ({ label: r.name, value: r.id }))
+const projectOptions = computed(() => 
+  userStore.availableProjects.map(p => ({ label: p.name, value: p.id }))
 )
 const groupOptions = computed(() => 
   userStore.availableGroups.map(g => ({ label: g.name, value: g.id }))
 )
-const projectOptions = computed(() => 
-  userStore.availableProjects.map(p => ({ label: p.name, value: p.id }))
+const languageOptions = computed(() => 
+  userStore.availableLanguages.map(l => ({ label: l, value: l }))
 )
+
+// Last login text for display
+const lastLoginText = computed(() => {
+  if (!props.user?.lastActivity) return ''
+  const date = new Date(props.user.lastActivity)
+  const today = new Date()
+  if (date.toDateString() === today.toDateString()) return 'Today'
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+})
 
 // Watch for modal opening and populate form
 watch(() => props.visible, async (isVisible) => {
@@ -149,11 +157,11 @@ watch(() => props.visible, async (isVisible) => {
         organization: props.user.organization || '',
         password: '',
         confirmPassword: '',
-        roleId: props.user.roleId || props.user.role?.id || '',
-        projectIds: props.user.projects?.map(p => p.id || p) || [],
-        groupIds: props.user.groups?.map(g => g.id || g) || [],
+        projectId: props.user.projects?.[0]?.id || props.user.projects?.[0] || null,
+        groupId: props.user.groups?.[0]?.id || props.user.groups?.[0] || null,
         isActive: props.user.isActive ?? true,
-        unit: props.user.customValues?.unit || ''
+        unit: props.user.customValues?.unit || null,
+        department: props.user.customValues?.department || ''
       })
       avatarColor.value = props.user.avatarColor || '#3b82f6'
     } else {
@@ -182,11 +190,13 @@ const onSubmit = handleSubmit(async (values) => {
       phone: values.phone,
       language: values.language,
       organization: values.organization,
-      roleId: values.roleId,
-      groupIds: values.groupIds,
-      projectIds: values.projectIds,
+      projectIds: values.projectId ? [values.projectId] : [],
+      groupIds: values.groupId ? [values.groupId] : [],
       isActive: values.isActive,
-      customValues: values.unit ? { unit: values.unit } : {}
+      customValues: {
+        ...(values.unit !== null && { unit: values.unit }),
+        ...(values.department && { department: values.department })
+      }
     }
 
     // Only send password if provided
@@ -231,81 +241,86 @@ const avatarInitial = computed(() => {
   <BaseModal
     v-model:visible="dialogVisible"
     :title="modalTitle"
-    width="520px"
+    width="500px"
     :closable="!isLoading"
     :closeOnEscape="!isLoading"
     :loading="isLoading"
   >
     <template #header>
-      <div class="flex items-center justify-between w-full">
-        <h2 class="text-base font-semibold text-gray-900">{{ modalTitle }}</h2>
-      </div>
+      <h2 class="text-base font-medium text-gray-900">{{ modalTitle }}</h2>
     </template>
 
-    <form @submit.prevent="onSubmit" class="space-y-4 -mx-2 px-2 max-h-[60vh] overflow-y-auto">
+    <form
+      @submit.prevent="onSubmit"
+      class="user-form max-h-[60vh] overflow-y-auto -my-5 -mx-6 px-6 py-5 space-y-4"
+    >
       <!-- Avatar Section -->
-      <div class="flex justify-center py-4">
-        <div class="relative">
-          <div 
-            class="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-semibold"
+      <div class="pt-4 pb-5">
+        <div class="relative inline-flex">
+          <div
+            class="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-semibold text-white"
             :style="{ backgroundColor: avatarColor }"
           >
             {{ avatarInitial }}
           </div>
           <button
             type="button"
-            class="absolute bottom-0 right-0 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors"
+            class="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors hover:bg-gray-50"
           >
-            <Pencil class="w-3 h-3 text-gray-600" />
+            <Pencil class="h-3 w-3 text-gray-500" />
           </button>
         </div>
       </div>
 
       <!-- User Information Section -->
-      <div class="border border-gray-200 rounded-lg overflow-hidden">
+      <div>
         <button
           type="button"
           @click="userInfoExpanded = !userInfoExpanded"
-          class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+          class="flex items-center gap-2 py-2 text-sm font-medium text-gray-900 transition-colors hover:text-gray-700"
         >
-          <span class="text-sm font-medium text-gray-900">User information</span>
-          <ChevronDown v-if="!userInfoExpanded" class="w-4 h-4 text-gray-500" />
-          <ChevronUp v-else class="w-4 h-4 text-gray-500" />
+          <ChevronDown
+            class="h-4 w-4 text-gray-500 transition-transform"
+            :class="{ '-rotate-90': !userInfoExpanded }"
+          />
+          <span>User information</span>
         </button>
-        
-        <div v-show="userInfoExpanded" class="p-4 space-y-4">
+
+        <div v-show="userInfoExpanded" class="space-y-4 pl-6 pt-2">
           <!-- Name Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">
                 First name <span class="text-red-500">*</span>
               </label>
               <InputText
                 v-model="firstName"
                 class="w-full"
                 :class="{ 'p-invalid': firstNameError }"
-                placeholder="Enter your full name"
               />
-              <small v-if="firstNameError" class="mt-1 block text-xs text-red-500">{{ firstNameError }}</small>
+              <small v-if="firstNameError" class="mt-1 text-xs text-red-500">
+                {{ firstNameError }}
+              </small>
             </div>
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">
                 Last name <span class="text-red-500">*</span>
               </label>
               <InputText
                 v-model="lastName"
                 class="w-full"
                 :class="{ 'p-invalid': lastNameError }"
-                placeholder="Your last name"
               />
-              <small v-if="lastNameError" class="mt-1 block text-xs text-red-500">{{ lastNameError }}</small>
+              <small v-if="lastNameError" class="mt-1 text-xs text-red-500">
+                {{ lastNameError }}
+              </small>
             </div>
           </div>
 
           <!-- Email & Phone Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">
                 Email <span class="text-red-500">*</span>
               </label>
               <InputText
@@ -313,163 +328,164 @@ const avatarInitial = computed(() => {
                 type="email"
                 class="w-full"
                 :class="{ 'p-invalid': emailError }"
-                placeholder="name@example.com"
               />
-              <small v-if="emailError" class="mt-1 block text-xs text-red-500">{{ emailError }}</small>
+              <small v-if="emailError" class="mt-1 text-xs text-red-500">
+                {{ emailError }}
+              </small>
             </div>
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">Phone</label>
-              <InputText
-                v-model="phone"
-                class="w-full"
-                placeholder="+1 2354687"
-              />
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">Phone</label>
+              <InputText v-model="phone" class="w-full" />
             </div>
           </div>
 
           <!-- Language & Organization Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">Preferred language</label>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">
+                Preferered language
+              </label>
               <Select
                 v-model="language"
-                :options="userStore.availableLanguages"
+                :options="languageOptions"
+                optionLabel="label"
+                optionValue="value"
                 class="w-full"
-                placeholder="Select language"
               />
             </div>
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">Organization</label>
-              <InputText
-                v-model="organization"
-                class="w-full"
-                placeholder="Company, school or union name"
-              />
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">Organization</label>
+              <InputText v-model="organization" class="w-full" />
             </div>
           </div>
 
           <!-- Password Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">
-                Password {{ isEditMode ? '' : '*' }}
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">
+                Password{{ isEditMode ? '' : ' *' }}
               </label>
               <Password
                 v-model="password"
                 class="w-full"
+                inputClass="w-full"
                 :class="{ 'p-invalid': passwordError }"
                 :feedback="false"
                 toggleMask
-                :placeholder="isEditMode ? 'Leave blank to keep current' : '••••••••'"
               />
-              <small v-if="passwordError" class="mt-1 block text-xs text-red-500">{{ passwordError }}</small>
+              <small v-if="passwordError" class="mt-1 text-xs text-red-500">
+                {{ passwordError }}
+              </small>
             </div>
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">
-                Confirm Password {{ isEditMode ? '' : '*' }}
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">
+                Confirm Password{{ isEditMode ? '' : ' *' }}
               </label>
               <Password
                 v-model="confirmPassword"
                 class="w-full"
+                inputClass="w-full"
                 :class="{ 'p-invalid': confirmPasswordError }"
                 :feedback="false"
                 toggleMask
-                placeholder="••••••••"
               />
-              <small v-if="confirmPasswordError" class="mt-1 block text-xs text-red-500">{{ confirmPasswordError }}</small>
+              <small
+                v-if="confirmPasswordError"
+                class="mt-1 text-xs text-red-500"
+              >
+                {{ confirmPasswordError }}
+              </small>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Project & Access Section -->
-      <div class="border border-gray-200 rounded-lg overflow-hidden">
+      <div>
         <button
           type="button"
           @click="projectAccessExpanded = !projectAccessExpanded"
-          class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+          class="flex items-center gap-2 py-2 text-sm font-medium text-gray-900 transition-colors hover:text-gray-700"
         >
-          <span class="text-sm font-medium text-gray-900">Project & Access</span>
-          <ChevronDown v-if="!projectAccessExpanded" class="w-4 h-4 text-gray-500" />
-          <ChevronUp v-else class="w-4 h-4 text-gray-500" />
+          <ChevronDown
+            class="h-4 w-4 text-gray-500 transition-transform"
+            :class="{ '-rotate-90': !projectAccessExpanded }"
+          />
+          <span>Project & Access</span>
         </button>
-        
-        <div v-show="projectAccessExpanded" class="p-4 space-y-4">
-          <!-- Role Row -->
-          <div>
-            <label class="mb-1.5 block text-xs font-medium text-gray-700">
-              Role <span class="text-red-500">*</span>
-            </label>
-            <Select
-              v-model="roleId"
-              :options="roleOptions"
-              optionLabel="label"
-              optionValue="value"
-              class="w-full"
-              :class="{ 'p-invalid': roleError }"
-              placeholder="Select role..."
-            />
-            <small v-if="roleError" class="mt-1 block text-xs text-red-500">{{ roleError }}</small>
-          </div>
 
+        <div v-show="projectAccessExpanded" class="space-y-4 pl-6 pt-2">
           <!-- Project & Group Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">Project</label>
-              <MultiSelect
-                v-model="projectIds"
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">Project</label>
+              <Select
+                v-model="projectId"
                 :options="projectOptions"
                 optionLabel="label"
                 optionValue="value"
+                placeholder="Select proje..."
+                showClear
                 class="w-full"
-                placeholder="Select project(s)..."
-                :maxSelectedLabels="2"
               />
             </div>
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-700">Group</label>
-              <MultiSelect
-                v-model="groupIds"
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">Group</label>
+              <Select
+                v-model="groupId"
                 :options="groupOptions"
                 optionLabel="label"
                 optionValue="value"
+                placeholder="Select grou..."
+                showClear
                 class="w-full"
-                placeholder="Select group(s)..."
-                filter
-                filterPlaceholder="Search for group"
-                :maxSelectedLabels="2"
               />
             </div>
           </div>
 
           <!-- Active Checkbox -->
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 pt-1">
             <Checkbox v-model="isActive" :binary="true" inputId="isActive" />
-            <label for="isActive" class="text-sm text-gray-700 cursor-pointer">Active</label>
+            <label for="isActive" class="text-sm text-gray-700 cursor-pointer">
+              Active
+            </label>
+            <span v-if="lastLoginText" class="ml-2 text-xs text-gray-400">
+              Last login: {{ lastLoginText }}
+            </span>
           </div>
         </div>
       </div>
 
       <!-- Custom Fields Section -->
-      <div class="border border-gray-200 rounded-lg overflow-hidden">
+      <div>
         <button
           type="button"
           @click="customFieldsExpanded = !customFieldsExpanded"
-          class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+          class="flex items-center gap-2 py-2 text-sm font-medium text-gray-900 transition-colors hover:text-gray-700"
         >
-          <span class="text-sm font-medium text-gray-900">Custom field(s)</span>
-          <ChevronDown v-if="!customFieldsExpanded" class="w-4 h-4 text-gray-500" />
-          <ChevronUp v-else class="w-4 h-4 text-gray-500" />
+          <ChevronDown
+            class="h-4 w-4 text-gray-500 transition-transform"
+            :class="{ '-rotate-90': !customFieldsExpanded }"
+          />
+          <span>Custom field(s)</span>
         </button>
-        
-        <div v-show="customFieldsExpanded" class="p-4">
-          <div>
-            <label class="mb-1.5 block text-xs font-medium text-gray-700">Unit</label>
-            <InputText
-              v-model="unit"
-              class="w-full"
-              placeholder="Enter unit"
-            />
+
+        <div v-show="customFieldsExpanded" class="space-y-4 pl-6 pt-2">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">Unit</label>
+              <InputNumber
+                v-model="unit"
+                showButtons
+                :min="0"
+                class="w-full"
+                inputClass="w-full"
+              />
+            </div>
+            <div class="flex flex-col">
+              <label class="mb-1.5 text-xs text-gray-500">Department</label>
+              <InputText v-model="department" class="w-full" />
+            </div>
           </div>
         </div>
       </div>
@@ -479,7 +495,7 @@ const avatarInitial = computed(() => {
       <div class="flex items-center justify-end gap-3">
         <button
           type="button"
-          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           @click="closeModal"
           :disabled="isLoading"
         >
@@ -487,11 +503,16 @@ const avatarInitial = computed(() => {
         </button>
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           @click="onSubmit"
           :disabled="isLoading"
         >
-          <svg v-if="isLoading" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+          <svg
+            v-if="isLoading"
+            class="h-4 w-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -503,15 +524,24 @@ const avatarInitial = computed(() => {
 </template>
 
 <style scoped>
-:deep(.p-password) {
-  width: 100%;
+.user-form :deep(.p-inputnumber-input) {
+  border-radius: 6px 0 0 6px;
 }
 
-:deep(.p-password-input) {
-  width: 100%;
+.user-form :deep(.p-inputnumber-button) {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
 }
 
-:deep(.p-multiselect) {
-  width: 100%;
+.user-form :deep(.p-inputnumber-button:hover) {
+  background: #f3f4f6;
+}
+
+.user-form :deep(.p-checkbox .p-checkbox-box) {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
 }
 </style>
