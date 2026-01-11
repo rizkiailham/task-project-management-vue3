@@ -311,23 +311,12 @@ body {
   background: var(--color-primary-50) !important;
 }
 
-/* Checkbox - Blue */
-.p-checkbox .p-checkbox-box.p-highlight {
-  background: var(--color-primary-500) !important;
-  border-color: var(--color-primary-500) !important;
-}
-
-.p-checkbox:not(.p-disabled):has(.p-checkbox-input:hover) .p-checkbox-box.p-highlight {
-  background: var(--color-primary-600) !important;
-  border-color: var(--color-primary-600) !important;
-}
-
 /* Input accent color */
 .p-checkbox-input,
 .p-radiobutton-input,
 .p-toggleswitch-input,
 .p-inputswitch-input {
-  accent-color: var(--color-primary-600);
+  accent-color: var(--p-primary-600);
 }
 
 /* Input Focus - Blue */

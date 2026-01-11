@@ -14,6 +14,7 @@ import 'primeicons/primeicons.css'
 // PrimeVue
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
+import { definePreset, palette } from '@primevue/themes'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
 import Tooltip from 'primevue/tooltip'
@@ -33,10 +34,16 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-// Configure PrimeVue with Orange theme
+const desidiaTheme = definePreset(Aura, {
+  semantic: {
+    primary: palette('#3b82f6')
+  }
+})
+
+// Configure PrimeVue theme
 app.use(PrimeVue, {
   theme: {
-    preset: Aura,
+    preset: desidiaTheme,
     options: {
       prefix: 'p',
       darkModeSelector: '.dark',

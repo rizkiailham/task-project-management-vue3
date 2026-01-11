@@ -4,21 +4,25 @@
  * 
  * Features:
  * - Custom header with hamburger, home icon, tabs
- * - Tab navigation (Users, Groups, Role) with yellow underline
+ * - Tab navigation (Users, Groups, Role) with blue underline
  * - Search and filter controls
  * - AG Grid table for users list
  * - Add/Edit/Delete user modals
+ * - Role management with permissions
  */
-import { ref, computed, onMounted } from 'vue'
-import { useUserStore, useUIStore } from '@/stores'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useUserStore, useUIStore, useRoleStore } from '@/stores'
 import UsersGrid from '@/modules/user/components/UsersGrid.vue'
+import RolesGrid from '@/modules/user/components/RolesGrid.vue'
 import UserFormModal from '@/components/modals/UserFormModal.vue'
 import InviteUserModal from '@/components/modals/InviteUserModal.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
+import RoleFormModal from '@/components/modals/RoleFormModal.vue'
 import { Search, Plus, UserPlus, Sparkles, ChevronDown, SlidersHorizontal, Settings, Users, Menu, Home } from 'lucide-vue-next'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
+const roleStore = useRoleStore()
 
 // State
 const activeTab = ref('users')
@@ -33,6 +37,12 @@ const showInviteModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedUser = ref(null)
 const isDeleting = ref(false)
+
+// Role modal states
+const showRoleFormModal = ref(false)
+const showRoleDeleteModal = ref(false)
+const selectedRole = ref(null)
+const isDeletingRole = ref(false)
 
 // Tab definitions
 const tabs = [
@@ -76,6 +86,18 @@ function toggleSidebar() {
     uiStore.toggleSidebar()
   }
 }
+
+// Watch for tab changes to fetch data
+watch(activeTab, async (newTab) => {
+  if (newTab === 'role' && roleStore.roles.length === 0) {
+    try {
+      await roleStore.fetchRoles()
+    } catch (error) {
+      console.error('Error fetching roles:', error)
+      uiStore.showError('Failed to load roles')
+    }
+  }
+})
 
 onMounted(async () => {
   try {
@@ -139,6 +161,42 @@ function openInviteModal() {
 
 function handleUserInvited() {
   userStore.fetchUsers()
+}
+
+// Role handlers
+function openAddRoleModal() {
+  selectedRole.value = null
+  showRoleFormModal.value = true
+}
+
+function openEditRoleModal(role) {
+  selectedRole.value = role
+  showRoleFormModal.value = true
+}
+
+function openRoleDeleteModal(role) {
+  selectedRole.value = role
+  showRoleDeleteModal.value = true
+}
+
+async function handleDeleteRole() {
+  if (!selectedRole.value) return
+  
+  isDeletingRole.value = true
+  try {
+    await roleStore.deleteRole(selectedRole.value.id)
+    uiStore.showSuccess('Role deleted successfully')
+    showRoleDeleteModal.value = false
+    selectedRole.value = null
+  } catch (error) {
+    uiStore.showError('Failed to delete role')
+  } finally {
+    isDeletingRole.value = false
+  }
+}
+
+function handleRoleSaved() {
+  // Grid will auto-update via reactive store
 }
 </script>
 
@@ -326,16 +384,26 @@ function handleUserInvited() {
         </div>
       </div>
 
-      <!-- Role Tab Content (Placeholder) -->
-      <div v-else-if="activeTab === 'role'" class="flex items-center justify-center h-full bg-white">
-        <div class="text-center">
-          <div class="text-gray-400 mb-2">
-            <svg class="w-12 h-12 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 mb-1">Role Management</h3>
-          <p class="text-sm text-gray-500">Coming soon - Define roles and access controls</p>
+      <!-- Role Tab Content -->
+      <div v-else-if="activeTab === 'role'" class="flex flex-col h-full">
+        <!-- Role Header Actions -->
+        <div class="flex items-center justify-end px-4 py-3 border-b border-gray-200">
+          <button
+            @click="openAddRoleModal"
+            class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+          >
+            <Plus class="w-4 h-4" />
+            New Role
+          </button>
+        </div>
+
+        <!-- Grid -->
+        <div class="flex-1">
+          <RolesGrid
+            :roles="roleStore.roles"
+            @edit="openEditRoleModal"
+            @delete="openRoleDeleteModal"
+          />
         </div>
       </div>
     </div>
@@ -360,6 +428,22 @@ function handleUserInvited() {
     <InviteUserModal
       v-model:visible="showInviteModal"
       @invited="handleUserInvited"
+    />
+
+    <!-- Role Form Modal -->
+    <RoleFormModal
+      v-model:visible="showRoleFormModal"
+      :role="selectedRole"
+      @saved="handleRoleSaved"
+    />
+
+    <!-- Role Delete Confirmation Modal -->
+    <DeleteConfirmModal
+      v-model:visible="showRoleDeleteModal"
+      :title="`Delete role: ${selectedRole?.name}`"
+      :loading="isDeletingRole"
+      @confirm="handleDeleteRole"
+      @cancel="showRoleDeleteModal = false"
     />
   </div>
 </template>
