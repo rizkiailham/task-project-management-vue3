@@ -153,16 +153,24 @@ export const useAIChatStore = defineStore('aiChat', () => {
     socket.on('ai:final', (data) => {
       console.log('AI final:', data)
       if (data.requestId === currentRequestId.value) {
-        // Add AI response to messages
-        const aiMessage = {
-          id: `msg-${Date.now()}`,
-          role: 'assistant',
-          content: data.answer,
-          plan: data.plan,
-          checks: data.checks,
-          timestamp: new Date().toISOString()
+        if (Array.isArray(data.plan) && data.plan.length > 0) {
+          currentPlan.value = data.plan
         }
-        chatMessages.value.push(aiMessage)
+        if (Array.isArray(data.checks) && data.checks.length > 0) {
+          currentChecks.value = data.checks
+        }
+        // Add AI response to messages
+      const aiMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: data.answer,
+        plan: data.plan,
+        checks: data.checks,
+        toolCalls: currentToolCalls.value.length ? [...currentToolCalls.value] : data.toolCalls || [],
+        toolResults: currentToolResults.value.length ? [...currentToolResults.value] : data.toolResults || [],
+        timestamp: new Date().toISOString()
+      }
+      chatMessages.value.push(aiMessage)
         isGenerating.value = false
         currentRequestId.value = null
       }
@@ -268,7 +276,16 @@ export const useAIChatStore = defineStore('aiChat', () => {
   // ================================
   // Chat Actions
   // ================================
-  
+
+  function buildContext() {
+    const workspaceId = localStorage.getItem('currentWorkspaceId')
+    const projectId = localStorage.getItem('currentProjectId')
+    return {
+      workspaceId: workspaceId || null,
+      projectId: projectId || null
+    }
+  }
+
   async function startNewChat() {
     await createNewConversation()
   }
@@ -337,7 +354,11 @@ export const useAIChatStore = defineStore('aiChat', () => {
         role: message.role,
         content: message.content,
         timestamp: message.createdAt,
-        metadata: message.metadata || {}
+        metadata: message.metadata || {},
+        plan: message.metadata?.plan || [],
+        checks: message.metadata?.checks || [],
+        toolCalls: message.metadata?.toolCalls || [],
+        toolResults: message.metadata?.toolResults || []
       }))
       currentPlan.value = []
       currentChecks.value = []
@@ -377,6 +398,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
     
     // Generate request ID
     currentRequestId.value = crypto.randomUUID()
+    const requestId = currentRequestId.value
+    const context = buildContext()
     
     // Build history for context
     const history = chatMessages.value
@@ -387,29 +410,29 @@ export const useAIChatStore = defineStore('aiChat', () => {
     // Try WebSocket first
     if (socket?.connected) {
       socket.emit('ai:message', {
-        requestId: currentRequestId.value,
+        requestId,
         conversationId: currentChatId.value,
         message: content.trim(),
         history: history.slice(0, -1), // Exclude current message
-        context: {},
+        context,
         mode: 'execute'
       })
     } else {
       // Fallback to HTTP
-      await sendMessageHttp(content.trim(), history.slice(0, -1))
+      await sendMessageHttp(content.trim(), history.slice(0, -1), context)
     }
   }
   
   /**
    * HTTP fallback for sending messages
    */
-  async function sendMessageHttp(content, history) {
+  async function sendMessageHttp(content, history, context) {
     try {
       const data = await aiChatApi.sendChatMessage({
         conversationId: currentChatId.value,
         message: content,
         history,
-        context: {},
+        context,
         mode: 'execute'
       })
       
@@ -425,6 +448,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
         checks: data.checks,
         timestamp: new Date().toISOString()
       }
+      currentToolCalls.value = data.toolCalls || []
+      currentToolResults.value = data.toolResults || []
       chatMessages.value.push(aiMessage)
     } catch (error) {
       console.error('HTTP fallback error:', error)

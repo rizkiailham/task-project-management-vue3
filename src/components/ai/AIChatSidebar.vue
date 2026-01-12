@@ -11,11 +11,11 @@
  */
 import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useConfirm } from 'primevue/useconfirm'
 import { useAIChatStore } from '@/stores'
 import TipTapChatEditor from './TipTapChatEditor.vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
-import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 
 const props = defineProps({
   topOffset: {
@@ -25,6 +25,7 @@ const props = defineProps({
 })
 
 const { t } = useI18n()
+const confirm = useConfirm()
 const aiChatStore = useAIChatStore()
 
 // Refs
@@ -38,18 +39,16 @@ const startWidth = ref(0)
 const isOpen = computed(() => aiChatStore.isChatSidebarOpen)
 const sidebarWidth = computed(() => aiChatStore.chatSidebarWidth)
 const messages = computed(() => aiChatStore.chatMessages)
-const conversations = computed(() => aiChatStore.conversations)
-const currentChatId = computed(() => aiChatStore.currentChatId)
-const isLoadingConversation = computed(() => aiChatStore.isLoadingConversation)
 const isGenerating = computed(() => aiChatStore.isGenerating)
 const breadcrumbs = computed(() => aiChatStore.chatBreadcrumbs)
 const featuredSkills = computed(() => aiChatStore.featuredSkills)
 const connectionStatus = computed(() => aiChatStore.connectionStatus)
 const currentPlan = computed(() => aiChatStore.currentPlan)
 const currentChecks = computed(() => aiChatStore.currentChecks)
+const currentToolCalls = computed(() => aiChatStore.currentToolCalls || [])
+const currentToolResults = computed(() => aiChatStore.currentToolResults || [])
 const canClearChat = computed(() => !isGenerating.value && messages.value.length > 0)
 
-const historyMenuRef = ref(null)
 
 // Markdown renderer for AI responses
 const markdown = new MarkdownIt({
@@ -124,23 +123,18 @@ function newChat() {
   aiChatStore.startNewChat()
 }
 
-function handleHistoryOpen() {
-  aiChatStore.refreshConversations()
-}
-
-function selectConversation(conversationId) {
-  if (!conversationId) return
-  aiChatStore.loadConversation(conversationId)
-  historyMenuRef.value?.close()
-}
 
 function clearCurrentChat() {
   if (!canClearChat.value) return
-  const confirmMessage = t('aiChat.clearChatConfirm')
-  if (confirmMessage && !window.confirm(confirmMessage)) {
-    return
-  }
-  aiChatStore.clearConversation()
+  confirm.require({
+    message: t('aiChat.clearChatConfirm'),
+    header: t('aiChat.clearChat'),
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: () => {
+      aiChatStore.clearConversation()
+    }
+  })
 }
 
 function handleSend({ content, mentions }) {
@@ -159,25 +153,6 @@ function executeSkill(skill) {
   aiChatStore.executeSkill(skill.id)
 }
 
-function formatConversationTitle(conversation) {
-  if (!conversation) return t('aiChat.newChat')
-  const title = conversation.title?.trim()
-  return title && title.length ? title : t('aiChat.newChat')
-}
-
-function formatConversationMeta(conversation) {
-  if (!conversation?.lastMessageAt) {
-    return t('aiChat.noMessages')
-  }
-
-  const date = new Date(conversation.lastMessageAt)
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  })
-}
 
 // Cleanup
 onUnmounted(() => {
@@ -232,55 +207,6 @@ onUnmounted(() => {
         </div>
         
         <div class="flex items-center gap-2">
-          <DropdownMenu
-            ref="historyMenuRef"
-            :items="[]"
-            position="right"
-            width="20rem"
-            :close-on-select="false"
-            @open="handleHistoryOpen"
-          >
-            <template #trigger>
-              <button
-                class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                :title="t('aiChat.history')"
-                aria-label="History"
-              >
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <path d="M12 7v5l3 3"></path>
-                </svg>
-              </button>
-            </template>
-            <template #content>
-              <div class="px-3 py-2 border-b border-gray-100">
-                <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                  {{ t('aiChat.history') }}
-                </span>
-              </div>
-              <div class="history-scroll max-h-72 overflow-y-auto py-1">
-                <div v-if="isLoadingConversation" class="px-3 py-2 text-xs text-gray-400">
-                  {{ t('common.loading') }}
-                </div>
-                <button
-                  v-for="conversation in conversations"
-                  :key="conversation.id"
-                  @click="selectConversation(conversation.id)"
-                  class="flex flex-col gap-0.5 w-full px-3 py-2 text-left transition-colors"
-                  :class="conversation.id === currentChatId ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'"
-                >
-                  <span class="text-sm font-medium truncate">{{ formatConversationTitle(conversation) }}</span>
-                  <span class="text-xs text-gray-400">{{ formatConversationMeta(conversation) }}</span>
-                </button>
-                <div
-                  v-if="!isLoadingConversation && conversations.length === 0"
-                  class="px-3 py-2 text-xs text-gray-400"
-                >
-                  {{ t('aiChat.noHistory') }}
-                </div>
-              </div>
-            </template>
-          </DropdownMenu>
           <button
             @click="clearCurrentChat"
             :disabled="!canClearChat"
@@ -315,7 +241,7 @@ onUnmounted(() => {
           <circle cx="12" cy="12" r="10"></circle>
         </svg>
         <template v-for="(crumb, index) in breadcrumbs" :key="crumb.id">
-          <span v-if="index > 0" class="text-gray-300">›</span>
+          <span v-if="index > 0" class="text-gray-300">&gt;</span>
           <button
             class="hover:text-gray-700 transition-colors"
             :class="{ 'text-primary-600': crumb.type === 'task' }"
@@ -354,6 +280,44 @@ onUnmounted(() => {
               </svg>
             </div>
             <div class="max-w-[80%] bg-gray-100 text-gray-800 rounded-2xl rounded-tl-md px-4 py-2">
+              <div v-if="message.plan?.length" class="mb-2 rounded-lg bg-white/70 border border-gray-200 p-2">
+                <div class="text-[11px] font-semibold text-gray-500 mb-1">Plan</div>
+                <div class="space-y-1">
+                  <div
+                    v-for="step in message.plan"
+                    :key="step.id"
+                    class="flex items-center gap-2 text-xs text-gray-700"
+                  >
+                    <span v-if="step.status === 'completed'" class="text-green-500">[x]</span>
+                    <span v-else-if="step.status === 'in_progress'" class="text-blue-500">[~]</span>
+                    <span v-else-if="step.status === 'blocked'" class="text-red-500">[!]</span>
+                    <span v-else class="text-gray-400">[ ]</span>
+                    <span>{{ step.title }}</span>
+                  </div>
+                </div>
+              </div>
+              <div v-if="message.checks?.length" class="mb-2 rounded-lg bg-white/70 border border-gray-200 p-2">
+                <div class="text-[11px] font-semibold text-gray-500 mb-1">Checks</div>
+                <ul class="space-y-1">
+                  <li v-for="(check, idx) in message.checks" :key="idx" class="flex gap-2 text-xs text-gray-700">
+                    <span class="text-green-500 mt-0.5">[x]</span>
+                    <span>{{ check }}</span>
+                  </li>
+                </ul>
+              </div>
+              <details v-if="message.toolCalls?.length || message.toolResults?.length" class="mb-2 text-xs text-gray-500">
+                <summary class="cursor-pointer select-none">Details</summary>
+                <div class="mt-2 space-y-2">
+                  <div v-if="message.toolCalls?.length">
+                    <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Calls</div>
+                    <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(message.toolCalls, null, 2) }}</pre>
+                  </div>
+                  <div v-if="message.toolResults?.length">
+                    <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Results</div>
+                    <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(message.toolResults, null, 2) }}</pre>
+                  </div>
+                </div>
+              </details>
               <div class="ai-markdown text-sm" v-html="renderMarkdown(message.content)"></div>
             </div>
           </div>
@@ -370,10 +334,10 @@ onUnmounted(() => {
                 :key="step.id"
                 class="flex items-center gap-2 text-sm"
               >
-                <span v-if="step.status === 'completed'" class="text-green-500">✓</span>
-                <span v-else-if="step.status === 'in_progress'" class="text-blue-500 animate-pulse">●</span>
-                <span v-else-if="step.status === 'blocked'" class="text-red-500">✗</span>
-                <span v-else class="text-gray-400">○</span>
+                <span v-if="step.status === 'completed'" class="text-green-500">[x]</span>
+                <span v-else-if="step.status === 'in_progress'" class="text-blue-500 animate-pulse">[~]</span>
+                <span v-else-if="step.status === 'blocked'" class="text-red-500">[!]</span>
+                <span v-else class="text-gray-400">[ ]</span>
                 <span :class="step.status === 'completed' ? 'text-gray-600' : 'text-gray-800'">
                   {{ step.title }}
                 </span>
@@ -385,16 +349,33 @@ onUnmounted(() => {
           <div v-if="currentChecks.length > 0" class="bg-green-50 rounded-lg p-3">
             <div class="text-xs font-medium text-green-700 mb-2">Checks</div>
             <div class="space-y-1">
-              <div 
-                v-for="(check, idx) in currentChecks" 
+              <div
+                v-for="(check, idx) in currentChecks"
                 :key="idx"
                 class="flex items-start gap-2 text-sm text-gray-700"
               >
-                <span class="text-green-500 mt-0.5">✓</span>
+                <span class="text-green-500 mt-0.5">[x]</span>
                 <span>{{ check }}</span>
               </div>
             </div>
           </div>
+
+          <details
+            v-if="currentToolCalls.length || currentToolResults.length"
+            class="rounded-lg border border-gray-200 bg-white/70 p-3 text-xs text-gray-500"
+          >
+            <summary class="cursor-pointer select-none">Details</summary>
+            <div class="mt-2 space-y-2">
+              <div v-if="currentToolCalls.length">
+                <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Calls</div>
+                <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(currentToolCalls, null, 2) }}</pre>
+              </div>
+              <div v-if="currentToolResults.length">
+                <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Results</div>
+                <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(currentToolResults, null, 2) }}</pre>
+              </div>
+            </div>
+          </details>
           
           <!-- Typing dots -->
           <div class="flex gap-3">

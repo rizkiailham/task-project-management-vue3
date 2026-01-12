@@ -17,7 +17,7 @@
  *   </template>
  * </DropdownMenu>
  */
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 
 const props = defineProps({
   /**
@@ -59,6 +59,33 @@ const isOpen = ref(false)
 const triggerRef = ref(null)
 const menuRef = ref(null)
 const instanceId = `dropdown-${Math.random().toString(36).slice(2, 9)}`
+const viewportWidth = ref(0)
+
+const menuStyle = computed(() => {
+  if (!triggerRef.value) {
+    return { width: props.width, top: '0', left: '0' }
+  }
+
+  const rect = triggerRef.value.getBoundingClientRect()
+  const top = `${rect.bottom + 8}px`
+
+  if (props.position === 'right') {
+    const right = Math.max(0, viewportWidth.value - rect.right)
+    return {
+      width: props.width,
+      top,
+      right: `${right}px`,
+      left: 'auto'
+    }
+  }
+
+  return {
+    width: props.width,
+    top,
+    left: `${rect.left}px`,
+    right: 'auto'
+  }
+})
 
 function toggle() {
   isOpen.value = !isOpen.value
@@ -136,6 +163,19 @@ onUnmounted(() => {
 
 onMounted(() => {
   window.addEventListener('dropdown-open', handlePeerOpen)
+  if (typeof window !== 'undefined') {
+    viewportWidth.value = window.innerWidth
+    window.addEventListener('resize', handleResize)
+  }
+})
+
+function handleResize() {
+  if (typeof window === 'undefined') return
+  viewportWidth.value = window.innerWidth
+}
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 
 // Expose methods for parent component
@@ -156,12 +196,7 @@ defineExpose({ open, close, toggle, isOpen })
           v-if="isOpen"
           ref="menuRef"
           class="dropdown-menu fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]"
-          :style="{ 
-            width: width,
-            top: triggerRef ? `${triggerRef.getBoundingClientRect().bottom + 8}px` : '0',
-            left: position === 'left' && triggerRef ? `${triggerRef.getBoundingClientRect().left}px` : 'auto',
-            right: position === 'right' && triggerRef ? `${window.innerWidth - triggerRef.getBoundingClientRect().right}px` : 'auto'
-          }"
+          :style="menuStyle"
         >
           <template v-for="(item, index) in items" :key="index">
             <!-- Divider -->
