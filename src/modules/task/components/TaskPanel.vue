@@ -9,9 +9,7 @@ import { TaskStatus, TaskPriority } from '@/models'
 
 // PrimeVue
 import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
-import Select from 'primevue/select'
+import FormInput from '@/components/ui/FormInput.vue'
 import Avatar from 'primevue/avatar'
 import Tag from 'primevue/tag'
 import ProgressBar from 'primevue/progressbar'
@@ -145,17 +143,25 @@ function formatDate(date) {
 
         <!-- Status & Priority -->
         <div class="flex flex-wrap gap-3">
-          <Select
+          <FormInput
+            id="task-panel-status"
             :modelValue="task.status"
             @update:modelValue="updateStatus"
+            as="select"
+            label="Status"
+            labelClass="sr-only"
             :options="statusOptions"
             optionLabel="label"
             optionValue="value"
             class="w-36"
           />
-          <Select
+          <FormInput
+            id="task-panel-priority"
             :modelValue="task.priority"
             @update:modelValue="updatePriority"
+            as="select"
+            label="Priority"
+            labelClass="sr-only"
             :options="priorityOptions"
             optionLabel="label"
             optionValue="value"
@@ -285,7 +291,11 @@ function formatDate(date) {
           
           <!-- Add Comment -->
           <div class="mt-3">
-            <Textarea
+            <FormInput
+              id="task-panel-comment"
+              as="textarea"
+              label="Add a comment"
+              labelClass="sr-only"
               placeholder="Add a comment..."
               rows="2"
               class="w-full"
@@ -319,4 +329,3 @@ function formatDate(date) {
   }
 }
 </style>
-

@@ -8,7 +8,7 @@ import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
 // PrimeVue
-import Password from 'primevue/password'
+import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 
 const authStore = useAuthStore()
@@ -61,11 +61,12 @@ const onSubmit = handleSubmit(async (values) => {
       
       <form @submit="onSubmit" class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-            Current Password
-          </label>
-          <Password 
+          <FormInput
+            id="current-password"
             v-model="currentPassword" 
+            as="password"
+            label="Current Password"
+            labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
             :feedback="false"
             toggleMask
             class="w-full"
@@ -76,11 +77,12 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-            New Password
-          </label>
-          <Password 
+          <FormInput
+            id="new-password"
             v-model="newPassword" 
+            as="password"
+            label="New Password"
+            labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
             toggleMask
             class="w-full"
             :class="{ 'p-invalid': newPasswordError }"
@@ -90,11 +92,12 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-            Confirm New Password
-          </label>
-          <Password 
+          <FormInput
+            id="confirm-new-password"
             v-model="confirmPassword" 
+            as="password"
+            label="Confirm New Password"
+            labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
             :feedback="false"
             toggleMask
             class="w-full"

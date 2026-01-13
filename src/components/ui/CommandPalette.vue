@@ -12,7 +12,7 @@ import { useRouter } from 'vue-router'
 import { useUIStore, useProjectStore, useTaskStore, useWorkspaceStore } from '@/stores'
 
 import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
+import FormInput from '@/components/ui/FormInput.vue'
 
 const router = useRouter()
 const uiStore = useUIStore()
@@ -142,7 +142,7 @@ watch(() => uiStore.isSearchOpen, async (isOpen) => {
     query.value = ''
     selectedIndex.value = 0
     await nextTick()
-    searchInput.value?.$el?.focus()
+    searchInput.value?.focus?.()
   }
 })
 
@@ -208,9 +208,12 @@ function getItemIndex(item) {
       <!-- Search Input -->
       <div class="flex items-center gap-3 border-b border-gray-200 px-4 py-3 dark-edit:border-gray-700">
         <i class="pi pi-search text-gray-400"></i>
-        <InputText
+        <FormInput
           ref="searchInput"
           v-model="query"
+          label="Search or type a command"
+          labelClass="sr-only"
+          wrapperClass="flex-1"
           placeholder="Search or type a command..."
           class="flex-1 border-0 bg-transparent p-0 text-base focus:ring-0"
           :pt="{ root: { class: 'shadow-none' } }"
@@ -331,4 +334,3 @@ function getItemIndex(item) {
   background: #1f2937;
 }
 </style>
-

@@ -6,8 +6,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoleStore, useUIStore } from '@/stores'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
+import FormInput from '@/components/ui/FormInput.vue'
 import Checkbox from 'primevue/checkbox'
 import { ChevronDown } from 'lucide-vue-next'
 
@@ -186,17 +185,22 @@ async function handleSubmit() {
         
         <div v-show="detailsExpanded" class="pl-6 pb-4 space-y-4">
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Name *</label>
-            <InputText
+            <FormInput
+              id="role-name"
               v-model="formData.name"
+              label="Name *"
+              labelClass="block text-xs text-gray-500 mb-1"
               placeholder="Enter role name"
               class="w-full"
             />
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Description</label>
-            <Textarea
+            <FormInput
+              id="role-description"
               v-model="formData.description"
+              as="textarea"
+              label="Description"
+              labelClass="block text-xs text-gray-500 mb-1"
               placeholder="Enter a brief description of this role's purpose and responsibilities"
               rows="3"
               class="w-full text-sm"

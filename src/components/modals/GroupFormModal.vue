@@ -5,8 +5,7 @@
 import { ref, computed, watch } from 'vue'
 import { useGroupStore, useUIStore } from '@/stores'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
+import FormInput from '@/components/ui/FormInput.vue'
 import { ChevronDown, Search, Trash2, Plus } from 'lucide-vue-next'
 import { getUsers } from '@/api/user.api'
 
@@ -358,17 +357,22 @@ async function handleSubmit() {
 
         <div v-show="detailsExpanded" class="pl-6 pb-4 space-y-4">
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Name *</label>
-            <InputText
+            <FormInput
+              id="group-name"
               v-model="formData.name"
+              label="Name *"
+              labelClass="block text-xs text-gray-500 mb-1"
               placeholder="Enter group name"
               class="w-full"
             />
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Description</label>
-            <Textarea
+            <FormInput
+              id="group-description"
               v-model="formData.description"
+              as="textarea"
+              label="Description"
+              labelClass="block text-xs text-gray-500 mb-1"
               placeholder="Enter a brief description for this group"
               rows="3"
               class="w-full text-sm"
@@ -454,10 +458,6 @@ async function handleSubmit() {
               </div>
             </div>
           </div>
-
-          <p v-if="!isEditing" class="mt-2 text-x px-6 text-gray-400">
-            Added users will be saved when you create the group.
-          </p>
         </div>
       </div>
       
@@ -537,9 +537,11 @@ async function handleSubmit() {
       <div class="flex w-[calc(100%+3rem)] items-center justify-between gap-3 -mx-6 px-6">
         <div class="relative flex-1">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+          <FormInput
+            id="group-search"
             v-model="searchQuery"
-            type="text"
+            label="Search users"
+            labelClass="sr-only"
             placeholder="Search users"
             class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />

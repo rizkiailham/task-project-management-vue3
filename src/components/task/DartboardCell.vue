@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import InputText from 'primevue/inputtext'
+import FormInput from '@/components/ui/FormInput.vue'
 import { ChevronsLeft } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -194,10 +194,13 @@ defineExpose({ refresh })
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <InputText
+    <FormInput
       v-model="inputValue"
       :style="inputStyle"
       :id="`dartboard-input-${pathKey.value}`"
+      label="Task title"
+      labelClass="sr-only"
+      wrapperClass="flex-1 min-w-0"
       class="dartboard-input h-7 px-1.5 py-1 w-auto min-w-0 text-left min-w-[60px]"
       @focus="isFocused = true"
       @blur="isFocused = false"
