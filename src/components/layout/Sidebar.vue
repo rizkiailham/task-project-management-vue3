@@ -15,6 +15,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUIStore, useWorkspaceStore, useNotificationStore, useAuthStore, useProjectStore } from '@/stores'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Avatar from 'primevue/avatar'
+import Button from 'primevue/button'
 import {
   Activity,
   BarChart3,
@@ -24,6 +25,7 @@ import {
   Building2,
   CheckSquare,
   CircleHelp,
+  ChevronDown,
   Home,
   Code,
   Crown,
@@ -49,6 +51,7 @@ import {
   Users,
   Video,
   Wallet,
+  Plus,
   Wrench
 } from 'lucide-vue-next'
 
@@ -224,6 +227,17 @@ function toggleProjects() {
   projectsExpanded.value = !projectsExpanded.value
 }
 
+function isProjectActive(projectId) {
+  return route.name === 'Project' && String(route.params.projectId) === String(projectId)
+}
+
+const isSettingsActive = computed(() => {
+  const name = route.name ? String(route.name) : ''
+  return name === 'Settings' || name.startsWith('Settings')
+})
+
+const isUsersActive = computed(() => route.name === 'Users')
+
 // Fetch projects on mount
 onMounted(async () => {
   try {
@@ -373,9 +387,9 @@ async function handleLogout() {
           </button> -->
         </div>
 
-        <div class="h-full pr-2 pb-4 pt-4 space-y-4">
+        <div class="h-full pb-4 pt-4 space-y-4">
           <!-- Main Navigation -->
-          <nav class="mb-6">
+          <nav class="mb-6 px-3">
             <button
               v-for="item in mainNavItems"
               :key="item.label"
@@ -398,29 +412,28 @@ async function handleLogout() {
           </nav>
 
           <!-- Spaces Section -->
-          <div class="flex items-center justify-between px-3 mt-12 pb-0 mb-0">
-            <button
+          <div class="flex items-center justify-between mt-12 pb-0 mb-0">
+            <Button
               type="button"
-              class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 uppercase tracking-wide"
+              class="flex items-center px-3 gap-1.5 text-[11px] font-semibold text-gray-600 uppercase tracking-wide"
               @click="toggleProjects"
               :aria-expanded="projectsExpanded"
+              unstyled
             >
+              Project
               <ChevronDown
                 class="w-3.5 h-3.5 text-gray-500 transition-transform"
                 :class="{ '-rotate-90': !projectsExpanded }"
               />
-              Project
-            </button>
-            <button
+            </Button>
+            <Button
               @click="openCreateProjectModal"
               class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors"
               title="Add project"
+              unstyled
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
+              <Plus class="w-4 h-4" />
+            </Button>
           </div>
 
           <div class="projects-scroll">
@@ -429,7 +442,12 @@ async function handleLogout() {
               <div v-for="project in projects" :key="project.id" class="dropdown-section mb-1 relative">
                 <button
                   @click="navigateToProject(project)"
-                  class="group flex items-center gap-2.5 py-2 px-3 rounded-md text-gray-900 text-sm cursor-pointer hover:bg-white/70 transition-colors w-full min-w-0"
+                  :class="[
+                    'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                    isProjectActive(project.id)
+                      ? 'bg-gray-300 text-gray-900 shadow-sm'
+                      : 'text-gray-900 hover:bg-white/70'
+                  ]"
                 >
                   <span class="w-5 h-5 flex items-center justify-center">
                     <FolderOpen class="w-4 h-4 text-gray-600" />
@@ -457,7 +475,12 @@ async function handleLogout() {
           <div class="space-y-1">
             <button
               type="button"
-              class="w-full flex items-center gap-2.5 py-2 rounded-md text-sm text-gray-900 hover:bg-white/70 transition-colors"
+              :class="[
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                isSettingsActive
+                  ? 'bg-gray-300 text-gray-900 shadow-sm'
+                  : 'text-gray-900 hover:bg-white/70'
+              ]"
               @click="goToSettings"
             >
               <svg class="w-[18px] h-[18px] opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -468,7 +491,12 @@ async function handleLogout() {
             </button>
             <button
               type="button"
-              class="w-full flex items-center gap-2.5 py-2 rounded-md text-sm text-gray-900 hover:bg-white/70 transition-colors"
+              :class="[
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                isUsersActive
+                  ? 'bg-gray-300 text-gray-900 shadow-sm'
+                  : 'text-gray-900 hover:bg-white/70'
+              ]"
               @click="router.push({ name: 'Users' })"
             >
               <svg class="w-[18px] h-[18px] opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -481,7 +509,10 @@ async function handleLogout() {
             </button>
             <button
               type="button"
-              class="w-full flex items-center gap-2.5 py-2 rounded-md text-sm text-gray-900 hover:bg-white/70 transition-colors"
+              :class="[
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                'text-gray-900 hover:bg-white/70'
+              ]"
               @click="notify('Bulletin')"
             >
               <Newspaper class="w-[18px] h-[18px] opacity-70" />
@@ -489,7 +520,10 @@ async function handleLogout() {
             </button>
             <button
               type="button"
-              class="w-full flex items-center gap-2.5 py-2 rounded-md text-sm text-gray-900 hover:bg-white/70 transition-colors"
+              :class="[
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                'text-gray-900 hover:bg-white/70'
+              ]"
               @click="notify('Help & Resources')"
             >
               <CircleHelp class="w-[18px] h-[18px] opacity-70" />
