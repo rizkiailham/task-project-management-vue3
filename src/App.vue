@@ -66,7 +66,7 @@ function handleKeyboardShortcuts(event) {
     <RouterView />
 
     <!-- Global Components -->
-    <Toast position="top-right" />
+    <Toast position="bottom-right" />
     <ConfirmDialog />
     <ToastNotifications />
     <GlobalLoader />
