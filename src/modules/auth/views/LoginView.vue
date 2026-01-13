@@ -318,7 +318,8 @@ function handleSocialLogin(provider) {
   padding: 0.7rem 1rem;
   font-weight: 600;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  border: none;
+  border: 1px solid transparent;
+  box-sizing: border-box;
   color: #ffffff;
 }
 
