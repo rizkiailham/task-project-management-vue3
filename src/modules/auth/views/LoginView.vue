@@ -183,7 +183,7 @@ function handleSocialLogin(provider) {
         <router-link :to="{ name: 'ForgotPassword' }" class="auth-link">
           Forgot password?
         </router-link>
-        <router-link :to="{ name: 'ForgotPassword' }" class="auth-link">
+        <router-link :to="{ name: 'LoginLinkRequest' }" class="auth-link">
           Log in with link
         </router-link>
       </div>
