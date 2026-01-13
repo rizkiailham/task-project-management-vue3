@@ -12,6 +12,7 @@ import * as yup from 'yup'
 import { useUIStore } from '@/stores'
 import { getInvitation, registerFromInvite } from '@/api/user.api'
 import { Pencil } from 'lucide-vue-next'
+import desidiaLogo from '@/assets/desidia.svg'
 
 // PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
@@ -167,9 +168,7 @@ function goToLogin() {
       <div v-else>
         <!-- Logo -->
         <div class="auth-logo">
-          <svg viewBox="0 0 24 24" class="auth-logo-icon" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+          <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
         </div>
 
         <!-- Header -->
@@ -396,12 +395,11 @@ function goToLogin() {
   place-items: center;
   border-radius: 16px;
   color: #2563eb;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.05));
+  
 }
 
 .auth-logo-icon {
-  width: 28px;
-  height: 28px;
+  width: 5rem;
 }
 
 .auth-title {

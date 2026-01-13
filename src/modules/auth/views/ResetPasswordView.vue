@@ -3,13 +3,14 @@
  * ResetPasswordView - Set new password page
  * With localization support (en/no)
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
+import desidiaLogo from '@/assets/desidia.svg'
 
 // PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
@@ -21,8 +22,8 @@ const route = useRoute()
 const authStore = useAuthStore()
 const toast = useToast()
 
-// Get token from URL
-const token = route.query.token
+// Get token/email from URL (supports base64 payload in query string)
+const token = ref('')
 
 // Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
@@ -44,7 +45,7 @@ const validationSchema = computed(() => yup.object({
 }))
 
 // Form setup
-const { handleSubmit, meta } = useForm({
+const { handleSubmit, meta, setFieldValue } = useForm({
   validationSchema
 })
 
@@ -52,12 +53,50 @@ const { value: email, errorMessage: emailError } = useField('email')
 const { value: password, errorMessage: passwordError } = useField('password')
 const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword')
 
+function parseResetPayload() {
+  const queryToken = route.query.token
+  const queryEmail = route.query.email
+
+  if (typeof queryToken === 'string') {
+    token.value = queryToken
+  }
+  if (typeof queryEmail === 'string') {
+    setFieldValue('email', queryEmail)
+  }
+
+  const queryKeys = Object.keys(route.query || {})
+  const hasSingleEncodedParam = queryKeys.length === 1 && route.query[queryKeys[0]] === ''
+
+  if (!hasSingleEncodedParam) return
+
+  const rawEncoded = queryKeys[0]
+  try {
+    const normalized = decodeURIComponent(rawEncoded).replace(/-/g, '+').replace(/_/g, '/')
+    const decoded = atob(normalized)
+    const params = new URLSearchParams(decoded)
+    const decodedToken = params.get('token')
+    const decodedEmail = params.get('email')
+    if (decodedToken) {
+      token.value = decodedToken
+    }
+    if (decodedEmail) {
+      setFieldValue('email', decodedEmail)
+    }
+  } catch (error) {
+    // Ignore invalid payloads and let standard query params handle it.
+  }
+}
+
+onMounted(() => {
+  parseResetPayload()
+})
+
 // Local state
 const isSubmitting = ref(false)
 
 // Methods
 const onSubmit = handleSubmit(async (values) => {
-  if (!token) {
+  if (!token.value) {
     toast.add({
       severity: 'error',
       summary: 'Invalid link',
@@ -72,7 +111,7 @@ const onSubmit = handleSubmit(async (values) => {
   try {
     await authStore.resetPassword({
       email: values.email,
-      token,
+      token: token.value,
       password: values.password,
       confirmPassword: values.confirmPassword
     })
@@ -101,9 +140,7 @@ const onSubmit = handleSubmit(async (values) => {
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-logo">
-        <svg viewBox="0 0 24 24" class="auth-logo-icon" fill="currentColor">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
+        <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
       <h1 class="auth-title">Reset Desidia password</h1>
 
@@ -235,12 +272,11 @@ const onSubmit = handleSubmit(async (values) => {
   place-items: center;
   border-radius: 16px;
   color: #2563eb;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.05));
+  
 }
 
 .auth-logo-icon {
-  width: 28px;
-  height: 28px;
+  width: 5rem;
 }
 
 .auth-title {
