@@ -147,6 +147,7 @@ watch(activeTab, async (newTab) => {
 
 onMounted(async () => {
   try {
+    await userStore.initializeOptions()
     await userStore.fetchUsers({ page: 1, limit: 10 })
   } catch (error) {
     console.error('Error fetching users:', error)
