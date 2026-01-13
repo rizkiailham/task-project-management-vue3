@@ -32,10 +32,11 @@ const { value: email, errorMessage: emailError } = useField('email')
 const { value: token, errorMessage: tokenError } = useField('token')
 
 const isSubmitting = ref(false)
+const didAutoVerify = ref(false)
 
 const redirectPath = computed(() => route.query.redirect || '/app')
 
-onMounted(() => {
+onMounted(async () => {
   const presetEmail = route.query.email
   const presetToken = route.query.token
   if (typeof presetEmail === 'string') {
@@ -44,9 +45,14 @@ onMounted(() => {
   if (typeof presetToken === 'string') {
     setFieldValue('token', presetToken)
   }
+
+  if (typeof presetEmail === 'string' && typeof presetToken === 'string') {
+    didAutoVerify.value = true
+    await runVerify({ email: presetEmail, token: presetToken })
+  }
 })
 
-const onSubmit = handleSubmit(async (values) => {
+async function runVerify(values) {
   isSubmitting.value = true
   try {
     await authStore.verifyLoginLink({
@@ -70,6 +76,10 @@ const onSubmit = handleSubmit(async (values) => {
   } finally {
     isSubmitting.value = false
   }
+}
+
+const onSubmit = handleSubmit(async (values) => {
+  await runVerify(values)
 })
 </script>
 
@@ -94,6 +104,7 @@ const onSubmit = handleSubmit(async (values) => {
             class="auth-input"
             :class="{ 'p-invalid': emailError }"
             autocomplete="email"
+            :disabled="didAutoVerify && isSubmitting"
           >
             <template #label>
               Email <span class="text-red-500">*</span>
@@ -111,6 +122,7 @@ const onSubmit = handleSubmit(async (values) => {
             class="auth-input"
             :class="{ 'p-invalid': tokenError }"
             autocomplete="one-time-code"
+            :disabled="didAutoVerify && isSubmitting"
           >
             <template #label>
               Token <span class="text-red-500">*</span>
