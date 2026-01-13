@@ -9,8 +9,7 @@ import * as yup from 'yup'
 
 // PrimeVue
 import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
+import FormInput from '@/components/ui/FormInput.vue'
 
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
@@ -120,26 +119,30 @@ const presetColors = [
     <form @submit="onSubmit" class="space-y-5">
       <!-- Name -->
       <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">
-          Project Name <span class="text-orange-500">*</span>
-        </label>
-        <InputText
+        <FormInput
+          id="project-name"
           v-model="name"
+          labelClass="mb-2 block text-sm font-medium text-gray-700"
           class="w-full"
           :class="{ 'p-invalid': nameError }"
           placeholder="Enter project name..."
           autofocus
-        />
+        >
+          <template #label>
+            Project Name <span class="text-red-500">*</span>
+          </template>
+        </FormInput>
         <small v-if="nameError" class="mt-1 block text-sm text-red-500">{{ nameError }}</small>
       </div>
 
       <!-- Description -->
       <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">
-          Description
-        </label>
-        <Textarea
+        <FormInput
+          id="project-description"
           v-model="description"
+          as="textarea"
+          label="Description"
+          labelClass="mb-2 block text-sm font-medium text-gray-700"
           rows="3"
           class="w-full"
           placeholder="Add a description..."

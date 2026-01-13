@@ -10,9 +10,7 @@ import * as yup from 'yup'
 
 // PrimeVue
 import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
-import Select from 'primevue/select'
+import FormInput from '@/components/ui/FormInput.vue'
 import DatePicker from 'primevue/datepicker'
 
 const taskStore = useTaskStore()
@@ -164,25 +162,25 @@ function closeModal() {
     <form @submit="onSubmit" class="space-y-5">
       <!-- Title -->
       <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">
-          Task Title <span class="text-orange-500">*</span>
-        </label>
-        <InputText
+        <FormInput
+          id="task-title"
           v-model="title"
+          labelClass="mb-2 block text-sm font-medium text-gray-700"
           class="w-full"
           :class="{ 'p-invalid': titleError }"
           placeholder="Enter task title..."
           autofocus
-        />
+        >
+          <template #label>
+            Task Title <span class="text-red-500">*</span>
+          </template>
+        </FormInput>
         <small v-if="titleError" class="mt-1 block text-sm text-red-500">{{ titleError }}</small>
       </div>
 
       <!-- Description -->
       <div>
-        <div class="mb-2 flex items-center justify-between">
-          <label class="text-sm font-medium text-gray-700">
-            Description
-          </label>
+        <div class="mb-2 flex justify-end">
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-orange-600 hover:bg-orange-50 transition-colors"
@@ -195,8 +193,12 @@ function closeModal() {
             {{ isGeneratingAI ? 'Generating...' : 'AI Generate' }}
           </button>
         </div>
-        <Textarea
+        <FormInput
+          id="task-description"
           v-model="description"
+          as="textarea"
+          label="Description"
+          labelClass="text-sm font-medium text-gray-700"
           rows="3"
           class="w-full"
           placeholder="Add a description..."
@@ -205,29 +207,34 @@ function closeModal() {
 
       <!-- Project -->
       <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">
-          Project <span class="text-orange-500">*</span>
-        </label>
-        <Select
+        <FormInput
+          id="task-project"
           v-model="projectId"
+          as="select"
+          labelClass="mb-2 block text-sm font-medium text-gray-700"
           :options="projectOptions"
           optionLabel="label"
           optionValue="value"
           placeholder="Select a project"
           class="w-full"
           :class="{ 'p-invalid': projectError }"
-        />
+        >
+          <template #label>
+            Project <span class="text-red-500">*</span>
+          </template>
+        </FormInput>
         <small v-if="projectError" class="mt-1 block text-sm text-red-500">{{ projectError }}</small>
       </div>
 
       <!-- Status & Priority -->
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">
-            Status
-          </label>
-          <Select
+          <FormInput
+            id="task-status"
             v-model="status"
+            as="select"
+            label="Status"
+            labelClass="mb-2 block text-sm font-medium text-gray-700"
             :options="statusOptions"
             optionLabel="label"
             optionValue="value"
@@ -235,11 +242,12 @@ function closeModal() {
           />
         </div>
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">
-            Priority
-          </label>
-          <Select
+          <FormInput
+            id="task-priority"
             v-model="priority"
+            as="select"
+            label="Priority"
+            labelClass="mb-2 block text-sm font-medium text-gray-700"
             :options="priorityOptions"
             optionLabel="label"
             optionValue="value"
@@ -334,4 +342,3 @@ function closeModal() {
   color: #9ca3af;
 }
 </style>
-

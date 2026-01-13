@@ -36,6 +36,36 @@ const routes = [
     }
   },
   {
+    path: '/login-link',
+    name: 'LoginLinkRequest',
+    component: () => import('@/modules/auth/views/LoginLinkRequestView.vue'),
+    meta: {
+      requiresAuth: false,
+      layout: 'auth',
+      title: 'Login With Link'
+    }
+  },
+  {
+    path: '/login-link/verify',
+    name: 'LoginLinkVerify',
+    component: () => import('@/modules/auth/views/LoginLinkVerifyView.vue'),
+    meta: {
+      requiresAuth: false,
+      layout: 'auth',
+      title: 'Verify Login Link'
+    }
+  },
+  {
+    path: '/login-token',
+    name: 'LoginTokenVerify',
+    component: () => import('@/modules/auth/views/LoginLinkVerifyView.vue'),
+    meta: {
+      requiresAuth: false,
+      layout: 'auth',
+      title: 'Verify Login Link'
+    }
+  },
+  {
     path: '/reset-password',
     name: 'ResetPassword',
     component: () => import('@/modules/auth/views/ResetPasswordView.vue'),

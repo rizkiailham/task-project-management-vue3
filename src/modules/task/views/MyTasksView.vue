@@ -11,8 +11,7 @@ import { TaskStatus, TaskPriority } from '@/models'
 
 // PrimeVue
 import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
+import FormInput from '@/components/ui/FormInput.vue'
 import Tag from 'primevue/tag'
 import Skeleton from 'primevue/skeleton'
 import Checkbox from 'primevue/checkbox'
@@ -432,22 +431,33 @@ function formatDate(date) {
     <div v-if="false" class="mb-6 flex flex-wrap items-center gap-3">
       <div class="relative flex-1 sm:max-w-xs">
         <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <InputText
+        <FormInput
+          id="my-tasks-search"
           v-model="searchQuery"
+          label="Search tasks"
+          labelClass="sr-only"
           placeholder="Search tasks..."
           class="w-full pl-10"
         />
       </div>
-      <Select
+      <FormInput
+        id="my-tasks-status"
         v-model="statusFilter"
+        as="select"
+        label="Status"
+        labelClass="sr-only"
         :options="statusOptions"
         optionLabel="label"
         optionValue="value"
         placeholder="Status"
         class="w-40"
       />
-      <Select
+      <FormInput
+        id="my-tasks-priority"
         v-model="priorityFilter"
+        as="select"
+        label="Priority"
+        labelClass="sr-only"
         :options="priorityOptions"
         optionLabel="label"
         optionValue="value"

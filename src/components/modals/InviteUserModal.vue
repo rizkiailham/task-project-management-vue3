@@ -13,7 +13,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import { inviteUser } from '@/api/user.api'
 
 // PrimeVue
-import InputText from 'primevue/inputtext'
+import FormInput from '@/components/ui/FormInput.vue'
 import MultiSelect from 'primevue/multiselect'
 
 const userStore = useUserStore()
@@ -116,16 +116,19 @@ function closeModal() {
     <form @submit.prevent="onSubmit" class="space-y-5">
       <!-- Email Field -->
       <div class="flex flex-col">
-        <label class="mb-1.5 text-xs text-gray-500">
-          Email <span class="text-red-500">*</span>
-        </label>
-        <InputText
+        <FormInput
+          id="invite-email"
           v-model="email"
           type="email"
+          labelClass="mb-1.5 text-xs text-gray-500"
           placeholder="user@email.address"
           class="w-full"
           :class="{ 'p-invalid': emailError }"
-        />
+        >
+          <template #label>
+            Email <span class="text-red-500">*</span>
+          </template>
+        </FormInput>
         <small v-if="emailError" class="mt-1 text-xs text-red-500">
           {{ emailError }}
         </small>

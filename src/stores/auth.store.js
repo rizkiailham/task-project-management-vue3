@@ -417,6 +417,64 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Request login link
+   * @param {string} email
+   */
+  async function requestLoginLink(email) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      await authApi.requestLoginLink(email)
+    } catch (err) {
+      error.value = err.message || 'Login link request failed'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Verify login link token
+   * @param {Object} data
+   * @param {string} data.email
+   * @param {string} data.token
+   */
+  async function verifyLoginLink(data) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await authApi.verifyLoginLink(data)
+
+      accessToken.value = response.accessToken
+      refreshToken.value = response.refreshToken || null
+
+      localStorage.setItem('accessToken', response.accessToken)
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken)
+      } else {
+        localStorage.removeItem('refreshToken')
+      }
+      setAuthToken(response.accessToken)
+
+      if (response.user) {
+        user.value = normalizeUser(response.user)
+      } else {
+        const userData = await authApi.getCurrentUser()
+        user.value = normalizeUser(userData)
+      }
+
+      return response
+    } catch (err) {
+      error.value = err.message || 'Login link verification failed'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
    * Check if user has a specific permission
    * @param {string} permission
    * @returns {boolean}
@@ -504,6 +562,8 @@ export const useAuthStore = defineStore('auth', () => {
     changePassword,
     requestPasswordReset,
     resetPassword,
+    requestLoginLink,
+    verifyLoginLink,
     ensureSession,
     hasPermission,
     hasRole

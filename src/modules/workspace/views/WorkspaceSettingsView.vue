@@ -9,8 +9,7 @@ import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
 // PrimeVue
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
+import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { useConfirm } from 'primevue/useconfirm'
@@ -86,11 +85,11 @@ function confirmDelete() {
           
           <div class="space-y-4">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-                Workspace Name
-              </label>
-              <InputText 
+              <FormInput
+                id="workspace-name"
                 v-model="name" 
+                label="Workspace Name"
+                labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
                 class="w-full"
                 :class="{ 'p-invalid': nameError }"
               />
@@ -133,4 +132,3 @@ function confirmDelete() {
     <ConfirmDialog />
   </div>
 </template>
-

@@ -14,20 +14,19 @@ import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore, useUIStore } from '@/stores'
+import { useToast } from 'primevue/usetoast'
+import { useAuthStore } from '@/stores'
 
 // PrimeVue
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
+import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
-import Message from 'primevue/message'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const uiStore = useUIStore()
+const toast = useToast()
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
@@ -52,8 +51,6 @@ const { value: email, errorMessage: emailError } = useField('email')
 const { value: password, errorMessage: passwordError } = useField('password')
 
 // Local state
-const rememberMe = ref(false)
-const serverError = ref('')
 const isSubmitting = ref(false)
 
 // Computed
@@ -62,8 +59,6 @@ const redirectPath = computed(() => route.query.redirect || '/app')
 // Methods
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
-  serverError.value = ''
-
   try {
     await authStore.login({
       email: values.email,
@@ -71,10 +66,20 @@ const onSubmit = handleSubmit(async (values) => {
       // rememberMe: rememberMe.value
     })
 
-    uiStore.showSuccess(t('auth.login.welcomeBack'), t('auth.login.loginSuccessful'))
+    toast.add({
+      severity: 'success',
+      summary: t('auth.login.loginSuccessful'),
+      detail: t('auth.login.welcomeBack'),
+      life: 4000
+    })
     router.push(redirectPath.value)
   } catch (error) {
-    serverError.value = error.message || t('auth.login.invalidCredentials')
+    toast.add({
+      severity: 'error',
+      summary: 'Login failed',
+      detail: error.message || t('auth.login.invalidCredentials'),
+      life: 6000
+    })
   } finally {
     isSubmitting.value = false
   }
@@ -93,41 +98,33 @@ function handleSocialLogin(provider) {
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
       </div>
-      <h1 class="auth-title">{{ t('auth.login.title') }}</h1>
-
-      <Message v-if="serverError" severity="error" :closable="false" class="mb-4">
-        {{ serverError }}
-      </Message>
+      <h1 class="auth-title">Login to Desidia</h1>
 
       <form @submit="onSubmit" class="auth-form">
         <div class="auth-field">
-          <label for="email" class="auth-label">
-            {{ t('auth.login.email') }} <span class="auth-required">*</span>
-          </label>
-          <InputText
+          <FormInput
             id="email"
             v-model="email"
             type="email"
+            labelClass="auth-label"
             :placeholder="t('auth.login.emailPlaceholder')"
             class="auth-input"
             :class="{ 'p-invalid': emailError }"
             autocomplete="email"
-          />
+          >
+            <template #label>
+              {{ t('auth.login.email') }} <span class="text-red-500">*</span>
+            </template>
+          </FormInput>
           <small v-if="emailError" class="auth-error">{{ emailError }}</small>
         </div>
 
         <div class="auth-field">
-          <div class="auth-field-head">
-            <label for="password" class="auth-label">
-              {{ t('auth.login.password') }} <span class="auth-required">*</span>
-            </label>
-            <router-link :to="{ name: 'ForgotPassword' }" class="auth-link">
-              {{ t('auth.login.forgotPassword') }}
-            </router-link>
-          </div>
-          <Password
+          <FormInput
             id="password"
             v-model="password"
+            as="password"
+            labelClass="auth-label"
             :placeholder="t('auth.login.passwordPlaceholder')"
             :class="{ 'p-invalid': passwordError }"
             :feedback="false"
@@ -135,22 +132,17 @@ function handleSocialLogin(provider) {
             autocomplete="current-password"
             inputClass="auth-input"
             class="auth-password"
-          />
+          >
+            <template #label>
+              {{ t('auth.login.password') }} <span class="text-red-500">*</span>
+            </template>
+          </FormInput>
           <small v-if="passwordError" class="auth-error">{{ passwordError }}</small>
-        </div>
-
-        <div class="auth-row">
-          <div class="auth-remember">
-            <Checkbox v-model="rememberMe" inputId="remember" :binary="true" />
-            <label for="remember" class="auth-remember-label">
-              {{ t('auth.login.rememberMe') }}
-            </label>
-          </div>
         </div>
 
         <Button
           type="submit"
-          :label="t('auth.login.signIn')"
+          label="Log In"
           class="auth-primary"
           :loading="isSubmitting"
           :disabled="!meta.valid || isSubmitting"
@@ -187,7 +179,14 @@ function handleSocialLogin(provider) {
         </Button>
       </div>
 
-      <div class="auth-footer"></div>
+      <div class="auth-footer">
+        <router-link :to="{ name: 'ForgotPassword' }" class="auth-link">
+          Forgot password?
+        </router-link>
+        <router-link :to="{ name: 'LoginLinkRequest' }" class="auth-link">
+          Log in with link
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -240,12 +239,12 @@ function handleSocialLogin(provider) {
   font-size: 1.35rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .auth-form {
   display: grid;
-  gap: 1.1rem;
+  gap: 1rem;
 }
 
 .auth-field {
@@ -265,9 +264,6 @@ function handleSocialLogin(provider) {
   color: #374151;
 }
 
-.auth-required {
-  color: #2563eb;
-}
 
 .auth-input,
 .auth-password :deep(input) {
@@ -288,6 +284,10 @@ function handleSocialLogin(provider) {
 
 .auth-password {
   width: 100%;
+}
+
+.auth-password :deep(.p-password) {
+  width: 100%!important;
 }
 
 .auth-error {
@@ -315,7 +315,7 @@ function handleSocialLogin(provider) {
 .auth-primary {
   width: 100%;
   border-radius: 10px;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
   font-weight: 600;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: none;
@@ -384,7 +384,9 @@ function handleSocialLogin(provider) {
 }
 
 .auth-footer {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.5rem;
   text-align: center;
 }
 </style>

@@ -1,59 +1,48 @@
 <script setup>
 /**
- * ForgotPasswordView - Password reset request page
- * With localization support (en/no)
+ * LoginLinkRequestView - Request magic login link
  */
 import { ref, computed } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
-import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
 
-// PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 
-const { t } = useI18n()
 const authStore = useAuthStore()
 const toast = useToast()
 
-// Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
   email: yup
     .string()
-    .required(t('auth.validation.emailRequired'))
-    .email(t('auth.validation.emailInvalid'))
+    .required('Email is required')
+    .email('Invalid email format')
 }))
 
-// Form setup
-const { handleSubmit, meta } = useForm({
-  validationSchema
-})
-
+const { handleSubmit, meta } = useForm({ validationSchema })
 const { value: email, errorMessage: emailError } = useField('email')
 
-// Local state
 const isSubmitting = ref(false)
 const isSuccess = ref(false)
 
-// Methods
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
   try {
-    await authStore.requestPasswordReset(values.email)
+    await authStore.requestLoginLink(values.email)
     isSuccess.value = true
     toast.add({
       severity: 'success',
-      summary: 'Email sent',
-      detail: t('auth.forgotPassword.checkEmail'),
+      summary: 'Link sent',
+      detail: 'Login link sent',
       life: 4000
     })
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Request failed',
-      detail: error.message || t('auth.forgotPassword.failedToSend'),
+      detail: error.message || 'Failed to send login link',
       life: 6000
     })
   } finally {
@@ -70,22 +59,19 @@ const onSubmit = handleSubmit(async (values) => {
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
       </div>
-      <h1 class="auth-title">Reset Desidia password</h1>
+      <h1 class="auth-title">Login with link</h1>
 
       <div v-if="isSuccess" class="auth-success">
         <div class="auth-success-icon">
           <i class="pi pi-check"></i>
         </div>
-        <h2 class="auth-success-title">{{ t('auth.forgotPassword.checkEmail') }}</h2>
+        <h2 class="auth-success-title">Check your email</h2>
         <p class="auth-success-text">
-          {{ t('auth.forgotPassword.resetLinkSent') }} <strong>{{ email }}</strong>
+          We sent a login link to <strong>{{ email }}</strong>
         </p>
-        <router-link :to="{ name: 'Login' }" class="auth-link">
-          {{ t('auth.forgotPassword.backToSignIn') }}
-        </router-link>
       </div>
 
-      <div v-else class="mt-6">
+      <div v-else>
         <form @submit="onSubmit" class="auth-form">
           <div class="auth-field">
             <FormInput
@@ -99,7 +85,7 @@ const onSubmit = handleSubmit(async (values) => {
               autocomplete="email"
             >
               <template #label>
-                {{ t('auth.forgotPassword.email') }} <span class="text-red-500">*</span>
+                Email <span class="text-red-500">*</span>
               </template>
             </FormInput>
             <small v-if="emailError" class="auth-error">{{ emailError }}</small>
@@ -107,7 +93,7 @@ const onSubmit = handleSubmit(async (values) => {
 
           <Button
             type="submit"
-            label="Continue"
+            label="Send Link"
             class="auth-primary"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
@@ -170,13 +156,12 @@ const onSubmit = handleSubmit(async (values) => {
   font-size: 1.35rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 0.3rem;
+  margin-bottom: 1.75rem;
 }
-
 
 .auth-form {
   display: grid;
-  gap: 1.1rem;
+  gap: 1rem;
   text-align: left;
 }
 
@@ -190,7 +175,6 @@ const onSubmit = handleSubmit(async (values) => {
   font-weight: 600;
   color: #374151;
 }
-
 
 .auth-input {
   width: 100%;
@@ -215,7 +199,7 @@ const onSubmit = handleSubmit(async (values) => {
 .auth-primary {
   width: 100%;
   border-radius: 10px;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
   font-weight: 600;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: none;
@@ -224,6 +208,7 @@ const onSubmit = handleSubmit(async (values) => {
 
 .auth-footer {
   margin-top: 1.25rem;
+  text-align: center;
 }
 
 .auth-link {

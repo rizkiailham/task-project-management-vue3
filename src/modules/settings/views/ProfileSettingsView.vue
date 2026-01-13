@@ -8,7 +8,7 @@ import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
 // PrimeVue
-import InputText from 'primevue/inputtext'
+import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import FileUpload from 'primevue/fileupload'
@@ -76,11 +76,11 @@ const onSubmit = handleSubmit(async (values) => {
 
       <form @submit="onSubmit" class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-            First Name
-          </label>
-          <InputText 
+          <FormInput
+            id="profile-first-name"
             v-model="firstName" 
+            label="First Name"
+            labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
             class="w-full"
             :class="{ 'p-invalid': firstNameError }"
           />
@@ -88,11 +88,11 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-            Last Name
-          </label>
-          <InputText 
+          <FormInput
+            id="profile-last-name"
             v-model="lastName" 
+            label="Last Name"
+            labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
             class="w-full"
             :class="{ 'p-invalid': lastNameError }"
           />
@@ -100,12 +100,12 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300">
-            Email Address
-          </label>
-          <InputText 
+          <FormInput
+            id="profile-email"
             :model-value="user?.email || ''"
             type="email"
+            label="Email Address"
+            labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
             class="w-full"
             disabled
           />

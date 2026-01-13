@@ -14,10 +14,7 @@ import { getInvitation, registerFromInvite } from '@/api/user.api'
 import { Pencil } from 'lucide-vue-next'
 
 // PrimeVue
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import Select from 'primevue/select'
-import InputNumber from 'primevue/inputnumber'
+import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 
@@ -198,34 +195,42 @@ function goToLogin() {
           <!-- Name Row -->
           <div class="form-row">
             <div class="auth-field">
-              <label class="auth-label">
-                First name <span class="auth-required">*</span>
-              </label>
-              <InputText
+              <FormInput
+                id="invite-first-name"
                 v-model="firstName"
+                labelClass="auth-label"
                 :class="{ 'p-invalid': firstNameError }"
                 class="auth-input"
-              />
+              >
+                <template #label>
+                  First name <span class="text-red-500">*</span>
+                </template>
+              </FormInput>
               <small v-if="firstNameError" class="auth-error">{{ firstNameError }}</small>
             </div>
             <div class="auth-field">
-              <label class="auth-label">
-                Last name <span class="auth-required">*</span>
-              </label>
-              <InputText
+              <FormInput
+                id="invite-last-name"
                 v-model="lastName"
+                labelClass="auth-label"
                 :class="{ 'p-invalid': lastNameError }"
                 class="auth-input"
-              />
+              >
+                <template #label>
+                  Last name <span class="text-red-500">*</span>
+                </template>
+              </FormInput>
               <small v-if="lastNameError" class="auth-error">{{ lastNameError }}</small>
             </div>
           </div>
 
           <!-- Email (readonly) -->
           <div class="auth-field">
-            <label class="auth-label">Email</label>
-            <InputText
-              :value="invitation?.email"
+            <FormInput
+              id="invite-email"
+              :model-value="invitation?.email"
+              label="Email"
+              labelClass="auth-label"
               disabled
               class="auth-input"
             />
@@ -233,38 +238,59 @@ function goToLogin() {
 
           <!-- Phone -->
           <div class="auth-field">
-            <label class="auth-label">Phone</label>
-            <InputText v-model="phone" class="auth-input" />
+            <FormInput
+              id="invite-phone"
+              v-model="phone"
+              label="Phone"
+              labelClass="auth-label"
+              class="auth-input"
+            />
           </div>
 
           <!-- Organization -->
           <div class="auth-field">
-            <label class="auth-label">Organization</label>
-            <InputText v-model="organization" class="auth-input" />
+            <FormInput
+              id="invite-organization"
+              v-model="organization"
+              label="Organization"
+              labelClass="auth-label"
+              class="auth-input"
+            />
           </div>
 
           <!-- Custom fields row -->
           <div class="form-row">
             <div class="auth-field">
-              <label class="auth-label">Unit</label>
-              <InputNumber
+              <FormInput
+                id="invite-unit"
                 v-model="unit"
+                as="number"
+                label="Unit"
+                labelClass="auth-label"
                 showButtons
                 :min="0"
                 class="auth-input-number"
               />
             </div>
             <div class="auth-field">
-              <label class="auth-label">Department</label>
-              <InputText v-model="department" class="auth-input" />
+              <FormInput
+                id="invite-department"
+                v-model="department"
+                label="Department"
+                labelClass="auth-label"
+                class="auth-input"
+              />
             </div>
           </div>
 
           <!-- Language -->
           <div class="auth-field">
-            <label class="auth-label">Preferred language</label>
-            <Select
+            <FormInput
+              id="invite-language"
               v-model="language"
+              as="select"
+              label="Preferred language"
+              labelClass="auth-label"
               :options="languageOptions"
               optionLabel="label"
               optionValue="value"
@@ -275,31 +301,39 @@ function goToLogin() {
           <!-- Password Row -->
           <div class="form-row">
             <div class="auth-field">
-              <label class="auth-label">
-                Password <span class="auth-required">*</span>
-              </label>
-              <Password
+              <FormInput
+                id="invite-password"
                 v-model="password"
+                as="password"
+                labelClass="auth-label"
                 :class="{ 'p-invalid': passwordError }"
                 :feedback="false"
                 toggleMask
                 inputClass="auth-input"
                 class="auth-password"
-              />
+              >
+                <template #label>
+                  Password <span class="text-red-500">*</span>
+                </template>
+              </FormInput>
               <small v-if="passwordError" class="auth-error">{{ passwordError }}</small>
             </div>
             <div class="auth-field">
-              <label class="auth-label">
-                Confirm Password <span class="auth-required">*</span>
-              </label>
-              <Password
+              <FormInput
+                id="invite-confirm-password"
                 v-model="confirmPassword"
+                as="password"
+                labelClass="auth-label"
                 :class="{ 'p-invalid': confirmPasswordError }"
                 :feedback="false"
                 toggleMask
                 inputClass="auth-input"
                 class="auth-password"
-              />
+              >
+                <template #label>
+                  Confirm Password <span class="text-red-500">*</span>
+                </template>
+              </FormInput>
               <small v-if="confirmPasswordError" class="auth-error">{{ confirmPasswordError }}</small>
             </div>
           </div>
@@ -451,9 +485,6 @@ function goToLogin() {
   color: #6b7280;
 }
 
-.auth-required {
-  color: #ef4444;
-}
 
 .auth-input,
 .auth-password :deep(input),

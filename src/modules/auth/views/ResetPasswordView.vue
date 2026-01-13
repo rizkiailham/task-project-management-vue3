@@ -8,19 +8,18 @@ import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore, useUIStore } from '@/stores'
+import { useToast } from 'primevue/usetoast'
+import { useAuthStore } from '@/stores'
 
 // PrimeVue
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
+import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
-import Message from 'primevue/message'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const uiStore = useUIStore()
+const toast = useToast()
 
 // Get token from URL
 const token = route.query.token
@@ -54,18 +53,21 @@ const { value: password, errorMessage: passwordError } = useField('password')
 const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword')
 
 // Local state
-const serverError = ref('')
 const isSubmitting = ref(false)
 
 // Methods
 const onSubmit = handleSubmit(async (values) => {
   if (!token) {
-    serverError.value = t('auth.resetPassword.invalidLink')
+    toast.add({
+      severity: 'error',
+      summary: 'Invalid link',
+      detail: t('auth.resetPassword.invalidLink'),
+      life: 6000
+    })
     return
   }
 
   isSubmitting.value = true
-  serverError.value = ''
 
   try {
     await authStore.resetPassword({
@@ -75,10 +77,20 @@ const onSubmit = handleSubmit(async (values) => {
       confirmPassword: values.confirmPassword
     })
 
-    uiStore.showSuccess(t('auth.resetPassword.passwordResetSuccess'))
+    toast.add({
+      severity: 'success',
+      summary: 'Password reset',
+      detail: t('auth.resetPassword.passwordResetSuccess'),
+      life: 4000
+    })
     router.push({ name: 'Login' })
   } catch (error) {
-    serverError.value = error.message || 'Failed to reset password'
+    toast.add({
+      severity: 'error',
+      summary: 'Reset failed',
+      detail: error.message || 'Failed to reset password',
+      life: 6000
+    })
   } finally {
     isSubmitting.value = false
   }
@@ -93,8 +105,7 @@ const onSubmit = handleSubmit(async (values) => {
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
       </div>
-      <h1 class="auth-title">{{ t('auth.resetPassword.title') }}</h1>
-      <p class="auth-subtitle">{{ t('auth.resetPassword.subtitle') }}</p>
+      <h1 class="auth-title">Reset Desidia password</h1>
 
       <div v-if="!token" class="auth-success">
         <div class="auth-error-icon">
@@ -110,51 +121,51 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
 
       <div v-else>
-        <Message v-if="serverError" severity="error" :closable="false" class="mb-4">
-          {{ serverError }}
-        </Message>
-
         <form @submit="onSubmit" class="auth-form">
           <div class="auth-field">
-            <label for="email" class="auth-label">
-              {{ t('auth.resetPassword.email') }} <span class="auth-required">*</span>
-            </label>
-            <InputText
+            <FormInput
               id="email"
               v-model="email"
               type="email"
-              :placeholder="t('auth.resetPassword.emailPlaceholder')"
+              labelClass="auth-label"
+              placeholder="Enter your email"
               class="auth-input"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
-            />
+            >
+              <template #label>
+                {{ t('auth.resetPassword.email') }} <span class="text-red-500">*</span>
+              </template>
+            </FormInput>
             <small v-if="emailError" class="auth-error">{{ emailError }}</small>
           </div>
 
           <div class="auth-field">
-            <label for="password" class="auth-label">
-              {{ t('auth.resetPassword.newPassword') }} <span class="auth-required">*</span>
-            </label>
-            <Password
+            <FormInput
               id="password"
               v-model="password"
+              as="password"
+              labelClass="auth-label"
               :placeholder="t('auth.resetPassword.newPasswordPlaceholder')"
               :class="{ 'p-invalid': passwordError }"
               toggleMask
               autocomplete="new-password"
               inputClass="auth-input"
               class="auth-password"
-            />
+            >
+              <template #label>
+                {{ t('auth.resetPassword.newPassword') }} <span class="text-red-500">*</span>
+              </template>
+            </FormInput>
             <small v-if="passwordError" class="auth-error">{{ passwordError }}</small>
           </div>
 
           <div class="auth-field">
-            <label for="confirmPassword" class="auth-label">
-              {{ t('auth.resetPassword.confirmPassword') }} <span class="auth-required">*</span>
-            </label>
-            <Password
+            <FormInput
               id="confirmPassword"
               v-model="confirmPassword"
+              as="password"
+              labelClass="auth-label"
               :placeholder="t('auth.resetPassword.confirmPasswordPlaceholder')"
               :class="{ 'p-invalid': confirmPasswordError }"
               :feedback="false"
@@ -162,18 +173,27 @@ const onSubmit = handleSubmit(async (values) => {
               autocomplete="new-password"
               inputClass="auth-input"
               class="auth-password"
-            />
+            >
+              <template #label>
+                {{ t('auth.resetPassword.confirmPassword') }} <span class="text-red-500">*</span>
+              </template>
+            </FormInput>
             <small v-if="confirmPasswordError" class="auth-error">{{ confirmPasswordError }}</small>
           </div>
 
           <Button
             type="submit"
-            :label="t('auth.resetPassword.resetPassword')"
+            label="Continue"
             class="auth-primary"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
           />
         </form>
+        <div class="auth-footer">
+          <router-link :to="{ name: 'Login' }" class="auth-link">
+            ← Back
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
@@ -253,9 +273,6 @@ const onSubmit = handleSubmit(async (values) => {
   color: #374151;
 }
 
-.auth-required {
-  color: #2563eb;
-}
 
 .auth-input,
 .auth-password :deep(input) {
@@ -297,6 +314,11 @@ const onSubmit = handleSubmit(async (values) => {
   color: #2563eb;
   font-weight: 600;
   font-size: 0.85rem;
+}
+
+.auth-footer {
+  margin-top: 1.25rem;
+  text-align: center;
 }
 
 .auth-success {

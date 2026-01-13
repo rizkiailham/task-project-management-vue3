@@ -1,59 +1,70 @@
 <script setup>
 /**
- * ForgotPasswordView - Password reset request page
- * With localization support (en/no)
+ * LoginLinkVerifyView - Verify magic login token
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
-import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
 
-// PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 
-const { t } = useI18n()
+const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const toast = useToast()
 
-// Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
   email: yup
     .string()
-    .required(t('auth.validation.emailRequired'))
-    .email(t('auth.validation.emailInvalid'))
+    .required('Email is required')
+    .email('Invalid email format'),
+  token: yup
+    .string()
+    .required('Token is required')
 }))
 
-// Form setup
-const { handleSubmit, meta } = useForm({
-  validationSchema
+const { handleSubmit, meta, setFieldValue } = useForm({ validationSchema })
+const { value: email, errorMessage: emailError } = useField('email')
+const { value: token, errorMessage: tokenError } = useField('token')
+
+const isSubmitting = ref(false)
+
+const redirectPath = computed(() => route.query.redirect || '/app')
+
+onMounted(() => {
+  const presetEmail = route.query.email
+  const presetToken = route.query.token
+  if (typeof presetEmail === 'string') {
+    setFieldValue('email', presetEmail)
+  }
+  if (typeof presetToken === 'string') {
+    setFieldValue('token', presetToken)
+  }
 })
 
-const { value: email, errorMessage: emailError } = useField('email')
-
-// Local state
-const isSubmitting = ref(false)
-const isSuccess = ref(false)
-
-// Methods
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
   try {
-    await authStore.requestPasswordReset(values.email)
-    isSuccess.value = true
+    await authStore.verifyLoginLink({
+      email: values.email,
+      token: values.token
+    })
     toast.add({
       severity: 'success',
-      summary: 'Email sent',
-      detail: t('auth.forgotPassword.checkEmail'),
+      summary: 'Login successful',
+      detail: 'Welcome back',
       life: 4000
     })
+    router.push(redirectPath.value)
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Request failed',
-      detail: error.message || t('auth.forgotPassword.failedToSend'),
+      summary: 'Verification failed',
+      detail: error.message || 'Failed to verify login link',
       life: 6000
     })
   } finally {
@@ -70,53 +81,55 @@ const onSubmit = handleSubmit(async (values) => {
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
       </div>
-      <h1 class="auth-title">Reset Desidia password</h1>
+      <h1 class="auth-title">Verify login link</h1>
 
-      <div v-if="isSuccess" class="auth-success">
-        <div class="auth-success-icon">
-          <i class="pi pi-check"></i>
+      <form @submit="onSubmit" class="auth-form">
+        <div class="auth-field">
+          <FormInput
+            id="email"
+            v-model="email"
+            type="email"
+            labelClass="auth-label"
+            placeholder="Enter your email"
+            class="auth-input"
+            :class="{ 'p-invalid': emailError }"
+            autocomplete="email"
+          >
+            <template #label>
+              Email <span class="text-red-500">*</span>
+            </template>
+          </FormInput>
+          <small v-if="emailError" class="auth-error">{{ emailError }}</small>
         </div>
-        <h2 class="auth-success-title">{{ t('auth.forgotPassword.checkEmail') }}</h2>
-        <p class="auth-success-text">
-          {{ t('auth.forgotPassword.resetLinkSent') }} <strong>{{ email }}</strong>
-        </p>
-        <router-link :to="{ name: 'Login' }" class="auth-link">
-          {{ t('auth.forgotPassword.backToSignIn') }}
-        </router-link>
-      </div>
 
-      <div v-else class="mt-6">
-        <form @submit="onSubmit" class="auth-form">
-          <div class="auth-field">
-            <FormInput
-              id="email"
-              v-model="email"
-              type="email"
-              labelClass="auth-label"
-              placeholder="Enter your email"
-              class="auth-input"
-              :class="{ 'p-invalid': emailError }"
-              autocomplete="email"
-            >
-              <template #label>
-                {{ t('auth.forgotPassword.email') }} <span class="text-red-500">*</span>
-              </template>
-            </FormInput>
-            <small v-if="emailError" class="auth-error">{{ emailError }}</small>
-          </div>
-
-          <Button
-            type="submit"
-            label="Continue"
-            class="auth-primary"
-            :loading="isSubmitting"
-            :disabled="!meta.valid || isSubmitting"
-          />
-        </form>
-
-        <div class="auth-footer">
-          <router-link :to="{ name: 'Login' }" class="auth-link">← Back</router-link>
+        <div class="auth-field">
+          <FormInput
+            id="token"
+            v-model="token"
+            labelClass="auth-label"
+            placeholder="Paste your login token"
+            class="auth-input"
+            :class="{ 'p-invalid': tokenError }"
+            autocomplete="one-time-code"
+          >
+            <template #label>
+              Token <span class="text-red-500">*</span>
+            </template>
+          </FormInput>
+          <small v-if="tokenError" class="auth-error">{{ tokenError }}</small>
         </div>
+
+        <Button
+          type="submit"
+          label="Continue"
+          class="auth-primary"
+          :loading="isSubmitting"
+          :disabled="!meta.valid || isSubmitting"
+        />
+      </form>
+
+      <div class="auth-footer">
+        <router-link :to="{ name: 'Login' }" class="auth-link">← Back</router-link>
       </div>
     </div>
   </div>
@@ -170,13 +183,12 @@ const onSubmit = handleSubmit(async (values) => {
   font-size: 1.35rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 0.3rem;
+  margin-bottom: 1.75rem;
 }
-
 
 .auth-form {
   display: grid;
-  gap: 1.1rem;
+  gap: 1rem;
   text-align: left;
 }
 
@@ -190,7 +202,6 @@ const onSubmit = handleSubmit(async (values) => {
   font-weight: 600;
   color: #374151;
 }
-
 
 .auth-input {
   width: 100%;
@@ -215,7 +226,7 @@ const onSubmit = handleSubmit(async (values) => {
 .auth-primary {
   width: 100%;
   border-radius: 10px;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
   font-weight: 600;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: none;
@@ -224,40 +235,12 @@ const onSubmit = handleSubmit(async (values) => {
 
 .auth-footer {
   margin-top: 1.25rem;
+  text-align: center;
 }
 
 .auth-link {
   color: #2563eb;
   font-weight: 600;
   font-size: 0.85rem;
-}
-
-.auth-success {
-  display: grid;
-  gap: 0.8rem;
-  margin-top: 0.5rem;
-}
-
-.auth-success-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  margin: 0 auto;
-  background: rgba(34, 197, 94, 0.15);
-  color: #16a34a;
-  font-size: 1.2rem;
-}
-
-.auth-success-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.auth-success-text {
-  font-size: 0.88rem;
-  color: #6b7280;
 }
 </style>

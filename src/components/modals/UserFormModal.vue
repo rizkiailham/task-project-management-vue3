@@ -15,11 +15,8 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import { Pencil, ChevronDown } from 'lucide-vue-next'
 
 // PrimeVue
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
-import Password from 'primevue/password'
-import InputNumber from 'primevue/inputnumber'
+import FormInput from '@/components/ui/FormInput.vue'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -290,27 +287,33 @@ const avatarInitial = computed(() => {
           <!-- Name Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">
-                First name <span class="text-red-500">*</span>
-              </label>
-              <InputText
+              <FormInput
+                id="user-first-name"
                 v-model="firstName"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
                 :class="{ 'p-invalid': firstNameError }"
-              />
+              >
+                <template #label>
+                  First name <span class="text-red-500">*</span>
+                </template>
+              </FormInput>
               <small v-if="firstNameError" class="mt-1 text-xs text-red-500">
                 {{ firstNameError }}
               </small>
             </div>
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">
-                Last name <span class="text-red-500">*</span>
-              </label>
-              <InputText
+              <FormInput
+                id="user-last-name"
                 v-model="lastName"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
                 :class="{ 'p-invalid': lastNameError }"
-              />
+              >
+                <template #label>
+                  Last name <span class="text-red-500">*</span>
+                </template>
+              </FormInput>
               <small v-if="lastNameError" class="mt-1 text-xs text-red-500">
                 {{ lastNameError }}
               </small>
@@ -320,33 +323,42 @@ const avatarInitial = computed(() => {
           <!-- Email & Phone Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">
-                Email <span class="text-red-500">*</span>
-              </label>
-              <InputText
+              <FormInput
+                id="user-email"
                 v-model="email"
                 type="email"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
                 :class="{ 'p-invalid': emailError }"
-              />
+              >
+                <template #label>
+                  Email <span class="text-red-500">*</span>
+                </template>
+              </FormInput>
               <small v-if="emailError" class="mt-1 text-xs text-red-500">
                 {{ emailError }}
               </small>
             </div>
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Phone</label>
-              <InputText v-model="phone" class="w-full" />
+              <FormInput
+                id="user-phone"
+                v-model="phone"
+                label="Phone"
+                labelClass="mb-1.5 text-xs text-gray-500"
+                class="w-full"
+              />
             </div>
           </div>
 
           <!-- Language & Organization Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">
-                Preferered language
-              </label>
-              <Select
+              <FormInput
+                id="user-language"
                 v-model="language"
+                as="select"
+                label="Preferered language"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 :options="languageOptions"
                 optionLabel="label"
                 optionValue="value"
@@ -354,41 +366,54 @@ const avatarInitial = computed(() => {
               />
             </div>
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Organization</label>
-              <InputText v-model="organization" class="w-full" />
+              <FormInput
+                id="user-organization"
+                v-model="organization"
+                label="Organization"
+                labelClass="mb-1.5 text-xs text-gray-500"
+                class="w-full"
+              />
             </div>
           </div>
 
           <!-- Password Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">
-                Password{{ isEditMode ? '' : ' *' }}
-              </label>
-              <Password
+              <FormInput
+                id="user-password"
                 v-model="password"
+                as="password"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
                 inputClass="w-full"
                 :class="{ 'p-invalid': passwordError }"
                 :feedback="false"
                 toggleMask
-              />
+              >
+                <template #label>
+                  Password<span v-if="!isEditMode" class="text-red-500"> *</span>
+                </template>
+              </FormInput>
               <small v-if="passwordError" class="mt-1 text-xs text-red-500">
                 {{ passwordError }}
               </small>
             </div>
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">
-                Confirm Password{{ isEditMode ? '' : ' *' }}
-              </label>
-              <Password
+              <FormInput
+                id="user-confirm-password"
                 v-model="confirmPassword"
+                as="password"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
                 inputClass="w-full"
                 :class="{ 'p-invalid': confirmPasswordError }"
                 :feedback="false"
                 toggleMask
-              />
+              >
+                <template #label>
+                  Confirm Password<span v-if="!isEditMode" class="text-red-500"> *</span>
+                </template>
+              </FormInput>
               <small
                 v-if="confirmPasswordError"
                 class="mt-1 text-xs text-red-500"
@@ -418,9 +443,12 @@ const avatarInitial = computed(() => {
           <!-- Project & Group Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Project</label>
-              <Select
+              <FormInput
+                id="user-project"
                 v-model="projectId"
+                as="select"
+                label="Project"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 :options="projectOptions"
                 optionLabel="label"
                 optionValue="value"
@@ -430,9 +458,12 @@ const avatarInitial = computed(() => {
               />
             </div>
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Group</label>
-              <Select
+              <FormInput
+                id="user-group"
                 v-model="groupId"
+                as="select"
+                label="Group"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 :options="groupOptions"
                 optionLabel="label"
                 optionValue="value"
@@ -473,9 +504,12 @@ const avatarInitial = computed(() => {
         <div v-show="customFieldsExpanded" class="space-y-4 pl-6 pt-2">
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Unit</label>
-              <InputNumber
+              <FormInput
+                id="user-unit"
                 v-model="unit"
+                as="number"
+                label="Unit"
+                labelClass="mb-1.5 text-xs text-gray-500"
                 showButtons
                 :min="0"
                 class="w-full"
@@ -483,8 +517,13 @@ const avatarInitial = computed(() => {
               />
             </div>
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Department</label>
-              <InputText v-model="department" class="w-full" />
+              <FormInput
+                id="user-department"
+                v-model="department"
+                label="Department"
+                labelClass="mb-1.5 text-xs text-gray-500"
+                class="w-full"
+              />
             </div>
           </div>
         </div>

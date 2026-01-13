@@ -89,6 +89,26 @@ export async function resetPassword(data) {
 }
 
 /**
+ * Request login link
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export async function requestLoginLink(email) {
+  return post('/auth/login-token/request', { email })
+}
+
+/**
+ * Verify login link token
+ * @param {Object} data
+ * @param {string} data.email
+ * @param {string} data.token
+ * @returns {Promise<{accessToken: string, refreshToken?: string, user?: User}>}
+ */
+export async function verifyLoginLink(data) {
+  return post('/auth/login-token/verify', data)
+}
+
+/**
  * Verify email
  * @param {string} token
  * @returns {Promise<void>}
