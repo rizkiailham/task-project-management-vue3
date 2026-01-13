@@ -26,7 +26,7 @@ const aiChatStore = useAIChatStore()
 const { isChatSidebarOpen, chatSidebarWidth, isResizingChatSidebar } = storeToRefs(aiChatStore)
 
 // Pages that have their own custom header (no global topbar)
-const pagesWithCustomHeader = []
+const pagesWithCustomHeader = ['Users']
 
 const showGlobalTopbar = computed(() => {
   return !pagesWithCustomHeader.includes(route.name)

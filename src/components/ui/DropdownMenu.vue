@@ -30,12 +30,19 @@ const props = defineProps({
     default: () => []
   },
   /**
-   * Dropdown position relative to trigger
+   * Dropdown position relative to trigger (horizontal)
    */
   position: {
     type: String,
     default: 'left',
     validator: (val) => ['left', 'right'].includes(val)
+  },
+  /**
+   * Open dropdown upwards (above trigger) instead of downwards
+   */
+  openUp: {
+    type: Boolean,
+    default: false
   },
   /**
    * Width of the dropdown menu
@@ -67,13 +74,22 @@ const menuStyle = computed(() => {
   }
 
   const rect = triggerRef.value.getBoundingClientRect()
-  const top = `${rect.bottom + 8}px`
+  
+  // Calculate vertical position
+  let verticalStyle = {}
+  if (props.openUp) {
+    // Open upwards: position bottom of menu at top of trigger
+    verticalStyle = { bottom: `${window.innerHeight - rect.top + 8}px`, top: 'auto' }
+  } else {
+    // Open downwards: position top of menu at bottom of trigger
+    verticalStyle = { top: `${rect.bottom + 8}px`, bottom: 'auto' }
+  }
 
   if (props.position === 'right') {
     const right = Math.max(0, viewportWidth.value - rect.right)
     return {
       width: props.width,
-      top,
+      ...verticalStyle,
       right: `${right}px`,
       left: 'auto'
     }
@@ -81,7 +97,7 @@ const menuStyle = computed(() => {
 
   return {
     width: props.width,
-    top,
+    ...verticalStyle,
     left: `${rect.left}px`,
     right: 'auto'
   }

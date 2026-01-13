@@ -2,11 +2,13 @@
 /**
  * UsersGrid - AG Grid component for displaying users table
  */
-import { ref, watch, h } from 'vue'
+import { ref, watch, h, computed } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
+import { Settings, Users, SlidersHorizontal, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-vue-next'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 
 // Cell renderer components
 import NameCell from './cells/NameCell.vue'
@@ -35,22 +37,228 @@ function getAvatarColor(name) {
 }
 
 const props = defineProps({
-  users: { type: Array, default: () => [] }
+  users: { type: Array, default: () => [] },
+  meta: { 
+    type: Object, 
+    default: () => ({ 
+      currentPage: 1, 
+      totalPages: 1, 
+      itemsPerPage: 10, 
+      totalItems: 0 
+    }) 
+  }
 })
 
-const emit = defineEmits(['edit', 'delete', 'resendInvite'])
+const emit = defineEmits(['edit', 'delete', 'resendInvite', 'filter', 'paginationChange', 'sortChange'])
 
 const gridApi = ref(null)
 const rowData = ref([])
 
+// Sort state
+const sortBy = ref('createdAt')
+const orderBy = ref('DESC')
+
+// Filter state
+const selectedStatus = ref(null)
+const selectedRole = ref(null)
+
+// Filter options
+const statusOptions = [
+  { id: null, label: 'All Status' },
+  { id: 'Active', label: 'Active' },
+  { id: 'Invited', label: 'Invited' },
+  { id: 'Inactive', label: 'Inactive' },
+]
+
+const roleOptions = [
+  { id: null, label: 'All Roles' },
+  { id: 'Admin', label: 'Admin' },
+  { id: 'Manager', label: 'Manager' },
+  { id: 'Member', label: 'Member' },
+]
+
+// Get status menu items
+const statusMenuItems = computed(() => 
+  statusOptions.map(opt => ({
+    id: opt.id,
+    label: opt.label,
+    icon: selectedStatus.value === opt.id ? Check : null,
+    action: () => {
+      selectedStatus.value = opt.id
+      applyFilters()
+    }
+  }))
+)
+
+// Get role menu items
+const roleMenuItems = computed(() => 
+  roleOptions.map(opt => ({
+    id: opt.id,
+    label: opt.label,
+    icon: selectedRole.value === opt.id ? Check : null,
+    action: () => {
+      selectedRole.value = opt.id
+      applyFilters()
+    }
+  }))
+)
+
+// Apply filters to grid
+function applyFilters() {
+  if (!gridApi.value) return
+  
+  const filterModel = {}
+  
+  if (selectedStatus.value) {
+    filterModel.status = {
+      filterType: 'text',
+      type: 'equals',
+      filter: selectedStatus.value
+    }
+  }
+  
+  gridApi.value.setFilterModel(filterModel)
+  emit('filter', { status: selectedStatus.value, role: selectedRole.value })
+}
+
+// Clear all filters
+function clearFilters() {
+  selectedStatus.value = null
+  selectedRole.value = null
+  if (gridApi.value) {
+    gridApi.value.setFilterModel(null)
+  }
+  emit('filter', { status: null, role: null })
+}
+
+// Check if any filters are active
+const hasActiveFilters = computed(() => 
+  selectedStatus.value !== null || selectedRole.value !== null
+)
+
+// Pagination state from props (server-side)
+const pageSizeOptions = [10, 20, 50, 100]
+const pageSize = ref(10)
+
+// Computed from meta props
+const currentPage = computed(() => props.meta?.currentPage || 1)
+const totalPages = computed(() => props.meta?.totalPages || 1)
+
+// Visible page numbers (max 5)
+const visiblePages = computed(() => {
+  const maxVisible = 5
+  const total = totalPages.value
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+  
+  if (end > total) {
+    end = total
+    start = end - maxVisible + 1
+  }
+  
+  return Array.from({ length: maxVisible }, (_, i) => start + i)
+})
+
+const isFirstPage = computed(() => currentPage.value <= 1)
+const isLastPage = computed(() => currentPage.value >= totalPages.value)
+
+// Emit pagination change for server-side pagination
+function emitPaginationChange(page, limit) {
+  emit('paginationChange', {
+    page,
+    limit,
+    sortBy: sortBy.value,
+    orderBy: orderBy.value
+  })
+}
+
+// Pagination control functions (server-side)
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value || page === currentPage.value) return
+  emitPaginationChange(page, pageSize.value)
+}
+
+function goToFirst() {
+  if (currentPage.value === 1) return
+  emitPaginationChange(1, pageSize.value)
+}
+
+function goToLast() {
+  if (currentPage.value === totalPages.value) return
+  emitPaginationChange(totalPages.value, pageSize.value)
+}
+
+function goToPrev() {
+  if (currentPage.value <= 1) return
+  emitPaginationChange(currentPage.value - 1, pageSize.value)
+}
+
+function goToNext() {
+  if (currentPage.value >= totalPages.value) return
+  emitPaginationChange(currentPage.value + 1, pageSize.value)
+}
+
+function changePageSize(newSize) {
+  pageSize.value = newSize
+  // Reset to page 1 when changing page size
+  emitPaginationChange(1, newSize)
+}
+
+// Handle AG Grid sort change
+function onSortChanged() {
+  if (!gridApi.value) return
+  
+  const sortModel = gridApi.value.getColumnState()
+    .filter(col => col.sort)
+    .map(col => ({ colId: col.colId, sort: col.sort }))
+  
+  if (sortModel.length > 0) {
+    // Map field names to API field names
+    const fieldMapping = {
+      'fullName': 'first_name',
+      'status': 'is_active',
+      'updatedAt': 'updated_at',
+      'createdAt': 'created_at'
+    }
+    
+    sortBy.value = fieldMapping[sortModel[0].colId] || sortModel[0].colId
+    orderBy.value = sortModel[0].sort.toUpperCase()
+  } else {
+    sortBy.value = 'createdAt'
+    orderBy.value = 'DESC'
+  }
+  
+  emit('sortChange', {
+    sortBy: sortBy.value,
+    orderBy: orderBy.value
+  })
+  
+  // Also emit pagination change to refetch with new sort
+  emitPaginationChange(1, pageSize.value)
+}
+
+// Sync page size from props
+watch(() => props.meta?.itemsPerPage, (newSize) => {
+  if (newSize && newSize !== pageSize.value) {
+    pageSize.value = newSize
+  }
+}, { immediate: true })
+
 // Transform users data for the grid
 watch(
-  () => props.users,
-  (users) => {
+  [() => props.users, () => props.meta],
+  ([users, meta]) => {
     if (!users || users.length === 0) {
       rowData.value = []
       return
     }
+    
+    // Calculate the starting index based on current page and items per page
+    const startIndex = ((meta?.currentPage || 1) - 1) * (meta?.itemsPerPage || 10)
     
     rowData.value = users.map((user, index) => {
       let projectNames = []
@@ -60,7 +268,7 @@ watch(
       
       return {
         ...user,
-        rowIndex: index + 1,
+        rowIndex: startIndex + index + 1,
         fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown',
         status: user.isActive ? 'Active' : (user.status || 'Invited'),
         avatarColor: getAvatarColor(`${user.firstName || ''} ${user.lastName || ''}`),
@@ -100,7 +308,7 @@ const columnDefs = ref([
   {
     field: 'rowIndex',
     headerName: '#',
-    width: 60,
+    width: 64,
     sortable: false,
     filter: false,
     suppressMenu: true,
@@ -175,43 +383,301 @@ const getRowId = (params) => params.data?.id
 </script>
 
 <template>
-  <div class="users-grid">
-    <ag-grid-vue
-      class="ag-theme-quartz w-full"
-      :rowData="rowData"
-      :columnDefs="columnDefs"
-      :defaultColDef="defaultColDef"
-      :theme="myTheme"
-      :getRowId="getRowId"
-      :rowHeight="52"
-      :headerHeight="40"
-      :suppressCellFocus="true"
-      :suppressRowClickSelection="true"
-      domLayout="autoHeight"
-      @grid-ready="onGridReady"
-    />
+  <div class="users-grid-wrapper">
+    <div class="users-grid">
+      <ag-grid-vue
+        class="ag-theme-quartz w-full h-full"
+        :rowData="rowData"
+        :columnDefs="columnDefs"
+        :defaultColDef="defaultColDef"
+        :theme="myTheme"
+        :getRowId="getRowId"
+        :rowHeight="52"
+        :headerHeight="40"
+        :suppressCellFocus="true"
+        :suppressRowClickSelection="true"
+        @grid-ready="onGridReady"
+        @sort-changed="onSortChanged"
+      />
+    </div>
+    <!-- Fixed Footer - Filter buttons on left, Pagination on right -->
+    <div class="footer-bar">
+      <!-- Left: Filters -->
+      <div class="footer-filters">
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-500">Filter by</span>
+          
+          <!-- Status Filter Dropdown -->
+          <DropdownMenu :items="statusMenuItems" position="left" width="10rem" :openUp="true">
+            <template #trigger>
+              <button
+                :class="[
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border rounded-md transition-colors',
+                  selectedStatus 
+                    ? 'text-blue-600 border-blue-300 bg-blue-50' 
+                    : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                ]"
+              >
+                <Settings class="w-4 h-4" :class="selectedStatus ? 'text-blue-500' : 'text-gray-400'" />
+                {{ selectedStatus || 'Status' }}
+              </button>
+            </template>
+          </DropdownMenu>
+          
+          <!-- Role Filter Dropdown -->
+          <DropdownMenu :items="roleMenuItems" position="left" width="10rem" :openUp="true">
+            <template #trigger>
+              <button
+                :class="[
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border rounded-md transition-colors',
+                  selectedRole 
+                    ? 'text-blue-600 border-blue-300 bg-blue-50' 
+                    : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                ]"
+              >
+                <Users class="w-4 h-4" :class="selectedRole ? 'text-blue-500' : 'text-gray-400'" />
+                {{ selectedRole || 'Role' }}
+              </button>
+            </template>
+          </DropdownMenu>
+          
+          <!-- Clear Filters Button -->
+          <button
+            @click="clearFilters"
+            :class="[
+              'inline-flex items-center p-1.5 border rounded-md transition-colors',
+              hasActiveFilters 
+                ? 'text-blue-600 border-blue-300 bg-blue-50 hover:bg-blue-100' 
+                : 'text-gray-700 border-gray-300 bg-white hover:bg-gray-50'
+            ]"
+            :title="hasActiveFilters ? 'Clear filters' : 'More filters'"
+          >
+            <SlidersHorizontal class="w-4 h-4" :class="hasActiveFilters ? 'text-blue-500' : 'text-gray-400'" />
+          </button>
+        </div>
+      </div>
+      
+      <!-- Right: Custom Pagination -->
+      <div class="footer-pagination">
+        <div class="flex items-center gap-1">
+          <!-- First Page -->
+          <button
+            @click="goToFirst"
+            :disabled="isFirstPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isFirstPage }"
+            title="First page"
+          >
+            <ChevronsLeft class="w-4 h-4" />
+          </button>
+          
+          <!-- Previous Page -->
+          <button
+            @click="goToPrev"
+            :disabled="isFirstPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isFirstPage }"
+            title="Previous page"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          
+          <!-- Page Numbers -->
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            @click="goToPage(page)"
+            class="pagination-btn pagination-page"
+            :class="{ 'pagination-page-active': page === currentPage }"
+          >
+            {{ page }}
+          </button>
+          
+          <!-- Next Page -->
+          <button
+            @click="goToNext"
+            :disabled="isLastPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isLastPage }"
+            title="Next page"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </button>
+          
+          <!-- Last Page -->
+          <button
+            @click="goToLast"
+            :disabled="isLastPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isLastPage }"
+            title="Last page"
+          >
+            <ChevronsRight class="w-4 h-4" />
+          </button>
+          
+          <!-- Page Size Selector -->
+          <div class="page-size-selector ml-2">
+            <select
+              :value="pageSize"
+              @change="changePageSize(Number($event.target.value))"
+              class="page-size-select"
+            >
+              <option v-for="size in pageSizeOptions" :key="size" :value="size">
+                {{ size }}
+              </option>
+            </select>
+            <ChevronDown class="w-3 h-3 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.users-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(100vh - 108px);
+  position: relative;
+}
+
 .users-grid {
   width: 100%;
+  height: calc(100% - 52px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fixed Footer Bar */
+.footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width, 280px);
+  right: 0;
+  z-index: 101;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-filters {
+  display: flex;
+  align-items: center;
+}
+
+.footer-pagination {
+  display: flex;
+  align-items: center;
+}
+
+/* Pagination Button Styles */
+.pagination-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.pagination-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
+
+.pagination-page {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 32px;
+}
+
+.pagination-page-active {
+  background-color: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+/* Page Size Selector */
+.page-size-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.page-size-select {
+  appearance: none;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 28px 6px 10px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  height: 32px;
+  transition: all 0.15s ease;
+}
+
+.page-size-select:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.page-size-selector .w-3 {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 :deep(.ag-theme-quartz) {
   --ag-row-hover-color: #fefce8;
   --ag-header-height: 44px;
   --ag-borders: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 :deep(.ag-theme-quartz .ag-root-wrapper) {
   border: none;
   border-radius: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
+/* Sticky Header */
 :deep(.ag-theme-quartz .ag-header) {
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 :deep(.ag-theme-quartz .ag-header-row) {
@@ -230,6 +696,13 @@ const getRowId = (params) => params.data?.id
 
 :deep(.ag-theme-quartz .ag-header-icon) {
   color: #9ca3af;
+}
+
+/* Body viewport - scrollable area */
+:deep(.ag-theme-quartz .ag-body-viewport) {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 :deep(.ag-theme-quartz .ag-row) {

@@ -15,7 +15,8 @@ import InviteUserModal from '@/components/modals/InviteUserModal.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import RoleFormModal from '@/components/modals/RoleFormModal.vue'
 import GroupFormModal from '@/components/modals/GroupFormModal.vue'
-import { Search, Plus, UserPlus, SlidersHorizontal, Settings, Users } from 'lucide-vue-next'
+import { Search, Plus, UserPlus, Menu } from 'lucide-vue-next'
+import AIChatButton from '@/components/ai/AIChatButton.vue'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -28,8 +29,15 @@ const searchQuery = ref('')
 const statusFilter = ref(null)
 const roleFilter = ref(null)
 const isLoading = ref(true)
-const currentPage = ref(1)
-const pageSize = ref(20)
+
+// Toggle sidebar
+function toggleSidebar() {
+  if (uiStore.isMobile) {
+    uiStore.openMobileSidebar()
+  } else {
+    uiStore.toggleSidebar()
+  }
+}
 
 // Modal states
 const showUserFormModal = ref(false)
@@ -67,84 +75,54 @@ const searchPlaceholder = computed(() => {
 const filteredUsers = computed(() => {
   let users = [...userStore.users]
 
-  // Search filter
+  // Search filter (client-side for quick filtering)
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     users = users.filter(u => 
-      u.firstName.toLowerCase().includes(query) ||
-      u.lastName.toLowerCase().includes(query) ||
-      u.email.toLowerCase().includes(query)
+      u.firstName?.toLowerCase().includes(query) ||
+      u.lastName?.toLowerCase().includes(query) ||
+      u.email?.toLowerCase().includes(query)
     )
-  }
-
-  // Status filter
-  if (statusFilter.value) {
-    users = users.filter(u => u.status === statusFilter.value)
-  }
-
-  // Role filter
-  if (roleFilter.value) {
-    users = users.filter(u => u.groups?.includes(roleFilter.value))
   }
 
   return users
 })
 
-const totalPages = computed(() => {
-  const total = Math.ceil(filteredUsers.value.length / pageSize.value)
-  return total > 0 ? total : 1
+const filteredRoles = computed(() => {
+  let roles = [...roleStore.roles]
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    roles = roles.filter(role =>
+      role.name?.toLowerCase().includes(query) ||
+      role.description?.toLowerCase().includes(query)
+    )
+  }
+
+  return roles
 })
 
-const pagedUsers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredUsers.value.slice(start, start + pageSize.value)
+const filteredGroups = computed(() => {
+  let groups = [...groupStore.groups]
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    groups = groups.filter(group =>
+      group.name?.toLowerCase().includes(query) ||
+      group.description?.toLowerCase().includes(query)
+    )
+  }
+
+  return groups
 })
 
-const visiblePages = computed(() => {
-  const maxVisible = 5
-  const total = totalPages.value
-  if (total <= maxVisible) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-
-  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
-  let end = start + maxVisible - 1
-
-  if (end > total) {
-    end = total
-    start = end - maxVisible + 1
-  }
-
-  return Array.from({ length: maxVisible }, (_, i) => start + i)
-})
-
-const isFirstPage = computed(() => currentPage.value <= 1)
-const isLastPage = computed(() => currentPage.value >= totalPages.value)
-
-function goToPage(page) {
-  const clamped = Math.min(Math.max(page, 1), totalPages.value)
-  currentPage.value = clamped
-}
-
-function goToFirst() {
-  goToPage(1)
-}
-
-function goToLast() {
-  goToPage(totalPages.value)
-}
-
-function goToPrev() {
-  if (!isFirstPage.value) {
-    goToPage(currentPage.value - 1)
-  }
-}
-
-function goToNext() {
-  if (!isLastPage.value) {
-    goToPage(currentPage.value + 1)
-  }
-}
+// Users meta data for pagination (from store)
+const usersMeta = computed(() => ({
+  currentPage: userStore.pagination.page,
+  totalPages: userStore.pagination.totalPages,
+  itemsPerPage: userStore.pagination.limit,
+  totalItems: userStore.pagination.total
+}))
 
 // Watch for tab changes to fetch data
 watch(activeTab, async (newTab) => {
@@ -167,22 +145,9 @@ watch(activeTab, async (newTab) => {
   }
 })
 
-watch([filteredUsers, pageSize], () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value
-  }
-  if (currentPage.value < 1) {
-    currentPage.value = 1
-  }
-})
-
-watch([searchQuery, statusFilter, roleFilter], () => {
-  currentPage.value = 1
-})
-
 onMounted(async () => {
   try {
-    await userStore.fetchUsers()
+    await userStore.fetchUsers({ page: 1, limit: 10 })
   } catch (error) {
     console.error('Error fetching users:', error)
     uiStore.showError('Failed to load users')
@@ -190,6 +155,24 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
+
+// Handle pagination change from grid
+async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
+  isLoading.value = true
+  try {
+    await userStore.fetchUsers({
+      page,
+      limit,
+      sortBy,
+      orderBy
+    })
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    uiStore.showError('Failed to load users')
+  } finally {
+    isLoading.value = false
+  }
+}
 
 function openAddUserModal() {
   selectedUser.value = null
@@ -318,11 +301,21 @@ function handleGroupSaved() {
 
 <template>
   <div class="users-view h-full flex flex-col">
-    <!-- Sub-header with Tabs and Actions (below global Topbar) -->
+    <!-- Header with Sidebar Toggle, Tabs, Actions, and AI Chat -->
     <div class="bg-white border-b border-gray-200 flex-shrink-0">
-      <div class="flex items-center h-12 px-4">
-        <!-- Left: Tabs -->
+      <div class="flex items-center h-12 pl-1 pr-4">
+        <!-- Left: Sidebar Toggle + Tabs -->
         <div class="flex items-center gap-4 h-full">
+          <!-- Sidebar Toggle Button -->
+          <button
+            @click="toggleSidebar"
+            class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 transition-colors"
+            title="Toggle sidebar"
+          >
+            <Menu class="w-5 h-5" />
+          </button>
+          
+          <!-- Tabs -->
           <button
             v-for="tab in tabs"
             :key="tab.id"
@@ -360,17 +353,18 @@ function handleGroupSaved() {
             <!-- New User Button -->
             <button
               @click="openAddUserModal"
-              class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+              class="inline-flex items-center gap-1.5 h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
             >
               <Plus class="w-4 h-4" />
+              New User
             </button>
 
             <!-- Invite User Button -->
             <button
               @click="openInviteModal"
-              class="inline-flex items-center gap-1.5 h-8 px-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+              class="inline-flex items-center gap-1.5 h-8 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-md transition-colors"
             >
-              <UserPlus class="w-4 h-4" />
+              Invite User
             </button>
           </template>
           <template v-else-if="activeTab === 'groups'">
@@ -391,6 +385,9 @@ function handleGroupSaved() {
               New Role
             </button>
           </template>
+          
+          <!-- AI Chat Button -->
+          <AIChatButton />
         </div>
       </div>
     </div>
@@ -398,115 +395,15 @@ function handleGroupSaved() {
     <!-- Content Area -->
     <div class="flex-1 overflow-auto bg-white">
       <!-- Users Tab Content -->
-      <div v-if="activeTab === 'users'" class="flex flex-col h-full">
-        <!-- Grid -->
-        <div class="flex-1">
-          <UsersGrid
-            :users="pagedUsers"
-            @edit="openEditUserModal"
-            @delete="openDeleteModal"
-            @resendInvite="handleResendInvite"
-          />
-        </div>
-
-        <!-- Bottom Bar: Filters on left, Pagination on right -->
-        <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white">
-          <!-- Left: Filters -->
-          <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-500">Filter by</span>
-            <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              <Settings class="w-4 h-4 text-gray-400" />
-              Status
-            </button>
-            <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              <Users class="w-4 h-4 text-gray-400" />
-              Role
-            </button>
-            <button
-              class="inline-flex items-center p-1.5 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              <SlidersHorizontal class="w-4 h-4 text-gray-400" />
-            </button>
-          </div>
-
-          <!-- Right: Custom Pagination -->
-          <div class="flex items-center gap-2">
-            <!-- First/Prev -->
-            <button
-              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
-              :class="isFirstPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
-              :disabled="isFirstPage"
-              @click="goToFirst"
-            >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="11 17 6 12 11 7"></polyline>
-                <polyline points="18 17 13 12 18 7"></polyline>
-              </svg>
-            </button>
-            <button
-              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
-              :class="isFirstPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
-              :disabled="isFirstPage"
-              @click="goToPrev"
-            >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </button>
-
-            <!-- Page Numbers -->
-            <div class="flex items-center gap-1">
-              <button
-                v-for="page in visiblePages"
-                :key="page"
-                class="w-8 h-8 flex items-center justify-center text-sm rounded"
-                :class="page === currentPage ? 'font-medium text-gray-900 bg-gray-100' : 'text-gray-600 hover:bg-gray-100'"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
-            </div>
-
-            <!-- Next/Last -->
-            <button
-              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
-              :class="isLastPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
-              :disabled="isLastPage"
-              @click="goToNext"
-            >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </button>
-            <button
-              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
-              :class="isLastPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
-              :disabled="isLastPage"
-              @click="goToLast"
-            >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="13 17 18 12 13 7"></polyline>
-                <polyline points="6 17 11 12 6 7"></polyline>
-              </svg>
-            </button>
-
-            <!-- Page Size -->
-            <div class="ml-2 flex items-center">
-              <select
-                v-model.number="pageSize"
-                class="h-8 px-2 pr-7 text-sm text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer"
-              >
-                <option :value="20">20</option>
-                <option :value="50">50</option>
-                <option :value="100">100</option>
-              </select>
-            </div>
-          </div>
-        </div>
+      <div v-if="activeTab === 'users'" class="h-full">
+        <UsersGrid
+          :users="filteredUsers"
+          :meta="usersMeta"
+          @edit="openEditUserModal"
+          @delete="openDeleteModal"
+          @resendInvite="handleResendInvite"
+          @paginationChange="handlePaginationChange"
+        />
       </div>
 
       <!-- Groups Tab Content -->

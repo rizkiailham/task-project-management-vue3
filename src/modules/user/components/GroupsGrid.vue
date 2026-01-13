@@ -108,10 +108,10 @@ const myTheme = themeQuartz.withParams({
   fontFamily: 'Inter, system-ui, sans-serif',
   fontSize: 13,
   foregroundColor: '#374151',
-  headerBackgroundColor: '#ffffff',
-  headerFontSize: 13,
-  headerFontWeight: 500,
-  headerTextColor: '#374151',
+  headerBackgroundColor: '#f9fafb',
+  headerFontSize: 12,
+  headerFontWeight: 600,
+  headerTextColor: '#6B7280',
   rowBorder: true,
   rowVerticalPaddingScale: 1,
   spacing: 8,
@@ -123,47 +123,90 @@ const getRowId = (params) => params.data?.id
 </script>
 
 <template>
-  <div class="groups-grid">
-    <ag-grid-vue
-      class="ag-theme-quartz w-full"
-      :rowData="rowData"
-      :columnDefs="columnDefs"
-      :defaultColDef="defaultColDef"
-      :theme="myTheme"
-      :getRowId="getRowId"
-      :rowHeight="52"
-      :headerHeight="44"
-      :suppressCellFocus="true"
-      :suppressRowClickSelection="true"
-      domLayout="autoHeight"
-    />
+  <div class="groups-grid-wrapper">
+    <div class="groups-grid">
+      <ag-grid-vue
+        class="ag-theme-quartz w-full h-full"
+        :rowData="rowData"
+        :columnDefs="columnDefs"
+        :defaultColDef="defaultColDef"
+        :theme="myTheme"
+        :getRowId="getRowId"
+        :rowHeight="52"
+        :headerHeight="40"
+        :suppressCellFocus="true"
+        :suppressRowClickSelection="true"
+      />
+    </div>
   </div>
 </template>
 
 <style scoped>
+.groups-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(100vh - 108px);
+  position: relative;
+}
+
 .groups-grid {
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 :deep(.ag-theme-quartz) {
   --ag-row-hover-color: #fefce8;
   --ag-header-height: 44px;
   --ag-borders: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 :deep(.ag-theme-quartz .ag-root-wrapper) {
   border: none;
   border-radius: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
+/* Sticky Header */
 :deep(.ag-theme-quartz .ag-header) {
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+:deep(.ag-theme-quartz .ag-header-row) {
+  font-weight: 500;
+  font-size: 13px;
 }
 
 :deep(.ag-theme-quartz .ag-header-cell) {
   padding-left: 16px;
   padding-right: 16px;
+}
+
+:deep(.ag-theme-quartz .ag-header-cell-text) {
+  color: #374151;
+}
+
+:deep(.ag-theme-quartz .ag-header-icon) {
+  color: #9ca3af;
+}
+
+/* Body viewport - scrollable area */
+:deep(.ag-theme-quartz .ag-body-viewport) {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 :deep(.ag-theme-quartz .ag-row) {
@@ -180,5 +223,27 @@ const getRowId = (params) => params.data?.id
   display: flex;
   align-items: center;
   border: none !important;
+}
+
+:deep(.ag-theme-quartz .ag-cell:focus),
+:deep(.ag-theme-quartz .ag-cell-focus) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide the menu button until hover */
+:deep(.ag-theme-quartz .ag-header-cell-menu-button) {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+:deep(.ag-theme-quartz .ag-header-cell:hover .ag-header-cell-menu-button) {
+  opacity: 1;
+}
+
+/* Sort icons */
+:deep(.ag-theme-quartz .ag-sort-indicator-icon) {
+  color: #9ca3af;
 }
 </style>

@@ -84,18 +84,18 @@ function openSkillsSettings() {
       <!-- Main AI Chat Button -->
       <button
         @click="openChat"
-        class="flex items-center gap-2 h-9 pl-3 pr-2 rounded-l-lg bg-primary-600 text-white text-sm font-medium hover:from-primary-600 hover:to-purple-700 transition-all shadow-sm"
+        class="flex items-center gap-2 h-8 pl-3 pr-2 rounded-l-md bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition-colors shadow-sm"
       >
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
         </svg>
-        <span>{{ t('aiChat.title') }}</span>
+        <span>{{ t('editor.bubble.askAI') }}</span>
       </button>
       
       <!-- Dropdown Arrow Button -->
       <button
         @click="toggleDropdown"
-        class="flex items-center justify-center h-9 px-2 rounded-r-lg bg-primary-600 text-white hover:from-primary-700 transition-all shadow-sm border-l border-primary-400/30"
+        class="flex items-center justify-center h-8 px-2 rounded-r-md bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-sm border-l border-purple-500/40"
       >
         <svg 
           class="w-3.5 h-3.5 transition-transform duration-200" 
