@@ -386,7 +386,7 @@ watch(
       <div class="relative flex-1 min-h-0">
         <div
           ref="chatContainerRef"
-          class="h-full overflow-y-auto px-4 py-4 space-y-4 pb-16"
+          class="h-full overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 pb-16"
           @scroll="handleChatScroll"
         >
           <!-- Empty State -->
@@ -752,6 +752,16 @@ watch(
   padding-left: 0.75rem;
   color: #6b7280;
   margin: 0.5rem 0;
+}
+
+.ai-markdown :deep(table) {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.ai-markdown :deep(th),
+.ai-markdown :deep(td) {
+  word-break: break-word;
 }
 
 details summary {
