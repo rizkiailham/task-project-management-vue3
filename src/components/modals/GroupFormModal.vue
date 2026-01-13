@@ -1,0 +1,568 @@
+<script setup>
+/**
+ * GroupFormModal - Modal for creating/editing groups and assigning users
+ */
+import { ref, computed, watch } from 'vue'
+import { useGroupStore, useUIStore } from '@/stores'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
+import { ChevronDown, Search, Trash2, Plus } from 'lucide-vue-next'
+import { getUsers } from '@/api/user.api'
+
+const props = defineProps({
+  visible: { type: Boolean, default: false },
+  group: { type: Object, default: null }
+})
+
+const emit = defineEmits(['update:visible', 'saved'])
+
+const groupStore = useGroupStore()
+const uiStore = useUIStore()
+
+const formData = ref({
+  name: '',
+  description: ''
+})
+
+const groupUsers = ref([])
+const pendingUserIds = ref([])
+const baseUsers = ref([])
+const searchResults = ref([])
+const searchQuery = ref('')
+
+const detailsExpanded = ref(true)
+const usersExpanded = ref(true)
+const isSubmitting = ref(false)
+const isLoadingUsers = ref(false)
+const busyUserIds = ref(new Set())
+let searchTimeout = null
+
+const isEditing = computed(() => !!props.group?.id)
+const modalTitle = computed(() => {
+  if (isEditing.value && props.group?.name) {
+    return `Manage Group - ${props.group.name}`
+  }
+  return 'Create New Group'
+})
+
+const dialogVisible = computed({
+  get: () => props.visible,
+  set: (val) => emit('update:visible', val)
+})
+
+const memberIds = computed(() => {
+  const ids = new Set()
+  groupUsers.value.forEach((user) => {
+    const id = getUserId(user)
+    if (id) ids.add(id)
+  })
+  searchResults.value.forEach((user) => {
+    if (user?.isJoined) {
+      const id = getUserId(user)
+      if (id) ids.add(id)
+    }
+  })
+  pendingUserIds.value.forEach((id) => {
+    if (id) ids.add(id)
+  })
+  return ids
+})
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) return
+    initializeModal()
+  }
+)
+
+watch(
+  () => props.group,
+  () => {
+    if (!props.visible) return
+    initializeModal()
+  }
+)
+
+watch(searchQuery, (query) => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    fetchUsers(query)
+  }, 250)
+})
+
+async function initializeModal() {
+  resetForm()
+  await Promise.all([loadGroupDetails(), fetchUsers('')])
+}
+
+async function loadGroupDetails() {
+  if (!isEditing.value || !props.group?.id) {
+    groupUsers.value = []
+    pendingUserIds.value = []
+    return
+  }
+
+  try {
+    const group = await groupStore.fetchGroup(props.group.id)
+    formData.value = {
+      name: group?.name || props.group?.name || '',
+      description: group?.description || props.group?.description || ''
+    }
+    if (Array.isArray(group?.users)) {
+      groupUsers.value = group.users
+    } else if (Array.isArray(group?.members)) {
+      groupUsers.value = group.members
+    } else {
+      groupUsers.value = []
+    }
+    pendingUserIds.value = []
+    const fetchedUsers = await groupStore.searchUsers(props.group.id, '')
+    if (Array.isArray(fetchedUsers)) {
+      baseUsers.value = fetchedUsers
+    }
+  } catch (error) {
+    uiStore.showError('Failed to load group details')
+  }
+}
+
+async function fetchUsers(keywords = '') {
+  isLoadingUsers.value = true
+  try {
+    if (isEditing.value && props.group?.id) {
+      const results = await groupStore.searchUsers(props.group.id, keywords)
+      if (keywords) {
+        searchResults.value = Array.isArray(results) ? results : []
+      } else {
+        baseUsers.value = Array.isArray(results) ? results : []
+      }
+    } else {
+      const response = await getUsers({ limit: 100, keywords })
+      const data = response?.data || response || []
+      if (keywords) {
+        searchResults.value = Array.isArray(data) ? data : []
+      } else {
+        baseUsers.value = Array.isArray(data) ? data : []
+      }
+    }
+  } catch (error) {
+    if (keywords) {
+      searchResults.value = []
+    } else {
+      baseUsers.value = []
+    }
+  } finally {
+    isLoadingUsers.value = false
+  }
+}
+
+function resetForm() {
+  formData.value = {
+    name: props.group?.name || '',
+    description: props.group?.description || ''
+  }
+  detailsExpanded.value = true
+  usersExpanded.value = true
+  groupUsers.value = []
+  pendingUserIds.value = []
+  searchQuery.value = ''
+}
+
+function closeModal() {
+  dialogVisible.value = false
+  resetForm()
+}
+
+function getUserId(user) {
+  return user?.id || user?.userId || user?._id || null
+}
+
+function isMember(user) {
+  if (user?.isJoined) return true
+  const id = getUserId(user)
+  if (!id) return false
+  return memberIds.value.has(id)
+}
+
+function getInitials(user) {
+  const first = user?.firstName?.charAt(0) || ''
+  const last = user?.lastName?.charAt(0) || ''
+  const initials = `${first}${last}`.trim()
+  return initials || user?.email?.charAt(0)?.toUpperCase() || 'U'
+}
+
+function getAvatarColor(user) {
+  const name = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+  if (!name) return '#3B82F6'
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const palette = ['#F59E0B', '#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#EC4899']
+  return palette[Math.abs(hash) % palette.length]
+}
+
+function setBusy(userId, isBusy) {
+  const next = new Set(busyUserIds.value)
+  if (isBusy) {
+    next.add(userId)
+  } else {
+    next.delete(userId)
+  }
+  busyUserIds.value = next
+}
+
+function updateUserJoinState(userId, isJoined) {
+  if (!userId) return
+  baseUsers.value = baseUsers.value.map((user) => {
+    if (getUserId(user) === userId) {
+      return { ...user, isJoined }
+    }
+    return user
+  })
+  searchResults.value = searchResults.value.map((user) => {
+    if (getUserId(user) === userId) {
+      return { ...user, isJoined }
+    }
+    return user
+  })
+}
+
+async function handleAddUser(user) {
+  const id = getUserId(user)
+  if (!id || busyUserIds.value.has(id)) return
+
+  if (!isEditing.value) {
+    if (!pendingUserIds.value.includes(id)) {
+      pendingUserIds.value.push(id)
+    }
+    updateUserJoinState(id, true)
+    return
+  }
+
+  setBusy(id, true)
+  try {
+    const updated = await groupStore.addUsers(props.group.id, [id])
+    if (Array.isArray(updated?.users)) {
+      groupUsers.value = updated.users
+    } else if (Array.isArray(updated?.members)) {
+      groupUsers.value = updated.members
+    } else if (!groupUsers.value.some(u => getUserId(u) === id)) {
+      groupUsers.value.push(user)
+    }
+    updateUserJoinState(id, true)
+  } catch (error) {
+    uiStore.showError('Failed to add user to group')
+  } finally {
+    setBusy(id, false)
+  }
+}
+
+async function handleRemoveUser(user) {
+  const id = getUserId(user)
+  if (!id || busyUserIds.value.has(id)) return
+
+  if (!isEditing.value) {
+    pendingUserIds.value = pendingUserIds.value.filter(item => item !== id)
+    updateUserJoinState(id, false)
+    return
+  }
+
+  setBusy(id, true)
+  try {
+    const updated = await groupStore.removeUsers(props.group.id, [id])
+    if (Array.isArray(updated?.users)) {
+      groupUsers.value = updated.users
+    } else if (Array.isArray(updated?.members)) {
+      groupUsers.value = updated.members
+    } else {
+      groupUsers.value = groupUsers.value.filter(u => getUserId(u) !== id)
+    }
+    updateUserJoinState(id, false)
+  } catch (error) {
+    uiStore.showError('Failed to remove user from group')
+  } finally {
+    setBusy(id, false)
+  }
+}
+
+async function handleSubmit() {
+  if (!formData.value.name.trim()) {
+    uiStore.showError('Group name is required')
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const payload = {
+      name: formData.value.name.trim(),
+      description: formData.value.description.trim()
+    }
+
+    if (isEditing.value) {
+      await groupStore.updateGroup(props.group.id, payload)
+      uiStore.showSuccess('Group updated successfully')
+    } else {
+      const newGroup = await groupStore.createGroup(payload)
+      if (pendingUserIds.value.length > 0 && newGroup?.id) {
+        await groupStore.addUsers(newGroup.id, pendingUserIds.value)
+      }
+      uiStore.showSuccess('Group created successfully')
+    }
+
+    emit('saved')
+    closeModal()
+  } catch (error) {
+    uiStore.showError(error.message || 'Failed to save group')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+</script>
+
+<template>
+  <BaseModal
+    v-model:visible="dialogVisible"
+    :title="modalTitle"
+    width="92vw"
+    maxWidth="560px"
+    :closable="!isSubmitting"
+    :closeOnEscape="!isSubmitting"
+    :loading="isSubmitting"
+  >
+    <template #header>
+      <h2 class="text-base font-semibold text-gray-900">{{ modalTitle }}</h2>
+    </template>
+
+    <div
+      :class="[
+        'relative -my-5 -mx-6 px-4 py-5 space-y-0',
+        searchQuery ? 'overflow-hidden' : 'overflow-y-auto'
+      ]"
+      style="height: 60vh;"
+    >
+      <!-- Details Section -->
+      <div class="border-b border-gray-100">
+        <button
+          type="button"
+          @click="detailsExpanded = !detailsExpanded"
+          class="w-full flex items-center gap-2 py-3 text-left"
+        >
+          <ChevronDown
+            class="w-4 h-4 text-gray-500 transition-transform"
+            :class="{ '-rotate-90': !detailsExpanded }"
+          />
+          <span class="text-sm font-medium text-gray-900">Details</span>
+        </button>
+
+        <div v-show="detailsExpanded" class="pl-6 pb-4 space-y-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Name *</label>
+            <InputText
+              v-model="formData.name"
+              placeholder="Enter group name"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Description</label>
+            <Textarea
+              v-model="formData.description"
+              placeholder="Enter a brief description for this group"
+              rows="3"
+              class="w-full text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- User List Section -->
+      <div class="-mx-4">
+        <button
+          type="button"
+          @click="usersExpanded = !usersExpanded"
+          class="w-full flex items-center gap-2 py-3 px-4 text-left"
+        >
+          <ChevronDown
+            class="w-4 h-4 text-gray-500 transition-transform"
+            :class="{ '-rotate-90': !usersExpanded }"
+          />
+          <span class="text-sm font-medium text-gray-900">User list</span>
+        </button>
+
+        <div v-show="usersExpanded" class="pb-4">
+          <div class="relative min-h-full">
+            <div class="min-h-full overflow-y-auto bg-white">
+              <div
+                v-if="!searchQuery && isLoadingUsers"
+                class="px-4 py-6 text-center text-sm text-gray-400"
+              >
+                Loading users...
+              </div>
+              <div
+                v-else-if="baseUsers.length === 0"
+                class="px-4 py-6 text-center text-sm text-gray-400"
+              >
+                No users found
+              </div>
+              <div v-else class="flex flex-col">
+                <div
+                  v-for="user in baseUsers"
+                  :key="getUserId(user) || user.email"
+                  :class="[
+                    'transition-colors',
+                    isMember(user) ? 'bg-gray-100' : 'hover:bg-gray-100'
+                  ]"
+                >
+                  <div class="flex items-center gap-3 px-6 py-3">
+                    <div
+                      class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
+                      :style="{ backgroundColor: getAvatarColor(user) }"
+                    >
+                      {{ getInitials(user) }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-medium text-gray-900">
+                        {{ `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email }}
+                      </div>
+                      <div class="text-xs text-gray-500">{{ user.email }}</div>
+                    </div>
+                    <div>
+                      <button
+                        v-if="isMember(user)"
+                        type="button"
+                        class="inline-flex items-center justify-center h-8 w-8 rounded-md text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="busyUserIds.has(getUserId(user))"
+                        @click="handleRemoveUser(user)"
+                      >
+                        <Trash2 class="w-4 h-4" />
+                      </button>
+                      <button
+                        v-else
+                        type="button"
+                        class="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="busyUserIds.has(getUserId(user))"
+                        @click="handleAddUser(user)"
+                      >
+                        <Plus class="w-3.5 h-3.5" />
+                        Add to group
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p v-if="!isEditing" class="mt-2 text-x px-6 text-gray-400">
+            Added users will be saved when you create the group.
+          </p>
+        </div>
+      </div>
+      
+
+      <!-- Search Results-->
+      <div v-show="searchQuery" class="absolute inset-0 z-20 w-full">
+        <div class="absolute inset-0 bg-slate-900/35 w-full"></div>
+        <div class="absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 w-full">
+          <div class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Search results
+          </div>
+          <div class="relative max-h-72 min-h-full overflow-hidden">
+            <div
+              v-if="isLoadingUsers"
+              class="absolute inset-x-0 top-0 flex items-center justify-center bg-white/80 py-2 text-xs text-gray-400"
+            >
+              Loading users...
+            </div>
+            <div
+              v-if="!isLoadingUsers && searchResults.length === 0"
+              class="px-4 py-6 text-center text-sm text-gray-400"
+            >
+              No users found
+            </div>
+            <div v-else class="flex flex-col">
+              <div
+                v-for="user in searchResults"
+                :key="getUserId(user) || user.email"
+                :class="[
+                  'transition-colors',
+                  isMember(user) ? 'bg-gray-100' : 'hover:bg-gray-100'
+                ]"
+              >
+                <div class="flex items-center gap-3 px-6 py-3">
+                  <div
+                    class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
+                    :style="{ backgroundColor: getAvatarColor(user) }"
+                  >
+                    {{ getInitials(user) }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email }}
+                    </div>
+                    <div class="text-xs text-gray-500">{{ user.email }}</div>
+                  </div>
+                  <div>
+                    <button
+                      v-if="isMember(user)"
+                      type="button"
+                      class="inline-flex items-center justify-center h-8 w-8 rounded-md text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="busyUserIds.has(getUserId(user))"
+                      @click="handleRemoveUser(user)"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
+                    <button
+                      v-else
+                      type="button"
+                      class="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="busyUserIds.has(getUserId(user))"
+                      @click="handleAddUser(user)"
+                    >
+                      <Plus class="w-3.5 h-3.5" />
+                      Add to group
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex w-[calc(100%+3rem)] items-center justify-between gap-3 -mx-6 px-6">
+        <div class="relative flex-1">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search users"
+            class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          />
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button
+            type="button"
+            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="closeModal"
+            :disabled="isSubmitting"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="handleSubmit"
+            :disabled="isSubmitting"
+          >
+            {{ isSubmitting ? 'Saving...' : 'Save changes' }}
+          </button>
+        </div>
+      </div>
+    </template>
+  </BaseModal>
+</template>

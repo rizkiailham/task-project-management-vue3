@@ -6,18 +6,21 @@
  * Contains sub-header with tabs, search, and action buttons.
  */
 import { ref, computed, onMounted, watch } from 'vue'
-import { useUserStore, useUIStore, useRoleStore } from '@/stores'
+import { useUserStore, useUIStore, useRoleStore, useGroupStore } from '@/stores'
 import UsersGrid from '@/modules/user/components/UsersGrid.vue'
 import RolesGrid from '@/modules/user/components/RolesGrid.vue'
+import GroupsGrid from '@/modules/user/components/GroupsGrid.vue'
 import UserFormModal from '@/components/modals/UserFormModal.vue'
 import InviteUserModal from '@/components/modals/InviteUserModal.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import RoleFormModal from '@/components/modals/RoleFormModal.vue'
+import GroupFormModal from '@/components/modals/GroupFormModal.vue'
 import { Search, Plus, UserPlus, SlidersHorizontal, Settings, Users } from 'lucide-vue-next'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
 const roleStore = useRoleStore()
+const groupStore = useGroupStore()
 
 // State
 const activeTab = ref('users')
@@ -41,6 +44,12 @@ const showRoleDeleteModal = ref(false)
 const selectedRole = ref(null)
 const isDeletingRole = ref(false)
 
+// Group modal states
+const showGroupFormModal = ref(false)
+const showGroupDeleteModal = ref(false)
+const selectedGroup = ref(null)
+const isDeletingGroup = ref(false)
+
 // Tab definitions
 const tabs = [
   { id: 'users', label: 'Users' },
@@ -49,6 +58,12 @@ const tabs = [
 ]
 
 // Computed
+const searchPlaceholder = computed(() => {
+  if (activeTab.value === 'groups') return 'Search group'
+  if (activeTab.value === 'role') return 'Search role'
+  return 'Search user'
+})
+
 const filteredUsers = computed(() => {
   let users = [...userStore.users]
 
@@ -139,6 +154,15 @@ watch(activeTab, async (newTab) => {
     } catch (error) {
       console.error('Error fetching roles:', error)
       uiStore.showError('Failed to load roles')
+    }
+  }
+
+  if (newTab === 'groups' && groupStore.groups.length === 0) {
+    try {
+      await groupStore.fetchGroups()
+    } catch (error) {
+      console.error('Error fetching groups:', error)
+      uiStore.showError('Failed to load groups')
     }
   }
 })
@@ -254,6 +278,42 @@ async function handleDeleteRole() {
 function handleRoleSaved() {
   // Grid will auto-update via reactive store
 }
+
+// Group handlers
+function openAddGroupModal() {
+  selectedGroup.value = null
+  showGroupFormModal.value = true
+}
+
+function openEditGroupModal(group) {
+  selectedGroup.value = group
+  showGroupFormModal.value = true
+}
+
+function openGroupDeleteModal(group) {
+  selectedGroup.value = group
+  showGroupDeleteModal.value = true
+}
+
+async function handleDeleteGroup() {
+  if (!selectedGroup.value) return
+
+  isDeletingGroup.value = true
+  try {
+    await groupStore.deleteGroup(selectedGroup.value.id)
+    uiStore.showSuccess('Group deleted successfully')
+    showGroupDeleteModal.value = false
+    selectedGroup.value = null
+  } catch (error) {
+    uiStore.showError('Failed to delete group')
+  } finally {
+    isDeletingGroup.value = false
+  }
+}
+
+function handleGroupSaved() {
+  // Grid will auto-update via reactive store
+}
 </script>
 
 <template>
@@ -291,26 +351,46 @@ function handleRoleSaved() {
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search user"
+              :placeholder="searchPlaceholder"
               class="h-8 pl-9 pr-4 w-40 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
 
-          <!-- New User Button -->
-          <button
-            @click="openAddUserModal"
-            class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
-          >
-            <Plus class="w-4 h-4" />
-          </button>
+          <template v-if="activeTab === 'users'">
+            <!-- New User Button -->
+            <button
+              @click="openAddUserModal"
+              class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+            >
+              <Plus class="w-4 h-4" />
+            </button>
 
-          <!-- Invite User Button -->
-          <button
-            @click="openInviteModal"
-            class="inline-flex items-center gap-1.5 h-8 px-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
-          >
-            <UserPlus class="w-4 h-4" />
-          </button>
+            <!-- Invite User Button -->
+            <button
+              @click="openInviteModal"
+              class="inline-flex items-center gap-1.5 h-8 px-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+            >
+              <UserPlus class="w-4 h-4" />
+            </button>
+          </template>
+          <template v-else-if="activeTab === 'groups'">
+            <button
+              @click="openAddGroupModal"
+              class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+            >
+              <Plus class="w-4 h-4" />
+              New Group
+            </button>
+          </template>
+          <template v-else-if="activeTab === 'role'">
+            <button
+              @click="openAddRoleModal"
+              class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+            >
+              <Plus class="w-4 h-4" />
+              New Role
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -429,34 +509,23 @@ function handleRoleSaved() {
         </div>
       </div>
 
-      <!-- Groups Tab Content (Placeholder) -->
-      <div v-else-if="activeTab === 'groups'" class="flex items-center justify-center h-full bg-white">
-        <div class="text-center">
-          <div class="text-gray-400 mb-2">
-            <Users class="w-12 h-12 mx-auto" />
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 mb-1">Groups Management</h3>
-          <p class="text-sm text-gray-500">Coming soon - Manage user groups and permissions</p>
+      <!-- Groups Tab Content -->
+      <div v-else-if="activeTab === 'groups'" class="flex flex-col h-full">
+        <div class="flex-1">
+          <GroupsGrid
+            :groups="filteredGroups"
+            @edit="openEditGroupModal"
+            @delete="openGroupDeleteModal"
+          />
         </div>
       </div>
 
       <!-- Role Tab Content -->
       <div v-else-if="activeTab === 'role'" class="flex flex-col h-full">
-        <!-- Role Header Actions -->
-        <div class="flex items-center justify-end px-4 py-3 border-b border-gray-200">
-          <button
-            @click="openAddRoleModal"
-            class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
-          >
-            <Plus class="w-4 h-4" />
-            New Role
-          </button>
-        </div>
-
         <!-- Grid -->
         <div class="flex-1">
           <RolesGrid
-            :roles="roleStore.roles"
+            :roles="filteredRoles"
             @edit="openEditRoleModal"
             @delete="openRoleDeleteModal"
           />
@@ -500,6 +569,23 @@ function handleRoleSaved() {
       :loading="isDeletingRole"
       @confirm="handleDeleteRole"
       @cancel="showRoleDeleteModal = false"
+    />
+
+    <!-- Group Form Modal -->
+    <GroupFormModal
+      v-model:visible="showGroupFormModal"
+      :group="selectedGroup"
+      @saved="handleGroupSaved"
+    />
+
+    <!-- Group Delete Confirmation Modal -->
+    <DeleteConfirmModal
+      v-model:visible="showGroupDeleteModal"
+      :title="`Delete ${selectedGroup?.name}`"
+      message="This action will permanently delete the group. User accounts within the group will remain unaffected."
+      :loading="isDeletingGroup"
+      @confirm="handleDeleteGroup"
+      @cancel="showGroupDeleteModal = false"
     />
   </div>
 </template>
