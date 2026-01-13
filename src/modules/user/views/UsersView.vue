@@ -28,6 +28,8 @@ const searchQuery = ref('')
 const statusFilter = ref(null)
 const roleFilter = ref(null)
 const isLoading = ref(true)
+const currentPage = ref(1)
+const pageSize = ref(20)
 
 // Modal states
 const showUserFormModal = ref(false)
@@ -88,37 +90,61 @@ const filteredUsers = computed(() => {
   return users
 })
 
-const filteredGroups = computed(() => {
-  let groups = [...groupStore.groups]
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    groups = groups.filter((group) => {
-      return (
-        group.name?.toLowerCase().includes(query) ||
-        group.description?.toLowerCase().includes(query)
-      )
-    })
-  }
-
-  return groups
+const totalPages = computed(() => {
+  const total = Math.ceil(filteredUsers.value.length / pageSize.value)
+  return total > 0 ? total : 1
 })
 
-const filteredRoles = computed(() => {
-  let roles = [...roleStore.roles]
+const pagedUsers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredUsers.value.slice(start, start + pageSize.value)
+})
 
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    roles = roles.filter((role) => {
-      return (
-        role.name?.toLowerCase().includes(query) ||
-        role.description?.toLowerCase().includes(query)
-      )
-    })
+const visiblePages = computed(() => {
+  const maxVisible = 5
+  const total = totalPages.value
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
   }
 
-  return roles
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+
+  if (end > total) {
+    end = total
+    start = end - maxVisible + 1
+  }
+
+  return Array.from({ length: maxVisible }, (_, i) => start + i)
 })
+
+const isFirstPage = computed(() => currentPage.value <= 1)
+const isLastPage = computed(() => currentPage.value >= totalPages.value)
+
+function goToPage(page) {
+  const clamped = Math.min(Math.max(page, 1), totalPages.value)
+  currentPage.value = clamped
+}
+
+function goToFirst() {
+  goToPage(1)
+}
+
+function goToLast() {
+  goToPage(totalPages.value)
+}
+
+function goToPrev() {
+  if (!isFirstPage.value) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+function goToNext() {
+  if (!isLastPage.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
 
 // Watch for tab changes to fetch data
 watch(activeTab, async (newTab) => {
@@ -139,6 +165,19 @@ watch(activeTab, async (newTab) => {
       uiStore.showError('Failed to load groups')
     }
   }
+})
+
+watch([filteredUsers, pageSize], () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value
+  }
+  if (currentPage.value < 1) {
+    currentPage.value = 1
+  }
+})
+
+watch([searchQuery, statusFilter, roleFilter], () => {
+  currentPage.value = 1
 })
 
 onMounted(async () => {
@@ -363,7 +402,7 @@ function handleGroupSaved() {
         <!-- Grid -->
         <div class="flex-1">
           <UsersGrid
-            :users="filteredUsers"
+            :users="pagedUsers"
             @edit="openEditUserModal"
             @delete="openDeleteModal"
             @resendInvite="handleResendInvite"
@@ -397,13 +436,23 @@ function handleGroupSaved() {
           <!-- Right: Custom Pagination -->
           <div class="flex items-center gap-2">
             <!-- First/Prev -->
-            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
+              :class="isFirstPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
+              :disabled="isFirstPage"
+              @click="goToFirst"
+            >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="11 17 6 12 11 7"></polyline>
                 <polyline points="18 17 13 12 18 7"></polyline>
               </svg>
             </button>
-            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
+              :class="isFirstPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
+              :disabled="isFirstPage"
+              @click="goToPrev"
+            >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
@@ -411,20 +460,34 @@ function handleGroupSaved() {
 
             <!-- Page Numbers -->
             <div class="flex items-center gap-1">
-              <button class="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-900 bg-gray-100 rounded">1</button>
-              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">2</button>
-              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">3</button>
-              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">4</button>
-              <button class="w-8 h-8 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 rounded">5</button>
+              <button
+                v-for="page in visiblePages"
+                :key="page"
+                class="w-8 h-8 flex items-center justify-center text-sm rounded"
+                :class="page === currentPage ? 'font-medium text-gray-900 bg-gray-100' : 'text-gray-600 hover:bg-gray-100'"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
             </div>
 
             <!-- Next/Last -->
-            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
+              :class="isLastPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
+              :disabled="isLastPage"
+              @click="goToNext"
+            >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </button>
-            <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded transition-colors"
+              :class="isLastPage ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'"
+              :disabled="isLastPage"
+              @click="goToLast"
+            >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="13 17 18 12 13 7"></polyline>
                 <polyline points="6 17 11 12 6 7"></polyline>
@@ -433,10 +496,13 @@ function handleGroupSaved() {
 
             <!-- Page Size -->
             <div class="ml-2 flex items-center">
-              <select class="h-8 px-2 pr-7 text-sm text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer">
-                <option>20</option>
-                <option>50</option>
-                <option>100</option>
+              <select
+                v-model.number="pageSize"
+                class="h-8 px-2 pr-7 text-sm text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer"
+              >
+                <option :value="20">20</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
               </select>
             </div>
           </div>
