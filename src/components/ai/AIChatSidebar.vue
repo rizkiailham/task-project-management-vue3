@@ -9,7 +9,7 @@
  * - Skills section at bottom
  * - Breadcrumb navigation
  */
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useConfirm } from 'primevue/useconfirm'
 import { useAIChatStore } from '@/stores'
@@ -45,9 +45,20 @@ const featuredSkills = computed(() => aiChatStore.featuredSkills)
 const connectionStatus = computed(() => aiChatStore.connectionStatus)
 const currentPlan = computed(() => aiChatStore.currentPlan)
 const currentChecks = computed(() => aiChatStore.currentChecks)
-const currentToolCalls = computed(() => aiChatStore.currentToolCalls || [])
-const currentToolResults = computed(() => aiChatStore.currentToolResults || [])
+const currentToolCalls = computed(() => aiChatStore.currentToolCalls || [])     
+const currentToolResults = computed(() => aiChatStore.currentToolResults || []) 
 const canClearChat = computed(() => !isGenerating.value && messages.value.length > 0)
+const autoScrollEnabled = ref(true)
+const showJumpToLatest = ref(false)
+const unreadCount = ref(0)
+let jumpButtonTimeout = null
+let scrollDebounceTimeout = null
+
+// Thresholds with hysteresis to prevent flicker
+const SCROLL_THRESHOLD_DISABLE = 80  // pixels from bottom to disable auto-scroll
+const SCROLL_THRESHOLD_ENABLE = 40   // pixels from bottom to re-enable auto-scroll
+const JUMP_BUTTON_DELAY = 300        // ms before showing jump button
+const SCROLL_DEBOUNCE = 100          // ms debounce for scroll handler
 
 
 // Markdown renderer for AI responses
@@ -73,6 +84,94 @@ function renderMarkdown(content = '') {
     anchor.setAttribute('rel', 'noopener noreferrer')
   })
   return wrapper.innerHTML
+}
+
+function hasThinking(message) {
+  return (
+    (message.plan && message.plan.length > 0) ||
+    (message.checks && message.checks.length > 0) ||
+    (message.toolCalls && message.toolCalls.length > 0) ||
+    (message.toolResults && message.toolResults.length > 0)
+  )
+}
+
+function getScrollDistance() {
+  const container = chatContainerRef.value
+  if (!container) return 0
+  return container.scrollHeight - container.scrollTop - container.clientHeight
+}
+
+function scrollToBottom(behavior = 'auto') {
+  const container = chatContainerRef.value
+  if (!container) return
+  container.scrollTo({ top: container.scrollHeight, behavior })
+}
+
+function handleChatScroll() {
+  // Debounce scroll handling
+  if (scrollDebounceTimeout) {
+    clearTimeout(scrollDebounceTimeout)
+  }
+  
+  scrollDebounceTimeout = setTimeout(() => {
+    const distance = getScrollDistance()
+    
+    // Hysteresis: use different thresholds for enabling vs disabling
+    if (autoScrollEnabled.value) {
+      // Currently enabled - disable only if scrolled far enough up
+      if (distance > SCROLL_THRESHOLD_DISABLE) {
+        autoScrollEnabled.value = false
+        scheduleJumpButton()
+      }
+    } else {
+      // Currently disabled - re-enable only if scrolled close to bottom
+      if (distance <= SCROLL_THRESHOLD_ENABLE) {
+        autoScrollEnabled.value = true
+        hideJumpButton()
+        unreadCount.value = 0
+      }
+    }
+  }, SCROLL_DEBOUNCE)
+}
+
+function scheduleJumpButton() {
+  // Clear any existing timeout
+  if (jumpButtonTimeout) {
+    clearTimeout(jumpButtonTimeout)
+  }
+  
+  // Delay showing the button to prevent flashing on quick scrolls
+  jumpButtonTimeout = setTimeout(() => {
+    if (!autoScrollEnabled.value) {
+      showJumpToLatest.value = true
+    }
+  }, JUMP_BUTTON_DELAY)
+}
+
+function hideJumpButton() {
+  if (jumpButtonTimeout) {
+    clearTimeout(jumpButtonTimeout)
+    jumpButtonTimeout = null
+  }
+  showJumpToLatest.value = false
+}
+
+function maybeAutoScroll() {
+  nextTick(() => {
+    if (autoScrollEnabled.value) {
+      scrollToBottom('auto')
+      hideJumpButton()
+      unreadCount.value = 0
+    }
+    // Removed: don't show jump button here - let scroll handler manage it
+  })
+}
+
+function jumpToLatest() {
+  autoScrollEnabled.value = true
+  hideJumpButton()
+  unreadCount.value = 0
+  scrollToBottom('smooth')
 }
 
 // Calculate sidebar style with proper positioning below topbar
@@ -140,13 +239,7 @@ function clearCurrentChat() {
 function handleSend({ content, mentions }) {
   const mention = mentions.length > 0 ? mentions[0] : null
   aiChatStore.sendMessage(content, mention)
-  
-  // Scroll to bottom after message
-  setTimeout(() => {
-    if (chatContainerRef.value) {
-      chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight
-    }
-  }, 100)
+  // Auto-scroll is handled by the watcher on messages.value.length
 }
 
 function executeSkill(skill) {
@@ -158,7 +251,45 @@ function executeSkill(skill) {
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleResize)
   document.removeEventListener('mouseup', stopResize)
+  if (jumpButtonTimeout) clearTimeout(jumpButtonTimeout)
+  if (scrollDebounceTimeout) clearTimeout(scrollDebounceTimeout)
 })
+
+watch(
+  () => [
+    messages.value.length,
+    currentPlan.value.length,
+    currentChecks.value.length,
+    currentToolCalls.value.length,
+    currentToolResults.value.length,
+    isGenerating.value
+  ],
+  () => {
+    maybeAutoScroll()
+  }
+)
+
+watch(
+  () => messages.value.length,
+  (next, prev) => {
+    if (next <= prev) return
+    if (autoScrollEnabled.value) {
+      unreadCount.value = 0
+      return
+    }
+    unreadCount.value += next - prev
+    showJumpToLatest.value = true
+  }
+)
+
+watch(
+  () => isOpen.value,
+  (open) => {
+    if (open) {
+      nextTick(() => scrollToBottom('auto'))
+    }
+  }
+)
 </script>
 
 <template>
@@ -252,149 +383,206 @@ onUnmounted(() => {
       </div>
       
       <!-- Chat Messages Area -->
-      <div ref="chatContainerRef" class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        <!-- Empty State -->
-        <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
-          <div class="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-primary-100 to-purple-100 flex items-center justify-center">
-            <svg class="w-10 h-10 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-          </div>
-          <p class="text-sm">{{ t('aiChat.mentionHint') }}</p>
-        </div>
-        
-        <!-- Messages -->
-        <div v-for="message in messages" :key="message.id" class="message-item">
-          <!-- User Message -->
-          <div v-if="message.role === 'user'" class="flex justify-end">
-            <div class="max-w-[80%] bg-primary-500 text-white rounded-2xl rounded-br-md px-4 py-2">
-              <p class="text-sm">{{ message.content }}</p>
-            </div>
-          </div>
-          
-          <!-- AI Message -->
-          <div v-else class="flex gap-3">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-              <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="relative flex-1 min-h-0">
+        <div
+          ref="chatContainerRef"
+          class="h-full overflow-y-auto px-4 py-4 space-y-4 pb-16"
+          @scroll="handleChatScroll"
+        >
+          <!-- Empty State -->
+          <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
+            <div class="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-primary-100 to-purple-100 flex items-center justify-center">
+              <svg class="w-10 h-10 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
             </div>
-            <div class="max-w-[80%] bg-gray-100 text-gray-800 rounded-2xl rounded-tl-md px-4 py-2">
-              <div v-if="message.plan?.length" class="mb-2 rounded-lg bg-white/70 border border-gray-200 p-2">
-                <div class="text-[11px] font-semibold text-gray-500 mb-1">Plan</div>
-                <div class="space-y-1">
-                  <div
-                    v-for="step in message.plan"
-                    :key="step.id"
-                    class="flex items-center gap-2 text-xs text-gray-700"
-                  >
-                    <span v-if="step.status === 'completed'" class="text-green-500">[x]</span>
-                    <span v-else-if="step.status === 'in_progress'" class="text-blue-500">[~]</span>
-                    <span v-else-if="step.status === 'blocked'" class="text-red-500">[!]</span>
-                    <span v-else class="text-gray-400">[ ]</span>
-                    <span>{{ step.title }}</span>
-                  </div>
-                </div>
-              </div>
-              <div v-if="message.checks?.length" class="mb-2 rounded-lg bg-white/70 border border-gray-200 p-2">
-                <div class="text-[11px] font-semibold text-gray-500 mb-1">Checks</div>
-                <ul class="space-y-1">
-                  <li v-for="(check, idx) in message.checks" :key="idx" class="flex gap-2 text-xs text-gray-700">
-                    <span class="text-green-500 mt-0.5">[x]</span>
-                    <span>{{ check }}</span>
-                  </li>
-                </ul>
-              </div>
-              <details v-if="message.toolCalls?.length || message.toolResults?.length" class="mb-2 text-xs text-gray-500">
-                <summary class="cursor-pointer select-none">Details</summary>
-                <div class="mt-2 space-y-2">
-                  <div v-if="message.toolCalls?.length">
-                    <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Calls</div>
-                    <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(message.toolCalls, null, 2) }}</pre>
-                  </div>
-                  <div v-if="message.toolResults?.length">
-                    <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Results</div>
-                    <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(message.toolResults, null, 2) }}</pre>
-                  </div>
-                </div>
-              </details>
-              <div class="ai-markdown text-sm" v-html="renderMarkdown(message.content)"></div>
-            </div>
+            <p class="text-sm">{{ t('aiChat.mentionHint') }}</p>
           </div>
-        </div>
-        
-        <!-- Typing Indicator with Plan/Checks -->
-        <div v-if="isGenerating" class="space-y-3">
-          <!-- Plan Steps -->
-          <div v-if="currentPlan.length > 0" class="bg-blue-50 rounded-lg p-3">
-            <div class="text-xs font-medium text-blue-700 mb-2">Plan</div>
-            <div class="space-y-1">
-              <div 
-                v-for="step in currentPlan" 
-                :key="step.id"
-                class="flex items-center gap-2 text-sm"
-              >
-                <span v-if="step.status === 'completed'" class="text-green-500">[x]</span>
-                <span v-else-if="step.status === 'in_progress'" class="text-blue-500 animate-pulse">[~]</span>
-                <span v-else-if="step.status === 'blocked'" class="text-red-500">[!]</span>
-                <span v-else class="text-gray-400">[ ]</span>
-                <span :class="step.status === 'completed' ? 'text-gray-600' : 'text-gray-800'">
-                  {{ step.title }}
-                </span>
+
+          <!-- Messages -->
+          <div v-for="message in messages" :key="message.id" class="message-item">
+            <!-- User Message -->
+            <div v-if="message.role === 'user'" class="flex justify-end">
+              <div class="max-w-[80%] bg-primary-500 text-white rounded-2xl rounded-br-md px-4 py-2">
+                <p class="text-sm">{{ message.content }}</p>
               </div>
             </div>
-          </div>
-          
-          <!-- Checks -->
-          <div v-if="currentChecks.length > 0" class="bg-green-50 rounded-lg p-3">
-            <div class="text-xs font-medium text-green-700 mb-2">Checks</div>
-            <div class="space-y-1">
-              <div
-                v-for="(check, idx) in currentChecks"
-                :key="idx"
-                class="flex items-start gap-2 text-sm text-gray-700"
-              >
-                <span class="text-green-500 mt-0.5">[x]</span>
-                <span>{{ check }}</span>
+
+            <!-- AI Message -->
+            <div v-else class="flex gap-3">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="max-w-[80%] bg-white text-gray-800 rounded-2xl rounded-tl-md px-4 py-3 border border-gray-200 shadow-sm">
+                <div v-if="hasThinking(message)" class="mb-2 rounded-lg border border-gray-200 bg-gray-50/70">
+                  <div class="px-2 py-1.5 text-xs font-semibold text-gray-600 flex items-center gap-2">
+                    <span class="inline-flex h-1.5 w-1.5 rounded-full bg-primary-500"></span>
+                    Thinking
+                  </div>
+                  <div class="px-2 pb-2 pt-2 space-y-1 text-xs text-gray-600">
+                    <details v-if="message.plan?.length" class="rounded-md border border-gray-200 bg-white">
+                      <summary class="cursor-pointer select-none px-2 py-1 text-[11px] font-semibold text-gray-500">Plan</summary>
+                      <div class="px-2 pb-2 space-y-1">
+                        <div
+                          v-for="step in message.plan"
+                          :key="step.id"
+                          class="flex items-center gap-2 text-[11px] text-gray-700"
+                        >
+                          <span v-if="step.status === 'completed'" class="inline-flex h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                          <span v-else-if="step.status === 'in_progress'" class="inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                          <span v-else-if="step.status === 'blocked'" class="inline-flex h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                          <span v-else class="inline-flex h-1.5 w-1.5 rounded-full bg-gray-300"></span>
+                          <span>{{ step.title }}</span>
+                        </div>
+                      </div>
+                    </details>
+
+                    <div v-if="message.checks?.length" class="rounded-md border border-gray-200 bg-white">
+                      <div class="px-2 py-1 text-[11px] font-semibold text-gray-500">Checks</div>
+                      <ul class="px-2 pb-2 space-y-1">
+                        <li v-for="(check, idx) in message.checks" :key="idx" class="flex gap-2 text-[11px] text-gray-700">
+                          <span class="inline-flex h-1.5 w-1.5 rounded-full bg-green-500 mt-1"></span>
+                          <span>{{ check }}</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <details v-if="message.toolCalls?.length || message.toolResults?.length" class="rounded-md border border-gray-200 bg-white">
+                      <summary class="cursor-pointer select-none px-2 py-1 text-[11px] font-semibold text-gray-500">Tool Details</summary>
+                      <div class="px-2 pb-2 space-y-2">
+                        <div v-if="message.toolCalls?.length">
+                          <div class="font-semibold text-[10px] uppercase text-gray-400 mb-1">Tool Calls</div>
+                          <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(message.toolCalls, null, 2) }}</pre>
+                        </div>
+                        <div v-if="message.toolResults?.length">
+                          <div class="font-semibold text-[10px] uppercase text-gray-400 mb-1">Tool Results</div>
+                          <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(message.toolResults, null, 2) }}</pre>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+
+                <div class="ai-markdown text-sm" v-html="renderMarkdown(message.content)"></div>
               </div>
             </div>
           </div>
 
-          <details
-            v-if="currentToolCalls.length || currentToolResults.length"
-            class="rounded-lg border border-gray-200 bg-white/70 p-3 text-xs text-gray-500"
-          >
-            <summary class="cursor-pointer select-none">Details</summary>
-            <div class="mt-2 space-y-2">
-              <div v-if="currentToolCalls.length">
-                <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Calls</div>
-                <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(currentToolCalls, null, 2) }}</pre>
+          <!-- Typing Indicator with Plan/Checks -->
+          <div v-if="isGenerating" class="space-y-3">
+            <div
+              v-if="currentPlan.length || currentChecks.length || currentToolCalls.length || currentToolResults.length"
+              class="rounded-lg border border-gray-200 bg-gray-50/80"
+            >
+              <div class="px-2 py-1.5 text-xs font-semibold text-gray-600 flex items-center gap-2">
+                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-primary-500"></span>
+                Thinking
               </div>
-              <div v-if="currentToolResults.length">
-                <div class="font-semibold text-[11px] uppercase text-gray-400 mb-1">Tool Results</div>
-                <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(currentToolResults, null, 2) }}</pre>
+              <div class="px-2 pb-2 pt-2 space-y-1 text-xs text-gray-600">
+                <details v-if="currentPlan.length > 0" class="rounded-md border border-gray-200 bg-white">
+                  <summary class="cursor-pointer select-none px-2 py-1 text-[11px] font-semibold text-gray-500">Plan</summary>
+                  <div class="px-2 pb-2 space-y-1">
+                    <div
+                      v-for="step in currentPlan"
+                      :key="step.id"
+                      class="flex items-center gap-2 text-[11px]"
+                    >
+                      <span v-if="step.status === 'completed'" class="inline-flex h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                      <span v-else-if="step.status === 'in_progress'" class="inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                      <span v-else-if="step.status === 'blocked'" class="inline-flex h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                      <span v-else class="inline-flex h-1.5 w-1.5 rounded-full bg-gray-300"></span>
+                      <span :class="step.status === 'completed' ? 'text-gray-600' : 'text-gray-800'">
+                        {{ step.title }}
+                      </span>
+                    </div>
+                  </div>
+                </details>
+
+                <div v-if="currentChecks.length > 0" class="rounded-md border border-gray-200 bg-white">
+                  <div class="px-2 py-1 text-[11px] font-semibold text-gray-500">Checks</div>
+                  <div class="px-2 pb-2 space-y-1">
+                    <div
+                      v-for="(check, idx) in currentChecks"
+                      :key="idx"
+                      class="flex items-start gap-2 text-[11px] text-gray-700"
+                    >
+                      <span class="inline-flex h-1.5 w-1.5 rounded-full bg-green-500 mt-1"></span>
+                      <span>{{ check }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <details
+                  v-if="currentToolCalls.length || currentToolResults.length"
+                  class="rounded-md border border-gray-200 bg-white"
+                >
+                  <summary class="cursor-pointer select-none px-2 py-1 text-[11px] font-semibold text-gray-500">Tool Details</summary>
+                  <div class="px-2 pb-2 space-y-2">
+                    <div v-if="currentToolCalls.length">
+                      <div class="font-semibold text-[10px] uppercase text-gray-400 mb-1">Tool Calls</div>
+                      <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(currentToolCalls, null, 2) }}</pre>
+                    </div>
+                    <div v-if="currentToolResults.length">
+                      <div class="font-semibold text-[10px] uppercase text-gray-400 mb-1">Tool Results</div>
+                      <pre class="text-[11px] bg-gray-900 text-gray-100 rounded p-2 overflow-x-auto">{{ JSON.stringify(currentToolResults, null, 2) }}</pre>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
-          </details>
-          
-          <!-- Typing dots -->
-          <div class="flex gap-3">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-              <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-            </div>
-            <div class="bg-gray-100 rounded-2xl rounded-tl-md px-4 py-3">
-              <div class="flex gap-1">
-                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
-                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
-                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+
+            <!-- Typing dots -->
+            <div class="flex gap-3">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="bg-gray-100 rounded-2xl rounded-tl-md px-4 py-3">
+                <div class="flex gap-1">
+                  <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                  <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                  <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <Transition name="fade-slide-up">
+          <div
+            v-if="!autoScrollEnabled && messages.length > 0"
+            class="pointer-events-none absolute bottom-3 left-0 right-0 z-10 flex justify-center"
+          >
+            <div class="pointer-events-auto flex items-center gap-2">
+              <div
+                class="rounded-full border border-gray-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 shadow-sm backdrop-blur"
+              >
+                Auto-scroll paused
+              </div>
+              <button
+                v-if="showJumpToLatest"
+                class="px-3 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-semibold text-gray-600 shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                @click="jumpToLatest"
+              >
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                <span>Jump to latest</span>
+                <span
+                  v-if="unreadCount > 0"
+                  class="inline-flex items-center justify-center rounded-full bg-primary-500 text-white text-[10px] px-1.5 min-w-[18px]"
+                >
+                  {{ unreadCount > 99 ? '99+' : unreadCount }}
+                </span>
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
-      
+
       <!-- Input Area -->
       <div class="px-4 py-3 border-t border-gray-200">
         <TipTapChatEditor
@@ -451,6 +639,36 @@ onUnmounted(() => {
 .slide-left-enter-from,
 .slide-left-leave-to {
   transform: translateX(100%);
+}
+
+/* Jump button fade-slide animation */
+.fade-slide-up-enter-active {
+  transition: all 0.2s ease-out;
+}
+
+.fade-slide-up-leave-active {
+  transition: all 0.15s ease-in;
+}
+
+.fade-slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* Simple fade transition for indicator */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* Resize handle hover effect */
@@ -536,6 +754,29 @@ onUnmounted(() => {
   margin: 0.5rem 0;
 }
 
+details summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary::after {
+  content: '+';
+  margin-left: auto;
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+details[open] summary::after {
+  content: '-';
+  color: #6b7280;
+}
+
 /* History dropdown scrollbar */
 .history-scroll::-webkit-scrollbar {
   width: 4px;
@@ -554,4 +795,5 @@ onUnmounted(() => {
   background: #9ca3af;
 }
 </style>
+
 
