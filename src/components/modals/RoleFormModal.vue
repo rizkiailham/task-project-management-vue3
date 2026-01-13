@@ -159,7 +159,7 @@ async function handleSubmit() {
   <BaseModal
     v-model:visible="dialogVisible"
     :title="modalTitle"
-    width="500px"
+    width="700px"
     :closable="!isSubmitting"
     :closeOnEscape="!isSubmitting"
     :loading="isSubmitting"
@@ -183,7 +183,7 @@ async function handleSubmit() {
           <span class="text-sm font-medium text-gray-900">Details</span>
         </button>
         
-        <div v-show="detailsExpanded" class="pl-6 pb-4 space-y-4">
+        <div v-show="detailsExpanded" class="pb-4 space-y-4">
           <div>
             <FormInput
               id="role-name"
@@ -223,14 +223,14 @@ async function handleSubmit() {
           <span class="text-sm font-medium text-gray-900">Access permission</span>
         </button>
         
-        <div v-show="permissionsExpanded" class="pl-6 pb-4">
+        <div v-show="permissionsExpanded" class="pb-4 text-[13px]">
           <!-- Permissions Table - No container -->
           <!-- Header -->
-          <div class="grid grid-cols-4 border-b border-gray-200 pb-2 mb-1">
-            <div class="text-sm text-gray-400">Section</div>
-            <div class="text-sm text-gray-400 text-center">Read</div>
-            <div class="text-sm text-gray-400 text-center">Write</div>
-            <div class="text-sm text-gray-400 text-center">Delete</div>
+          <div class="grid grid-cols-4 border-b border-gray-200 pb-2 mb-1" style="font-size: 13px;">
+            <div class="text-xs text-gray-400">Section</div>
+            <div class="text-xs text-gray-400 text-center">Read</div>
+            <div class="text-xs text-gray-400 text-center">Write</div>
+            <div class="text-xs text-gray-400 text-center">Delete</div>
           </div>
 
           <!-- Permission Rows -->
@@ -239,7 +239,7 @@ async function handleSubmit() {
             :key="permission.name"
             class="grid grid-cols-4 items-center py-2.5"
           >
-            <div class="text-sm text-gray-700">{{ permission.name }}</div>
+            <div class="text-xs text-gray-700">{{ permission.name }}</div>
             <div class="flex justify-center">
               <Checkbox
                 v-model="formData.permissions[index].read"
