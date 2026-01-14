@@ -13,10 +13,12 @@ import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { Pencil, ChevronDown } from 'lucide-vue-next'
+import { upload } from '@/api'
 
 // PrimeVue
 import Checkbox from 'primevue/checkbox'
 import FormInput from '@/components/ui/FormInput.vue'
+import MultiSelect from 'primevue/multiselect'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -52,6 +54,9 @@ const isLoading = ref(false)
 
 // Avatar color (randomly generated for new users)
 const avatarColor = ref('#3b82f6')
+const avatarUrl = ref('')
+const isUploadingAvatar = ref(false)
+const avatarInputRef = ref(null)
 
 // Form validation
 const validationSchema = computed(() => {
@@ -62,24 +67,26 @@ const validationSchema = computed(() => {
     phone: yup.string(),
     language: yup.string(),
     organization: yup.string(),
-    projectId: yup.string().nullable(),
-    groupId: yup.string().nullable(),
+    projectIds: yup.array(),
+    groupIds: yup.array(),
     isActive: yup.boolean(),
     unit: yup.number().nullable(),
     department: yup.string()
   }
 
-  // Only require password for new users
-  if (!isEditMode.value) {
-    baseSchema.password = yup.string().required('Password is required').min(8, 'Password must be at least 8 characters')
-    baseSchema.confirmPassword = yup.string()
-      .required('Confirm password is required')
-      .oneOf([yup.ref('password')], 'Passwords must match')
-  } else {
-    baseSchema.password = yup.string().min(8, 'Password must be at least 8 characters')
-    baseSchema.confirmPassword = yup.string()
-      .oneOf([yup.ref('password')], 'Passwords must match')
-  }
+  baseSchema.password = yup
+    .string()
+    .transform((value) => (value === '' ? undefined : value))
+    .min(8, 'Password must be at least 8 characters')
+    .notRequired()
+  baseSchema.confirmPassword = yup.string().when('password', {
+    is: (value) => !!value,
+    then: (schema) =>
+      schema
+        .required('Confirm password is required')
+        .oneOf([yup.ref('password')], 'Passwords must match'),
+    otherwise: (schema) => schema.notRequired()
+  })
 
   return yup.object(baseSchema)
 })
@@ -95,24 +102,34 @@ const { handleSubmit, resetForm, setValues } = useForm({
     organization: '',
     password: '',
     confirmPassword: '',
-    projectId: null,
-    groupId: null,
+    projectIds: [],
+    groupIds: [],
     isActive: true,
     unit: null,
     department: ''
   }
 })
 
-const { value: firstName, errorMessage: firstNameError } = useField('firstName')
-const { value: lastName, errorMessage: lastNameError } = useField('lastName')
-const { value: email, errorMessage: emailError } = useField('email')
+const { value: firstName, errorMessage: firstNameError } = useField('firstName', undefined, {
+  validateOnValueUpdate: false
+})
+const { value: lastName, errorMessage: lastNameError } = useField('lastName', undefined, {
+  validateOnValueUpdate: false
+})
+const { value: email, errorMessage: emailError } = useField('email', undefined, {
+  validateOnValueUpdate: false
+})
 const { value: phone } = useField('phone')
 const { value: language } = useField('language')
 const { value: organization } = useField('organization')
-const { value: password, errorMessage: passwordError } = useField('password')
-const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword')
-const { value: projectId } = useField('projectId')
-const { value: groupId } = useField('groupId')
+const { value: password, errorMessage: passwordError } = useField('password', undefined, {
+  validateOnValueUpdate: false
+})
+const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword', undefined, {
+  validateOnValueUpdate: false
+})
+const { value: projectIds } = useField('projectIds')
+const { value: groupIds } = useField('groupIds')
 const { value: isActive } = useField('isActive')
 const { value: unit } = useField('unit')
 const { value: department } = useField('department')
@@ -140,12 +157,10 @@ const lastLoginText = computed(() => {
 // Watch for modal opening and populate form
 watch(() => props.visible, async (isVisible) => {
   if (isVisible) {
-    // Fetch dropdown options
-    await userStore.initializeOptions()
-    
     if (props.user) {
       // Edit mode - populate form with user data
-      setValues({
+      resetForm({
+        values: {
         firstName: props.user.firstName || '',
         lastName: props.user.lastName || '',
         email: props.user.email || '',
@@ -154,17 +169,20 @@ watch(() => props.visible, async (isVisible) => {
         organization: props.user.organization || '',
         password: '',
         confirmPassword: '',
-        projectId: props.user.projects?.[0]?.id || props.user.projects?.[0] || null,
-        groupId: props.user.groups?.[0]?.id || props.user.groups?.[0] || null,
+        projectIds: normalizeSelectionArray(props.user.projects),
+        groupIds: normalizeSelectionArray(props.user.groups),
         isActive: props.user.isActive ?? true,
         unit: props.user.customValues?.unit || null,
         department: props.user.customValues?.department || ''
+        }
       })
       avatarColor.value = props.user.avatarColor || '#3b82f6'
+      avatarUrl.value = props.user.avatar || props.user.avatarUrl || props.user.avatar_url || ''
     } else {
       // Add mode - reset form
       resetForm()
       avatarColor.value = getRandomColor()
+      avatarUrl.value = ''
     }
   }
 })
@@ -177,9 +195,49 @@ function getRandomColor() {
   return colors[Math.floor(Math.random() * colors.length)]
 }
 
+const avatarPreview = computed(() => avatarUrl.value)
+
+function triggerAvatarSelect() {
+  if (isUploadingAvatar.value) return
+  if (avatarInputRef.value) {
+    avatarInputRef.value.value = ''
+    avatarInputRef.value.click()
+  }
+}
+
+async function handleAvatarChange(event) {
+  const file = event.target?.files?.[0]
+  if (!file) return
+
+  isUploadingAvatar.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await upload('/upload', formData)
+    const url =
+      (typeof response === 'string' && response) ||
+      response?.url ||
+      response?.data?.url ||
+      response?.path ||
+      response?.data?.path
+
+    if (!url) {
+      throw new Error('Upload failed')
+    }
+
+    avatarUrl.value = url
+  } catch (error) {
+    uiStore.showError('Failed to upload avatar')
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
+
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
+    const resolvedProjectIds = resolveSelectionIds(values.projectIds, userStore.availableProjects)
+    const resolvedGroupIds = resolveSelectionIds(values.groupIds, userStore.availableGroups)
     const userData = {
       firstName: values.firstName,
       lastName: values.lastName,
@@ -187,8 +245,8 @@ const onSubmit = handleSubmit(async (values) => {
       phone: values.phone,
       language: values.language,
       organization: values.organization,
-      projectIds: values.projectId ? [values.projectId] : [],
-      groupIds: values.groupId ? [values.groupId] : [],
+      projectIds: resolvedProjectIds,
+      groupIds: resolvedGroupIds,
       isActive: values.isActive,
       customValues: {
         ...(values.unit !== null && { unit: values.unit }),
@@ -199,6 +257,9 @@ const onSubmit = handleSubmit(async (values) => {
     // Only send password if provided
     if (values.password) {
       userData.password = values.password
+    }
+    if (avatarUrl.value) {
+      userData.avatar = avatarUrl.value
     }
 
     if (isEditMode.value) {
@@ -225,6 +286,33 @@ function closeModal() {
   dialogVisible.value = false
 }
 
+function resolveSelectionIds(values, options) {
+  if (!Array.isArray(values) || values.length === 0) return []
+  return values
+    .map((value) => resolveSelectionId(value, options))
+    .filter(Boolean)
+}
+
+function resolveSelectionId(value, options) {
+  if (!value) return null
+  if (typeof value === 'object' && value.id) return value.id
+  if (typeof value === 'string' || typeof value === 'number') {
+    const matched = (options || []).find(option =>
+      option?.id === value || option?.value === value || option?.name === value
+    )
+    return matched?.id || matched?.value || value
+  }
+  return null
+}
+
+function normalizeSelectionArray(values) {
+  if (!values) return []
+  const list = Array.isArray(values) ? values : [values]
+  return list
+    .map((item) => item?.id || item?.value || item)
+    .filter(Boolean)
+}
+
 // Get initials for avatar
 const avatarInitial = computed(() => {
   if (firstName.value) {
@@ -238,7 +326,7 @@ const avatarInitial = computed(() => {
   <BaseModal
     v-model:visible="dialogVisible"
     :title="modalTitle"
-    width="500px"
+    width="800px"
     :closable="!isLoading"
     :closeOnEscape="!isLoading"
     :loading="isLoading"
@@ -255,17 +343,32 @@ const avatarInitial = computed(() => {
       <div class="pt-4 pb-5">
         <div class="relative inline-flex">
           <div
-            class="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-semibold text-white"
+            class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full text-2xl font-semibold text-white"
             :style="{ backgroundColor: avatarColor }"
           >
-            {{ avatarInitial }}
+            <img
+              v-if="avatarPreview"
+              :src="avatarPreview"
+              alt="User avatar"
+              class="h-full w-full object-cover"
+            />
+            <span v-else>{{ avatarInitial }}</span>
           </div>
           <button
             type="button"
-            class="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors hover:bg-gray-50"
+            class="cursor-pointer absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isUploadingAvatar"
+            @click="triggerAvatarSelect"
           >
             <Pencil class="h-3 w-3 text-gray-500" />
           </button>
+          <input
+            ref="avatarInputRef"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="handleAvatarChange"
+          />
         </div>
       </div>
 
@@ -283,7 +386,7 @@ const avatarInitial = computed(() => {
           <span>User information</span>
         </button>
 
-        <div v-show="userInfoExpanded" class="space-y-4 pl-6 pt-2">
+        <div v-show="userInfoExpanded" class="space-y-4 pt-2">
           <!-- Name Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
@@ -391,7 +494,7 @@ const avatarInitial = computed(() => {
                 toggleMask
               >
                 <template #label>
-                  Password<span v-if="!isEditMode" class="text-red-500"> *</span>
+                  Password
                 </template>
               </FormInput>
               <small v-if="passwordError" class="mt-1 text-xs text-red-500">
@@ -411,7 +514,7 @@ const avatarInitial = computed(() => {
                 toggleMask
               >
                 <template #label>
-                  Confirm Password<span v-if="!isEditMode" class="text-red-500"> *</span>
+                  Confirm Password
                 </template>
               </FormInput>
               <small
@@ -439,37 +542,35 @@ const avatarInitial = computed(() => {
           <span>Project & Access</span>
         </button>
 
-        <div v-show="projectAccessExpanded" class="space-y-4 pl-6 pt-2">
+        <div v-show="projectAccessExpanded" class="space-y-4 pt-2">
           <!-- Project & Group Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
-              <FormInput
-                id="user-project"
-                v-model="projectId"
-                as="select"
-                label="Project"
-                labelClass="mb-1.5 text-xs text-gray-500"
+              <label class="mb-1.5 text-xs text-gray-500">Project(s)</label>
+              <MultiSelect
+                v-model="projectIds"
                 :options="projectOptions"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Select proje..."
-                showClear
+                placeholder="Select project(s)"
+                filter
+                filterPlaceholder="Search..."
                 class="w-full"
+                :maxSelectedLabels="3"
               />
             </div>
             <div class="flex flex-col">
-              <FormInput
-                id="user-group"
-                v-model="groupId"
-                as="select"
-                label="Group"
-                labelClass="mb-1.5 text-xs text-gray-500"
+              <label class="mb-1.5 text-xs text-gray-500">Group(s)</label>
+              <MultiSelect
+                v-model="groupIds"
                 :options="groupOptions"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Select grou..."
-                showClear
+                placeholder="Select group(s)"
+                filter
+                filterPlaceholder="Search..."
                 class="w-full"
+                :maxSelectedLabels="3"
               />
             </div>
           </div>
@@ -501,7 +602,7 @@ const avatarInitial = computed(() => {
           <span>Custom field(s)</span>
         </button>
 
-        <div v-show="customFieldsExpanded" class="space-y-4 pl-6 pt-2">
+        <div v-show="customFieldsExpanded" class="space-y-4 pt-2">
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col">
               <FormInput
@@ -582,5 +683,13 @@ const avatarInitial = computed(() => {
   height: 18px;
   border-radius: 4px;
   border: 1px solid #d1d5db;
+}
+
+.user-form :deep(.p-multiselect) {
+  width: 100%;
+}
+
+.user-form :deep(.p-multiselect-label) {
+  padding: 10px 12px;
 }
 </style>

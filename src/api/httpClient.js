@@ -6,6 +6,7 @@
  */
 
 import axios from 'axios'
+import { useUIStore } from '@/stores/ui.store'
 
 // API Base URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
@@ -20,11 +21,35 @@ const httpClient = axios.create({
   }
 })
 
+let activeRequestCount = 0
+
+function startGlobalLoader() {
+  activeRequestCount += 1
+  try {
+    const uiStore = useUIStore()
+    uiStore.setGlobalLoading(true)
+  } catch (error) {
+    // Ignore loader errors outside of app context
+  }
+}
+
+function stopGlobalLoader() {
+  activeRequestCount = Math.max(0, activeRequestCount - 1)
+  if (activeRequestCount > 0) return
+  try {
+    const uiStore = useUIStore()
+    uiStore.setGlobalLoading(false)
+  } catch (error) {
+    // Ignore loader errors outside of app context
+  }
+}
+
 // ================================
 // Request Interceptor
 // ================================
 httpClient.interceptors.request.use(
   (config) => {
+    startGlobalLoader()
     // Get access token from localStorage
     const token = localStorage.getItem('accessToken')
     
@@ -41,6 +66,7 @@ httpClient.interceptors.request.use(
     return config
   },
   (error) => {
+    stopGlobalLoader()
     return Promise.reject(error)
   }
 )
@@ -50,17 +76,25 @@ httpClient.interceptors.request.use(
 // ================================
 httpClient.interceptors.response.use(
   (response) => {
+    stopGlobalLoader()
     // Return data directly for convenience
     return response.data
   },
   async (error) => {
     const originalRequest = error.config
+    let loaderStopped = false
+    const finalizeLoader = () => {
+      if (loaderStopped) return
+      stopGlobalLoader()
+      loaderStopped = true
+    }
 
     // Handle 401 Unauthorized - Token expired
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
       try {
+        finalizeLoader()
         // Attempt to refresh token
         const refreshToken = localStorage.getItem('refreshToken')
         
@@ -80,6 +114,7 @@ httpClient.interceptors.response.use(
           window.dispatchEvent(new CustomEvent('auth:logout'))
         }
       } catch (refreshError) {
+        finalizeLoader()
         // Refresh failed - clear tokens and redirect to login
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
@@ -105,6 +140,7 @@ httpClient.interceptors.response.use(
       console.error('[HTTP Error]', errorResponse)
     }
 
+    finalizeLoader()
     return Promise.reject(errorResponse)
   }
 )

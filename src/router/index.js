@@ -108,7 +108,7 @@ const routes = [
       {
         path: 'my-tasks',
         name: 'MyTasks',
-        component: () => import('@/modules/task/views/MyTasksView.vue'),
+        // component: () => import('@/modules/task/views/MyTasksView.vue'),
         meta: {
           title: 'My Tasks'
         }

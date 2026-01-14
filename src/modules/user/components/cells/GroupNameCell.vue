@@ -3,10 +3,6 @@ const props = defineProps({
   params: Object
 })
 
-function getInitial() {
-  return props.params.data?.firstName?.charAt(0)?.toUpperCase() || 'U'
-}
-
 function onEdit() {
   props.params.onEdit?.(props.params.data)
 }
@@ -18,15 +14,10 @@ function onDelete() {
 
 <template>
   <div class="flex items-center gap-3 py-1 group w-full h-full">
-    <div 
-      class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
-      :style="{ backgroundColor: params.data?.avatarColor || '#3B82F6' }"
-    >
-      {{ getInitial() }}
-    </div>
     <div class="flex-1 min-w-0">
-      <div class="font-medium text-gray-900 text-sm">{{ params.data?.fullName }}</div>
-      <div class="text-xs text-gray-500">{{ params.data?.email }}</div>
+      <div class="font-medium text-gray-900 text-sm truncate">
+        {{ params.data?.name || '-' }}
+      </div>
     </div>
     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
       <button

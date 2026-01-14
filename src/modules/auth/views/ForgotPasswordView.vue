@@ -9,6 +9,7 @@ import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
+import desidiaLogo from '@/assets/desidia.svg'
 
 // PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
@@ -66,9 +67,7 @@ const onSubmit = handleSubmit(async (values) => {
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-logo">
-        <svg viewBox="0 0 24 24" class="auth-logo-icon" fill="currentColor">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
+        <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
       <h1 class="auth-title">Reset Desidia password</h1>
 
@@ -158,12 +157,11 @@ const onSubmit = handleSubmit(async (values) => {
   place-items: center;
   border-radius: 16px;
   color: #2563eb;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.05));
+  
 }
 
 .auth-logo-icon {
-  width: 28px;
-  height: 28px;
+  width: 5rem;
 }
 
 .auth-title {

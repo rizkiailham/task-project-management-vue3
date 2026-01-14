@@ -16,6 +16,7 @@ import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
+import desidiaLogo from '@/assets/desidia.svg'
 
 // PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
@@ -94,9 +95,7 @@ function handleSocialLogin(provider) {
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-logo">
-        <svg viewBox="0 0 24 24" class="auth-logo-icon" fill="currentColor">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
+        <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
       <h1 class="auth-title">Login to Desidia</h1>
 
@@ -219,19 +218,15 @@ function handleSocialLogin(provider) {
 }
 
 .auth-logo {
-  width: 56px;
-  height: 56px;
   margin: 0 auto 1.25rem;
   display: grid;
   place-items: center;
   border-radius: 16px;
   color: #2563eb;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.05));
 }
 
 .auth-logo-icon {
-  width: 28px;
-  height: 28px;
+  width: 8rem;
 }
 
 .auth-title {
@@ -318,7 +313,8 @@ function handleSocialLogin(provider) {
   padding: 0.7rem 1rem;
   font-weight: 600;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  border: none;
+  border: 1px solid transparent;
+  box-sizing: border-box;
   color: #ffffff;
 }
 

@@ -25,7 +25,7 @@ function onDelete() {
     </button>
     <button
       @click.stop="onDelete"
-      class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded border border-gray-200 bg-white"
+      class="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200 bg-white"
     >
       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="3 6 5 6 21 6"></polyline>

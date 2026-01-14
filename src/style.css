@@ -99,6 +99,32 @@ body {
   color: var(--color-gray-900);
 }
 
+input,
+select,
+textarea,
+.p-inputtext,
+.p-textarea,
+.p-password input,
+.p-inputnumber input,
+.p-select,
+.p-select-label,
+.p-select-option,
+.p-multiselect,
+.p-multiselect-label,
+.p-multiselect-item,
+.p-dropdown,
+.p-dropdown-label,
+.p-dropdown-item,
+.p-calendar input,
+.p-datepicker input,
+.p-autocomplete input,
+.p-chips input,
+.p-listbox,
+.p-radiobutton-label,
+.p-checkbox-label {
+  font-size: 13px!important;
+}
+
 #app {
   min-height: 100vh;
 }
@@ -374,7 +400,7 @@ body {
 
 .p-dialog .p-dialog-header {
   padding: .4em .8em!important;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: none;
 }
 
 .p-dialog .p-dialog-content {
@@ -382,9 +408,9 @@ body {
 }
 
 .p-dialog .p-dialog-footer {
-  padding: 1rem 1.5rem !important;
+  padding: .8rem 1.5rem !important;
   border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  background: white;
 }
 
 /* ================================

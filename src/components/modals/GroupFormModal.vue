@@ -85,6 +85,7 @@ watch(
 )
 
 watch(searchQuery, (query) => {
+  if (!isEditing.value) return
   if (searchTimeout) clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
     fetchUsers(query)
@@ -93,7 +94,11 @@ watch(searchQuery, (query) => {
 
 async function initializeModal() {
   resetForm()
-  await Promise.all([loadGroupDetails(), fetchUsers('')])
+  if (isEditing.value) {
+    await Promise.all([loadGroupDetails(), fetchUsers('')])
+  } else {
+    await loadGroupDetails()
+  }
 }
 
 async function loadGroupDetails() {
@@ -162,7 +167,7 @@ function resetForm() {
     description: props.group?.description || ''
   }
   detailsExpanded.value = true
-  usersExpanded.value = true
+  usersExpanded.value = isEditing.value
   groupUsers.value = []
   pendingUserIds.value = []
   searchQuery.value = ''
@@ -337,12 +342,12 @@ async function handleSubmit() {
     <div
       :class="[
         'relative -my-5 -mx-6 px-4 py-5 space-y-0',
-        searchQuery ? 'overflow-hidden' : 'overflow-y-auto'
+        isEditing ? (searchQuery ? 'overflow-hidden' : 'overflow-y-auto') : 'overflow-visible'
       ]"
-      style="height: 60vh;"
+      :style="{ height: isEditing ? '60vh' : 'auto' }"
     >
       <!-- Details Section -->
-      <div class="border-b border-gray-100">
+      <div :class="['border-gray-100', isEditing ? 'border-b' : 'border-b-0']">
         <button
           type="button"
           @click="detailsExpanded = !detailsExpanded"
@@ -355,7 +360,7 @@ async function handleSubmit() {
           <span class="text-sm font-medium text-gray-900">Details</span>
         </button>
 
-        <div v-show="detailsExpanded" class="pl-6 pb-4 space-y-4">
+        <div v-show="detailsExpanded" class="pb-4 space-y-4">
           <div>
             <FormInput
               id="group-name"
@@ -382,7 +387,7 @@ async function handleSubmit() {
       </div>
 
       <!-- User List Section -->
-      <div class="-mx-4">
+      <div v-if="isEditing" class="-mx-4">
         <button
           type="button"
           @click="usersExpanded = !usersExpanded"
@@ -463,7 +468,7 @@ async function handleSubmit() {
       
 
       <!-- Search Results-->
-      <div v-show="searchQuery" class="absolute inset-0 z-20 w-full">
+      <div v-if="isEditing" v-show="searchQuery" class="absolute inset-0 z-20 w-full">
         <div class="absolute inset-0 bg-slate-900/35 w-full"></div>
         <div class="absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 w-full">
           <div class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -535,7 +540,7 @@ async function handleSubmit() {
 
     <template #footer>
       <div class="flex w-[calc(100%+3rem)] items-center justify-between gap-3 -mx-6 px-6">
-        <div class="relative flex-1">
+        <div v-if="isEditing" class="relative flex-1">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <FormInput
             id="group-search"

@@ -8,6 +8,7 @@ import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
+import desidiaLogo from '@/assets/desidia.svg'
 
 import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
@@ -32,10 +33,11 @@ const { value: email, errorMessage: emailError } = useField('email')
 const { value: token, errorMessage: tokenError } = useField('token')
 
 const isSubmitting = ref(false)
+const didAutoVerify = ref(false)
 
 const redirectPath = computed(() => route.query.redirect || '/app')
 
-onMounted(() => {
+onMounted(async () => {
   const presetEmail = route.query.email
   const presetToken = route.query.token
   if (typeof presetEmail === 'string') {
@@ -44,9 +46,14 @@ onMounted(() => {
   if (typeof presetToken === 'string') {
     setFieldValue('token', presetToken)
   }
+
+  if (typeof presetEmail === 'string' && typeof presetToken === 'string') {
+    didAutoVerify.value = true
+    await runVerify({ email: presetEmail, token: presetToken })
+  }
 })
 
-const onSubmit = handleSubmit(async (values) => {
+async function runVerify(values) {
   isSubmitting.value = true
   try {
     await authStore.verifyLoginLink({
@@ -70,6 +77,10 @@ const onSubmit = handleSubmit(async (values) => {
   } finally {
     isSubmitting.value = false
   }
+}
+
+const onSubmit = handleSubmit(async (values) => {
+  await runVerify(values)
 })
 </script>
 
@@ -77,9 +88,7 @@ const onSubmit = handleSubmit(async (values) => {
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-logo">
-        <svg viewBox="0 0 24 24" class="auth-logo-icon" fill="currentColor">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
+        <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
       <h1 class="auth-title">Verify login link</h1>
 
@@ -94,6 +103,7 @@ const onSubmit = handleSubmit(async (values) => {
             class="auth-input"
             :class="{ 'p-invalid': emailError }"
             autocomplete="email"
+            :disabled="didAutoVerify && isSubmitting"
           >
             <template #label>
               Email <span class="text-red-500">*</span>
@@ -111,6 +121,7 @@ const onSubmit = handleSubmit(async (values) => {
             class="auth-input"
             :class="{ 'p-invalid': tokenError }"
             autocomplete="one-time-code"
+            :disabled="didAutoVerify && isSubmitting"
           >
             <template #label>
               Token <span class="text-red-500">*</span>
@@ -171,12 +182,11 @@ const onSubmit = handleSubmit(async (values) => {
   place-items: center;
   border-radius: 16px;
   color: #2563eb;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.05));
+  
 }
 
 .auth-logo-icon {
-  width: 28px;
-  height: 28px;
+  width: 5rem;
 }
 
 .auth-title {

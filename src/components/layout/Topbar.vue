@@ -152,15 +152,6 @@ function setView(view) {
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-
-      <!-- Home Icon with Page Title -->
-      <div class="flex items-center gap-2 text-gray-600">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-        <span class="text-sm font-medium">{{ pageTitle }}</span>
-      </div>
     </div>
 
     <!-- Center Section - Search -->

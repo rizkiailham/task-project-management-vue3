@@ -3,7 +3,6 @@
  * GlobalLoader - Full-screen loading overlay
  */
 import { useUIStore } from '@/stores'
-import ProgressSpinner from 'primevue/progressspinner'
 
 const uiStore = useUIStore()
 </script>
@@ -13,13 +12,9 @@ const uiStore = useUIStore()
     <Transition name="fade">
       <div 
         v-if="uiStore.globalLoading"
-        class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm dark-edit:bg-gray-900/80"
+        class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/30 dark-edit:bg-gray-900/80"
       >
-        <ProgressSpinner 
-          style="width: 50px; height: 50px" 
-          strokeWidth="4"
-          animationDuration=".8s"
-        />
+        <div class="loader-spinner" aria-label="Loading" role="status"></div>
         <p 
           v-if="uiStore.loadingMessage"
           class="mt-4 text-sm text-gray-600 dark-edit:text-gray-400"
@@ -41,5 +36,19 @@ const uiStore = useUIStore()
 .fade-leave-to {
   opacity: 0;
 }
-</style>
 
+.loader-spinner {
+  width: 50px;
+  height: 50px;
+  border-radius: 9999px;
+  border: 4px solid rgba(37, 99, 235, 0.15);
+  border-top-color: var(--color-primary-600);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

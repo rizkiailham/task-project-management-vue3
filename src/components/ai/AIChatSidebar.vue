@@ -14,8 +14,10 @@ import { useI18n } from 'vue-i18n'
 import { useConfirm } from 'primevue/useconfirm'
 import { useAIChatStore } from '@/stores'
 import TipTapChatEditor from './TipTapChatEditor.vue'
+import Button from 'primevue/button'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import { Circle, ChevronDown, ChevronRight, Plus, Settings, Sparkles, Trash2, X } from 'lucide-vue-next'
 
 const props = defineProps({
   topOffset: {
@@ -317,16 +319,14 @@ watch(
       <!-- Header -->
       <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
         <div class="flex items-center gap-3">
-          <button
+          <Button
             @click="newChat"
             class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            unstyled
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
+            <Plus class="w-4 h-4" />
             <span>{{ t('aiChat.newChat') }}</span>
-          </button>
+          </Button>
           <!-- Connection Status -->
           <div class="flex items-center gap-1.5">
             <span 
@@ -345,47 +345,39 @@ watch(
         </div>
         
         <div class="flex items-center gap-2">
-          <button
+          <Button
             @click="clearCurrentChat"
             :disabled="!canClearChat"
             class="p-1.5 rounded transition-colors"
             :class="canClearChat ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'"
             :title="t('aiChat.clearChat')"
             aria-label="Clear chat"
+            unstyled
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M8 6v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"></path>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </button>
-          <button
+            <Trash2 class="w-4 h-4" />
+          </Button>
+          <Button
             @click="close"
             class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            unstyled
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+            <X class="w-4 h-4" />
+          </Button>
         </div>
       </div>
       
       <!-- Breadcrumbs -->
       <div class="flex items-center gap-1 px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-        </svg>
+        <Circle class="w-4 h-4" />
         <template v-for="(crumb, index) in breadcrumbs" :key="crumb.id">
           <span v-if="index > 0" class="text-gray-300">&gt;</span>
-          <button
+          <Button
             class="hover:text-gray-700 transition-colors"
             :class="{ 'text-primary-600': crumb.type === 'task' }"
+            unstyled
           >
             {{ crumb.label }}
-          </button>
+          </Button>
         </template>
       </div>
       
@@ -399,9 +391,7 @@ watch(
           <!-- Empty State -->
           <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
             <div class="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-primary-100 to-purple-100 flex items-center justify-center">
-              <svg class="w-10 h-10 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
+              <Sparkles class="w-10 h-10 text-primary-500" />
             </div>
             <p class="text-sm">{{ t('aiChat.mentionHint') }}</p>
           </div>
@@ -437,9 +427,7 @@ watch(
             <!-- AI Message -->
             <div v-else class="flex gap-3">
               <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
+                <Sparkles class="w-4 h-4 text-white" />
               </div>
               <div class="max-w-[80%] bg-white text-gray-800 rounded-2xl rounded-tl-md px-4 py-3 border border-gray-200 shadow-sm">
                 <div v-if="hasThinking(message)" class="mb-2 rounded-lg border border-gray-200 bg-gray-50/70">
@@ -562,9 +550,7 @@ watch(
             <!-- Typing dots -->
             <div class="flex gap-3">
               <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
+                <Sparkles class="w-4 h-4 text-white" />
               </div>
               <div class="bg-gray-100 rounded-2xl rounded-tl-md px-4 py-3">
                 <div class="flex gap-1">
@@ -588,14 +574,13 @@ watch(
               >
                 Auto-scroll paused
               </div>
-              <button
+              <Button
                 v-if="showJumpToLatest"
                 class="px-3 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-semibold text-gray-600 shadow-sm hover:shadow-md transition-all flex items-center gap-2"
                 @click="jumpToLatest"
+                unstyled
               >
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
+                <ChevronDown class="w-3 h-3" />
                 <span>Jump to latest</span>
                 <span
                   v-if="unreadCount > 0"
@@ -603,7 +588,7 @@ watch(
                 >
                   {{ unreadCount > 99 ? '99+' : unreadCount }}
                 </span>
-              </button>
+              </Button>
             </div>
           </div>
         </Transition>
@@ -622,21 +607,19 @@ watch(
       <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
         <div class="flex items-center justify-between mb-3">
           <span class="text-sm font-medium text-gray-700">{{ t('aiChat.skills') }}</span>
-          <button class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
-            </svg>
-          </button>
+          <Button class="p-1 text-gray-400 hover:text-gray-600 transition-colors" unstyled>
+            <Settings class="w-4 h-4" />
+          </Button>
         </div>
         
         <!-- Featured Skills -->
         <div class="space-y-2">
-          <button
+          <Button
             v-for="skill in featuredSkills"
             :key="skill.id"
             @click="executeSkill(skill)"
             class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-white transition-colors group"
+            unstyled
           >
             <div class="flex items-center gap-3">
               <span class="text-lg">{{ skill.icon }}</span>
@@ -645,10 +628,8 @@ watch(
                 <p class="text-xs text-gray-500 truncate max-w-[200px]">{{ skill.description }}</p>
               </div>
             </div>
-            <svg class="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
+            <ChevronRight class="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+          </Button>
         </div>
       </div>
     </div>
