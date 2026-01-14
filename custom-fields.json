@@ -1,0 +1,317 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Default module",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/custom-field-user-definitions": {
+      "post": {
+        "summary": "Create",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Beare {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "examples": {
+                "1": {
+                  "value": "{\n    \"label\": \"Department\",\n    \"type\": \"text\", // text, number, boolean, date, select, multiselect, user, checkbox\n    \"description\": \"This is department with type text\",\n    \"isShow\": true,\n    \"settings\": {\n        \"options\": [], // fill if type select or multiselect\n        \"currencySign\": \"NOK\", // fill if type number (NOK, IDR, USD)\n        \"numberFormat\": \"number\", //fill if type number (number, currency, percentage)\n        \"isAllowMultiple\": false, // fill if type users\n        \"isDisplayName\": false, // fill if type users\n        \"isDateRange\": false, // fill if type date\n    }\n}"
+                },
+                "2": {
+                  "value": "{\n    \"label\": \"Salary\",\n    \"type\": \"number\", // text, number, boolean, date, select, multiselect, user, checkbox\n    \"description\": \"This is Salary\",\n    \"isShow\": true,\n    \"settings\": {\n        // \"options\": [\"Baso\",\"Siomay\",\"Batagor\"], // fill if type checkbox, select, or multiselect\n        \"currencySign\": \"NOK\", // fill if type number (NOK, IDR, USD)\n        \"numberFormat\": \"currency\", //fill if type number (number, currency, percentage)\n        // \"isAllowMultiple\": false, // fill if type user\n        // \"isDisplayName\": false, // fill if type user\n        // \"isDateRange\": false // fill if type date\n    }\n}",
+                  "summary": "Example 2"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Custom field created successfully",
+                  "saved": {
+                    "id": "1a12d223-5ee4-49c8-9e5c-6edfec69779a",
+                    "key": "unit",
+                    "label": "Unit",
+                    "description": "This is department with type text",
+                    "type": "number",
+                    "isShow": true,
+                    "settings": {
+                      "numberFormat": "number"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "get": {
+        "summary": "Find All",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "1a12d223-5ee4-49c8-9e5c-6edfec69779a",
+                      "key": "unit",
+                      "label": "Unit",
+                      "description": "This is department with type text",
+                      "type": "number",
+                      "isShow": true,
+                      "settings": {
+                        "numberFormat": "number"
+                      },
+                      "createdAt": "2026-01-07T03:02:44.488Z",
+                      "updatedAt": "2026-01-07T03:02:44.488Z"
+                    }
+                  ],
+                  "meta": {
+                    "itemsPerPage": 10,
+                    "totalItems": 1,
+                    "currentPage": 1,
+                    "totalPages": 1,
+                    "sortBy": [
+                      [
+                        "label",
+                        "DESC"
+                      ]
+                    ]
+                  },
+                  "links": {
+                    "current": "http://localhost:3333/custom-field-user-definitions/custom-field-user-definitions?page=1&limit=10&sortBy=label:DESC"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/custom-field-user-definitions/{id}": {
+      "get": {
+        "summary": "Find One",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "Update",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "e1fff2bf-e74c-4e7f-81b1-f3d554092b10",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": true,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "settings": {
+                  "options": [
+                    "Baso",
+                    "Siomay",
+                    "Batagor",
+                    "Indomie"
+                  ]
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "examples": {
+                  "1": {
+                    "summary": "Success",
+                    "value": {
+                      "id": "8be10a25-4cb3-4314-a061-ec1b31e989d2",
+                      "key": "department",
+                      "label": "Department",
+                      "description": "This is department with type text",
+                      "type": "number",
+                      "isShow": true,
+                      "settings": {
+                        "numberFormat": "number"
+                      }
+                    }
+                  },
+                  "2": {
+                    "summary": "Success",
+                    "value": {
+                      "message": "Custom field updated successfully",
+                      "saved": {
+                        "id": "8be10a25-4cb3-4314-a061-ec1b31e989d2",
+                        "key": "department",
+                        "label": "Department",
+                        "description": "This is department with type text",
+                        "type": "number",
+                        "isShow": true,
+                        "settings": {
+                          "numberFormat": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "Delete",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Deleted successfully"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}
