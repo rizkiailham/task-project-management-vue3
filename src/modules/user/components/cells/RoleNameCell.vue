@@ -6,6 +6,11 @@ const props = defineProps({
 })
 
 const isAdmin = computed(() => props.params.data?.isAdmin)
+const displayName = computed(() => {
+  const name = props.params.value
+  if (name === 'super_admin') return 'Super Admin'
+  return name
+})
 
 function onEdit() {
   props.params.onEdit?.(props.params.data)
@@ -19,7 +24,7 @@ function onDelete() {
 <template>
   <div class="flex items-center gap-2 h-full w-full group">
     <div class="flex items-center gap-2 min-w-0">
-      <span class="font-medium text-gray-900 truncate">{{ params.value }}</span>
+      <span class="font-medium text-gray-900 truncate">{{ displayName }}</span>
       <span
         v-if="isAdmin"
         class="px-1.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded"
@@ -38,6 +43,7 @@ function onDelete() {
         Edit
       </button>
       <button
+        v-if="!isAdmin"
         @click.stop="onDelete"
         class="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200 bg-white"
       >

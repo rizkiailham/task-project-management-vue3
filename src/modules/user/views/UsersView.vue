@@ -28,6 +28,10 @@ const activeTab = ref('users')
 const searchQuery = ref('')
 const statusFilter = ref(null)
 const roleFilter = ref(null)
+const userStatusFilter = ref(null)
+const userRoleFilter = ref(null)
+const userSortBy = ref(null)
+const userOrderBy = ref(null)
 const isLoading = ref(true)
 
 // Toggle sidebar
@@ -124,6 +128,8 @@ const usersMeta = computed(() => ({
   totalItems: userStore.pagination.total
 }))
 
+const userRoleOptions = computed(() => userStore.availableRoles)
+
 // Watch for tab changes to fetch data
 watch(activeTab, async (newTab) => {
   if (newTab === 'role' && roleStore.roles.length === 0) {
@@ -160,12 +166,37 @@ onMounted(async () => {
 // Handle pagination change from grid
 async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
   isLoading.value = true
+  userSortBy.value = sortBy
+  userOrderBy.value = orderBy
   try {
     await userStore.fetchUsers({
       page,
       limit,
       sortBy,
-      orderBy
+      orderBy,
+      isActive: userStatusFilter.value,
+      roleId: userRoleFilter.value
+    })
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    uiStore.showError('Failed to load users')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleUserFilter({ isActive, roleId }) {
+  userStatusFilter.value = isActive
+  userRoleFilter.value = roleId
+  isLoading.value = true
+  try {
+    await userStore.fetchUsers({
+      page: 1,
+      limit: usersMeta.value.itemsPerPage,
+      sortBy: userSortBy.value,
+      orderBy: userOrderBy.value,
+      isActive: userStatusFilter.value,
+      roleId: userRoleFilter.value
     })
   } catch (error) {
     console.error('Error fetching users:', error)
@@ -400,9 +431,11 @@ function handleGroupSaved() {
         <UsersGrid
           :users="filteredUsers"
           :meta="usersMeta"
+          :roleOptions="userRoleOptions"
           @edit="openEditUserModal"
           @delete="openDeleteModal"
           @resendInvite="handleResendInvite"
+          @filter="handleUserFilter"
           @paginationChange="handlePaginationChange"
         />
       </div>

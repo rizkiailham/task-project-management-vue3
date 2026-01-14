@@ -6,6 +6,7 @@ import Textarea from 'primevue/textarea'
 import Password from 'primevue/password'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
 
 defineOptions({ inheritAttrs: false })
 
@@ -63,7 +64,8 @@ const componentMap = {
   textarea: Textarea,
   password: Password,
   number: InputNumber,
-  select: Select
+  select: Select,
+  multiselect: MultiSelect
 }
 
 const resolvedComponent = computed(() => {
@@ -81,14 +83,29 @@ const labelText = computed(() => {
   if (!labelHasStar.value) return props.label
   return props.label.replace('*', '').trim()
 })
-const isSelectLike = computed(() => props.as === 'select' || resolvedComponent.value === Select)
+const isSelectLike = computed(() => {
+  if (props.as === 'select' || props.as === 'multiselect') return true
+  return resolvedComponent.value === Select || resolvedComponent.value === MultiSelect
+})
 
 const inputAttrs = computed(() => {
   const { class: _class, placeholder, 'aria-label': ariaLabel, ...rest } = attrs
-  if (hasLabel.value && isSelectLike.value && placeholder) {
-    return { ...rest, 'aria-label': ariaLabel || placeholder }
+  const next = { ...rest, placeholder }
+
+  if (isSelectLike.value) {
+    if (rest.filter === undefined) {
+      next.filter = true
+    }
+    if (rest.filterPlaceholder === undefined) {
+      next.filterPlaceholder = 'Search...'
+    }
   }
-  return { ...rest, placeholder }
+
+  if (hasLabel.value && isSelectLike.value && placeholder) {
+    return { ...next, 'aria-label': ariaLabel || placeholder }
+  }
+
+  return next
 })
 
 const mergedInputClass = computed(() => ['w-full', attrs.class, { 'p-invalid': props.invalid }])

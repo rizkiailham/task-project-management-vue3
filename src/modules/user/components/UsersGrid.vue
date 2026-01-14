@@ -46,6 +46,10 @@ const props = defineProps({
       itemsPerPage: 10, 
       totalItems: 0 
     }) 
+  },
+  roleOptions: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -65,17 +69,22 @@ const selectedRole = ref(null)
 // Filter options
 const statusOptions = [
   { id: null, label: 'All Status' },
-  { id: 'Active', label: 'Active' },
-  { id: 'Invited', label: 'Invited' },
-  { id: 'Inactive', label: 'Inactive' },
+  { id: true, label: 'Active' },
+  { id: false, label: 'Inactive' },
 ]
 
-const roleOptions = [
+function formatRoleLabel(name) {
+  if (name === 'super_admin') return 'Super Admin'
+  return name
+}
+
+const roleOptionItems = computed(() => ([
   { id: null, label: 'All Roles' },
-  { id: 'Admin', label: 'Admin' },
-  { id: 'Manager', label: 'Manager' },
-  { id: 'Member', label: 'Member' },
-]
+  ...props.roleOptions.map(role => ({
+    id: role.id,
+    label: formatRoleLabel(role.name || role.label || role.value || role.id)
+  }))
+]))
 
 // Get status menu items
 const statusMenuItems = computed(() => 
@@ -92,7 +101,7 @@ const statusMenuItems = computed(() =>
 
 // Get role menu items
 const roleMenuItems = computed(() => 
-  roleOptions.map(opt => ({
+  roleOptionItems.value.map(opt => ({
     id: opt.id,
     label: opt.label,
     icon: selectedRole.value === opt.id ? Check : null,
@@ -105,36 +114,28 @@ const roleMenuItems = computed(() =>
 
 // Apply filters to grid
 function applyFilters() {
-  if (!gridApi.value) return
-  
-  const filterModel = {}
-  
-  if (selectedStatus.value) {
-    filterModel.status = {
-      filterType: 'text',
-      type: 'equals',
-      filter: selectedStatus.value
-    }
-  }
-  
-  gridApi.value.setFilterModel(filterModel)
-  emit('filter', { status: selectedStatus.value, role: selectedRole.value })
+  emit('filter', { isActive: selectedStatus.value, roleId: selectedRole.value })
 }
 
 // Clear all filters
 function clearFilters() {
   selectedStatus.value = null
   selectedRole.value = null
-  if (gridApi.value) {
-    gridApi.value.setFilterModel(null)
-  }
-  emit('filter', { status: null, role: null })
+  emit('filter', { isActive: null, roleId: null })
 }
 
 // Check if any filters are active
 const hasActiveFilters = computed(() => 
   selectedStatus.value !== null || selectedRole.value !== null
 )
+
+const selectedStatusLabel = computed(() => {
+  return statusOptions.find(opt => opt.id === selectedStatus.value)?.label || 'Status'
+})
+
+const selectedRoleLabel = computed(() => {
+  return roleOptionItems.value.find(opt => opt.id === selectedRole.value)?.label || 'Role'
+})
 
 // Pagination state from props (server-side)
 const pageSizeOptions = [10, 20, 50, 100]
@@ -419,7 +420,7 @@ const getRowId = (params) => params.data?.id
                 ]"
               >
                 <Settings class="w-4 h-4" :class="selectedStatus ? 'text-blue-500' : 'text-gray-400'" />
-                {{ selectedStatus || 'Status' }}
+                {{ selectedStatusLabel }}
               </button>
             </template>
           </DropdownMenu>
@@ -436,7 +437,7 @@ const getRowId = (params) => params.data?.id
                 ]"
               >
                 <Users class="w-4 h-4" :class="selectedRole ? 'text-blue-500' : 'text-gray-400'" />
-                {{ selectedRole || 'Role' }}
+                {{ selectedRoleLabel }}
               </button>
             </template>
           </DropdownMenu>

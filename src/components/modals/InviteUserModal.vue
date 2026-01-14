@@ -14,7 +14,6 @@ import { inviteUser } from '@/api/user.api'
 
 // PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
-import MultiSelect from 'primevue/multiselect'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -139,17 +138,18 @@ function closeModal() {
         <label class="mb-1.5 text-xs text-gray-500">
           Project(s) <span class="text-red-500">*</span>
         </label>
-        <MultiSelect
+        <FormInput
           v-model="projectIds"
+          as="multiselect"
           :options="projectOptions"
           optionLabel="label"
           optionValue="value"
           placeholder="Search for existing project(s)"
+          display="comma"
           filter
           filterPlaceholder="Search..."
           class="w-full"
           :class="{ 'p-invalid': projectIdsError }"
-          :maxSelectedLabels="3"
         />
         <small v-if="projectIdsError" class="mt-1 text-xs text-red-500">
           {{ projectIdsError }}

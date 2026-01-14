@@ -52,7 +52,7 @@ function handleDelete(role) {
 const columnDefs = ref([
   {
     field: 'name',
-    headerName: 'Name',
+    headerName: 'Role',
     flex: 1,
     minWidth: 200,
     cellRenderer: RoleNameCell,

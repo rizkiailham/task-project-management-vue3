@@ -18,7 +18,6 @@ import { upload } from '@/api'
 // PrimeVue
 import Checkbox from 'primevue/checkbox'
 import FormInput from '@/components/ui/FormInput.vue'
-import MultiSelect from 'primevue/multiselect'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -68,6 +67,7 @@ const validationSchema = computed(() => {
     language: yup.string(),
     organization: yup.string(),
     projectIds: yup.array(),
+    roleId: yup.mixed().nullable(),
     groupIds: yup.array(),
     isActive: yup.boolean(),
     unit: yup.number().nullable(),
@@ -103,6 +103,7 @@ const { handleSubmit, resetForm, setValues } = useForm({
     password: '',
     confirmPassword: '',
     projectIds: [],
+    roleId: null,
     groupIds: [],
     isActive: true,
     unit: null,
@@ -129,14 +130,23 @@ const { value: confirmPassword, errorMessage: confirmPasswordError } = useField(
   validateOnValueUpdate: false
 })
 const { value: projectIds } = useField('projectIds')
+const { value: roleId } = useField('roleId')
 const { value: groupIds } = useField('groupIds')
 const { value: isActive } = useField('isActive')
 const { value: unit } = useField('unit')
 const { value: department } = useField('department')
 
+function formatRoleName(name) {
+  if (name === 'super_admin') return 'Super Admin'
+  return name
+}
+
 // Computed options for dropdowns
 const projectOptions = computed(() => 
   userStore.availableProjects.map(p => ({ label: p.name, value: p.id }))
+)
+const roleOptions = computed(() => 
+  userStore.availableRoles.map(role => ({ label: formatRoleName(role.name), value: role.id }))
 )
 const groupOptions = computed(() => 
   userStore.availableGroups.map(g => ({ label: g.name, value: g.id }))
@@ -157,6 +167,7 @@ const lastLoginText = computed(() => {
 // Watch for modal opening and populate form
 watch(() => props.visible, async (isVisible) => {
   if (isVisible) {
+    await userStore.initializeOptions()
     if (props.user) {
       // Edit mode - populate form with user data
       resetForm({
@@ -170,6 +181,7 @@ watch(() => props.visible, async (isVisible) => {
         password: '',
         confirmPassword: '',
         projectIds: normalizeSelectionArray(props.user.projects),
+        roleId: resolveSelectionId(props.user.roleId || props.user.role, userStore.availableRoles),
         groupIds: normalizeSelectionArray(props.user.groups),
         isActive: props.user.isActive ?? true,
         unit: props.user.customValues?.unit || null,
@@ -237,6 +249,7 @@ const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
     const resolvedProjectIds = resolveSelectionIds(values.projectIds, userStore.availableProjects)
+    const resolvedRoleId = resolveSelectionId(values.roleId, userStore.availableRoles)
     const resolvedGroupIds = resolveSelectionIds(values.groupIds, userStore.availableGroups)
     const userData = {
       firstName: values.firstName,
@@ -252,6 +265,9 @@ const onSubmit = handleSubmit(async (values) => {
         ...(values.unit !== null && { unit: values.unit }),
         ...(values.department && { department: values.department })
       }
+    }
+    if (resolvedRoleId !== null && resolvedRoleId !== undefined) {
+      userData.roleId = resolvedRoleId
     }
 
     // Only send password if provided
@@ -545,32 +561,50 @@ const avatarInitial = computed(() => {
         <div v-show="projectAccessExpanded" class="space-y-4 pt-2">
           <!-- Project & Group Row -->
           <div class="grid gap-4 sm:grid-cols-2">
-            <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Project(s)</label>
-              <MultiSelect
-                v-model="projectIds"
-                :options="projectOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select project(s)"
-                filter
-                filterPlaceholder="Search..."
-                class="w-full"
-                :maxSelectedLabels="3"
-              />
+            <div class="flex flex-col gap-4">
+              <div class="flex flex-col">
+                <label class="mb-1.5 text-xs text-gray-500">Project(s)</label>
+                <FormInput
+                  v-model="projectIds"
+                  as="multiselect"
+                  :options="projectOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select project(s)"
+                  display="comma"
+                  filter
+                  filterPlaceholder="Search..."
+                  class="w-full"
+                />
+              </div>
+              <div class="flex flex-col">
+                <label class="mb-1.5 text-xs text-gray-500">Role</label>
+                <FormInput
+                  id="user-role"
+                  v-model="roleId"
+                  as="select"
+                  :options="roleOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select role"
+                  class="w-full"
+                />
+              </div>
             </div>
             <div class="flex flex-col">
               <label class="mb-1.5 text-xs text-gray-500">Group(s)</label>
-              <MultiSelect
+              <FormInput
                 v-model="groupIds"
+                as="multiselect"
                 :options="groupOptions"
+                :checkboxIcon="false"
                 optionLabel="label"
                 optionValue="value"
                 placeholder="Select group(s)"
+                display="comma"
                 filter
                 filterPlaceholder="Search..."
                 class="w-full"
-                :maxSelectedLabels="3"
               />
             </div>
           </div>

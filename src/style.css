@@ -369,6 +369,25 @@ textarea,
   accent-color: var(--p-primary-600);
 }
 
+.p-multiselect-option {
+  font-size: 13px !important;
+}
+
+.p-multiselect-panel .p-multiselect-item .p-checkbox {
+  display: none;
+}
+
+/* Animate select chevrons on open */
+.p-select .p-select-dropdown-icon,
+.p-multiselect .p-multiselect-dropdown-icon {
+  transition: transform 0.2s ease;
+}
+
+.p-select.p-select-open .p-select-dropdown-icon,
+.p-multiselect.p-multiselect-open .p-multiselect-dropdown-icon {
+  transform: rotate(180deg);
+}
+
 /* Input Focus - Blue */
 .p-inputtext:focus {
   border-color: var(--color-primary-500) !important;
