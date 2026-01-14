@@ -92,15 +92,6 @@ const inputAttrs = computed(() => {
   const { class: _class, placeholder, 'aria-label': ariaLabel, ...rest } = attrs
   const next = { ...rest, placeholder }
 
-  if (isSelectLike.value) {
-    if (rest.filter === undefined) {
-      next.filter = true
-    }
-    if (rest.filterPlaceholder === undefined) {
-      next.filterPlaceholder = 'Search...'
-    }
-  }
-
   if (hasLabel.value && isSelectLike.value && placeholder) {
     return { ...next, 'aria-label': ariaLabel || placeholder }
   }
