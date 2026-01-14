@@ -18,6 +18,7 @@ import CommandPalette from '@/components/ui/CommandPalette.vue'
 // Modal components
 import CreateTaskModal from '@/components/modals/CreateTaskModal.vue'
 import CreateProjectModal from '@/components/modals/CreateProjectModal.vue'
+import SettingsModal from '@/components/modals/SettingsModal.vue'
 
 const route = useRoute()
 const uiStore = useUIStore()
@@ -75,6 +76,7 @@ function handleKeyboardShortcuts(event) {
     <!-- Global Modals -->
     <CreateTaskModal />
     <CreateProjectModal />
+    <SettingsModal />
   </div>
 </template>
 
