@@ -39,8 +39,8 @@ avatarColor.value = colors[Math.floor(Math.random() * colors.length)]
 
 // Language options
 const languageOptions = [
-  { label: 'English', value: 'English' },
-  { label: 'Norwegian', value: 'Norwegian' }
+  { label: 'English', value: 'en' },
+  { label: 'Norwegian', value: 'no' }
 ]
 
 // Form validation schema
@@ -49,8 +49,7 @@ const validationSchema = yup.object({
   lastName: yup.string().required('Last name is required'),
   phone: yup.string(),
   organization: yup.string(),
-  unit: yup.number().nullable(),
-  department: yup.string(),
+  salary: yup.number().nullable(),
   language: yup.string(),
   password: yup.string().required('Password is required').min(8, 'Password must be at least 8 characters'),
   confirmPassword: yup.string()
@@ -65,9 +64,8 @@ const { handleSubmit, meta, setFieldValue } = useForm({
     lastName: '',
     phone: '',
     organization: '',
-    unit: null,
-    department: '',
-    language: 'English',
+    salary: null,
+    language: 'en',
     password: '',
     confirmPassword: ''
   }
@@ -77,8 +75,7 @@ const { value: firstName, errorMessage: firstNameError } = useField('firstName')
 const { value: lastName, errorMessage: lastNameError } = useField('lastName')
 const { value: phone } = useField('phone')
 const { value: organization } = useField('organization')
-const { value: unit } = useField('unit')
-const { value: department } = useField('department')
+const { value: salary } = useField('salary')
 const { value: language } = useField('language')
 const { value: password, errorMessage: passwordError } = useField('password')
 const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword')
@@ -126,8 +123,7 @@ const onSubmit = handleSubmit(async (values) => {
       password: values.password,
       confirmPassword: values.confirmPassword,
       customValues: {
-        ...(values.unit !== null && { unit: values.unit }),
-        ...(values.department && { department: values.department })
+        ...(values.salary !== null && { salary: values.salary })
       }
     })
 
@@ -150,7 +146,7 @@ function goToLogin() {
     <div class="auth-card">
       <!-- Loading State -->
       <div v-if="isLoading" class="loading-state">
-        <div class="spinner"></div>
+        <!-- <div class="spinner"></div> -->
         <p class="loading-text">Validating invitation...</p>
       </div>
 
@@ -191,36 +187,33 @@ function goToLogin() {
         </div>
 
         <form @submit.prevent="onSubmit" class="auth-form">
-          <!-- Name Row -->
-          <div class="form-row">
-            <div class="auth-field">
-              <FormInput
-                id="invite-first-name"
-                v-model="firstName"
-                labelClass="auth-label"
-                :class="{ 'p-invalid': firstNameError }"
-                class="auth-input"
-              >
-                <template #label>
-                  First name <span class="text-red-500">*</span>
-                </template>
-              </FormInput>
-              <small v-if="firstNameError" class="auth-error">{{ firstNameError }}</small>
-            </div>
-            <div class="auth-field">
-              <FormInput
-                id="invite-last-name"
-                v-model="lastName"
-                labelClass="auth-label"
-                :class="{ 'p-invalid': lastNameError }"
-                class="auth-input"
-              >
-                <template #label>
-                  Last name <span class="text-red-500">*</span>
-                </template>
-              </FormInput>
-              <small v-if="lastNameError" class="auth-error">{{ lastNameError }}</small>
-            </div>
+          <div class="auth-field">
+            <FormInput
+              id="invite-first-name"
+              v-model="firstName"
+              labelClass="auth-label"
+              :class="{ 'p-invalid': firstNameError }"
+              class="auth-input"
+            >
+              <template #label>
+                First name <span class="text-red-500">*</span>
+              </template>
+            </FormInput>
+            <small v-if="firstNameError" class="auth-error">{{ firstNameError }}</small>
+          </div>
+          <div class="auth-field">
+            <FormInput
+              id="invite-last-name"
+              v-model="lastName"
+              labelClass="auth-label"
+              :class="{ 'p-invalid': lastNameError }"
+              class="auth-input"
+            >
+              <template #label>
+                Last name <span class="text-red-500">*</span>
+              </template>
+            </FormInput>
+            <small v-if="lastNameError" class="auth-error">{{ lastNameError }}</small>
           </div>
 
           <!-- Email (readonly) -->
@@ -257,29 +250,18 @@ function goToLogin() {
             />
           </div>
 
-          <!-- Custom fields row -->
-          <div class="form-row">
-            <div class="auth-field">
-              <FormInput
-                id="invite-unit"
-                v-model="unit"
-                as="number"
-                label="Unit"
-                labelClass="auth-label"
-                showButtons
-                :min="0"
-                class="auth-input-number"
-              />
-            </div>
-            <div class="auth-field">
-              <FormInput
-                id="invite-department"
-                v-model="department"
-                label="Department"
-                labelClass="auth-label"
-                class="auth-input"
-              />
-            </div>
+          <!-- Salary -->
+          <div class="auth-field">
+            <FormInput
+              id="invite-salary"
+              v-model="salary"
+              as="number"
+              label="Salary"
+              labelClass="auth-label"
+              showButtons
+              :min="0"
+              class="auth-input-number"
+            />
           </div>
 
           <!-- Language -->
@@ -298,43 +280,41 @@ function goToLogin() {
           </div>
 
           <!-- Password Row -->
-          <div class="form-row">
-            <div class="auth-field">
-              <FormInput
-                id="invite-password"
-                v-model="password"
-                as="password"
-                labelClass="auth-label"
-                :class="{ 'p-invalid': passwordError }"
-                :feedback="false"
-                toggleMask
-                inputClass="auth-input"
-                class="auth-password"
-              >
-                <template #label>
-                  Password <span class="text-red-500">*</span>
-                </template>
-              </FormInput>
-              <small v-if="passwordError" class="auth-error">{{ passwordError }}</small>
-            </div>
-            <div class="auth-field">
-              <FormInput
-                id="invite-confirm-password"
-                v-model="confirmPassword"
-                as="password"
-                labelClass="auth-label"
-                :class="{ 'p-invalid': confirmPasswordError }"
-                :feedback="false"
-                toggleMask
-                inputClass="auth-input"
-                class="auth-password"
-              >
-                <template #label>
-                  Confirm Password <span class="text-red-500">*</span>
-                </template>
-              </FormInput>
-              <small v-if="confirmPasswordError" class="auth-error">{{ confirmPasswordError }}</small>
-            </div>
+          <div class="auth-field">
+            <FormInput
+              id="invite-password"
+              v-model="password"
+              as="password"
+              labelClass="auth-label"
+              :class="{ 'p-invalid': passwordError }"
+              :feedback="false"
+              toggleMask
+              inputClass="auth-input"
+              class="auth-password"
+            >
+              <template #label>
+                Password <span class="text-red-500">*</span>
+              </template>
+            </FormInput>
+            <small v-if="passwordError" class="auth-error">{{ passwordError }}</small>
+          </div>
+          <div class="auth-field">
+            <FormInput
+              id="invite-confirm-password"
+              v-model="confirmPassword"
+              as="password"
+              labelClass="auth-label"
+              :class="{ 'p-invalid': confirmPasswordError }"
+              :feedback="false"
+              toggleMask
+              inputClass="auth-input"
+              class="auth-password"
+            >
+              <template #label>
+                Confirm Password <span class="text-red-500">*</span>
+              </template>
+            </FormInput>
+            <small v-if="confirmPasswordError" class="auth-error">{{ confirmPasswordError }}</small>
           </div>
 
           <!-- Actions -->
@@ -342,6 +322,8 @@ function goToLogin() {
             <Button
               type="button"
               label="Cancel"
+              outlined
+              severity="secondary"
               class="auth-secondary"
               @click="goToLogin"
               :disabled="isSubmitting"
