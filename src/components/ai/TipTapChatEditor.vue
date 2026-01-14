@@ -9,7 +9,7 @@
  * - Send on Enter, new line on Shift+Enter
  * - Placeholder text
  */
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useEditor, EditorContent, VueRenderer } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
@@ -20,7 +20,7 @@ import TaskItem from '@tiptap/extension-task-item'
 import tippy from 'tippy.js'
 import MentionList from '@/components/editor/MentionList.vue'
 import SlashCommandList from '@/components/editor/SlashCommandList.vue'
-import { useAIChatStore } from '@/stores'
+import { useAIChatStore, useUIStore } from '@/stores'
 
 const props = defineProps({
   placeholder: {
@@ -37,6 +37,25 @@ const emit = defineEmits(['send', 'update:content'])
 
 const { t } = useI18n()
 const aiChatStore = useAIChatStore()
+const uiStore = useUIStore()
+
+const MAX_FILES = 5
+const MAX_FILE_SIZE = 20 * 1024 * 1024
+const ALLOWED_MIME_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+])
+const FILE_ACCEPT = Array.from(ALLOWED_MIME_TYPES).join(',')
+
+const fileInputRef = ref(null)
+const attachments = ref([])
+const isUploading = ref(false)
+const uploadError = ref('')
 
 // Slash command suggestion configuration
 const slashSuggestion = {
@@ -203,9 +222,11 @@ const editor = useEditor({
 // Methods
 function handleSend() {
   if (!editor.value || props.disabled) return
-  
+  if (isUploading.value) return
+
   const content = editor.value.getText().trim()
-  if (!content) return
+  const hasAttachments = attachments.value.length > 0
+  if (!content && !hasAttachments) return
   
   // Extract mentions
   const mentions = []
@@ -215,12 +236,64 @@ function handleSend() {
     }
   })
   
-  emit('send', { content, mentions })
+  emit('send', { content, mentions, attachments: attachments.value })
   editor.value.commands.clearContent()
+  attachments.value = []
+  uploadError.value = ''
 }
 
 function focus() {
   editor.value?.commands.focus()
+}
+
+function openFilePicker() {
+  if (props.disabled || isUploading.value) return
+  fileInputRef.value?.click()
+}
+
+function removeAttachment(index) {
+  attachments.value.splice(index, 1)
+}
+
+async function handleFileSelection(event) {
+  const input = event.target
+  const selected = Array.from(input.files || [])
+  input.value = ''
+  uploadError.value = ''
+
+  if (selected.length === 0) return
+
+  const remainingSlots = Math.max(0, MAX_FILES - attachments.value.length)
+  if (remainingSlots === 0) {
+    uploadError.value = `You can attach up to ${MAX_FILES} files.`
+    return
+  }
+
+  const valid = []
+  for (const file of selected.slice(0, remainingSlots)) {
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      uploadError.value = `Unsupported file type: ${file.name}`
+      continue
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      uploadError.value = `File too large (max 20MB): ${file.name}`
+      continue
+    }
+    valid.push(file)
+  }
+
+  if (valid.length === 0) return
+
+  isUploading.value = true
+  try {
+    const uploaded = await aiChatStore.uploadChatFiles(valid)
+    attachments.value = [...attachments.value, ...uploaded]
+  } catch (error) {
+    uploadError.value = error?.message || 'Failed to upload files'
+    uiStore.showError(uploadError.value)
+  } finally {
+    isUploading.value = false
+  }
 }
 
 // Cleanup
@@ -234,19 +307,57 @@ defineExpose({ focus, handleSend })
 
 <template>
   <div class="tiptap-chat-editor">
+    <input
+      ref="fileInputRef"
+      type="file"
+      class="hidden"
+      multiple
+      :accept="FILE_ACCEPT"
+      @change="handleFileSelection"
+    />
+
     <!-- Editor Content -->
     <div class="editor-wrapper bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100 transition-all">
       <EditorContent :editor="editor" />
     </div>
-    
+
+    <!-- Attachments -->
+    <div v-if="attachments.length" class="mt-2 flex flex-wrap gap-2">
+      <div
+        v-for="(file, index) in attachments"
+        :key="file.id || `${file.name}-${index}`"
+        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
+      >
+        <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+        </svg>
+        <span class="max-w-[140px] truncate">{{ file.name }}</span>
+        <button
+          type="button"
+          class="text-gray-400 hover:text-gray-600"
+          @click="removeAttachment(index)"
+          aria-label="Remove attachment"
+        >
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <p v-if="uploadError" class="mt-2 text-xs text-red-500">{{ uploadError }}</p>
+
     <!-- Action Buttons -->
     <div class="flex items-center justify-between mt-2">
       <div class="flex items-center gap-2">
         <!-- Attach File -->
         <button
           type="button"
-          class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Attach file"
+          :disabled="disabled || isUploading || attachments.length >= MAX_FILES"
+          @click="openFilePicker"
         >
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
@@ -271,7 +382,7 @@ defineExpose({ focus, handleSend })
       <!-- Send Button -->
       <button
         @click="handleSend"
-        :disabled="disabled"
+        :disabled="disabled || isUploading"
         class="flex items-center justify-center w-9 h-9 bg-gradient-to-r from-primary-500 to-purple-600 text-white rounded-lg hover:from-primary-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
         title="Send message"
       >

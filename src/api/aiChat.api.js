@@ -23,10 +23,15 @@ export async function clearConversation(conversationId) {
   return post(`/ai/conversations/${conversationId}/clear`)
 }
 
+export async function registerFiles(payload) {
+  return post('/ai/files', payload)
+}
+
 export default {
   listConversations,
   getConversation,
   createConversation,
   sendChatMessage,
-  clearConversation
+  clearConversation,
+  registerFiles
 }
