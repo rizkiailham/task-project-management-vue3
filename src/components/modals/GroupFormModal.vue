@@ -127,7 +127,7 @@ async function loadGroupDetails() {
       baseUsers.value = fetchedUsers
     }
   } catch (error) {
-    uiStore.showError('Failed to load group details')
+    uiStore.showApiError(error, 'Failed to load group details')
   }
 }
 
@@ -257,7 +257,7 @@ async function handleAddUser(user) {
     }
     updateUserJoinState(id, true)
   } catch (error) {
-    uiStore.showError('Failed to add user to group')
+    uiStore.showApiError(error, 'Failed to add user to group')
   } finally {
     setBusy(id, false)
   }
@@ -285,7 +285,7 @@ async function handleRemoveUser(user) {
     }
     updateUserJoinState(id, false)
   } catch (error) {
-    uiStore.showError('Failed to remove user from group')
+    uiStore.showApiError(error, 'Failed to remove user from group')
   } finally {
     setBusy(id, false)
   }
@@ -305,20 +305,21 @@ async function handleSubmit() {
     }
 
     if (isEditing.value) {
-      await groupStore.updateGroup(props.group.id, payload)
-      uiStore.showSuccess('Group updated successfully')
+      const response = await groupStore.updateGroup(props.group.id, payload)
+      uiStore.showApiSuccess(response, 'Group updated successfully')
     } else {
-      const newGroup = await groupStore.createGroup(payload)
+      const response = await groupStore.createGroup(payload)
+      const newGroup = response?.group || response?.data || response
       if (pendingUserIds.value.length > 0 && newGroup?.id) {
         await groupStore.addUsers(newGroup.id, pendingUserIds.value)
       }
-      uiStore.showSuccess('Group created successfully')
+      uiStore.showApiSuccess(response, 'Group created successfully')
     }
 
     emit('saved')
     closeModal()
   } catch (error) {
-    uiStore.showError(error.message || 'Failed to save group')
+    uiStore.showApiError(error, 'Failed to save group')
   } finally {
     isSubmitting.value = false
   }

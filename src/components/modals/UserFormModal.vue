@@ -8,6 +8,7 @@
  * - Custom fields section
  */
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore, useUIStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
@@ -21,6 +22,7 @@ import FormInput from '@/components/ui/FormInput.vue'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
+const { t, locale } = useI18n()
 
 const props = defineProps({
   visible: {
@@ -41,7 +43,9 @@ const dialogVisible = computed({
 })
 
 const isEditMode = computed(() => !!props.user?.id)
-const modalTitle = computed(() => isEditMode.value ? 'Edit user' : 'Add user')
+const modalTitle = computed(() => (
+  isEditMode.value ? t('users.modal.editTitle') : t('users.modal.addTitle')
+))
 
 // Section expand state
 const userInfoExpanded = ref(true)
@@ -60,9 +64,9 @@ const avatarInputRef = ref(null)
 // Form validation
 const validationSchema = computed(() => {
   const baseSchema = {
-    firstName: yup.string().required('First name is required'),
-    lastName: yup.string().required('Last name is required'),
-    email: yup.string().required('Email is required').email('Invalid email format'),
+    firstName: yup.string().required(t('users.validation.firstNameRequired')),
+    lastName: yup.string().required(t('users.validation.lastNameRequired')),
+    email: yup.string().required(t('users.validation.emailRequired')).email(t('users.validation.emailInvalid')),
     phone: yup.string(),
     language: yup.string(),
     organization: yup.string(),
@@ -77,14 +81,14 @@ const validationSchema = computed(() => {
   baseSchema.password = yup
     .string()
     .transform((value) => (value === '' ? undefined : value))
-    .min(8, 'Password must be at least 8 characters')
+    .min(8, t('auth.validation.passwordMin'))
     .notRequired()
   baseSchema.confirmPassword = yup.string().when('password', {
     is: (value) => !!value,
     then: (schema) =>
       schema
-        .required('Confirm password is required')
-        .oneOf([yup.ref('password')], 'Passwords must match'),
+        .required(t('auth.validation.confirmPasswordRequired'))
+        .oneOf([yup.ref('password')], t('auth.validation.passwordsMustMatch')),
     otherwise: (schema) => schema.notRequired()
   })
 
@@ -137,7 +141,7 @@ const { value: unit } = useField('unit')
 const { value: department } = useField('department')
 
 function formatRoleName(name) {
-  if (name === 'super_admin') return 'Super Admin'
+  if (name === 'super_admin') return t('roles.superAdmin')
   return name
 }
 
@@ -160,8 +164,8 @@ const lastLoginText = computed(() => {
   if (!props.user?.lastActivity) return ''
   const date = new Date(props.user.lastActivity)
   const today = new Date()
-  if (date.toDateString() === today.toDateString()) return 'Today'
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  if (date.toDateString() === today.toDateString()) return t('calendar.today')
+  return date.toLocaleDateString(locale.value || 'en', { month: 'short', day: 'numeric', year: 'numeric' })
 })
 
 // Watch for modal opening and populate form
@@ -234,12 +238,12 @@ async function handleAvatarChange(event) {
       response?.data?.path
 
     if (!url) {
-      throw new Error('Upload failed')
+      throw new Error(t('users.errors.uploadFailed'))
     }
 
     avatarUrl.value = url
   } catch (error) {
-    uiStore.showError('Failed to upload avatar')
+    uiStore.showApiError(error, t('users.errors.avatarUpload'))
   } finally {
     isUploadingAvatar.value = false
   }
@@ -279,11 +283,11 @@ const onSubmit = handleSubmit(async (values) => {
     }
 
     if (isEditMode.value) {
-      await userStore.updateUser(props.user.id, userData)
-      uiStore.showSuccess('User updated successfully')
+      const response = await userStore.updateUser(props.user.id, userData)
+      uiStore.showApiSuccess(response, t('users.messages.updated'))
     } else {
-      await userStore.createUser(userData)
-      uiStore.showSuccess('User created successfully')
+      const response = await userStore.createUser(userData)
+      uiStore.showApiSuccess(response, t('users.messages.created'))
     }
     
     // Refresh users list
@@ -292,7 +296,10 @@ const onSubmit = handleSubmit(async (values) => {
     emit('saved')
     dialogVisible.value = false
   } catch (error) {
-    uiStore.showError(isEditMode.value ? 'Failed to update user' : 'Failed to create user')
+    uiStore.showApiError(
+      error,
+      isEditMode.value ? t('users.errors.update') : t('users.errors.create')
+    )
   } finally {
     isLoading.value = false
   }
@@ -334,7 +341,7 @@ const avatarInitial = computed(() => {
   if (firstName.value) {
     return firstName.value.charAt(0).toUpperCase()
   }
-  return 'U'
+  return t('users.avatarFallback')
 })
 </script>
 
@@ -365,7 +372,7 @@ const avatarInitial = computed(() => {
             <img
               v-if="avatarPreview"
               :src="avatarPreview"
-              alt="User avatar"
+              :alt="t('users.avatarAlt')"
               class="h-full w-full object-cover"
             />
             <span v-else>{{ avatarInitial }}</span>
@@ -399,7 +406,7 @@ const avatarInitial = computed(() => {
             class="h-4 w-4 text-gray-500 transition-transform"
             :class="{ '-rotate-90': !userInfoExpanded }"
           />
-          <span>User information</span>
+          <span>{{ t('users.sections.info') }}</span>
         </button>
 
         <div v-show="userInfoExpanded" class="space-y-4 pt-2">
@@ -414,7 +421,7 @@ const avatarInitial = computed(() => {
                 :class="{ 'p-invalid': firstNameError }"
               >
                 <template #label>
-                  First name <span class="text-red-500">*</span>
+                  {{ t('users.fields.firstName') }} <span class="text-red-500">*</span>
                 </template>
               </FormInput>
               <small v-if="firstNameError" class="mt-1 text-xs text-red-500">
@@ -430,7 +437,7 @@ const avatarInitial = computed(() => {
                 :class="{ 'p-invalid': lastNameError }"
               >
                 <template #label>
-                  Last name <span class="text-red-500">*</span>
+                  {{ t('users.fields.lastName') }} <span class="text-red-500">*</span>
                 </template>
               </FormInput>
               <small v-if="lastNameError" class="mt-1 text-xs text-red-500">
@@ -451,7 +458,7 @@ const avatarInitial = computed(() => {
                 :class="{ 'p-invalid': emailError }"
               >
                 <template #label>
-                  Email <span class="text-red-500">*</span>
+                  {{ t('users.fields.email') }} <span class="text-red-500">*</span>
                 </template>
               </FormInput>
               <small v-if="emailError" class="mt-1 text-xs text-red-500">
@@ -462,7 +469,7 @@ const avatarInitial = computed(() => {
               <FormInput
                 id="user-phone"
                 v-model="phone"
-                label="Phone"
+                :label="t('users.fields.phone')"
                 labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
               />
@@ -476,7 +483,7 @@ const avatarInitial = computed(() => {
                 id="user-language"
                 v-model="language"
                 as="select"
-                label="Preferered language"
+                :label="t('users.fields.language')"
                 labelClass="mb-1.5 text-xs text-gray-500"
                 :options="languageOptions"
                 optionLabel="label"
@@ -488,7 +495,7 @@ const avatarInitial = computed(() => {
               <FormInput
                 id="user-organization"
                 v-model="organization"
-                label="Organization"
+                :label="t('users.fields.organization')"
                 labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
               />
@@ -510,7 +517,7 @@ const avatarInitial = computed(() => {
                 toggleMask
               >
                 <template #label>
-                  Password
+                  {{ t('users.fields.password') }}
                 </template>
               </FormInput>
               <small v-if="passwordError" class="mt-1 text-xs text-red-500">
@@ -530,7 +537,7 @@ const avatarInitial = computed(() => {
                 toggleMask
               >
                 <template #label>
-                  Confirm Password
+                  {{ t('users.fields.confirmPassword') }}
                 </template>
               </FormInput>
               <small
@@ -555,7 +562,7 @@ const avatarInitial = computed(() => {
             class="h-4 w-4 text-gray-500 transition-transform"
             :class="{ '-rotate-90': !projectAccessExpanded }"
           />
-          <span>Project & Access</span>
+          <span>{{ t('users.sections.projectAccess') }}</span>
         </button>
 
         <div v-show="projectAccessExpanded" class="space-y-4 pt-2">
@@ -563,22 +570,22 @@ const avatarInitial = computed(() => {
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col gap-4">
               <div class="flex flex-col">
-                <label class="mb-1.5 text-xs text-gray-500">Project(s)</label>
+                <label class="mb-1.5 text-xs text-gray-500">{{ t('users.fields.projects') }}</label>
                 <FormInput
                   v-model="projectIds"
                   as="multiselect"
                   :options="projectOptions"
                   optionLabel="label"
                   optionValue="value"
-                  placeholder="Select project(s)"
+                  :placeholder="t('users.placeholders.projects')"
                   display="comma"
                   filter
-                  filterPlaceholder="Search..."
+                  :filterPlaceholder="t('common.search')"
                   class="w-full"
                 />
               </div>
               <div class="flex flex-col">
-                <label class="mb-1.5 text-xs text-gray-500">Role</label>
+                <label class="mb-1.5 text-xs text-gray-500">{{ t('users.fields.role') }}</label>
                 <FormInput
                   id="user-role"
                   v-model="roleId"
@@ -586,13 +593,13 @@ const avatarInitial = computed(() => {
                   :options="roleOptions"
                   optionLabel="label"
                   optionValue="value"
-                  placeholder="Select role"
+                  :placeholder="t('users.placeholders.role')"
                   class="w-full"
                 />
               </div>
             </div>
             <div class="flex flex-col">
-              <label class="mb-1.5 text-xs text-gray-500">Group(s)</label>
+              <label class="mb-1.5 text-xs text-gray-500">{{ t('users.fields.groups') }}</label>
               <FormInput
                 v-model="groupIds"
                 as="multiselect"
@@ -600,10 +607,10 @@ const avatarInitial = computed(() => {
                 :checkboxIcon="false"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Select group(s)"
+                :placeholder="t('users.placeholders.groups')"
                 display="comma"
                 filter
-                filterPlaceholder="Search..."
+                :filterPlaceholder="t('common.search')"
                 class="w-full"
               />
             </div>
@@ -613,10 +620,10 @@ const avatarInitial = computed(() => {
           <div class="flex items-center gap-2 pt-1">
             <Checkbox v-model="isActive" :binary="true" inputId="isActive" />
             <label for="isActive" class="text-sm text-gray-700 cursor-pointer">
-              Active
+              {{ t('users.fields.active') }}
             </label>
             <span v-if="lastLoginText" class="ml-2 text-xs text-gray-400">
-              Last login: {{ lastLoginText }}
+              {{ t('users.lastLogin', { date: lastLoginText }) }}
             </span>
           </div>
         </div>
@@ -633,7 +640,7 @@ const avatarInitial = computed(() => {
             class="h-4 w-4 text-gray-500 transition-transform"
             :class="{ '-rotate-90': !customFieldsExpanded }"
           />
-          <span>Custom field(s)</span>
+          <span>{{ t('users.sections.customFields') }}</span>
         </button>
 
         <div v-show="customFieldsExpanded" class="space-y-4 pt-2">
@@ -643,7 +650,7 @@ const avatarInitial = computed(() => {
                 id="user-unit"
                 v-model="unit"
                 as="number"
-                label="Unit"
+                :label="t('users.fields.unit')"
                 labelClass="mb-1.5 text-xs text-gray-500"
                 showButtons
                 :min="0"
@@ -655,7 +662,7 @@ const avatarInitial = computed(() => {
               <FormInput
                 id="user-department"
                 v-model="department"
-                label="Department"
+                :label="t('users.fields.department')"
                 labelClass="mb-1.5 text-xs text-gray-500"
                 class="w-full"
               />
@@ -673,7 +680,7 @@ const avatarInitial = computed(() => {
           @click="closeModal"
           :disabled="isLoading"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -690,7 +697,7 @@ const avatarInitial = computed(() => {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          {{ isLoading ? 'Saving...' : 'Save changes' }}
+          {{ isLoading ? t('common.saving') : t('common.saveChanges') }}
         </button>
       </div>
     </template>

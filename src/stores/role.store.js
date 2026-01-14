@@ -80,9 +80,9 @@ export const useRoleStore = defineStore('role', () => {
         isLoading.value = true
         try {
             const response = await roleApi.createRole(roleData)
-            const newRole = response.role || response
+            const newRole = response.role || response.data || response
             roles.value.unshift(newRole)
-            return newRole
+            return response
         } finally {
             isLoading.value = false
         }
@@ -92,13 +92,13 @@ export const useRoleStore = defineStore('role', () => {
         isLoading.value = true
         try {
             const response = await roleApi.updateRole(roleId, roleData)
-            const updatedRole = response.role || response
+            const updatedRole = response.role || response.data || response
 
             const index = roles.value.findIndex(r => r.id === roleId)
             if (index !== -1) {
                 roles.value[index] = { ...roles.value[index], ...updatedRole }
             }
-            return updatedRole
+            return response
         } finally {
             isLoading.value = false
         }
@@ -107,12 +107,12 @@ export const useRoleStore = defineStore('role', () => {
     async function deleteRole(roleId) {
         isLoading.value = true
         try {
-            await roleApi.deleteRole(roleId)
+            const response = await roleApi.deleteRole(roleId)
             const index = roles.value.findIndex(r => r.id === roleId)
             if (index !== -1) {
                 roles.value.splice(index, 1)
             }
-            return true
+            return response
         } finally {
             isLoading.value = false
         }

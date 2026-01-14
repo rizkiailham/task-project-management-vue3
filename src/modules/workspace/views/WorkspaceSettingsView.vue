@@ -4,6 +4,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore, useUIStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
@@ -15,6 +16,7 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import { useConfirm } from 'primevue/useconfirm'
 
 const router = useRouter()
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const uiStore = useUIStore()
 const confirm = useConfirm()
@@ -23,9 +25,12 @@ const workspace = computed(() => workspaceStore.currentWorkspace)
 const isLoading = ref(false)
 
 // Form validation
-const validationSchema = yup.object({
-  name: yup.string().required('Workspace name is required').min(2, 'Name must be at least 2 characters')
-})
+const validationSchema = computed(() => yup.object({
+  name: yup
+    .string()
+    .required(t('workspace.settings.validation.nameRequired'))
+    .min(2, t('workspace.settings.validation.nameMin'))
+}))
 
 const { handleSubmit, meta, resetForm } = useForm({
   validationSchema,
@@ -45,10 +50,10 @@ onMounted(() => {
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
-    await workspaceStore.updateCurrentWorkspace(values)
-    uiStore.showSuccess('Workspace updated successfully')
+    const response = await workspaceStore.updateCurrentWorkspace(values)
+    uiStore.showApiSuccess(response, t('workspace.settings.messages.updated'))
   } catch (error) {
-    uiStore.showError('Failed to update workspace')
+    uiStore.showApiError(error, t('workspace.settings.errors.update'))
   } finally {
     isLoading.value = false
   }
@@ -56,17 +61,17 @@ const onSubmit = handleSubmit(async (values) => {
 
 function confirmDelete() {
   confirm.require({
-    message: 'Are you sure you want to delete this workspace? All projects and tasks will be permanently deleted.',
-    header: 'Delete Workspace',
+    message: t('workspace.settings.deleteConfirm.message'),
+    header: t('workspace.settings.deleteConfirm.title'),
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
     accept: async () => {
       try {
-        await workspaceStore.deleteWorkspace(workspace.value.id)
-        uiStore.showSuccess('Workspace deleted')
+        const response = await workspaceStore.deleteWorkspace(workspace.value.id)
+        uiStore.showApiSuccess(response, t('workspace.settings.messages.deleted'))
         router.push({ name: 'Home' })
       } catch (error) {
-        uiStore.showError('Failed to delete workspace')
+        uiStore.showApiError(error, t('workspace.settings.errors.delete'))
       }
     }
   })
@@ -76,19 +81,19 @@ function confirmDelete() {
 <template>
   <div class="p-6 lg:p-8">
     <div class="mx-auto max-w-2xl">
-      <h1 class="mb-6 text-xl font-bold text-gray-900 dark-edit:text-white">Workspace Settings</h1>
+      <h1 class="mb-6 text-xl font-bold text-gray-900 dark-edit:text-white">{{ t('workspace.settings.title') }}</h1>
 
       <form @submit="onSubmit" class="space-y-6">
         <!-- General Settings -->
         <div class="rounded-lg border border-gray-200 bg-white p-6 dark-edit:border-gray-700 dark-edit:bg-gray-800">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">General</h2>
+          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">{{ t('workspace.settings.sections.general') }}</h2>
           
           <div class="space-y-4">
             <div>
               <FormInput
                 id="workspace-name"
                 v-model="name" 
-                label="Workspace Name"
+                :label="t('workspace.settings.fields.name')"
                 labelClass="mb-1 block text-sm font-medium text-gray-700 dark-edit:text-gray-300"
                 class="w-full"
                 :class="{ 'p-invalid': nameError }"
@@ -100,7 +105,7 @@ function confirmDelete() {
           <div class="mt-6 flex justify-end">
             <Button 
               type="submit" 
-              label="Save Changes" 
+              :label="t('common.save')"
               :loading="isLoading"
               :disabled="!meta.valid"
             />
@@ -109,17 +114,17 @@ function confirmDelete() {
 
         <!-- Danger Zone -->
         <div class="rounded-lg border border-red-200 bg-red-50 p-6 dark-edit:border-red-900/30 dark-edit:bg-red-900/10">
-          <h2 class="mb-4 text-lg font-semibold text-red-700 dark-edit:text-red-400">Danger Zone</h2>
+          <h2 class="mb-4 text-lg font-semibold text-red-700 dark-edit:text-red-400">{{ t('workspace.settings.sections.danger') }}</h2>
           
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="font-medium text-gray-900 dark-edit:text-white">Delete Workspace</h3>
+              <h3 class="font-medium text-gray-900 dark-edit:text-white">{{ t('workspace.settings.actions.deleteTitle') }}</h3>
               <p class="text-sm text-gray-500 dark-edit:text-gray-400">
-                Permanently delete this workspace and all its data.
+                {{ t('workspace.settings.actions.deleteDescription') }}
               </p>
             </div>
             <Button 
-              label="Delete" 
+              :label="t('common.delete')"
               severity="danger" 
               outlined
               @click="confirmDelete"

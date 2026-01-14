@@ -46,15 +46,15 @@ const onSubmit = handleSubmit(async (values) => {
     isSuccess.value = true
     toast.add({
       severity: 'success',
-      summary: 'Email sent',
+      summary: t('auth.forgotPassword.emailSent'),
       detail: t('auth.forgotPassword.checkEmail'),
       life: 4000
     })
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Request failed',
-      detail: error.message || t('auth.forgotPassword.failedToSend'),
+      summary: t('auth.forgotPassword.requestFailed'),
+      detail: error?.response?.data?.message || error?.message || t('auth.forgotPassword.failedToSend'),
       life: 6000
     })
   } finally {
@@ -69,7 +69,7 @@ const onSubmit = handleSubmit(async (values) => {
       <div class="auth-logo">
         <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
-      <h1 class="auth-title">Reset Desidia password</h1>
+      <h1 class="auth-title">{{ t('auth.forgotPassword.title') }}</h1>
 
       <div v-if="isSuccess" class="auth-success">
         <div class="auth-success-icon">
@@ -92,7 +92,7 @@ const onSubmit = handleSubmit(async (values) => {
               v-model="email"
               type="email"
               labelClass="auth-label"
-              placeholder="Enter your email"
+              :placeholder="t('auth.forgotPassword.emailPlaceholder')"
               class="auth-input"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
@@ -106,7 +106,7 @@ const onSubmit = handleSubmit(async (values) => {
 
           <Button
             type="submit"
-            label="Continue"
+            :label="t('common.continue')"
             class="auth-primary"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
@@ -114,7 +114,9 @@ const onSubmit = handleSubmit(async (values) => {
         </form>
 
         <div class="auth-footer">
-          <router-link :to="{ name: 'Login' }" class="auth-link">← Back</router-link>
+          <router-link :to="{ name: 'Login' }" class="auth-link">
+            {{ t('auth.forgotPassword.backToSignIn') }}
+          </router-link>
         </div>
       </div>
     </div>

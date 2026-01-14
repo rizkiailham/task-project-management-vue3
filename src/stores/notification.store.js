@@ -120,12 +120,13 @@ export const useNotificationStore = defineStore('notification', () => {
    */
   async function markAllAsRead() {
     try {
-      await notificationApi.markAllAsRead()
+      const response = await notificationApi.markAllAsRead()
       
       notifications.value.forEach(n => {
         n.isRead = true
       })
       unreadCount.value = 0
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to mark all as read'
       throw err
@@ -233,4 +234,3 @@ export const useNotificationStore = defineStore('notification', () => {
     clearState
   }
 })
-

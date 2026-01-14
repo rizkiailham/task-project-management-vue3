@@ -145,7 +145,7 @@ onMounted(async () => {
       isEditorReady.value = true
     }
   } catch (error) {
-    uiStore.showError('Failed to load editor')
+    uiStore.showApiError(error, 'Failed to load editor')
   }
 })
 
@@ -186,7 +186,7 @@ async function improveWriting() {
       }
     }
   } catch (error) {
-    uiStore.showError('Failed to improve writing')
+    uiStore.showApiError(error, 'Failed to improve writing')
   }
 }
 
@@ -208,7 +208,7 @@ async function rewriteContent(style) {
       }
     }
   } catch (error) {
-    uiStore.showError('Failed to rewrite content')
+    uiStore.showApiError(error, 'Failed to rewrite content')
   }
 }
 
@@ -230,7 +230,7 @@ async function summarizeContent() {
       }
     }
   } catch (error) {
-    uiStore.showError('Failed to summarize content')
+    uiStore.showApiError(error, 'Failed to summarize content')
   }
 }
 
@@ -312,4 +312,3 @@ function replaceSelectedText(newText) {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
 }
 </style>
-

@@ -99,7 +99,7 @@ const onSubmit = handleSubmit(async (values) => {
   if (!token.value) {
     toast.add({
       severity: 'error',
-      summary: 'Invalid link',
+      summary: t('auth.resetPassword.invalidLinkTitle'),
       detail: t('auth.resetPassword.invalidLink'),
       life: 6000
     })
@@ -118,7 +118,7 @@ const onSubmit = handleSubmit(async (values) => {
 
     toast.add({
       severity: 'success',
-      summary: 'Password reset',
+      summary: t('auth.resetPassword.resetSuccessTitle'),
       detail: t('auth.resetPassword.passwordResetSuccess'),
       life: 4000
     })
@@ -126,8 +126,8 @@ const onSubmit = handleSubmit(async (values) => {
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Reset failed',
-      detail: error.message || 'Failed to reset password',
+      summary: t('auth.resetPassword.resetFailedTitle'),
+      detail: error?.response?.data?.message || error?.message || t('auth.resetPassword.resetFailed'),
       life: 6000
     })
   } finally {
@@ -142,7 +142,7 @@ const onSubmit = handleSubmit(async (values) => {
       <div class="auth-logo">
         <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
-      <h1 class="auth-title">Reset Desidia password</h1>
+      <h1 class="auth-title">{{ t('auth.resetPassword.title') }}</h1>
 
       <div v-if="!token" class="auth-success">
         <div class="auth-error-icon">
@@ -165,7 +165,7 @@ const onSubmit = handleSubmit(async (values) => {
               v-model="email"
               type="email"
               labelClass="auth-label"
-              placeholder="Enter your email"
+              :placeholder="t('auth.resetPassword.emailPlaceholder')"
               class="auth-input"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
@@ -220,7 +220,7 @@ const onSubmit = handleSubmit(async (values) => {
 
           <Button
             type="submit"
-            label="Continue"
+            :label="t('common.continue')"
             class="auth-primary"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
@@ -228,7 +228,7 @@ const onSubmit = handleSubmit(async (values) => {
         </form>
         <div class="auth-footer">
           <router-link :to="{ name: 'Login' }" class="auth-link">
-            ← Back
+            {{ t('auth.forgotPassword.backToSignIn') }}
           </router-link>
         </div>
       </div>

@@ -24,7 +24,7 @@ onMounted(async () => {
     try {
       await taskStore.fetchTask(taskId.value)
     } catch (error) {
-      uiStore.showError('Failed to load task')
+      uiStore.showApiError(error, 'Failed to load task')
       router.back()
     }
   }
@@ -92,4 +92,3 @@ function goBack() {
     </div>
   </div>
 </template>
-

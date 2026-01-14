@@ -5,6 +5,7 @@
 import { ref, computed } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
 import desidiaLogo from '@/assets/desidia.svg'
@@ -12,14 +13,15 @@ import desidiaLogo from '@/assets/desidia.svg'
 import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const toast = useToast()
 
 const validationSchema = computed(() => yup.object({
   email: yup
     .string()
-    .required('Email is required')
-    .email('Invalid email format')
+    .required(t('auth.validation.emailRequired'))
+    .email(t('auth.validation.emailInvalid'))
 }))
 
 const { handleSubmit, meta } = useForm({ validationSchema })
@@ -35,15 +37,15 @@ const onSubmit = handleSubmit(async (values) => {
     isSuccess.value = true
     toast.add({
       severity: 'success',
-      summary: 'Link sent',
-      detail: 'Login link sent',
+      summary: t('auth.loginLink.requestedTitle'),
+      detail: t('auth.loginLink.requestedDetail'),
       life: 4000
     })
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Request failed',
-      detail: error.message || 'Failed to send login link',
+      summary: t('auth.loginLink.requestFailedTitle'),
+      detail: error?.response?.data?.message || error?.message || t('auth.loginLink.requestFailed'),
       life: 6000
     })
   } finally {
@@ -58,15 +60,15 @@ const onSubmit = handleSubmit(async (values) => {
       <div class="auth-logo">
         <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
-      <h1 class="auth-title">Login with link</h1>
+      <h1 class="auth-title">{{ t('auth.loginLink.title') }}</h1>
 
       <div v-if="isSuccess" class="auth-success">
         <div class="auth-success-icon">
           <i class="pi pi-check"></i>
         </div>
-        <h2 class="auth-success-title">Check your email</h2>
+        <h2 class="auth-success-title">{{ t('auth.loginLink.checkEmail') }}</h2>
         <p class="auth-success-text">
-          We sent a login link to <strong>{{ email }}</strong>
+          {{ t('auth.loginLink.sentTo') }} <strong>{{ email }}</strong>
         </p>
       </div>
 
@@ -78,13 +80,13 @@ const onSubmit = handleSubmit(async (values) => {
               v-model="email"
               type="email"
               labelClass="auth-label"
-              placeholder="Enter your email"
+              :placeholder="t('auth.loginLink.emailPlaceholder')"
               class="auth-input"
               :class="{ 'p-invalid': emailError }"
               autocomplete="email"
             >
               <template #label>
-                Email <span class="text-red-500">*</span>
+                {{ t('auth.loginLink.email') }} <span class="text-red-500">*</span>
               </template>
             </FormInput>
             <small v-if="emailError" class="auth-error">{{ emailError }}</small>
@@ -92,7 +94,7 @@ const onSubmit = handleSubmit(async (values) => {
 
           <Button
             type="submit"
-            label="Send Link"
+            :label="t('auth.loginLink.sendLink')"
             class="auth-primary"
             :loading="isSubmitting"
             :disabled="!meta.valid || isSubmitting"
@@ -100,7 +102,9 @@ const onSubmit = handleSubmit(async (values) => {
         </form>
 
         <div class="auth-footer">
-          <router-link :to="{ name: 'Login' }" class="auth-link">← Back</router-link>
+          <router-link :to="{ name: 'Login' }" class="auth-link">
+            {{ t('auth.forgotPassword.backToSignIn') }}
+          </router-link>
         </div>
       </div>
     </div>

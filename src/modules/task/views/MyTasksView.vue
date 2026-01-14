@@ -338,7 +338,7 @@ onMounted(async () => {
   try {
     await taskStore.fetchMyTasks()
   } catch (error) {
-    uiStore.showError('Failed to load tasks')
+    uiStore.showApiError(error, 'Failed to load tasks')
   } finally {
     isLoading.value = false
   }
@@ -376,7 +376,7 @@ async function toggleTaskStatus(task) {
   try {
     await taskStore.changeTaskStatus(task.id, newStatus)
   } catch (error) {
-    uiStore.showError('Failed to update task')
+    uiStore.showApiError(error, 'Failed to update task')
   }
 }
 

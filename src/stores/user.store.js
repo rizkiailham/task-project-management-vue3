@@ -110,9 +110,9 @@ export const useUserStore = defineStore('user', () => {
     isLoading.value = true
     try {
       const response = await userApi.createUser(userData)
-      const newUser = response.user || response
+      const newUser = response.user || response.data || response
       users.value.unshift(newUser)
-      return newUser
+      return response
     } finally {
       isLoading.value = false
     }
@@ -122,13 +122,13 @@ export const useUserStore = defineStore('user', () => {
     isLoading.value = true
     try {
       const response = await userApi.updateUser(userId, userData)
-      const updatedUser = response.user || response
+      const updatedUser = response.user || response.data || response
 
       const index = users.value.findIndex(u => u.id === userId)
       if (index !== -1) {
         users.value[index] = { ...users.value[index], ...updatedUser }
       }
-      return updatedUser
+      return response
     } finally {
       isLoading.value = false
     }
@@ -137,12 +137,12 @@ export const useUserStore = defineStore('user', () => {
   async function deleteUser(userId) {
     isLoading.value = true
     try {
-      await userApi.deleteUser(userId)
+      const response = await userApi.deleteUser(userId)
       const index = users.value.findIndex(u => u.id === userId)
       if (index !== -1) {
         users.value.splice(index, 1)
       }
-      return true
+      return response
     } finally {
       isLoading.value = false
     }

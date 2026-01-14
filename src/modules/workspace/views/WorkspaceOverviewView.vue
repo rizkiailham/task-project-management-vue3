@@ -4,6 +4,7 @@
  */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore, useProjectStore, useUIStore } from '@/stores'
 
 // PrimeVue
@@ -13,6 +14,7 @@ import Avatar from 'primevue/avatar'
 import AvatarGroup from 'primevue/avatargroup'
 
 const router = useRouter()
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
@@ -41,10 +43,10 @@ function openCreateProjectModal() {
     <!-- Header -->
     <div class="mb-8">
       <h1 class="text-2xl font-bold text-gray-900 dark-edit:text-white">
-        {{ workspace?.name || 'Workspace' }}
+        {{ workspace?.name || t('workspace.title') }}
       </h1>
       <p class="mt-1 text-gray-600 dark-edit:text-gray-400">
-        {{ projects.length }} projects · {{ members.length }} members
+        {{ t('workspace.overview.summary', { projects: projects.length, members: members.length }) }}
       </p>
     </div>
 
@@ -54,7 +56,7 @@ function openCreateProjectModal() {
         <template #content>
           <div class="text-center">
             <p class="text-3xl font-bold text-primary-600">{{ projects.length }}</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">Projects</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('workspace.overview.stats.projects') }}</p>
           </div>
         </template>
       </Card>
@@ -62,7 +64,7 @@ function openCreateProjectModal() {
         <template #content>
           <div class="text-center">
             <p class="text-3xl font-bold text-primary-600">{{ members.length }}</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">Members</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('workspace.overview.stats.members') }}</p>
           </div>
         </template>
       </Card>
@@ -70,7 +72,7 @@ function openCreateProjectModal() {
         <template #content>
           <div class="text-center">
             <p class="text-3xl font-bold text-primary-600">{{ projectStore.activeProjects.length }}</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">Active Projects</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('workspace.overview.stats.activeProjects') }}</p>
           </div>
         </template>
       </Card>
@@ -79,10 +81,10 @@ function openCreateProjectModal() {
     <!-- Projects Section -->
     <div class="mb-8">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-900 dark-edit:text-white">Projects</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark-edit:text-white">{{ t('projects.title') }}</h2>
         <Button 
           icon="pi pi-plus" 
-          label="New Project" 
+          :label="t('projects.newProject')" 
           size="small"
           @click="openCreateProjectModal"
         />
@@ -90,9 +92,9 @@ function openCreateProjectModal() {
 
       <div v-if="projects.length === 0" class="rounded-lg border border-dashed border-gray-300 p-8 text-center dark-edit:border-gray-600">
         <i class="pi pi-folder-open text-4xl text-gray-300 dark-edit:text-gray-600"></i>
-        <p class="mt-2 text-gray-500 dark-edit:text-gray-400">No projects yet</p>
+        <p class="mt-2 text-gray-500 dark-edit:text-gray-400">{{ t('projects.emptyState.title') }}</p>
         <Button 
-          label="Create your first project" 
+          :label="t('workspace.overview.actions.createFirstProject')"
           text 
           class="mt-2"
           @click="openCreateProjectModal"
@@ -119,7 +121,7 @@ function openCreateProjectModal() {
                   {{ project.name }}
                 </h3>
                 <p class="text-sm text-gray-500 dark-edit:text-gray-400">
-                  {{ project.taskCount || 0 }} tasks
+                  {{ t('workspace.overview.tasksCount', { count: project.taskCount || 0 }) }}
                 </p>
               </div>
             </div>
@@ -131,10 +133,10 @@ function openCreateProjectModal() {
     <!-- Members Section -->
     <div>
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-900 dark-edit:text-white">Members</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark-edit:text-white">{{ t('workspace.members') }}</h2>
         <Button 
           icon="pi pi-user-plus" 
-          label="Invite" 
+          :label="t('workspace.inviteMember')" 
           size="small"
           outlined
           @click="uiStore.openModal('inviteMember')"
@@ -164,11 +166,10 @@ function openCreateProjectModal() {
               'bg-gray-100 text-gray-700 dark-edit:bg-gray-700 dark-edit:text-gray-300': member.role === 'member'
             }"
           >
-            {{ member.role }}
+            {{ t(`workspace.roles.${member.role}`) }}
           </span>
         </div>
       </div>
     </div>
   </div>
 </template>
-

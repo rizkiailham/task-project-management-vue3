@@ -215,9 +215,10 @@ export const useTaskStore = defineStore('task', () => {
 
     try {
       const response = await taskApi.createTask(projectStore.currentProjectId, data)
-      const task = createTask(response)
+      const taskData = response.task || response.data || response
+      const task = createTask(taskData)
       tasks.value.unshift(task)
-      return task
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to create task'
       throw err
@@ -236,7 +237,8 @@ export const useTaskStore = defineStore('task', () => {
 
     try {
       const response = await taskApi.updateTask(taskId, data)
-      const task = createTask(response)
+      const taskData = response.task || response.data || response
+      const task = createTask(taskData)
 
       // Update in list
       const index = tasks.value.findIndex(t => t.id === taskId)
@@ -249,7 +251,7 @@ export const useTaskStore = defineStore('task', () => {
         currentTask.value = task
       }
 
-      return task
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to update task'
       throw err

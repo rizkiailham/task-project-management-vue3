@@ -137,7 +137,7 @@ watch(activeTab, async (newTab) => {
       await roleStore.fetchRoles()
     } catch (error) {
       console.error('Error fetching roles:', error)
-      uiStore.showError('Failed to load roles')
+      uiStore.showApiError(error, 'Failed to load roles')
     }
   }
 
@@ -146,7 +146,7 @@ watch(activeTab, async (newTab) => {
       await groupStore.fetchGroups()
     } catch (error) {
       console.error('Error fetching groups:', error)
-      uiStore.showError('Failed to load groups')
+      uiStore.showApiError(error, 'Failed to load groups')
     }
   }
 })
@@ -157,7 +157,7 @@ onMounted(async () => {
     await userStore.fetchUsers({ page: 1, limit: 10 })
   } catch (error) {
     console.error('Error fetching users:', error)
-    uiStore.showError('Failed to load users')
+    uiStore.showApiError(error, 'Failed to load users')
   } finally {
     isLoading.value = false
   }
@@ -179,7 +179,7 @@ async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
     })
   } catch (error) {
     console.error('Error fetching users:', error)
-    uiStore.showError('Failed to load users')
+    uiStore.showApiError(error, 'Failed to load users')
   } finally {
     isLoading.value = false
   }
@@ -200,7 +200,7 @@ async function handleUserFilter({ isActive, roleId }) {
     })
   } catch (error) {
     console.error('Error fetching users:', error)
-    uiStore.showError('Failed to load users')
+    uiStore.showApiError(error, 'Failed to load users')
   } finally {
     isLoading.value = false
   }
@@ -226,12 +226,12 @@ async function handleDeleteUser() {
   
   isDeleting.value = true
   try {
-    await userStore.deleteUser(selectedUser.value.id)
-    uiStore.showSuccess('User deleted successfully')
+    const response = await userStore.deleteUser(selectedUser.value.id)
+    uiStore.showApiSuccess(response, 'User deleted successfully')
     showDeleteModal.value = false
     selectedUser.value = null
   } catch (error) {
-    uiStore.showError('Failed to delete user')
+    uiStore.showApiError(error, 'Failed to delete user')
   } finally {
     isDeleting.value = false
   }
@@ -239,10 +239,10 @@ async function handleDeleteUser() {
 
 async function handleResendInvite(user) {
   try {
-    await userStore.resendInvite(user.id)
-    uiStore.showSuccess('Invitation email resent successfully')
+    const response = await userStore.resendInvite(user.id)
+    uiStore.showApiSuccess(response, 'Invitation email resent successfully')
   } catch (error) {
-    uiStore.showError('Failed to resend invitation')
+    uiStore.showApiError(error, 'Failed to resend invitation')
   }
 }
 
@@ -279,12 +279,12 @@ async function handleDeleteRole() {
   
   isDeletingRole.value = true
   try {
-    await roleStore.deleteRole(selectedRole.value.id)
-    uiStore.showSuccess('Role deleted successfully')
+    const response = await roleStore.deleteRole(selectedRole.value.id)
+    uiStore.showApiSuccess(response, 'Role deleted successfully')
     showRoleDeleteModal.value = false
     selectedRole.value = null
   } catch (error) {
-    uiStore.showError('Failed to delete role')
+    uiStore.showApiError(error, 'Failed to delete role')
   } finally {
     isDeletingRole.value = false
   }
@@ -315,12 +315,12 @@ async function handleDeleteGroup() {
 
   isDeletingGroup.value = true
   try {
-    await groupStore.deleteGroup(selectedGroup.value.id)
-    uiStore.showSuccess('Group deleted successfully')
+    const response = await groupStore.deleteGroup(selectedGroup.value.id)
+    uiStore.showApiSuccess(response, 'Group deleted successfully')
     showGroupDeleteModal.value = false
     selectedGroup.value = null
   } catch (error) {
-    uiStore.showError('Failed to delete group')
+    uiStore.showApiError(error, 'Failed to delete group')
   } finally {
     isDeletingGroup.value = false
   }

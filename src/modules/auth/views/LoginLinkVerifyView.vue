@@ -6,6 +6,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
 import desidiaLogo from '@/assets/desidia.svg'
@@ -13,6 +14,7 @@ import desidiaLogo from '@/assets/desidia.svg'
 import FormInput from '@/components/ui/FormInput.vue'
 import Button from 'primevue/button'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -21,11 +23,11 @@ const toast = useToast()
 const validationSchema = computed(() => yup.object({
   email: yup
     .string()
-    .required('Email is required')
-    .email('Invalid email format'),
+    .required(t('auth.validation.emailRequired'))
+    .email(t('auth.validation.emailInvalid')),
   token: yup
     .string()
-    .required('Token is required')
+    .required(t('auth.loginLink.tokenRequired'))
 }))
 
 const { handleSubmit, meta, setFieldValue } = useForm({ validationSchema })
@@ -62,16 +64,16 @@ async function runVerify(values) {
     })
     toast.add({
       severity: 'success',
-      summary: 'Login successful',
-      detail: 'Welcome back',
+      summary: t('auth.login.loginSuccessful'),
+      detail: t('auth.login.welcomeBack'),
       life: 4000
     })
     router.push(redirectPath.value)
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Verification failed',
-      detail: error.message || 'Failed to verify login link',
+      summary: t('auth.loginLink.verifyFailedTitle'),
+      detail: error?.response?.data?.message || error?.message || t('auth.loginLink.verifyFailed'),
       life: 6000
     })
   } finally {
@@ -90,7 +92,7 @@ const onSubmit = handleSubmit(async (values) => {
       <div class="auth-logo">
         <img :src="desidiaLogo" alt="Desidia" class="auth-logo-icon" />
       </div>
-      <h1 class="auth-title">Verify login link</h1>
+      <h1 class="auth-title">{{ t('auth.loginLink.verifyTitle') }}</h1>
 
       <form @submit="onSubmit" class="auth-form">
         <div class="auth-field">
@@ -99,14 +101,14 @@ const onSubmit = handleSubmit(async (values) => {
             v-model="email"
             type="email"
             labelClass="auth-label"
-            placeholder="Enter your email"
+            :placeholder="t('auth.loginLink.emailPlaceholder')"
             class="auth-input"
             :class="{ 'p-invalid': emailError }"
             autocomplete="email"
             :disabled="didAutoVerify && isSubmitting"
           >
             <template #label>
-              Email <span class="text-red-500">*</span>
+              {{ t('auth.loginLink.email') }} <span class="text-red-500">*</span>
             </template>
           </FormInput>
           <small v-if="emailError" class="auth-error">{{ emailError }}</small>
@@ -117,14 +119,14 @@ const onSubmit = handleSubmit(async (values) => {
             id="token"
             v-model="token"
             labelClass="auth-label"
-            placeholder="Paste your login token"
+            :placeholder="t('auth.loginLink.tokenPlaceholder')"
             class="auth-input"
             :class="{ 'p-invalid': tokenError }"
             autocomplete="one-time-code"
             :disabled="didAutoVerify && isSubmitting"
           >
             <template #label>
-              Token <span class="text-red-500">*</span>
+              {{ t('auth.loginLink.token') }} <span class="text-red-500">*</span>
             </template>
           </FormInput>
           <small v-if="tokenError" class="auth-error">{{ tokenError }}</small>
@@ -132,7 +134,7 @@ const onSubmit = handleSubmit(async (values) => {
 
         <Button
           type="submit"
-          label="Continue"
+          :label="t('common.continue')"
           class="auth-primary"
           :loading="isSubmitting"
           :disabled="!meta.valid || isSubmitting"
@@ -140,7 +142,9 @@ const onSubmit = handleSubmit(async (values) => {
       </form>
 
       <div class="auth-footer">
-        <router-link :to="{ name: 'Login' }" class="auth-link">← Back</router-link>
+        <router-link :to="{ name: 'Login' }" class="auth-link">
+          {{ t('auth.forgotPassword.backToSignIn') }}
+        </router-link>
       </div>
     </div>
   </div>

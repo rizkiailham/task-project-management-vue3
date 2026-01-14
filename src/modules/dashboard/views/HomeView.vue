@@ -6,6 +6,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore, useTaskStore, useProjectStore, useWorkspaceStore, useUIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 
@@ -17,6 +18,7 @@ import ProgressBar from 'primevue/progressbar'
 import Skeleton from 'primevue/skeleton'
 
 const router = useRouter()
+const { t } = useI18n()
 const authStore = useAuthStore()
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
@@ -29,9 +31,9 @@ const isLoading = ref(true)
 // Computed
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return t('dashboard.greeting.morning')
+  if (hour < 18) return t('dashboard.greeting.afternoon')
+  return t('dashboard.greeting.evening')
 })
 
 const todayTasks = computed(() => {
@@ -72,7 +74,7 @@ onMounted(async () => {
       projectStore.fetchProjects()
     ])
   } catch (error) {
-    uiStore.showError('Failed to load dashboard data')
+    uiStore.showApiError(error, t('dashboard.errors.loadFailed'))
   } finally {
     isLoading.value = false
   }
@@ -105,6 +107,23 @@ function getPriorityColor(priority) {
   }
   return colors[priority] || 'text-gray-400'
 }
+
+function getStatusLabel(status) {
+  switch (status) {
+    case TaskStatus.TODO:
+      return t('tasks.statusOptions.todo')
+    case TaskStatus.IN_PROGRESS:
+      return t('tasks.statusOptions.inProgress')
+    case TaskStatus.IN_REVIEW:
+      return t('tasks.statusOptions.inReview')
+    case TaskStatus.DONE:
+      return t('tasks.statusOptions.done')
+    case TaskStatus.CANCELLED:
+      return t('tasks.statusOptions.cancelled')
+    default:
+      return status
+  }
+}
 </script>
 
 <template>
@@ -115,7 +134,7 @@ function getPriorityColor(priority) {
         {{ greeting }}, {{ authStore.userName.split(' ')[0] }}!
       </h1>
       <p class="mt-1 text-gray-600 dark-edit:text-gray-400">
-        Here's what's happening with your tasks today.
+        {{ t('dashboard.subheading') }}
       </p>
     </div>
 
@@ -126,7 +145,7 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Total Tasks</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.totalTasks') }}</p>
               <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
                 {{ taskStats.total }}
               </p>
@@ -144,7 +163,7 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">In Progress</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.inProgress') }}</p>
               <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
                 {{ taskStats.inProgress }}
               </p>
@@ -162,7 +181,7 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Completed</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.completed') }}</p>
               <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
                 {{ taskStats.completed }}
               </p>
@@ -180,7 +199,7 @@ function getPriorityColor(priority) {
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Overdue</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.overdue') }}</p>
               <p v-if="!isLoading" class="text-2xl font-bold" :class="taskStats.overdue > 0 ? 'text-red-600' : 'text-gray-900 dark-edit:text-white'">
                 {{ taskStats.overdue }}
               </p>
@@ -200,10 +219,10 @@ function getPriorityColor(priority) {
         <Card class="shadow-sm">
           <template #title>
             <div class="flex items-center justify-between">
-              <span>Today's Tasks</span>
+              <span>{{ t('dashboard.today.title') }}</span>
               <Button 
                 icon="pi pi-plus" 
-                label="Add Task" 
+                :label="t('dashboard.today.addTask')"
                 size="small" 
                 @click="openCreateTaskModal"
               />
@@ -216,9 +235,9 @@ function getPriorityColor(priority) {
             
             <div v-else-if="todayTasks.length === 0" class="py-8 text-center">
               <i class="pi pi-check-circle text-4xl text-gray-300 dark-edit:text-gray-600"></i>
-              <p class="mt-2 text-gray-500 dark-edit:text-gray-400">No tasks due today</p>
+              <p class="mt-2 text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.today.empty') }}</p>
               <Button 
-                label="Create a task" 
+                :label="t('dashboard.today.createTask')"
                 text 
                 size="small" 
                 class="mt-2"
@@ -246,7 +265,7 @@ function getPriorityColor(priority) {
                     'bg-green-100 text-green-700 dark-edit:bg-green-900/20 dark-edit:text-green-400': task.status === TaskStatus.DONE
                   }"
                 >
-                  {{ task.status.replace('_', ' ') }}
+                  {{ getStatusLabel(task.status) }}
                 </span>
               </div>
               
@@ -255,7 +274,7 @@ function getPriorityColor(priority) {
                 :to="{ name: 'MyTasks' }"
                 class="block text-center text-sm text-primary-600 hover:text-primary-500"
               >
-                View all {{ todayTasks.length }} tasks →
+                {{ t('dashboard.today.viewAll', { count: todayTasks.length }) }}
               </router-link>
             </div>
           </template>
@@ -266,14 +285,14 @@ function getPriorityColor(priority) {
       <div class="space-y-6">
         <!-- Progress Card -->
         <Card class="shadow-sm">
-          <template #title>Weekly Progress</template>
+          <template #title>{{ t('dashboard.progress.title') }}</template>
           <template #content>
             <div class="text-center">
               <div class="text-4xl font-bold text-primary-600">{{ completionRate }}%</div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">Tasks completed</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.progress.completedLabel') }}</p>
               <ProgressBar :value="completionRate" class="mt-4" :showValue="false" />
               <p class="mt-2 text-xs text-gray-500 dark-edit:text-gray-400">
-                {{ taskStats.completed }} of {{ taskStats.total }} tasks
+                {{ t('dashboard.progress.completedCount', { completed: taskStats.completed, total: taskStats.total }) }}
               </p>
             </div>
           </template>
@@ -281,14 +300,14 @@ function getPriorityColor(priority) {
 
         <!-- Recent Projects -->
         <Card class="shadow-sm">
-          <template #title>Recent Projects</template>
+          <template #title>{{ t('dashboard.projects.title') }}</template>
           <template #content>
             <div v-if="isLoading" class="space-y-3">
               <Skeleton v-for="i in 3" :key="i" height="40px" />
             </div>
             
             <div v-else-if="projectStore.projects.length === 0" class="py-4 text-center">
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">No projects yet</p>
+              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.projects.empty') }}</p>
             </div>
             
             <div v-else class="space-y-2">
@@ -316,4 +335,3 @@ function getPriorityColor(priority) {
     </div>
   </div>
 </template>
-

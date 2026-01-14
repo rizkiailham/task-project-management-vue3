@@ -137,7 +137,38 @@
     "aiInsights": "AI-innsikt",
     "tasksDueToday": "oppgaver forfaller i dag",
     "tasksOverdue": "forfalte oppgaver",
-    "projectsActive": "aktive prosjekter"
+    "projectsActive": "aktive prosjekter",
+    "greeting": {
+      "morning": "God morgen",
+      "afternoon": "God ettermiddag",
+      "evening": "God kveld"
+    },
+    "subheading": "Her er det som skjer med arbeidet ditt i dag.",
+    "stats": {
+      "totalTasks": "Totale oppgaver",
+      "inProgress": "Pågår",
+      "completed": "Fullført",
+      "overdue": "Forfalt"
+    },
+    "today": {
+      "title": "Dagens oppgaver",
+      "addTask": "Legg til oppgave",
+      "empty": "Ingen oppgaver med forfall i dag",
+      "createTask": "Opprett en oppgave",
+      "viewAll": "Vis alle ({count})"
+    },
+    "progress": {
+      "title": "Fremdrift",
+      "completedLabel": "Fullført i dag",
+      "completedCount": "{completed} av {total} oppgaver fullført"
+    },
+    "projects": {
+      "title": "Siste prosjekter",
+      "empty": "Ingen nylige prosjekter"
+    },
+    "errors": {
+      "loadFailed": "Kunne ikke laste dashborddata"
+    }
   },
   "tasks": {
     "title": "Oppgaver",
@@ -183,6 +214,43 @@
     "emptyState": {
       "title": "Ingen oppgaver ennå",
       "description": "Opprett din første oppgave for å komme i gang"
+    },
+
+    "fields": {
+      "title": "Task Title",
+      "description": "Description",
+      "project": "Project",
+      "status": "Status",
+      "priority": "Priority",
+      "dueDate": "Due Date"
+    },
+    "placeholders": {
+      "title": "Enter task title...",
+      "description": "Add a description...",
+      "project": "Select a project"
+    },
+    "createModal": {
+      "title": "Create New Task",
+      "subtitle": "Add a new task to your project",
+      "cta": "Create Task",
+      "creating": "Creating...",
+      "aiGenerate": "AI Generate",
+      "placeholders": {
+        "title": "Enter task title..."
+      }
+    },
+    "validation": {
+      "titleRequired": "Task title is required",
+      "titleMin": "Title must be at least 2 characters",
+      "projectRequired": "Please select a project"
+    },
+    "messages": {
+      "created": "Task created successfully"
+    },
+    "errors": {
+      "create": "Failed to create task",
+      "titleRequired": "Please enter a task title first",
+      "generateDescription": "Failed to generate description"
     }
   },
   "projects": {
@@ -213,6 +281,33 @@
     "emptyState": {
       "title": "Ingen prosjekter ennå",
       "description": "Opprett ditt første prosjekt for å komme i gang"
+    },
+
+    "fields": {
+      "name": "Project Name",
+      "description": "Description",
+      "color": "Project Color"
+    },
+    "createModal": {
+      "title": "Create New Project",
+      "subtitle": "Add a new project to your workspace",
+      "cta": "Create Project",
+      "creating": "Creating...",
+      "previewLabel": "Preview",
+      "placeholders": {
+        "name": "Enter project name...",
+        "description": "Add a description..."
+      }
+    },
+    "validation": {
+      "nameRequired": "Project name is required",
+      "nameMin": "Name must be at least 2 characters"
+    },
+    "messages": {
+      "created": "Project created successfully"
+    },
+    "errors": {
+      "create": "Failed to create project"
     }
   },
   "workspace": {
@@ -260,7 +355,196 @@
       "no": "Norsk"
     },
     "saveChanges": "Lagre endringer",
-    "changesSaved": "Endringer lagret"
+    "changesSaved": "Endringer lagret",
+    "modal": {
+      "groups": {
+        "account": "Account",
+        "preferences": "Preferences",
+        "ai": "AI",
+        "apiAccess": "API Access"
+      },
+      "items": {
+        "profile": "Profile",
+        "project": "Project",
+        "notifications": "Notifications",
+        "dataTypes": "Data Types",
+        "customFields": "Custom Fields",
+        "formsBuilder": "Forms Builder",
+        "dataImport": "Data Import",
+        "dataExport": "Data Export",
+        "assistants": "Assistants",
+        "aiModels": "AI Models",
+        "promptLibrary": "Prompt Library",
+        "skillsTools": "Skills & Tools",
+        "integrations": "Integrations",
+        "webhooks": "Webhooks"
+      },
+      "comingSoon": "Coming soon",
+      "comingSoonDescription": "This section will be available in the settings hub."
+    },
+    "customFields": {
+      "title": "Custom user fields",
+      "subtitle": "Manage data captured in profiles and forms.",
+      "editorTitle": "Edit custom fields",
+      "columns": {
+        "name": "Name",
+        "type": "Type"
+      },
+      "sections": {
+        "general": "General",
+        "settings": "Settings"
+      },
+      "fields": {
+        "type": "Type",
+        "nameLabel": "Name/Label",
+        "description": "Description",
+        "show": "Show",
+        "numberFormat": "Number Format",
+        "currencySign": "Currency Sign",
+        "options": "Options",
+        "allowMultiple": "Allow multiple",
+        "displayName": "Display name",
+        "dateRange": "Date Range"
+      },
+      "placeholders": {
+        "name": "Department",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla interdum"
+      },
+      "help": {
+        "show": "Show this field on user profiles and forms by default. Hidden fields remain visible to admins.",
+        "numberFormat": "How the numbers should be displayed for this field",
+        "allowMultiple": "Enable this to assign multiple users to this field.",
+        "displayName": "Enable this to always show the user's name rather than just their avatar.",
+        "dateRange": "Enable this to add a second date and use a date range instead of a single date."
+      },
+      "actions": {
+        "newOption": "+ New option",
+        "deleteField": "Delete field"
+      },
+      "options": {
+        "new": "New Option",
+        "addSubItem": "Add sub-item"
+      },
+      "badges": {
+        "text": "Text",
+        "number": "Number",
+        "boolean": "Boolean",
+        "select": "Select",
+        "multiselect": "Multiselect",
+        "date": "Date",
+        "user": "User"
+      },
+      "types": {
+        "text": "Text",
+        "number": "Number",
+        "checkbox": "Checkbox",
+        "select": "Select",
+        "multiselect": "Multiselect",
+        "date": "Date",
+        "user": "User"
+      },
+      "numberFormats": {
+        "number": "Number",
+        "percentage": "Percentage",
+        "currency": "Currency"
+      },
+      "labels": {
+        "customField": "Custom field"
+      },
+      "messages": {
+        "created": "Custom field created successfully",
+        "updated": "Custom field updated successfully",
+        "deleted": "Custom field deleted successfully"
+      },
+      "errors": {
+        "load": "Failed to load custom fields",
+        "save": "Failed to save custom field",
+        "delete": "Failed to delete custom field"
+      },
+      "loading": "Loading custom fields...",
+      "empty": "No custom fields yet.",
+      "newFieldLabel": "New Field {index}",
+      "delete": {
+        "title": "Delete {label}",
+        "message": "This action will permanently delete the custom field. This action cannot be undone."
+      }
+    }
+  },
+  "users": {
+    "avatarAlt": "Brukeravatar",
+    "avatarFallback": "B",
+    "lastLogin": "Sist innlogget {date}",
+    "modal": {
+      "addTitle": "Legg til bruker",
+      "editTitle": "Rediger bruker"
+    },
+    "sections": {
+      "info": "Brukerinformasjon",
+      "projectAccess": "Prosjekt og tilgang",
+      "customFields": "Egendefinerte felt"
+    },
+    "fields": {
+      "firstName": "Fornavn",
+      "lastName": "Etternavn",
+      "email": "E-post",
+      "phone": "Telefon",
+      "language": "Språk",
+      "organization": "Organisasjon",
+      "password": "Passord",
+      "confirmPassword": "Bekreft passord",
+      "projects": "Prosjekter",
+      "role": "Rolle",
+      "groups": "Grupper",
+      "active": "Aktiv",
+      "unit": "Enhet",
+      "department": "Avdeling"
+    },
+    "placeholders": {
+      "projects": "Velg prosjekter",
+      "role": "Velg rolle",
+      "groups": "Velg grupper"
+    },
+    "validation": {
+      "firstNameRequired": "Fornavn er påkrevd",
+      "lastNameRequired": "Etternavn er påkrevd",
+      "emailRequired": "E-post er påkrevd",
+      "emailInvalid": "Vennligst oppgi en gyldig e-postadresse"
+    },
+    "messages": {
+      "created": "Bruker opprettet",
+      "updated": "Bruker oppdatert"
+    },
+    "errors": {
+      "create": "Kunne ikke opprette bruker",
+      "update": "Kunne ikke oppdatere bruker",
+      "avatarUpload": "Kunne ikke laste opp avatar",
+      "uploadFailed": "Opplasting mislyktes"
+    },
+    "invite": {
+      "title": "Invite user",
+      "subtitle": "Users will complete their details after accepting the email invitation",
+      "cta": "Send Invitation",
+      "sending": "Sending...",
+      "fields": {
+        "projects": "Project(s)"
+      },
+      "placeholders": {
+        "email": "user@email.address",
+        "projects": "Search for existing project(s)"
+      },
+      "validation": {
+        "emailRequired": "Email is required",
+        "emailInvalid": "Invalid email format",
+        "projectRequired": "At least one project is required"
+      },
+      "messages": {
+        "userExists": "User already exists and has been added to the project(s)",
+        "sent": "Invitation sent successfully"
+      },
+      "errors": {
+        "send": "Failed to send invitation"
+      }
+    }
   },
   "promo": {
     "manageWithAI": "Administrer oppgavene dine med AI",

@@ -276,6 +276,27 @@ export const useUIStore = defineStore('ui', () => {
     return showToast({ message, title, type: 'info' })
   }
 
+  function getApiMessage(source, fallback = '') {
+    if (!source) return fallback
+    if (typeof source === 'string') return source
+    return (
+      source.message ||
+      source.data?.message ||
+      source.response?.data?.message ||
+      source.response?.data?.detail ||
+      source.detail ||
+      fallback
+    )
+  }
+
+  function showApiSuccess(response, fallback = '', title = '') {
+    return showSuccess(getApiMessage(response, fallback), title)
+  }
+
+  function showApiError(error, fallback = '', title = '') {
+    return showError(getApiMessage(error, fallback), title)
+  }
+
   // ================================
   // Search Actions
   // ================================
@@ -409,6 +430,9 @@ export const useUIStore = defineStore('ui', () => {
     showError,
     showWarning,
     showInfo,
+    getApiMessage,
+    showApiSuccess,
+    showApiError,
 
     // Search Actions
     openSearch,

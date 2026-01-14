@@ -120,9 +120,9 @@ export const useProjectStore = defineStore('project', () => {
     try {
       const response = await projectApi.createProject(data)
       // Backend returns { message, project }
-      const project = response.project || response
+      const project = response.project || response.data || response
       projects.value.unshift(project)
-      return project
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to create project'
       throw err
@@ -141,7 +141,8 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null
 
     try {
-      const project = await projectApi.updateProject(projectId, data)
+      const response = await projectApi.updateProject(projectId, data)
+      const project = response.project || response.data || response
 
       // Update in list
       const index = projects.value.findIndex(p => p.id === projectId)
@@ -154,7 +155,7 @@ export const useProjectStore = defineStore('project', () => {
         currentProject.value = { ...currentProject.value, ...project }
       }
 
-      return project
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to update project'
       throw err
@@ -172,12 +173,13 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null
 
     try {
-      await projectApi.deleteProject(projectId)
+      const response = await projectApi.deleteProject(projectId)
       projects.value = projects.value.filter(p => p.id !== projectId)
 
       if (currentProject.value?.id === projectId) {
         currentProject.value = null
       }
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to delete project'
       throw err

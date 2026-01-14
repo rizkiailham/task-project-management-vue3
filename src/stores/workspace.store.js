@@ -163,7 +163,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     try {
       const response = await workspaceApi.updateWorkspace(currentWorkspace.value.id, data)
-      const workspace = createWorkspace(response)
+      const workspaceData = response.workspace || response.data || response
+      const workspace = createWorkspace(workspaceData)
 
       // Update in list
       const index = workspaces.value.findIndex(w => w.id === workspace.id)
@@ -172,7 +173,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       }
 
       currentWorkspace.value = workspace
-      return workspace
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to update workspace'
       throw err
@@ -190,7 +191,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     error.value = null
 
     try {
-      await workspaceApi.deleteWorkspace(workspaceId)
+      const response = await workspaceApi.deleteWorkspace(workspaceId)
       workspaces.value = workspaces.value.filter(w => w.id !== workspaceId)
 
       // Select another workspace if current was deleted
@@ -200,6 +201,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
           await selectWorkspace(workspaces.value[0].id)
         }
       }
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to delete workspace'
       throw err

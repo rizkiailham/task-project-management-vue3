@@ -3,6 +3,7 @@
  * ProjectBoardView - Kanban board view for project tasks
  */
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useUIStore, useWorkspaceStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 
@@ -15,17 +16,18 @@ const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
 const workspaceStore = useWorkspaceStore()
+const { t, locale } = useI18n()
 
 // State
 const draggedTask = ref(null)
 
 // Kanban columns configuration
-const columns = [
-  { status: TaskStatus.TODO, label: 'To Do', color: 'bg-gray-500' },
-  { status: TaskStatus.IN_PROGRESS, label: 'In Progress', color: 'bg-blue-500' },
-  { status: TaskStatus.IN_REVIEW, label: 'In Review', color: 'bg-yellow-500' },
-  { status: TaskStatus.DONE, label: 'Done', color: 'bg-green-500' }
-]
+const columns = computed(() => ([
+  { status: TaskStatus.TODO, label: t('tasks.statusOptions.todo'), color: 'bg-gray-500' },
+  { status: TaskStatus.IN_PROGRESS, label: t('tasks.statusOptions.inProgress'), color: 'bg-blue-500' },
+  { status: TaskStatus.IN_REVIEW, label: t('tasks.statusOptions.inReview'), color: 'bg-yellow-500' },
+  { status: TaskStatus.DONE, label: t('tasks.statusOptions.done'), color: 'bg-green-500' }
+]))
 
 // Computed
 const tasksByStatus = computed(() => taskStore.tasksByStatus)
@@ -55,10 +57,10 @@ async function onDrop(event, targetStatus) {
   }
   
   try {
-    await taskStore.changeTaskStatus(draggedTask.value.id, targetStatus)
-    uiStore.showSuccess('Task moved')
+    const response = await taskStore.changeTaskStatus(draggedTask.value.id, targetStatus)
+    uiStore.showApiSuccess(response, t('tasks.messages.moved'))
   } catch (error) {
-    uiStore.showError('Failed to move task')
+    uiStore.showApiError(error, t('tasks.errors.move'))
   }
   
   draggedTask.value = null
@@ -89,11 +91,11 @@ function formatDate(date) {
   const today = new Date()
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
-  
-  if (d.toDateString() === today.toDateString()) return 'Today'
-  if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow'
-  
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+  if (d.toDateString() === today.toDateString()) return t('calendar.today')
+  if (d.toDateString() === tomorrow.toDateString()) return t('calendar.tomorrow')
+
+  return d.toLocaleDateString(locale.value || 'en', { month: 'short', day: 'numeric' })
 }
 
 function isOverdue(task) {
@@ -111,12 +113,12 @@ function isOverdue(task) {
           {{ projectStore.currentProjectName }}
         </h1>
         <p class="text-sm text-gray-500 dark-edit:text-gray-400">
-          {{ taskStore.taskCount }} tasks
+          {{ t('projects.tasksCount', { count: taskStore.taskCount }) }}
         </p>
       </div>
       <Button 
         icon="pi pi-plus" 
-        label="Add Task" 
+        :label="t('projects.addTask')" 
         @click="openCreateTaskModal()"
       />
     </div>
@@ -130,8 +132,8 @@ function isOverdue(task) {
     </div>
 
     <!-- Kanban Columns -->
-    <div v-else class="flex gap-4">
-      <div
+      <div v-else class="flex gap-4">
+        <div
         v-for="column in columns"
         :key="column.status"
         class="kanban-column w-72 flex-shrink-0"
@@ -244,7 +246,7 @@ function isOverdue(task) {
             v-if="getColumnTasks(column.status).length === 0"
             class="flex h-24 items-center justify-center text-sm text-gray-400"
           >
-            No tasks
+            {{ t('tasks.emptyState.title') }}
           </div>
         </div>
       </div>
@@ -278,4 +280,3 @@ function isOverdue(task) {
   background-color: rgba(99, 102, 241, 0.05);
 }
 </style>
-

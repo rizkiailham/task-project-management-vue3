@@ -76,9 +76,9 @@ export const useGroupStore = defineStore('group', () => {
         isLoading.value = true
         try {
             const response = await groupApi.createGroup(groupData)
-            const newGroup = response.group || response
+            const newGroup = response.group || response.data || response
             groups.value.unshift(newGroup)
-            return newGroup
+            return response
         } finally {
             isLoading.value = false
         }
@@ -88,13 +88,13 @@ export const useGroupStore = defineStore('group', () => {
         isLoading.value = true
         try {
             const response = await groupApi.updateGroup(groupId, groupData)
-            const updatedGroup = response.group || response
+            const updatedGroup = response.group || response.data || response
 
             const index = groups.value.findIndex(g => g.id === groupId)
             if (index !== -1) {
                 groups.value[index] = { ...groups.value[index], ...updatedGroup }
             }
-            return updatedGroup
+            return response
         } finally {
             isLoading.value = false
         }
@@ -103,12 +103,12 @@ export const useGroupStore = defineStore('group', () => {
     async function deleteGroup(groupId) {
         isLoading.value = true
         try {
-            await groupApi.deleteGroup(groupId)
+            const response = await groupApi.deleteGroup(groupId)
             const index = groups.value.findIndex(g => g.id === groupId)
             if (index !== -1) {
                 groups.value.splice(index, 1)
             }
-            return true
+            return response
         } finally {
             isLoading.value = false
         }

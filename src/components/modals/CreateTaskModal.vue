@@ -3,6 +3,7 @@
  * CreateTaskModal - Modal for creating new tasks
  */
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useUIStore, useAIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 import { useForm, useField } from 'vee-validate'
@@ -17,6 +18,7 @@ const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
 const aiStore = useAIStore()
+const { t } = useI18n()
 
 // Modal visibility
 const visible = computed({
@@ -29,9 +31,9 @@ const isGeneratingAI = computed(() => aiStore.isGenerating)
 
 // Form validation
 const validationSchema = yup.object({
-  title: yup.string().required('Task title is required').min(2, 'Title must be at least 2 characters'),
+  title: yup.string().required(t('tasks.validation.titleRequired')).min(2, t('tasks.validation.titleMin')),
   description: yup.string(),
-  projectId: yup.string().required('Please select a project'),
+  projectId: yup.string().required(t('tasks.validation.projectRequired')),
   status: yup.string().required(),
   priority: yup.string().required(),
   dueDate: yup.date().nullable()
@@ -62,16 +64,16 @@ const projectOptions = computed(() =>
 )
 
 const statusOptions = [
-  { label: 'To Do', value: TaskStatus.TODO },
-  { label: 'In Progress', value: TaskStatus.IN_PROGRESS },
-  { label: 'In Review', value: TaskStatus.IN_REVIEW }
+  { label: t('tasks.statusOptions.todo'), value: TaskStatus.TODO },
+  { label: t('tasks.statusOptions.inProgress'), value: TaskStatus.IN_PROGRESS },
+  { label: t('tasks.statusOptions.inReview'), value: TaskStatus.IN_REVIEW }
 ]
 
 const priorityOptions = [
-  { label: 'Urgent', value: TaskPriority.URGENT },
-  { label: 'High', value: TaskPriority.HIGH },
-  { label: 'Medium', value: TaskPriority.MEDIUM },
-  { label: 'Low', value: TaskPriority.LOW }
+  { label: t('tasks.priorityOptions.urgent'), value: TaskPriority.URGENT },
+  { label: t('tasks.priorityOptions.high'), value: TaskPriority.HIGH },
+  { label: t('tasks.priorityOptions.medium'), value: TaskPriority.MEDIUM },
+  { label: t('tasks.priorityOptions.low'), value: TaskPriority.LOW }
 ]
 
 // Watch for modal data changes
@@ -94,14 +96,14 @@ watch(visible, (isVisible) => {
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
-    await taskStore.createNewTask({
+    const response = await taskStore.createNewTask({
       ...values,
       dueDate: values.dueDate?.toISOString()
     })
-    uiStore.showSuccess('Task created successfully')
+    uiStore.showApiSuccess(response, t('tasks.messages.created'))
     uiStore.closeModal()
   } catch (error) {
-    uiStore.showError('Failed to create task')
+    uiStore.showApiError(error, t('tasks.errors.create'))
   } finally {
     isLoading.value = false
   }
@@ -109,7 +111,7 @@ const onSubmit = handleSubmit(async (values) => {
 
 async function generateDescription() {
   if (!title.value) {
-    uiStore.showWarning('Please enter a task title first')
+    uiStore.showWarning(t('tasks.errors.titleRequired'))
     return
   }
   
@@ -119,7 +121,7 @@ async function generateDescription() {
       setFieldValue('description', result)
     }
   } catch (error) {
-    uiStore.showError('Failed to generate description')
+    uiStore.showApiError(error, t('tasks.errors.generateDescription'))
   }
 }
 
@@ -153,8 +155,8 @@ function closeModal() {
           </svg>
         </div>
         <div>
-          <h2 class="text-lg font-semibold text-gray-900">Create New Task</h2>
-          <p class="text-sm text-gray-500">Add a new task to your project</p>
+          <h2 class="text-lg font-semibold text-gray-900">{{ t('tasks.createModal.title') }}</h2>
+          <p class="text-sm text-gray-500">{{ t('tasks.createModal.subtitle') }}</p>
         </div>
       </div>
     </template>
@@ -168,11 +170,11 @@ function closeModal() {
           labelClass="mb-2 block text-sm font-medium text-gray-700"
           class="w-full"
           :class="{ 'p-invalid': titleError }"
-          placeholder="Enter task title..."
+          :placeholder="t('tasks.createModal.placeholders.title')"
           autofocus
         >
           <template #label>
-            Task Title <span class="text-red-500">*</span>
+            {{ t('tasks.fields.title') }} <span class="text-red-500">*</span>
           </template>
         </FormInput>
         <small v-if="titleError" class="mt-1 block text-sm text-red-500">{{ titleError }}</small>
@@ -190,18 +192,18 @@ function closeModal() {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
-            {{ isGeneratingAI ? 'Generating...' : 'AI Generate' }}
+            {{ isGeneratingAI ? t('aiChat.generating') : t('tasks.createModal.aiGenerate') }}
           </button>
         </div>
         <FormInput
           id="task-description"
           v-model="description"
           as="textarea"
-          label="Description"
+          :label="t('tasks.fields.description')"
           labelClass="text-sm font-medium text-gray-700"
           rows="3"
           class="w-full"
-          placeholder="Add a description..."
+          :placeholder="t('tasks.placeholders.description')"
         />
       </div>
 
@@ -215,12 +217,12 @@ function closeModal() {
           :options="projectOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Select a project"
+          :placeholder="t('tasks.placeholders.project')"
           class="w-full"
           :class="{ 'p-invalid': projectError }"
         >
           <template #label>
-            Project <span class="text-red-500">*</span>
+            {{ t('tasks.fields.project') }} <span class="text-red-500">*</span>
           </template>
         </FormInput>
         <small v-if="projectError" class="mt-1 block text-sm text-red-500">{{ projectError }}</small>
@@ -233,7 +235,7 @@ function closeModal() {
             id="task-status"
             v-model="status"
             as="select"
-            label="Status"
+            :label="t('tasks.fields.status')"
             labelClass="mb-2 block text-sm font-medium text-gray-700"
             :options="statusOptions"
             optionLabel="label"
@@ -246,7 +248,7 @@ function closeModal() {
             id="task-priority"
             v-model="priority"
             as="select"
-            label="Priority"
+            :label="t('tasks.fields.priority')"
             labelClass="mb-2 block text-sm font-medium text-gray-700"
             :options="priorityOptions"
             optionLabel="label"
@@ -259,7 +261,7 @@ function closeModal() {
       <!-- Due Date -->
       <div>
         <label class="mb-2 block text-sm font-medium text-gray-700">
-          Due Date
+          {{ t('tasks.fields.dueDate') }}
         </label>
         <DatePicker
           v-model="dueDate"
@@ -280,7 +282,7 @@ function closeModal() {
           @click="closeModal"
           :disabled="isLoading"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -295,7 +297,7 @@ function closeModal() {
           <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          {{ isLoading ? 'Creating...' : 'Create Task' }}
+          {{ isLoading ? t('tasks.createModal.creating') : t('tasks.createModal.cta') }}
         </button>
       </div>
     </template>

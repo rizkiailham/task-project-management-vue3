@@ -290,7 +290,7 @@ async function handleFileSelection(event) {
     attachments.value = [...attachments.value, ...uploaded]
   } catch (error) {
     uploadError.value = error?.message || 'Failed to upload files'
-    uiStore.showError(uploadError.value)
+    uiStore.showApiError(error || uploadError.value, 'Failed to upload files')
   } finally {
     isUploading.value = false
   }

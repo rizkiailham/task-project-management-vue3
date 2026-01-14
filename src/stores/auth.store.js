@@ -351,9 +351,10 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const updatedUser = await authApi.updateProfile(data)
+      const response = await authApi.updateProfile(data)
+      const updatedUser = response.user || response.data || response
       user.value = normalizeUser(updatedUser)
-      return updatedUser
+      return response
     } catch (err) {
       error.value = err.message || 'Profile update failed'
       throw err
@@ -371,7 +372,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      await authApi.changePassword(data)
+      const response = await authApi.changePassword(data)
+      return response
     } catch (err) {
       error.value = err.message || 'Password change failed'
       throw err

@@ -52,20 +52,20 @@ function closePanel() {
 async function updateStatus(status) {
   if (!task.value) return
   try {
-    await taskStore.changeTaskStatus(task.value.id, status)
-    uiStore.showSuccess('Status updated')
+    const response = await taskStore.changeTaskStatus(task.value.id, status)
+    uiStore.showApiSuccess(response, 'Status updated')
   } catch (error) {
-    uiStore.showError('Failed to update status')
+    uiStore.showApiError(error, 'Failed to update status')
   }
 }
 
 async function updatePriority(priority) {
   if (!task.value) return
   try {
-    await taskStore.updateTask(task.value.id, { priority })
-    uiStore.showSuccess('Priority updated')
+    const response = await taskStore.updateTask(task.value.id, { priority })
+    uiStore.showApiSuccess(response, 'Priority updated')
   } catch (error) {
-    uiStore.showError('Failed to update priority')
+    uiStore.showApiError(error, 'Failed to update priority')
   }
 }
 

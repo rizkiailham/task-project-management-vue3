@@ -4,9 +4,11 @@
  */
 import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
 
 const route = useRoute()
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
 
@@ -18,8 +20,8 @@ watch(
       try {
         await projectStore.selectProject(projectId)
       } catch (error) {
-        console.error('Failed to load project:', error)
-        uiStore.showError('Failed to load project')
+        console.error(t('projects.errors.loadFailed'), error)
+        uiStore.showApiError(error, t('projects.errors.loadFailed'))
       }
     }
   },

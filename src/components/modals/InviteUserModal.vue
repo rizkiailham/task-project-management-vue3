@@ -6,6 +6,7 @@
  * Users will complete their details after accepting the email invitation.
  */
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore, useUIStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
@@ -17,6 +18,7 @@ import FormInput from '@/components/ui/FormInput.vue'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 const props = defineProps({
   visible: {
@@ -37,8 +39,8 @@ const isLoading = ref(false)
 
 // Form validation
 const validationSchema = yup.object({
-  email: yup.string().required('Email is required').email('Invalid email format'),
-  projectIds: yup.array().min(1, 'At least one project is required')
+  email: yup.string().required(t('users.invite.validation.emailRequired')).email(t('users.invite.validation.emailInvalid')),
+  projectIds: yup.array().min(1, t('users.invite.validation.projectRequired'))
 })
 
 const { handleSubmit, resetForm } = useForm({
@@ -75,15 +77,15 @@ const onSubmit = handleSubmit(async (values) => {
     })
     
     if (result.userExists) {
-      uiStore.showSuccess('User already exists and has been added to the project(s)')
+      uiStore.showApiSuccess(result, t('users.invite.messages.userExists'))
     } else {
-      uiStore.showSuccess('Invitation sent successfully')
+      uiStore.showApiSuccess(result, t('users.invite.messages.sent'))
     }
     
     emit('invited')
     dialogVisible.value = false
   } catch (error) {
-    uiStore.showError(error?.message || 'Failed to send invitation')
+    uiStore.showApiError(error, t('users.invite.errors.send'))
   } finally {
     isLoading.value = false
   }
@@ -97,7 +99,7 @@ function closeModal() {
 <template>
   <BaseModal
     v-model:visible="dialogVisible"
-    title="Invite user"
+    :title="t('users.invite.title')"
     width="450px"
     :closable="!isLoading"
     :closeOnEscape="!isLoading"
@@ -105,9 +107,9 @@ function closeModal() {
   >
     <template #header>
       <div class="flex flex-col">
-        <h2 class="text-base font-medium text-gray-900">Invite user</h2>
+        <h2 class="text-base font-medium text-gray-900">{{ t('users.invite.title') }}</h2>
         <p class="mt-0.5 text-xs text-gray-500">
-          Users will complete their details after accepting the email invitation
+          {{ t('users.invite.subtitle') }}
         </p>
       </div>
     </template>
@@ -120,12 +122,12 @@ function closeModal() {
           v-model="email"
           type="email"
           labelClass="mb-1.5 text-xs text-gray-500"
-          placeholder="user@email.address"
+          :placeholder="t('users.invite.placeholders.email')"
           class="w-full"
           :class="{ 'p-invalid': emailError }"
         >
           <template #label>
-            Email <span class="text-red-500">*</span>
+            {{ t('users.fields.email') }} <span class="text-red-500">*</span>
           </template>
         </FormInput>
         <small v-if="emailError" class="mt-1 text-xs text-red-500">
@@ -136,7 +138,7 @@ function closeModal() {
       <!-- Project(s) Field -->
       <div class="flex flex-col">
         <label class="mb-1.5 text-xs text-gray-500">
-          Project(s) <span class="text-red-500">*</span>
+          {{ t('users.invite.fields.projects') }} <span class="text-red-500">*</span>
         </label>
         <FormInput
           v-model="projectIds"
@@ -144,7 +146,7 @@ function closeModal() {
           :options="projectOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Search for existing project(s)"
+          :placeholder="t('users.invite.placeholders.projects')"
           display="comma"
           filter
           filterPlaceholder="Search..."
@@ -165,7 +167,7 @@ function closeModal() {
           @click="closeModal"
           :disabled="isLoading"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -182,7 +184,7 @@ function closeModal() {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          {{ isLoading ? 'Sending...' : 'Send Invitation' }}
+          {{ isLoading ? t('users.invite.sending') : t('users.invite.cta') }}
         </button>
       </div>
     </template>

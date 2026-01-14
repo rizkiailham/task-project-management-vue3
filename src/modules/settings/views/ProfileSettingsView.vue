@@ -39,13 +39,13 @@ const { value: lastName, errorMessage: lastNameError } = useField('lastName')
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
-    await authStore.updateProfile({
+    const response = await authStore.updateProfile({
       firstName: values.firstName,
       lastName: values.lastName
     })
-    uiStore.showSuccess('Profile updated successfully')
+    uiStore.showApiSuccess(response, 'Profile updated successfully')
   } catch (error) {
-    uiStore.showError('Failed to update profile')
+    uiStore.showApiError(error, 'Failed to update profile')
   } finally {
     isLoading.value = false
   }

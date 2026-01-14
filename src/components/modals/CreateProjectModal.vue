@@ -3,6 +3,7 @@
  * CreateProjectModal - Modal for creating new projects
  */
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
@@ -13,6 +14,7 @@ import FormInput from '@/components/ui/FormInput.vue'
 
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 // Modal visibility
 const visible = computed({
@@ -25,7 +27,7 @@ const color = ref('6366f1')
 
 // Form validation
 const validationSchema = yup.object({
-  name: yup.string().required('Project name is required').min(2, 'Name must be at least 2 characters'),
+  name: yup.string().required(t('projects.validation.nameRequired')).min(2, t('projects.validation.nameMin')),
   description: yup.string()
 })
 
@@ -52,16 +54,16 @@ watch(visible, (isVisible) => {
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
-    await projectStore.createNewProject({
+    const response = await projectStore.createNewProject({
       name: values.name,
       description: values.description
     })
     // Refresh the projects list to ensure sidebar updates
     await projectStore.fetchProjects()
-    uiStore.showSuccess('Project created successfully')
+    uiStore.showApiSuccess(response, t('projects.messages.created'))
     uiStore.closeModal()
   } catch (error) {
-    uiStore.showError('Failed to create project')
+    uiStore.showApiError(error, t('projects.errors.create'))
   } finally {
     isLoading.value = false
   }
@@ -110,8 +112,8 @@ const presetColors = [
           </svg>
         </div>
         <div>
-          <h2 class="text-lg font-semibold text-gray-900">Create New Project</h2>
-          <p class="text-sm text-gray-500">Add a new project to your workspace</p>
+          <h2 class="text-lg font-semibold text-gray-900">{{ t('projects.createModal.title') }}</h2>
+          <p class="text-sm text-gray-500">{{ t('projects.createModal.subtitle') }}</p>
         </div>
       </div>
     </template>
@@ -125,11 +127,11 @@ const presetColors = [
           labelClass="mb-2 block text-sm font-medium text-gray-700"
           class="w-full"
           :class="{ 'p-invalid': nameError }"
-          placeholder="Enter project name..."
+          :placeholder="t('projects.createModal.placeholders.name')"
           autofocus
         >
           <template #label>
-            Project Name <span class="text-red-500">*</span>
+            {{ t('projects.fields.name') }} <span class="text-red-500">*</span>
           </template>
         </FormInput>
         <small v-if="nameError" class="mt-1 block text-sm text-red-500">{{ nameError }}</small>
@@ -141,18 +143,18 @@ const presetColors = [
           id="project-description"
           v-model="description"
           as="textarea"
-          label="Description"
+          :label="t('projects.fields.description')"
           labelClass="mb-2 block text-sm font-medium text-gray-700"
           rows="3"
           class="w-full"
-          placeholder="Add a description..."
+          :placeholder="t('projects.createModal.placeholders.description')"
         />
       </div>
 
       <!-- Color -->
       <div>
         <label class="mb-2 block text-sm font-medium text-gray-700">
-          Project Color
+          {{ t('projects.fields.color') }}
         </label>
 
         <!-- Preset Colors -->
@@ -179,7 +181,7 @@ const presetColors = [
 
       <!-- Preview -->
       <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
-        <p class="mb-2 text-xs text-gray-500">Preview</p>
+        <p class="mb-2 text-xs text-gray-500">{{ t('projects.createModal.previewLabel') }}</p>
         <div class="flex items-center gap-3">
           <span
             class="flex h-10 w-10 items-center justify-center rounded-lg text-white font-medium"
@@ -188,7 +190,7 @@ const presetColors = [
             {{ name ? name.charAt(0).toUpperCase() : 'P' }}
           </span>
           <span class="font-medium text-gray-900">
-            {{ name || 'Project Name' }}
+            {{ name || t('projects.fields.name') }}
           </span>
         </div>
       </div>
@@ -202,7 +204,7 @@ const presetColors = [
           @click="closeModal"
           :disabled="isLoading"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -217,7 +219,7 @@ const presetColors = [
           <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          {{ isLoading ? 'Creating...' : 'Create Project' }}
+          {{ isLoading ? t('projects.createModal.creating') : t('projects.createModal.cta') }}
         </button>
       </div>
     </template>

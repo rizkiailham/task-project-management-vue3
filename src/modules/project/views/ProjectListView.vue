@@ -3,6 +3,7 @@
  * ProjectListView - List view for project tasks
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useUIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 
@@ -18,6 +19,7 @@ import Skeleton from 'primevue/skeleton'
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const { t, locale } = useI18n()
 
 const tasks = computed(() => taskStore.tasks)
 const isLoading = computed(() => taskStore.isLoading)
@@ -45,10 +47,27 @@ function getPriorityIcon(priority) {
 
 function formatDate(date) {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('en-US', {
+  return new Date(date).toLocaleDateString(locale.value || 'en', {
     month: 'short',
     day: 'numeric'
   })
+}
+
+function getStatusLabel(status) {
+  switch (status) {
+    case TaskStatus.TODO:
+      return t('tasks.statusOptions.todo')
+    case TaskStatus.IN_PROGRESS:
+      return t('tasks.statusOptions.inProgress')
+    case TaskStatus.IN_REVIEW:
+      return t('tasks.statusOptions.inReview')
+    case TaskStatus.DONE:
+      return t('tasks.statusOptions.done')
+    case TaskStatus.BLOCKED:
+      return t('tasks.statusOptions.blocked')
+    default:
+      return status
+  }
 }
 
 function openTaskPanel(task) {
@@ -71,12 +90,12 @@ async function toggleTaskStatus(task) {
           {{ projectStore.currentProjectName }}
         </h1>
         <p class="text-sm text-gray-500 dark-edit:text-gray-400">
-          {{ taskStore.taskCount }} tasks
+          {{ t('projects.tasksCount', { count: taskStore.taskCount }) }}
         </p>
       </div>
       <Button 
         icon="pi pi-plus" 
-        label="Add Task" 
+        :label="t('projects.addTask')" 
         @click="uiStore.openModal('createTask')"
       />
     </div>
@@ -111,7 +130,7 @@ async function toggleTaskStatus(task) {
         </template>
       </Column>
 
-      <Column field="title" header="Task" style="min-width: 300px">
+      <Column field="title" :header="t('tasks.columns.task')" style="min-width: 300px">
         <template #body="{ data }">
           <div class="flex items-center gap-2">
             <i :class="getPriorityIcon(data.priority)"></i>
@@ -127,13 +146,13 @@ async function toggleTaskStatus(task) {
         </template>
       </Column>
 
-      <Column field="status" header="Status" style="width: 120px">
+      <Column field="status" :header="t('tasks.columns.status')" style="width: 120px">
         <template #body="{ data }">
-          <Tag :value="data.status.replace('_', ' ')" :severity="getStatusSeverity(data.status)" />
+          <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
         </template>
       </Column>
 
-      <Column field="assignee" header="Assignee" style="width: 150px">
+      <Column field="assignee" :header="t('tasks.columns.assignee')" style="width: 150px">
         <template #body="{ data }">
           <div v-if="data.assignee" class="flex items-center gap-2">
             <Avatar 
@@ -144,11 +163,11 @@ async function toggleTaskStatus(task) {
             />
             <span class="text-sm">{{ data.assignee.name }}</span>
           </div>
-          <span v-else class="text-gray-400">Unassigned</span>
+          <span v-else class="text-gray-400">{{ t('tasks.assignee.unassigned') }}</span>
         </template>
       </Column>
 
-      <Column field="dueDate" header="Due Date" style="width: 120px">
+      <Column field="dueDate" :header="t('tasks.columns.dueDate')" style="width: 120px">
         <template #body="{ data }">
           <span 
             :class="[
@@ -166,9 +185,9 @@ async function toggleTaskStatus(task) {
       <template #empty>
         <div class="py-8 text-center">
           <i class="pi pi-inbox text-4xl text-gray-300"></i>
-          <p class="mt-2 text-gray-500">No tasks in this project</p>
+          <p class="mt-2 text-gray-500">{{ t('projects.emptyTasks') }}</p>
           <Button 
-            label="Create Task" 
+            :label="t('tasks.newTask')" 
             text 
             class="mt-2"
             @click="uiStore.openModal('createTask')"
@@ -178,4 +197,3 @@ async function toggleTaskStatus(task) {
     </DataTable>
   </div>
 </template>
-

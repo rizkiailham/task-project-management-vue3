@@ -88,8 +88,8 @@ async function handleNotificationClick(notification) {
 }
 
 async function markAllRead() {
-  await notificationStore.markAllAsRead()
-  uiStore.showSuccess('All notifications marked as read')
+  const response = await notificationStore.markAllAsRead()
+  uiStore.showApiSuccess(response, 'All notifications marked as read')
 }
 
 async function loadMore() {
@@ -189,4 +189,3 @@ async function loadMore() {
     </div>
   </div>
 </template>
-

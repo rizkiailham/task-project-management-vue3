@@ -3,6 +3,7 @@
  * ProjectCalendarView - Calendar view for project tasks
  */
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useUIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 
@@ -12,6 +13,7 @@ import Button from 'primevue/button'
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const { t, locale } = useI18n()
 
 // State
 const currentDate = ref(new Date())
@@ -19,8 +21,18 @@ const viewMode = ref('month') // 'month' | 'week'
 
 // Computed
 const currentMonth = computed(() => {
-  return currentDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  return currentDate.value.toLocaleDateString(locale.value || 'en', { month: 'long', year: 'numeric' })
 })
+
+const weekdayLabels = computed(() => ([
+  t('calendar.days.sun'),
+  t('calendar.days.mon'),
+  t('calendar.days.tue'),
+  t('calendar.days.wed'),
+  t('calendar.days.thu'),
+  t('calendar.days.fri'),
+  t('calendar.days.sat')
+]))
 
 const calendarDays = computed(() => {
   const year = currentDate.value.getFullYear()
@@ -121,11 +133,11 @@ function getPriorityColor(priority) {
         <h1 class="text-xl font-bold text-gray-900 dark-edit:text-white">
           {{ projectStore.currentProjectName }}
         </h1>
-        <p class="text-sm text-gray-500 dark-edit:text-gray-400">Calendar View</p>
+        <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('projects.calendarView') }}</p>
       </div>
       <Button 
         icon="pi pi-plus" 
-        label="Add Task" 
+        :label="t('projects.addTask')" 
         @click="uiStore.openModal('createTask')"
       />
     </div>
@@ -139,7 +151,7 @@ function getPriorityColor(priority) {
         </h2>
         <Button icon="pi pi-chevron-right" text rounded @click="nextMonth" />
       </div>
-      <Button label="Today" text @click="goToToday" />
+      <Button :label="t('calendar.today')" text @click="goToToday" />
     </div>
 
     <!-- Calendar Grid -->
@@ -147,7 +159,7 @@ function getPriorityColor(priority) {
       <!-- Day Headers -->
       <div class="grid grid-cols-7 border-b border-gray-200 dark-edit:border-gray-700">
         <div 
-          v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
+          v-for="day in weekdayLabels"
           :key="day"
           class="p-2 text-center text-sm font-medium text-gray-500 dark-edit:text-gray-400"
         >
@@ -198,7 +210,7 @@ function getPriorityColor(priority) {
               v-if="getTasksForDate(day.date).length > 3"
               class="text-xs text-gray-500 dark-edit:text-gray-400"
             >
-              +{{ getTasksForDate(day.date).length - 3 }} more
+              {{ t('calendar.moreCount', { count: getTasksForDate(day.date).length - 3 }) }}
             </div>
           </div>
         </div>
@@ -206,4 +218,3 @@ function getPriorityColor(priority) {
     </div>
   </div>
 </template>
-

@@ -138,17 +138,17 @@ async function handleSubmit() {
     }
 
     if (isEditing.value) {
-      await roleStore.updateRole(props.role.id, payload)
-      uiStore.showSuccess('Role updated successfully')
+      const response = await roleStore.updateRole(props.role.id, payload)
+      uiStore.showApiSuccess(response, 'Role updated successfully')
     } else {
-      await roleStore.createRole(payload)
-      uiStore.showSuccess('Role created successfully')
+      const response = await roleStore.createRole(payload)
+      uiStore.showApiSuccess(response, 'Role created successfully')
     }
 
     emit('saved')
     closeModal()
   } catch (error) {
-    uiStore.showError(error.message || 'Failed to save role')
+    uiStore.showApiError(error, 'Failed to save role')
   } finally {
     isSubmitting.value = false
   }

@@ -9,6 +9,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { useUIStore } from '@/stores'
 import { getInvitation, registerFromInvite } from '@/api/user.api'
 import { Pencil } from 'lucide-vue-next'
@@ -22,6 +23,7 @@ import Message from 'primevue/message'
 const router = useRouter()
 const route = useRoute()
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 // Get token from URL
 const token = route.query.token
@@ -38,24 +40,26 @@ const colors = ['#ec4899', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6'
 avatarColor.value = colors[Math.floor(Math.random() * colors.length)]
 
 // Language options
-const languageOptions = [
-  { label: 'English', value: 'en' },
-  { label: 'Norwegian', value: 'no' }
-]
+const languageOptions = computed(() => ([
+  { label: t('settings.languageOptions.en'), value: 'en' },
+  { label: t('settings.languageOptions.no'), value: 'no' }
+]))
 
 // Form validation schema
-const validationSchema = yup.object({
-  firstName: yup.string().required('First name is required'),
-  lastName: yup.string().required('Last name is required'),
+const validationSchema = computed(() => yup.object({
+  firstName: yup.string().required(t('auth.invite.validation.firstNameRequired')),
+  lastName: yup.string().required(t('auth.invite.validation.lastNameRequired')),
   phone: yup.string(),
   organization: yup.string(),
   salary: yup.number().nullable(),
   language: yup.string(),
-  password: yup.string().required('Password is required').min(8, 'Password must be at least 8 characters'),
+  password: yup.string()
+    .required(t('auth.validation.passwordRequired'))
+    .min(8, t('auth.validation.passwordMin')),
   confirmPassword: yup.string()
-    .required('Confirm password is required')
-    .oneOf([yup.ref('password')], 'Passwords must match')
-})
+    .required(t('auth.validation.confirmPasswordRequired'))
+    .oneOf([yup.ref('password')], t('auth.validation.passwordsMustMatch'))
+}))
 
 const { handleSubmit, meta, setFieldValue } = useForm({
   validationSchema,
@@ -85,13 +89,13 @@ const avatarInitial = computed(() => {
   if (firstName.value) {
     return firstName.value.charAt(0).toUpperCase()
   }
-  return 'U'
+  return t('auth.invite.avatarFallback')
 })
 
 // Load invitation details
 onMounted(async () => {
   if (!token) {
-    invitationError.value = 'No invitation token provided'
+    invitationError.value = t('auth.invite.errors.noToken')
     isLoading.value = false
     return
   }
@@ -99,7 +103,7 @@ onMounted(async () => {
   try {
     invitation.value = await getInvitation(token)
   } catch (error) {
-    invitationError.value = error?.message || 'Invalid or expired invitation'
+    invitationError.value = error?.response?.data?.message || error?.message || t('auth.invite.errors.invalid')
   } finally {
     isLoading.value = false
   }
@@ -112,7 +116,7 @@ const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
 
   try {
-    await registerFromInvite({
+    const response = await registerFromInvite({
       token,
       email: invitation.value.email,
       firstName: values.firstName,
@@ -127,10 +131,10 @@ const onSubmit = handleSubmit(async (values) => {
       }
     })
 
-    uiStore.showSuccess('Registration successful! Please log in.')
+    uiStore.showApiSuccess(response, t('auth.invite.messages.registered'))
     router.push({ name: 'Login' })
   } catch (error) {
-    uiStore.showError(error?.message || 'Failed to complete registration')
+    uiStore.showApiError(error, t('auth.invite.errors.registerFailed'))
   } finally {
     isSubmitting.value = false
   }
@@ -147,7 +151,7 @@ function goToLogin() {
       <!-- Loading State -->
       <div v-if="isLoading" class="loading-state">
         <!-- <div class="spinner"></div> -->
-        <p class="loading-text">Validating invitation...</p>
+        <p class="loading-text">{{ t('auth.invite.loading') }}</p>
       </div>
 
       <!-- Error State -->
@@ -155,9 +159,9 @@ function goToLogin() {
         <div class="error-icon">
           <i class="pi pi-times"></i>
         </div>
-        <h2 class="error-title">Invalid Invitation</h2>
+        <h2 class="error-title">{{ t('auth.invite.errors.title') }}</h2>
         <p class="error-text">{{ invitationError }}</p>
-        <Button label="Go to Login" class="auth-primary" @click="goToLogin" />
+        <Button :label="t('auth.invite.actions.goToLogin')" class="auth-primary" @click="goToLogin" />
       </div>
 
       <!-- Registration Form -->
@@ -168,8 +172,8 @@ function goToLogin() {
         </div>
 
         <!-- Header -->
-        <h1 class="auth-title">You are invited to join {{ invitation?.projectName }}</h1>
-        <p class="auth-subtitle">Complete your details to continue.</p>
+        <h1 class="auth-title">{{ t('auth.invite.title', { project: invitation?.projectName }) }}</h1>
+        <p class="auth-subtitle">{{ t('auth.invite.subtitle') }}</p>
 
         <!-- Avatar -->
         <div class="avatar-section">
@@ -196,7 +200,7 @@ function goToLogin() {
               class="auth-input"
             >
               <template #label>
-                First name <span class="text-red-500">*</span>
+                {{ t('auth.invite.fields.firstName') }} <span class="text-red-500">*</span>
               </template>
             </FormInput>
             <small v-if="firstNameError" class="auth-error">{{ firstNameError }}</small>
@@ -210,7 +214,7 @@ function goToLogin() {
               class="auth-input"
             >
               <template #label>
-                Last name <span class="text-red-500">*</span>
+                {{ t('auth.invite.fields.lastName') }} <span class="text-red-500">*</span>
               </template>
             </FormInput>
             <small v-if="lastNameError" class="auth-error">{{ lastNameError }}</small>
@@ -221,7 +225,7 @@ function goToLogin() {
             <FormInput
               id="invite-email"
               :model-value="invitation?.email"
-              label="Email"
+              :label="t('auth.invite.fields.email')"
               labelClass="auth-label"
               disabled
               class="auth-input"
@@ -233,7 +237,7 @@ function goToLogin() {
             <FormInput
               id="invite-phone"
               v-model="phone"
-              label="Phone"
+              :label="t('auth.invite.fields.phone')"
               labelClass="auth-label"
               class="auth-input"
             />
@@ -244,7 +248,7 @@ function goToLogin() {
             <FormInput
               id="invite-organization"
               v-model="organization"
-              label="Organization"
+              :label="t('auth.invite.fields.organization')"
               labelClass="auth-label"
               class="auth-input"
             />
@@ -256,7 +260,7 @@ function goToLogin() {
               id="invite-salary"
               v-model="salary"
               as="number"
-              label="Salary"
+              :label="t('auth.invite.fields.salary')"
               labelClass="auth-label"
               showButtons
               :min="0"
@@ -270,7 +274,7 @@ function goToLogin() {
               id="invite-language"
               v-model="language"
               as="select"
-              label="Preferred language"
+              :label="t('auth.invite.fields.language')"
               labelClass="auth-label"
               :options="languageOptions"
               optionLabel="label"
@@ -293,7 +297,7 @@ function goToLogin() {
               class="auth-password"
             >
               <template #label>
-                Password <span class="text-red-500">*</span>
+                {{ t('auth.invite.fields.password') }} <span class="text-red-500">*</span>
               </template>
             </FormInput>
             <small v-if="passwordError" class="auth-error">{{ passwordError }}</small>
@@ -311,7 +315,7 @@ function goToLogin() {
               class="auth-password"
             >
               <template #label>
-                Confirm Password <span class="text-red-500">*</span>
+                {{ t('auth.invite.fields.confirmPassword') }} <span class="text-red-500">*</span>
               </template>
             </FormInput>
             <small v-if="confirmPasswordError" class="auth-error">{{ confirmPasswordError }}</small>
@@ -321,7 +325,7 @@ function goToLogin() {
           <div class="form-actions">
             <Button
               type="button"
-              label="Cancel"
+              :label="t('common.cancel')"
               outlined
               severity="secondary"
               class="auth-secondary"
@@ -330,7 +334,7 @@ function goToLogin() {
             />
             <Button
               type="submit"
-              label="Register"
+              :label="t('auth.invite.actions.register')"
               class="auth-primary"
               :loading="isSubmitting"
               :disabled="!meta.valid || isSubmitting"

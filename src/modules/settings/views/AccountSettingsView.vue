@@ -39,15 +39,15 @@ const { value: confirmPassword, errorMessage: confirmPasswordError } = useField(
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
-    await authStore.changePassword({
+    const response = await authStore.changePassword({
       currentPassword: values.currentPassword,
       newPassword: values.newPassword,
       confirmPassword: values.confirmPassword
     })
-    uiStore.showSuccess('Password changed successfully')
+    uiStore.showApiSuccess(response, 'Password changed successfully')
     resetForm()
   } catch (error) {
-    uiStore.showError(error.message || 'Failed to change password')
+    uiStore.showApiError(error, 'Failed to change password')
   } finally {
     isLoading.value = false
   }

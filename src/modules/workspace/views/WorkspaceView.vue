@@ -4,9 +4,11 @@
  */
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore, useProjectStore, useUIStore } from '@/stores'
 
 const route = useRoute()
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
@@ -20,7 +22,7 @@ watch(
         await workspaceStore.selectWorkspace(workspaceId)
         await projectStore.fetchProjects()
       } catch (error) {
-        uiStore.showError('Failed to load workspace')
+        uiStore.showApiError(error, t('workspace.errors.loadFailed'))
       }
     }
   },
@@ -33,4 +35,3 @@ watch(
     <RouterView />
   </div>
 </template>
-
