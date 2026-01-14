@@ -238,9 +238,9 @@ function clearCurrentChat() {
   })
 }
 
-function handleSend({ content, mentions }) {
+function handleSend({ content, mentions, attachments }) {
   const mention = mentions.length > 0 ? mentions[0] : null
-  aiChatStore.sendMessage(content, mention)
+  aiChatStore.sendMessage(content, mention, attachments)
   // Auto-scroll is handled by the watcher on messages.value.length
 }
 
@@ -248,6 +248,13 @@ function executeSkill(skill) {
   aiChatStore.executeSkill(skill.id)
 }
 
+function formatFileSize(bytes = 0) {
+  if (!bytes || bytes < 1024) return `${bytes} B`
+  const kb = bytes / 1024
+  if (kb < 1024) return `${kb.toFixed(1)} KB`
+  const mb = kb / 1024
+  return `${mb.toFixed(1)} MB`
+}
 
 // Cleanup
 onUnmounted(() => {
@@ -394,7 +401,26 @@ watch(
             <!-- User Message -->
             <div v-if="message.role === 'user'" class="flex justify-end">
               <div class="max-w-[80%] bg-primary-500 text-white rounded-2xl rounded-br-md px-4 py-2">
-                <p class="text-sm">{{ message.content }}</p>
+                <p v-if="message.content" class="text-sm">{{ message.content }}</p>
+                <div
+                  v-if="message.attachments && message.attachments.length"
+                  class="mt-2 flex flex-wrap gap-2"
+                >
+                  <a
+                    v-for="file in message.attachments"
+                    :key="file.id || file.url"
+                    :href="file.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 rounded-lg bg-white/15 px-2 py-1 text-xs text-white hover:bg-white/25 transition-colors"
+                  >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                    <span class="truncate max-w-[140px]">{{ file.name }}</span>
+                    <span class="text-white/70">{{ formatFileSize(file.size) }}</span>
+                  </a>
+                </div>
               </div>
             </div>
 

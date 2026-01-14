@@ -9,6 +9,7 @@ import { ref, computed } from 'vue'
 import { io } from 'socket.io-client'
 import { useAuthStore } from './auth.store'
 import * as aiChatApi from '@/api/aiChat.api'
+import { upload } from '@/api/httpClient'
 
 export const useAIChatStore = defineStore('aiChat', () => {
   // ================================
@@ -309,6 +310,38 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
   }
 
+  async function ensureConversation() {
+    if (currentChatId.value) return currentChatId.value
+    await createNewConversation()
+    return currentChatId.value
+  }
+
+  async function uploadChatFiles(files = []) {
+    if (!files.length) return []
+    const conversationId = await ensureConversation()
+    const uploaded = []
+
+    for (const file of files) {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await upload('/upload', formData)
+      uploaded.push({
+        name: file.name,
+        size: file.size,
+        mimeType: file.type,
+        key: response.key,
+        url: response.path
+      })
+    }
+
+    const registered = await aiChatApi.registerFiles({
+      conversationId,
+      files: uploaded
+    })
+
+    return registered.files || registered
+  }
+
   async function loadLatestConversation() {
     if (isLoadingConversation.value) return
     isLoadingConversation.value = true
@@ -354,6 +387,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         role: message.role,
         content: message.content,
         timestamp: message.createdAt,
+        attachments: message.attachments || [],
         metadata: message.metadata || {},
         plan: message.metadata?.plan || [],
         checks: message.metadata?.checks || [],
@@ -372,18 +406,25 @@ export const useAIChatStore = defineStore('aiChat', () => {
   /**
    * Send a message to the AI
    */
-  async function sendMessage(content, mention = null) {
-    if (!content.trim()) return
+  async function sendMessage(content, mention = null, attachments = []) {
+    const trimmedContent = typeof content === 'string' ? content.trim() : ''
 
     if (!currentChatId.value) {
       await createNewConversation()
     }
 
+    const fileIds = Array.isArray(attachments)
+      ? attachments.map((file) => file.id).filter(Boolean)
+      : []
+
+    if (!trimmedContent && fileIds.length === 0) return
+
     const userMessage = {
       id: `msg-${Date.now()}`,
       role: 'user',
-      content: content.trim(),
+      content: trimmedContent,
       mention,
+      attachments,
       timestamp: new Date().toISOString()
     }
     
@@ -412,28 +453,30 @@ export const useAIChatStore = defineStore('aiChat', () => {
       socket.emit('ai:message', {
         requestId,
         conversationId: currentChatId.value,
-        message: content.trim(),
+        message: trimmedContent,
         history: history.slice(0, -1), // Exclude current message
         context,
-        mode: 'execute'
+        mode: 'execute',
+        fileIds
       })
     } else {
       // Fallback to HTTP
-      await sendMessageHttp(content.trim(), history.slice(0, -1), context)
+      await sendMessageHttp(trimmedContent, history.slice(0, -1), context, fileIds)
     }
   }
   
   /**
    * HTTP fallback for sending messages
    */
-  async function sendMessageHttp(content, history, context) {
+  async function sendMessageHttp(content, history, context, fileIds = []) {
     try {
       const data = await aiChatApi.sendChatMessage({
         conversationId: currentChatId.value,
         message: content,
         history,
         context,
-        mode: 'execute'
+        mode: 'execute',
+        fileIds
       })
       
       // Update state with response
@@ -588,6 +631,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
     // Chat Actions
     startNewChat,
     createNewConversation,
+    ensureConversation,
+    uploadChatFiles,
     loadLatestConversation,
     refreshConversations,
     loadConversation,
