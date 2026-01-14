@@ -300,6 +300,10 @@ function handleEdit(user) {
   emit('edit', user)
 }
 
+function handleResendInvite(user) {
+  emit('resendInvite', user)
+}
+
 function handleDelete(user) {
   emit('delete', user)
 }
@@ -322,6 +326,7 @@ const columnDefs = ref([
     cellRenderer: NameCell,
     cellRendererParams: {
       onEdit: handleEdit,
+      onResendInvite: handleResendInvite,
       onDelete: handleDelete,
     }
   },

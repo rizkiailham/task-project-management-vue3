@@ -1,4 +1,7 @@
 <script setup>
+import { computed } from 'vue'
+import { Mail } from 'lucide-vue-next'
+
 const props = defineProps({
   params: Object
 })
@@ -11,9 +14,15 @@ function onEdit() {
   props.params.onEdit?.(props.params.data)
 }
 
+function onResendInvite() {
+  props.params.onResendInvite?.(props.params.data)
+}
+
 function onDelete() {
   props.params.onDelete?.(props.params.data)
 }
+
+const showResendInvite = computed(() => props.params.data?.loginAt == null)
 </script>
 
 <template>
@@ -30,6 +39,15 @@ function onDelete() {
     </div>
     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
       <button
+        v-if="showResendInvite"
+        @click.stop="onResendInvite"
+        class="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded border border-gray-200 bg-white"
+      >
+        <Mail class="w-3 h-3" />
+        Resend invite
+      </button>
+      <button
+        v-else
         @click.stop="onEdit"
         class="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded border border-gray-200 bg-white"
       >
