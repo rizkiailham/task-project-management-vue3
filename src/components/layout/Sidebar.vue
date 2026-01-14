@@ -233,7 +233,7 @@ function isProjectActive(projectId) {
 
 const isSettingsActive = computed(() => {
   const name = route.name ? String(route.name) : ''
-  return name === 'Settings' || name.startsWith('Settings')
+  return uiStore.activeModal === 'settings' || name === 'Settings' || name.startsWith('Settings')
 })
 
 const isUsersActive = computed(() => route.name === 'Users')
@@ -282,7 +282,10 @@ function openCreateProjectModal() {
 }
 
 function goToSettings() {
-  router.push({ name: 'Settings' })
+  uiStore.openModal('settings')
+  if (uiStore.isMobile) {
+    uiStore.closeMobileSidebar()
+  }
 }
 
 function goToAccount() {
