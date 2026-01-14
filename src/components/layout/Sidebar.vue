@@ -412,7 +412,7 @@ async function handleLogout() {
           </nav>
 
           <!-- Spaces Section -->
-          <div class="flex items-center justify-between mt-12 pb-0 mb-0">
+          <div class="flex items-center justify-between px-3 mt-12 pb-0 mb-0">
             <Button
               type="button"
               class="flex items-center px-3 gap-1.5 text-[11px] font-semibold text-gray-600 uppercase tracking-wide"
@@ -471,7 +471,7 @@ async function handleLogout() {
 
         <!-- System Options (fixed bottom) -->
         <div class="absolute inset-x-0 bottom-0 border-t border-gray-200 bg-[#f4f4f5] px-3 pt-4 pb-0 system-options pb-8">
-          <div class="text-[11px] font-semibold text-gray-600 uppercase tracking-wide mb-2">System options</div>
+          <div class="text-[11px] font-semibold text-gray-600 uppercase tracking-wide px-3 mb-2">System options</div>
           <div class="space-y-1">
             <button
               type="button"
