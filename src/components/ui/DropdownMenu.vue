@@ -57,6 +57,14 @@ const props = defineProps({
   closeOnSelect: {
     type: Boolean,
     default: true
+  },
+  /**
+   * Position custom content slot before or after items
+   */
+  contentPosition: {
+    type: String,
+    default: 'after',
+    validator: (val) => ['before', 'after'].includes(val)
   }
 })
 
@@ -214,6 +222,10 @@ defineExpose({ open, close, toggle, isOpen })
           class="dropdown-menu fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]"
           :style="menuStyle"
         >
+          <template v-if="contentPosition === 'before'">
+            <slot name="content"></slot>
+          </template>
+
           <template v-for="(item, index) in items" :key="index">
             <!-- Divider -->
             <div v-if="item.type === 'divider'" class="border-t border-gray-100 my-1"></div>
@@ -253,7 +265,9 @@ defineExpose({ open, close, toggle, isOpen })
           </template>
           
           <!-- Custom Content Slot -->
-          <slot name="content"></slot>
+          <template v-if="contentPosition === 'after'">
+            <slot name="content"></slot>
+          </template>
         </div>
       </Transition>
     </Teleport>
