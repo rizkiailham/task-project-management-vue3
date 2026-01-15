@@ -44,26 +44,29 @@ function selectSection(sectionId) {
 
 <style scoped>
 .settings-nav {
-  background: #f9fafb;
-  border-right: 1px solid #e5e7eb;
-  padding: 20px 16px;
+  background: #f3f4f6;
+  border-right: 1px solid #f3f4f6;
+  padding: 20px 10px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   height: 100%;
   overflow: auto;
+  box-sizing: border-box;
+  padding-bottom: calc(20px + var(--settings-footer-height, 56px));
 }
 
 .settings-nav-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .settings-nav-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  padding: 0 10px;
+  margin-bottom: 6px;
+  color: #9CA3af;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -71,8 +74,9 @@ function selectSection(sectionId) {
 .settings-nav-item {
   text-align: left;
   font-size: 13px;
-  padding: 6px 8px;
-  border-radius: 8px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
   color: #374151;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -83,16 +87,15 @@ function selectSection(sectionId) {
 
 .settings-nav-item.is-active {
   background: #e5e7eb;
-  color: #111827;
-  font-weight: 600;
 }
 
 @media (max-width: 900px) {
   .settings-nav {
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #f3f4f6;
     flex-direction: row;
     flex-wrap: wrap;
+    padding-bottom: 20px;
   }
 }
 </style>
