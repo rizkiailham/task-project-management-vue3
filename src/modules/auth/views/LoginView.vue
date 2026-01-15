@@ -9,15 +9,15 @@
  * - Social login placeholders
  * - Localization support (en/no)
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
-import { get } from '@/api/httpClient'
 import desidiaLogo from '@/assets/desidia.svg'
+import { get } from '@/api/httpClient'
 
 // PrimeVue
 import FormInput from '@/components/ui/FormInput.vue'
@@ -29,12 +29,6 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const toast = useToast()
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
-const socialAuthRoutes = {
-  google: '/auth/google',
-  microsoft: '/auth/microsoft'
-}
 
 // Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
@@ -91,65 +85,21 @@ const onSubmit = handleSubmit(async (values) => {
   }
 })
 
-function extractTokenFromRedirect() {
-  if (typeof route.query.token === 'string' && route.query.token) {
-    return route.query.token
-  }
-  if (typeof redirectPath.value === 'string') {
-    try {
-      const redirectUrl = new URL(redirectPath.value, window.location.origin)
-      return redirectUrl.searchParams.get('token') || ''
-    } catch {
-      const match = redirectPath.value.match(/(?:\\?|&)token=([^&]+)/)
-      return match ? decodeURIComponent(match[1]) : ''
-    }
-  }
-  return ''
-}
-
-async function handleSocialCallbackToken(token) {
-  if (!token) return
-  try {
-    await authStore.completeSocialLogin({ accessToken: token })
-    router.replace('/app')
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.login.loginFailed'),
-      detail: error?.response?.data?.message || error?.message || t('auth.login.invalidCredentials'),
-      life: 6000
-    })
-  }
-}
-
-onMounted(() => {
-  const token = extractTokenFromRedirect()
-  if (token) {
-    handleSocialCallbackToken(token)
-  }
-})
-
 async function handleSocialLogin(provider) {
-  const route = socialAuthRoutes[provider]
-  if (!route) return
   try {
-    const redirectUri = `${window.location.origin}/auth/callback/${provider}`
-    const response = await get(route, {
-      redirect: redirectUri,
-      redirect_uri: redirectUri
-    })
-    if (response?.url) {
-      const authUrl = new URL(response.url)
-      if (authUrl.searchParams.has('redirect_uri')) {
-        authUrl.searchParams.set('redirect_uri', redirectUri)
-      }
-      window.location.assign(authUrl.toString())
+    const response = await get(`/auth/${provider}`)
+    const redirectUrl = response?.url
+
+    if (!redirectUrl) {
+      throw new Error(response?.message || t('auth.social.loginFailed'))
     }
+
+    window.location.href = redirectUrl
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: t('auth.login.loginFailed'),
-      detail: error?.response?.data?.message || error?.message || t('auth.login.invalidCredentials'),
+      detail: error?.message || t('auth.social.loginFailed'),
       life: 6000
     })
   }
