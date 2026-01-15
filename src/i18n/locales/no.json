@@ -285,7 +285,6 @@
       "title": "Ingen oppgaver ennå",
       "description": "Opprett din første oppgave for å komme i gang"
     },
-
     "fields": {
       "title": "Task Title",
       "description": "Description",
@@ -352,7 +351,6 @@
       "title": "Ingen prosjekter ennå",
       "description": "Opprett ditt første prosjekt for å komme i gang"
     },
-
     "fields": {
       "name": "Project Name",
       "description": "Description",
@@ -529,7 +527,8 @@
       "errors": {
         "load": "Failed to load custom fields",
         "save": "Failed to save custom field",
-        "delete": "Failed to delete custom field"
+        "delete": "Failed to delete custom field",
+        "nameRequired": "Navn er påkrevd"
       },
       "loading": "Loading custom fields...",
       "empty": "No custom fields yet.",
@@ -741,4 +740,3 @@
     "archive": "Arkiver"
   }
 }
-

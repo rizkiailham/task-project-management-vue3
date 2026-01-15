@@ -15,6 +15,7 @@ import * as yup from 'yup'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { Pencil, ChevronDown } from 'lucide-vue-next'
 import { upload } from '@/api'
+import CustomFieldInputs from '@/components/modals/user/CustomFieldInputs.vue'
 
 // PrimeVue
 import Checkbox from 'primevue/checkbox'
@@ -73,9 +74,7 @@ const validationSchema = computed(() => {
     projectIds: yup.array(),
     roleId: yup.mixed().nullable(),
     groupIds: yup.array(),
-    isActive: yup.boolean(),
-    unit: yup.number().nullable(),
-    department: yup.string()
+    isActive: yup.boolean()
   }
 
   baseSchema.password = yup
@@ -109,9 +108,7 @@ const { handleSubmit, resetForm, setValues } = useForm({
     projectIds: [],
     roleId: null,
     groupIds: [],
-    isActive: true,
-    unit: null,
-    department: ''
+    isActive: true
   }
 })
 
@@ -137,8 +134,7 @@ const { value: projectIds } = useField('projectIds')
 const { value: roleId } = useField('roleId')
 const { value: groupIds } = useField('groupIds')
 const { value: isActive } = useField('isActive')
-const { value: unit } = useField('unit')
-const { value: department } = useField('department')
+const customValues = ref({})
 
 function formatRoleName(name) {
   if (name === 'super_admin') return t('roles.superAdmin')
@@ -158,6 +154,12 @@ const groupOptions = computed(() =>
 const languageOptions = computed(() => 
   userStore.availableLanguages.map(l => ({ label: l, value: l }))
 )
+const userOptions = computed(() =>
+  userStore.users.map((user) => ({
+    label: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.id,
+    value: user.id
+  }))
+)
 
 // Last login text for display
 const lastLoginText = computed(() => {
@@ -172,6 +174,7 @@ const lastLoginText = computed(() => {
 watch(() => props.visible, async (isVisible) => {
   if (isVisible) {
     await userStore.initializeOptions()
+    const definitions = userStore.customFieldDefinitions || []
     if (props.user) {
       // Edit mode - populate form with user data
       resetForm({
@@ -187,11 +190,10 @@ watch(() => props.visible, async (isVisible) => {
         projectIds: normalizeSelectionArray(props.user.projects),
         roleId: resolveSelectionId(props.user.roleId || props.user.role, userStore.availableRoles),
         groupIds: normalizeSelectionArray(props.user.groups),
-        isActive: props.user.isActive ?? true,
-        unit: props.user.customValues?.unit || null,
-        department: props.user.customValues?.department || ''
+        isActive: props.user.isActive ?? true
         }
       })
+      customValues.value = buildCustomValuesMap(definitions, props.user.customValues)
       avatarColor.value = props.user.avatarColor || '#3b82f6'
       avatarUrl.value = props.user.avatar || props.user.avatarUrl || props.user.avatar_url || ''
     } else {
@@ -199,6 +201,7 @@ watch(() => props.visible, async (isVisible) => {
       resetForm()
       avatarColor.value = getRandomColor()
       avatarUrl.value = ''
+      customValues.value = buildCustomValuesMap(definitions, {})
     }
   }
 })
@@ -255,6 +258,10 @@ const onSubmit = handleSubmit(async (values) => {
     const resolvedProjectIds = resolveSelectionIds(values.projectIds, userStore.availableProjects)
     const resolvedRoleId = resolveSelectionId(values.roleId, userStore.availableRoles)
     const resolvedGroupIds = resolveSelectionIds(values.groupIds, userStore.availableGroups)
+    const resolvedCustomValues = buildCustomValuesPayload(
+      userStore.customFieldDefinitions || [],
+      customValues.value
+    )
     const userData = {
       firstName: values.firstName,
       lastName: values.lastName,
@@ -265,10 +272,7 @@ const onSubmit = handleSubmit(async (values) => {
       projectIds: resolvedProjectIds,
       groupIds: resolvedGroupIds,
       isActive: values.isActive,
-      customValues: {
-        ...(values.unit !== null && { unit: values.unit }),
-        ...(values.department && { department: values.department })
-      }
+      customValues: resolvedCustomValues
     }
     if (resolvedRoleId !== null && resolvedRoleId !== undefined) {
       userData.roleId = resolvedRoleId
@@ -334,6 +338,139 @@ function normalizeSelectionArray(values) {
   return list
     .map((item) => item?.id || item?.value || item)
     .filter(Boolean)
+}
+
+function getCustomFieldKey(field) {
+  return field?.key || field?.id || field?.label || ''
+}
+
+function normalizeCustomValuesSource(values) {
+  if (!values) return {}
+  if (Array.isArray(values)) {
+    return values.reduce((acc, entry) => {
+      if (!entry || typeof entry !== 'object') return acc
+      const key =
+        entry.key ||
+        entry.fieldKey ||
+        entry.customFieldKey ||
+        entry.customFieldId ||
+        entry.fieldId ||
+        entry.id ||
+        entry.label
+      if (!key) return acc
+      acc[key] = entry.value ?? entry.values ?? entry.data ?? entry.selection
+      return acc
+    }, {})
+  }
+  if (values.customValues && typeof values.customValues === 'object') {
+    return values.customValues
+  }
+  if (Array.isArray(values.customFieldValues)) {
+    return normalizeCustomValuesSource(values.customFieldValues)
+  }
+  return values
+}
+
+function getCustomFieldValue(source, field) {
+  if (!source || typeof source !== 'object') return undefined
+  if (field?.key && source[field.key] !== undefined) return source[field.key]
+  if (field?.id && source[field.id] !== undefined) return source[field.id]
+  if (field?.label && source[field.label] !== undefined) return source[field.label]
+  return undefined
+}
+
+function normalizeCustomFieldValue(field, value) {
+  if (value === undefined) return undefined
+  if (field.type === 'checkbox' || field.type === 'boolean') {
+    return !!value
+  }
+  if (field.type === 'multiselect' || (field.type === 'user' && field.settings?.isAllowMultiple)) {
+    if (Array.isArray(value)) return value
+    if (value === null || value === '') return []
+    return [value]
+  }
+  if (field.type === 'date' && field.settings?.isDateRange) {
+    if (value && typeof value === 'object') {
+      return {
+        start: value.start || value.from || value.begin || '',
+        end: value.end || value.to || value.until || ''
+      }
+    }
+    return { start: '', end: '' }
+  }
+  if (value && typeof value === 'object' && value.value !== undefined) {
+    return value.value
+  }
+  return value
+}
+
+function normalizeCustomFieldPayloadValue(field, value) {
+  if (field.type === 'checkbox' || field.type === 'boolean') {
+    return !!value
+  }
+  if (field.type === 'date' && field.settings?.isDateRange) {
+    const start = value?.start || value?.from || value?.begin || ''
+    const end = value?.end || value?.to || value?.until || ''
+    if (!start && !end) return null
+    return { start, end }
+  }
+  if (field.type === 'multiselect' || (field.type === 'user' && field.settings?.isAllowMultiple)) {
+    const list = Array.isArray(value) ? value : value == null ? [] : [value]
+    return list
+      .map((item) => (item && typeof item === 'object' ? item.value ?? item.id ?? item.key ?? item : item))
+      .filter((item) => item !== undefined && item !== null && item !== '')
+  }
+  if (value && typeof value === 'object') {
+    return value.value ?? value.id ?? value.key ?? value
+  }
+  return value
+}
+
+function buildCustomValuesMap(definitions, existingValues) {
+  const output = {}
+  const source = normalizeCustomValuesSource(existingValues)
+  ;(definitions || []).forEach((field) => {
+    const key = getCustomFieldKey(field)
+    if (!key) return
+    const resolvedValue = getCustomFieldValue(source, field)
+    if (resolvedValue !== undefined) {
+      output[key] = normalizeCustomFieldValue(field, resolvedValue)
+      return
+    }
+    if (field.type === 'multiselect' || (field.type === 'user' && field.settings?.isAllowMultiple)) {
+      output[key] = []
+      return
+    }
+    if (field.type === 'checkbox' || field.type === 'boolean') {
+      output[key] = false
+      return
+    }
+    if (field.type === 'date' && field.settings?.isDateRange) {
+      output[key] = { start: '', end: '' }
+      return
+    }
+    output[key] = null
+  })
+  return output
+}
+
+function buildCustomValuesPayload(definitions, values) {
+  const payload = {}
+  const source = values || {}
+  ;(definitions || []).forEach((field) => {
+    const key = getCustomFieldKey(field)
+    if (!key) return
+    const rawValue = source[key]
+    const normalizedValue = normalizeCustomFieldPayloadValue(field, rawValue)
+    if (Array.isArray(normalizedValue)) {
+      if (normalizedValue.length) payload[key] = normalizedValue
+      return
+    }
+    if (normalizedValue !== null && normalizedValue !== undefined && normalizedValue !== '') {
+      payload[key] = normalizedValue
+    }
+  })
+  return payload
 }
 
 // Get initials for avatar
@@ -644,30 +781,11 @@ const avatarInitial = computed(() => {
         </button>
 
         <div v-show="customFieldsExpanded" class="space-y-4 pt-2">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="flex flex-col">
-              <FormInput
-                id="user-unit"
-                v-model="unit"
-                as="number"
-                :label="t('users.fields.unit')"
-                labelClass="mb-1.5 text-xs text-gray-500"
-                showButtons
-                :min="0"
-                class="w-full"
-                inputClass="w-full"
-              />
-            </div>
-            <div class="flex flex-col">
-              <FormInput
-                id="user-department"
-                v-model="department"
-                :label="t('users.fields.department')"
-                labelClass="mb-1.5 text-xs text-gray-500"
-                class="w-full"
-              />
-            </div>
-          </div>
+          <CustomFieldInputs
+            v-model="customValues"
+            :fields="userStore.customFieldDefinitions"
+            :user-options="userOptions"
+          />
         </div>
       </div>
     </form>

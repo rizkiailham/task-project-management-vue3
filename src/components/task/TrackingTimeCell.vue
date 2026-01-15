@@ -902,7 +902,7 @@ if (running.value) startTicking()
   width: 28px;
   height: 28px;
   font-size: 12px;
-  color: #111827;
+  color: #6b7280;
 }
 
 :deep(.desidia-inline-datepicker .vc-day.is-not-in-month .vc-day-content) {
@@ -916,7 +916,7 @@ if (running.value) startTicking()
 :deep(.desidia-inline-datepicker .vc-day.is-selected .vc-day-content) {
   background: #2563eb;
   color: #ffffff;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .desidia-calendar-titlebar {

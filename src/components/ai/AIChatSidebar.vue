@@ -734,17 +734,17 @@ watch(
 }
 
 .ai-markdown :deep(code) {
-  background: #e5e7eb;
+  background: #f3f4f6;
   border-radius: 4px;
   padding: 0 4px;
   font-size: 0.85em;
 }
 
 .ai-markdown :deep(pre) {
-  background: #111827;
+  background: #6b7280;
   color: #f9fafb;
   padding: 0.75rem;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow-x: auto;
   margin: 0.5rem 0;
 }

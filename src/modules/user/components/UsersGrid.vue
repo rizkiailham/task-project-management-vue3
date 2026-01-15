@@ -617,7 +617,7 @@ const getRowId = (params) => params.data?.id
 
 .pagination-page-active {
   background-color: #f3f4f6;
-  color: #111827;
+  color: #6b7280;
   border-color: #d1d5db;
 }
 

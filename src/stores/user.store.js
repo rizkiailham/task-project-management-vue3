@@ -207,7 +207,12 @@ export const useUserStore = defineStore('user', () => {
   async function fetchCustomFieldDefinitions() {
     try {
       const response = await customFieldApi.getCustomFields()
-      customFieldDefinitions.value = response.data || response
+      const list = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : response?.data?.data || []
+      customFieldDefinitions.value = list
       return customFieldDefinitions.value
     } catch (error) {
       console.error('Failed to fetch custom fields:', error)

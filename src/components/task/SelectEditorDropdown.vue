@@ -319,7 +319,7 @@ function getTextColor(hex) {
   const g = parseInt(value.slice(2, 4), 16)
   const b = parseInt(value.slice(4, 6), 16)
   const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  return brightness > 170 ? '#111827' : '#ffffff'
+  return brightness > 170 ? '#6b7280' : '#ffffff'
 }
 
 function handleDocumentClick(event) {
@@ -536,7 +536,7 @@ defineExpose({ refresh })
   min-height: 28px;
   padding: 2px 6px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   cursor: pointer;
   text-align: left;

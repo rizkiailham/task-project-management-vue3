@@ -91,9 +91,14 @@ const isSelectLike = computed(() => {
 const inputAttrs = computed(() => {
   const { class: _class, placeholder, 'aria-label': ariaLabel, ...rest } = attrs
   const next = { ...rest, placeholder }
+  const isMultiSelect = props.as === 'multiselect' || resolvedComponent.value === MultiSelect
+
+  if (isMultiSelect && !('showToggleAll' in attrs)) {
+    next.showToggleAll = false
+  }
 
   if (hasLabel.value && isSelectLike.value && placeholder) {
-    return { ...next, 'aria-label': ariaLabel || placeholder }
+    next['aria-label'] = ariaLabel || placeholder
   }
 
   return next

@@ -160,7 +160,7 @@ function getIndicatorColor(hex) {
   const g = parseInt(value.slice(2, 4), 16)
   const b = parseInt(value.slice(4, 6), 16)
   const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  return brightness > 170 ? '#111827' : '#ffffff'
+  return brightness > 170 ? '#6b7280' : '#ffffff'
 }
 </script>
 

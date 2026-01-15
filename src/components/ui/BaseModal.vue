@@ -36,6 +36,10 @@ const props = defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  dialogClass: {
+    type: String,
+    default: ''
   }
 })
 
@@ -59,7 +63,7 @@ const dialogVisible = computed({
     :closeOnEscape="closeOnEscape && !loading"
     class="base-modal"
     :pt="{
-      root: { class: 'rounded-xl overflow-hidden shadow-2xl border-0' },
+      root: { class: ['rounded-xl overflow-hidden shadow-2xl border-0', dialogClass].filter(Boolean).join(' ') },
       header: { class: 'bg-white border-b border-gray-200 px-6 py-4' },
       content: { class: 'bg-white px-6 py-5' },
       footer: { class: 'bg-gray-50 border-t border-gray-200 px-6 py-4' },
@@ -109,8 +113,8 @@ const dialogVisible = computed({
 .base-modal :deep(.p-inputtext:focus),
 .base-modal :deep(.p-textarea:focus),
 .base-modal :deep(.p-select:focus) {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 1px #3b82f6;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
 }
 
 .base-modal :deep(.p-inputtext::placeholder),

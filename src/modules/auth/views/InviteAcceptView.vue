@@ -474,7 +474,7 @@ function goToLogin() {
 .auth-password :deep(input),
 .auth-select :deep(.p-select-label) {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
   padding: 0.6rem 0.75rem;
   font-size: 0.9rem;
@@ -496,7 +496,7 @@ function goToLogin() {
 }
 
 .auth-input-number :deep(.p-inputnumber-input) {
-  border-radius: 8px 0 0 8px;
+  border-radius: 6px 0 0 8px;
   padding: 0.6rem 0.75rem;
   font-size: 0.9rem;
 }
@@ -515,7 +515,7 @@ function goToLogin() {
 }
 
 .auth-primary {
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.55rem 1rem;
   font-weight: 600;
   font-size: 0.9rem;
@@ -525,7 +525,7 @@ function goToLogin() {
 }
 
 .auth-secondary {
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.55rem 1rem;
   font-weight: 500;
   font-size: 0.9rem;

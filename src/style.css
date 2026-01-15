@@ -14,7 +14,7 @@
   --color-primary-200: #bfdbfe;
   --color-primary-300: #93c5fd;
   --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
+  --color-primary-500: #2563eb;
   --color-primary-600: #2563eb;
   --color-primary-700: #1d4ed8;
   --color-primary-800: #1e40af;
@@ -29,7 +29,7 @@
   --color-primary-200: #bfdbfe;
   --color-primary-300: #93c5fd;
   --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
+  --color-primary-500: #2563eb;
   --color-primary-600: #2563eb;
   --color-primary-700: #1d4ed8;
   --color-primary-800: #1e40af;
@@ -122,7 +122,7 @@ textarea,
 .p-listbox,
 .p-radiobutton-label,
 .p-checkbox-label {
-  font-size: 13px!important;
+  font-size: 13px !important;
 }
 
 #app {
@@ -178,7 +178,7 @@ textarea,
   font-family: var(--font-sans);
 }
 
-.p-datatable .p-datatable-tbody > tr {
+.p-datatable .p-datatable-tbody>tr {
   transition: background-color var(--transition-fast);
 }
 
@@ -273,6 +273,7 @@ textarea,
     transform: translateX(-100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -284,6 +285,7 @@ textarea,
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -294,6 +296,7 @@ textarea,
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -418,7 +421,7 @@ textarea,
 }
 
 .p-dialog .p-dialog-header {
-  padding: .4em .8em!important;
+  padding: .4em .8em !important;
   border-bottom: none;
 }
 
@@ -427,7 +430,7 @@ textarea,
 }
 
 .p-dialog .p-dialog-footer {
-  padding: .8rem 1.5rem !important;
+  padding: .4rem 1.5rem !important;
   border-top: 1px solid #e5e7eb;
   background: white;
 }
@@ -546,4 +549,13 @@ a.text-primary,
 a.text-primary:hover,
 .text-primary:hover {
   color: var(--color-primary-700) !important;
+}
+
+.p-button {
+  padding: 4px 4px !important;
+}
+
+.p-button-label {
+  font-size: 14px !important;
+  font-weight: 400 !important;
 }
