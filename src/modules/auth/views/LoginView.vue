@@ -9,7 +9,7 @@
  * - Social login placeholders
  * - Localization support (en/no)
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
@@ -78,6 +78,57 @@ const onSubmit = handleSubmit(async (values) => {
       severity: 'error',
       summary: t('auth.login.loginFailed'),
       detail: error?.response?.data?.message || error?.message || t('auth.login.invalidCredentials'),
+      life: 6000
+    })
+  } finally {
+    isSubmitting.value = false
+  }
+})
+
+function getRedirectToken(redirectValue) {
+  if (typeof redirectValue !== 'string' || !redirectValue) return null
+
+  let decodedValue = redirectValue
+  try {
+    decodedValue = decodeURIComponent(redirectValue)
+  } catch {
+    decodedValue = redirectValue
+  }
+
+  let url
+  try {
+    url = new URL(decodedValue, window.location.origin)
+  } catch {
+    return null
+  }
+
+  const token = url.searchParams.get('token')
+
+  if (!token) return null
+
+  url.searchParams.delete('token')
+  const cleanedRedirect = `${url.pathname}${url.search}${url.hash}`
+
+  return { token, redirect: cleanedRedirect || '/app' }
+}
+
+onMounted(async () => {
+  const redirectValue = route.query.redirect
+  const tokenValue = typeof route.query.token === 'string' ? route.query.token : ''
+  const redirectToken = getRedirectToken(redirectValue)
+
+  if (!tokenValue && !redirectToken) return
+
+  isSubmitting.value = true
+  try {
+    const accessToken = tokenValue || redirectToken?.token
+    await authStore.completeSocialLogin({ accessToken })
+    router.replace(redirectToken?.redirect || redirectPath.value)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('auth.login.loginFailed'),
+      detail: error?.message || t('auth.social.loginFailed'),
       life: 6000
     })
   } finally {
