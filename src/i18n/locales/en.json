@@ -128,6 +128,14 @@
       "verifyFailedTitle": "Verification failed",
       "verifyFailed": "Unable to verify login link"
     },
+    "social": {
+      "title": "Signing you in",
+      "processing": "Completing sign-in...",
+      "missingProvider": "Missing provider information.",
+      "missingToken": "Missing access token.",
+      "loginFailed": "Social login failed.",
+      "backToLogin": "Back to login"
+    },
     "invite": {
       "title": "You're invited to {project}",
       "subtitle": "Complete your details to join the workspace.",

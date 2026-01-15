@@ -128,6 +128,14 @@
       "verifyFailedTitle": "Bekreftelse mislyktes",
       "verifyFailed": "Kunne ikke bekrefte innloggingslenke"
     },
+    "social": {
+      "title": "Logger deg inn",
+      "processing": "Fullforer innlogging...",
+      "missingProvider": "Mangler leverandorinformasjon.",
+      "missingToken": "Mangler tilgangstoken.",
+      "loginFailed": "Sosial innlogging mislyktes.",
+      "backToLogin": "Tilbake til innlogging"
+    },
     "invite": {
       "title": "Du er invitert til {project}",
       "subtitle": "Fyll inn detaljene dine for a bli med.",

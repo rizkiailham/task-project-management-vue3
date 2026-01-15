@@ -95,7 +95,8 @@ async function handleSocialLogin(provider) {
   const route = socialAuthRoutes[provider]
   if (!route) return
   try {
-    const response = await get(route)
+    const redirect = `${window.location.origin}/auth/callback/${provider}`
+    const response = await get(route, { redirect })
     if (response?.url) {
       window.location.assign(response.url)
     }

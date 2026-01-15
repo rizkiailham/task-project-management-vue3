@@ -476,6 +476,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function completeSocialLogin(response) {
+    accessToken.value = response.accessToken
+    refreshToken.value = response.refreshToken || null
+
+    localStorage.setItem('accessToken', response.accessToken)
+    if (response.refreshToken) {
+      localStorage.setItem('refreshToken', response.refreshToken)
+    } else {
+      localStorage.removeItem('refreshToken')
+    }
+    setAuthToken(response.accessToken)
+
+    if (response.user) {
+      user.value = normalizeUser(response.user)
+    } else {
+      const userData = await authApi.getCurrentUser()
+      user.value = normalizeUser(userData)
+    }
+
+    return response
+  }
+
   /**
    * Check if user has a specific permission
    * @param {string} permission
@@ -566,6 +588,7 @@ export const useAuthStore = defineStore('auth', () => {
     resetPassword,
     requestLoginLink,
     verifyLoginLink,
+    completeSocialLogin,
     ensureSession,
     hasPermission,
     hasRole

@@ -85,6 +85,16 @@ const routes = [
       title: 'Complete Registration'
     }
   },
+  {
+    path: '/auth/callback/:provider?',
+    name: 'SocialAuthCallback',
+    component: () => import('@/modules/auth/views/SocialAuthCallbackView.vue'),
+    meta: {
+      requiresAuth: false,
+      layout: 'auth',
+      title: 'Complete Sign In'
+    }
+  },
 
 
   // ================================
