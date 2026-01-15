@@ -571,24 +571,16 @@ onUnmounted(() => {
             {{ t('settings.customFields.title') }}
             <CircleHelp class="inline-block ml-1 w-3.5 h-3.5 text-gray-400" />
           </div>
-          <div class="settings-list-subtitle">
-            {{ t('settings.customFields.subtitle') }}
-          </div>
+          
         </div>
         <DropdownMenu :items="addTypeMenuItems" position="right" width="12rem">
           <template #trigger>
-            <button type="button" class="settings-add-btn">
               <Plus class="w-4 h-4" />
-            </button>
           </template>
         </DropdownMenu>
       </div>
 
-      <div class="settings-list-body">
-        <div class="settings-list-row settings-list-row--head">
-          <span>{{ t('settings.customFields.columns.name') }}</span>
-          <span>{{ t('settings.customFields.columns.type') }}</span>
-        </div>
+      <div class="settings-list-body pl-1">
         <div v-if="isLoadingFields" class="settings-list-empty">
           {{ t('settings.customFields.loading') }}
         </div>
@@ -600,14 +592,12 @@ onUnmounted(() => {
             v-for="field in customFields"
             :key="field.id"
             type="button"
-            class="settings-list-row"
+            class="settings-list-row pl-3 py-1"
             :class="{ 'is-selected': field.id === selectedFieldId }"
             @click="selectField(field.id)"
           >
+            <component :is="getFieldTypeIcon(field.type)" class="w-4 h-4 text-gray-400 flex-shrink-0" />
             <span class="settings-list-name">{{ field.label }}</span>
-            <span class="text-gray-500">
-              {{ typeLabelById[field.type] || field.type }}
-            </span>
           </button>
         </template>
       </div>
@@ -616,19 +606,29 @@ onUnmounted(() => {
     <div class="settings-divider" @mousedown="startResize"></div>
 
     <div class="settings-editor">
-      <div class="settings-editor-title">{{ t('settings.customFields.editorTitle') }}</div>
+      <div class="settings-editor-header">
+        <div class="settings-editor-title">{{ t('settings.customFields.editorTitle') }}</div>
+        <button
+          v-if="selectedField"
+          type="button"
+          class="settings-delete cursor-pointer"
+          :disabled="isDeleting"
+          @click="deleteSelectedField"
+          :title="t('settings.customFields.actions.deleteField')"
+          aria-label="Delete field"
+        >
+          <Trash2 class="w-4 h-4 text-red-500" />
+        </button>
+      </div>
 
       <div class="settings-editor-section">
         <div class="settings-editor-section-title">{{ t('settings.customFields.sections.general') }}</div>
         <div class="settings-editor-row">
           <span class="settings-label">{{ t('settings.customFields.fields.type') }}</span>
-          <DropdownMenu :items="typeMenuItems" position="right" width="12rem">
-            <template #trigger>
-              <button type="button" class="settings-type-pill">
-                {{ selectedTypeBadge }}
-              </button>
-            </template>
-          </DropdownMenu>
+          <div class="settings-type-pill">
+            <component :is="getFieldTypeIcon(selectedFieldType)" class="w-4 h-4" />
+            {{ selectedTypeBadge }}
+          </div>
         </div>
         <div class="settings-editor-field">
           <FormInput
@@ -637,7 +637,11 @@ onUnmounted(() => {
             labelClass="settings-label"
             :placeholder="t('settings.customFields.placeholders.name')"
             class="w-full"
+            :class="{ 'has-error': isNameEmpty && selectedField }"
           />
+          <span v-if="isNameEmpty && selectedField" class="settings-error-text">
+            {{ t('settings.customFields.errors.nameRequired') }}
+          </span>
         </div>
         <div class="settings-editor-field">
           <FormInput
@@ -660,7 +664,7 @@ onUnmounted(() => {
               {{ t('settings.customFields.help.show') }}
             </div>
           </div>
-          <ToggleSwitch class="min-w-[40px]" v-model="selectedFieldVisible" />
+          <ToggleSwitch class="min-w-[40px] max-h-[26px]" v-model="selectedFieldVisible" />
         </div>
         <div v-if="showNumberFormat" class="settings-editor-field settings-inline-row">
           <div>
@@ -706,10 +710,11 @@ onUnmounted(() => {
               <div class="settings-option-row">
                 <div class="settings-option-pill" :style="{ backgroundColor: option.color }">
                   <input
-                    class="settings-option-input"
+                    class="settings-option-input text-center"
                     :value="option.label"
-                    :style="{ width: `${(option.label?.length || 1) * 0.01}em` }"
+                    :style="{ width: `${(option.label?.length || 1) * 0.53 + 0.5}em` }"
                     @input="updateOptionLabel(option, $event.target.value)"
+                    @blur="blurOptionLabel(option)"
                   />
                 </div>
                 <DropdownMenu
@@ -741,6 +746,7 @@ onUnmounted(() => {
                     :value="child.label"
                     :style="{ width: `${(child.label?.length || 1) * 0.65 + 0.5}em` }"
                     @input="updateOptionLabel(child, $event.target.value)"
+                    @blur="blurOptionLabel(child)"
                   />
                 </div>
                 <DropdownMenu
@@ -774,7 +780,7 @@ onUnmounted(() => {
               {{ t('settings.customFields.help.allowMultiple') }}
             </div>
           </div>
-          <ToggleSwitch class="min-w-[40px]" v-model="selectedFieldAllowMultiple" />
+          <ToggleSwitch class="min-w-[40px] max-h-[26px]" v-model="selectedFieldAllowMultiple" />
         </div>
         <div v-if="showUserSettings" class="settings-toggle-row">
           <div>
@@ -783,7 +789,7 @@ onUnmounted(() => {
               {{ t('settings.customFields.help.displayName') }}
             </div>
           </div>
-          <ToggleSwitch class="min-w-[40px]" v-model="selectedFieldDisplayName" />
+          <ToggleSwitch class="min-w-[40px] max-h-[26px]" v-model="selectedFieldDisplayName" />
         </div>
         <div v-if="showDateSettings" class="settings-toggle-row">
           <div>
@@ -792,17 +798,8 @@ onUnmounted(() => {
               {{ t('settings.customFields.help.dateRange') }}
             </div>
           </div>
-          <ToggleSwitch class="min-w-[40px]" v-model="selectedFieldDateRange" />
+          <ToggleSwitch class="min-w-[40px] max-h-[26px]" v-model="selectedFieldDateRange" />
         </div>
-        <button
-          v-if="selectedField"
-          type="button"
-          class="settings-delete"
-          :disabled="isDeleting"
-          @click="deleteSelectedField"
-        >
-          {{ t('settings.customFields.actions.deleteField') }}
-        </button>
       </div>
 
     </div>
@@ -826,19 +823,57 @@ onUnmounted(() => {
   height: 100%;
   min-height: 0;
   flex: 1;
+  position: relative;
+}
+
+.settings-custom::before {
+  content: '';
+  position: absolute;
+  left: calc(12px + var(--settings-list-width, 280px));
+  right: 0;
+  bottom: 0;
+  height: var(--settings-footer-height, 72px);
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.settings-custom::after {
+  content: '';
+  position: absolute;
+  left: calc(12px + var(--settings-list-width, 280px));
+  right: 0;
+  bottom: var(--settings-footer-height, 72px);
+  height: 1px;
+  background: #e5e7eb;
+  pointer-events: none;
 }
 
 .settings-list {
   display: flex;
+  /* padding-left: 15px; */
   flex-direction: column;
   min-width: 0;
-  padding-right: 16px;
   height: 100%;
-  min-height: 0;
+  min-height: 240px;
+  max-height: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.settings-list::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: #ffffff;
+  pointer-events: none;
 }
 
 .settings-list-header {
-  padding: 8px 0 12px;
+  padding: 19px;
+  padding-bottom: 8px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -846,12 +881,13 @@ onUnmounted(() => {
 }
 
 .settings-list-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: #111827;
+  color: #9CA3af;
   display: flex;
   align-items: center;
   gap: 6px;
+  text-transform: uppercase;
 }
 
 .settings-list-subtitle {
