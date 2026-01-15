@@ -8,7 +8,7 @@ import { useUIStore } from '@/stores'
 import FormInput from '@/components/ui/FormInput.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { CircleHelp, Plus } from 'lucide-vue-next'
+import { CircleHelp, Plus, Type, Hash, CheckSquare, ListFilter, Calendar, User, Trash2 } from 'lucide-vue-next'
 import ColorPicker from '@/components/ui/ColorPicker.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import * as customFieldApi from '@/api/customField.api'
@@ -170,12 +170,18 @@ const showDateSettings = computed(() => selectedFieldType.value === 'date')
 
 const selectedFieldOptions = computed(() => selectedField.value?.settings?.options || [])
 
-const canSave = computed(() => Boolean(selectedField.value) && !isSaving.value)
+const isNameEmpty = computed(() => {
+  const name = selectedField.value?.label?.trim()
+  return !name || name.length === 0
+})
+
+const canSave = computed(() => Boolean(selectedField.value) && !isSaving.value && !isNameEmpty.value)
 
 const addTypeMenuItems = computed(() =>
   typeOptions.value.map((option) => ({
     id: option.id,
     label: option.label,
+    icon: getFieldTypeIcon(option.id),
     action: () => addCustomField(option.id)
   }))
 )
@@ -184,6 +190,7 @@ const typeMenuItems = computed(() =>
   typeOptions.value.map((option) => ({
     id: option.id,
     label: option.label,
+    icon: getFieldTypeIcon(option.id),
     action: () => {
       selectedFieldType.value = option.id
     }
@@ -221,6 +228,19 @@ function stopResize() {
 
 function selectField(fieldId) {
   selectedFieldId.value = fieldId
+}
+
+function getFieldTypeIcon(type) {
+  const iconMap = {
+    text: Type,
+    number: Hash,
+    checkbox: CheckSquare,
+    select: ListFilter,
+    multiselect: ListFilter,
+    date: Calendar,
+    user: User
+  }
+  return iconMap[type] || Type
 }
 
 function addCustomField(type) {
@@ -472,8 +492,12 @@ function addOption(parentId = null) {
 }
 
 function updateOptionLabel(option, value) {
-  const next = value.trim()
-  option.label = next || t('settings.customFields.options.new')
+  option.label = value
+}
+
+function blurOptionLabel(option) {
+  const trimmed = (option.label || '').trim()
+  option.label = trimmed || t('settings.customFields.options.new')
 }
 
 function getOptionSize(option) {
@@ -539,7 +563,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="settings-custom">
+  <div class="settings-custom" :style="{ '--settings-list-width': `${listWidth}px` }">
     <div class="settings-list" :style="{ width: `${listWidth}px` }">
       <div class="settings-list-header">
         <div>
