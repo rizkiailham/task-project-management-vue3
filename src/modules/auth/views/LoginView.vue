@@ -16,6 +16,7 @@ import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores'
+import { get } from '@/api/httpClient'
 import desidiaLogo from '@/assets/desidia.svg'
 
 // PrimeVue
@@ -90,11 +91,22 @@ const onSubmit = handleSubmit(async (values) => {
   }
 })
 
-function handleSocialLogin(provider) {
+async function handleSocialLogin(provider) {
   const route = socialAuthRoutes[provider]
   if (!route) return
-  // Trigger OAuth with a full-page GET redirect.
-  window.location.assign(`${apiBaseUrl}${route}`)
+  try {
+    const response = await get(route)
+    if (response?.url) {
+      window.location.assign(response.url)
+    }
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('auth.login.loginFailed'),
+      detail: error?.response?.data?.message || error?.message || t('auth.login.invalidCredentials'),
+      life: 6000
+    })
+  }
 }
 </script>
 
