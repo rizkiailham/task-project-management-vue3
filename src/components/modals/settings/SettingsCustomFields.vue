@@ -898,7 +898,7 @@ onUnmounted(() => {
 .settings-add-btn {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
   color: #6b7280;
   display: inline-flex;
@@ -916,20 +916,21 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0;
   overflow: auto;
   flex: 1;
-  min-height: 0;
+  min-height: 160px;
+  max-height: 100%;
+  box-sizing: border-box;
+  padding-bottom: var(--settings-footer-height, 72px);
 }
 
 .settings-list-row {
-  display: grid;
-  grid-template-columns: 1fr 90px;
-  gap: 12px;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   color: #374151;
-  padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   text-align: left;
 }
 
@@ -946,9 +947,8 @@ onUnmounted(() => {
 }
 
 .settings-list-row.is-selected {
-  background: #eef2ff;
-  color: #1f2937;
-  font-weight: 600;
+  background: #f3f4f6;
+  color: #111827;
 }
 
 .settings-list-name {
@@ -975,37 +975,48 @@ onUnmounted(() => {
 .settings-divider::before {
   content: '';
   width: 1px;
-  background: #e5e7eb;
+  background: #f3f4f6;
   height: 100%;
 }
 
 .settings-editor {
-  padding: 12px 20px;
+  padding: 0 24px;
+  padding-top: 15px;
+  padding-bottom: calc(30px + var(--settings-footer-height, 72px));
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  min-height: 240px;
   height: 100%;
-  min-height: 0;
+  max-height: 100%;
   overflow: auto;
+  box-sizing: border-box;
+}
+
+.settings-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 1.8rem;
+  padding-bottom: 12px;
 }
 
 .settings-editor-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
 }
 
 .settings-editor-section {
   display: grid;
-  gap: 12px;
+  gap: 20px;
 }
 
 .settings-editor-section-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: #6b7280;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
@@ -1028,7 +1039,10 @@ onUnmounted(() => {
 }
 
 .settings-type-pill {
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
   padding: 4px 12px;
   font-size: 12px;
@@ -1043,6 +1057,11 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 12px;
   border-radius: 10px;
+}
+
+.settings-toggle-row :deep(.p-toggleswitch) {
+  transform: scale(0.7);
+  transform-origin: right center;
 }
 
 .settings-inline-row {
@@ -1063,8 +1082,8 @@ onUnmounted(() => {
 
 .settings-toggle-title {
   font-size: 13px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .settings-toggle-subtitle {
@@ -1114,13 +1133,14 @@ onUnmounted(() => {
 }
 
 .settings-option-add:hover {
-  color: #111827;
+  color: #6b7280;
 }
 
 .settings-option-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 300px;
 }
 
 .settings-option-group {
@@ -1154,7 +1174,6 @@ onUnmounted(() => {
   background: transparent;
   font-size: 12px;
   color: #ffffff;
-  font-weight: 600;
   line-height: 1;
   padding: 0;
   min-width: 1ch;
@@ -1212,5 +1231,19 @@ onUnmounted(() => {
   .settings-list {
     width: 100% !important;
   }
+}
+
+.settings-error-text {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 4px;
+}
+
+.has-error :deep(.p-inputtext) {
+  border-color: #ef4444;
+}
+
+:deep(.p-button) {
+  font-size: 14px;
 }
 </style>
