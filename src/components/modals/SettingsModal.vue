@@ -12,6 +12,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import SettingsSidebar from '@/components/modals/settings/SettingsSidebar.vue'
 import SettingsCustomFields from '@/components/modals/settings/SettingsCustomFields.vue'
 import Button from 'primevue/button'
+import { X } from 'lucide-vue-next'
 
 const uiStore = useUIStore()
 const { t } = useI18n()
@@ -85,15 +86,18 @@ function handleSave() {
     v-model:visible="isVisible"
     width="1200px"
     maxWidth="96vw"
+    dialogClass="settings-dialog"
     class="settings-modal"
   >
-    <template #header>
-      <div class="flex items-center justify-between w-full">
-        <h2 class="text-base font-semibold text-gray-900">{{ t('settings.title') }}</h2>
-      </div>
-    </template>
-
     <div class="settings-body">
+      <div
+        @click="closeModal"
+        class="cursor-pointer settings-top-cancel"
+        :title="t('common.cancel')"
+        aria-label="Close settings"
+      >
+        <X class="w-4 h-4" />
+      </div>
       <SettingsSidebar
         :groups="navGroups"
         :activeSection="activeSection"
@@ -149,18 +153,20 @@ function handleSave() {
   gap: 0;
   height: 100%;
   min-height: 0;
+  position: relative;
 }
 
 .settings-content {
   background: #ffffff;
-  padding: 20px;
   display: flex;
   flex-direction: column;
   min-width: 0;
   height: 100%;
   min-height: 0;
   flex: 1;
+  position: relative;
 }
+
 
 .settings-placeholder {
   border: 1px dashed #e5e7eb;
@@ -189,22 +195,84 @@ function handleSave() {
   min-width: 120px;
 }
 
-.settings-modal :deep(.p-dialog) {
-  height: 90vh;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+.settings-top-cancel {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 2;
 }
 
-.settings-modal :deep(.p-dialog-content) {
+.settings-modal :deep(.p-dialog) {
+  height: var(--settings-modal-height, 90vh);
+  max-height: var(--settings-modal-height, 90vh);
+  min-height: var(--settings-modal-height, 90vh);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.settings-modal :deep(.p-dialog-header) {
+  display: none;
+}
+
+.settings-modal :deep(.p-dialog .p-dialog-content) {
   flex: 1;
-  padding: 0;
+  padding: 0 !important;
   overflow: hidden;
+}
+
+.settings-modal :deep(.p-dialog-footer) {
+  padding: 10px 16px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  border-top: none;
+  z-index: 2;
+  height: var(--settings-footer-height, 72px);
+  min-height: var(--settings-footer-height, 72px);
+  box-sizing: border-box;
 }
 
 @media (max-width: 900px) {
   .settings-body {
     grid-template-columns: 1fr;
   }
+}
+</style>
+
+<style>
+/* Non-scoped override for settings modal dialog content padding */
+.settings-dialog.p-dialog {
+  position: relative;
+  --settings-footer-height: 58px;
+  --settings-modal-height: 90vh;
+  height: var(--settings-modal-height);
+  max-height: var(--settings-modal-height);
+  min-height: var(--settings-modal-height);
+}
+
+.settings-dialog.p-dialog .p-dialog-content {
+  padding: 0 !important;
+  height: 100%;
+}
+
+.settings-dialog.p-dialog .p-dialog-header {
+  display: none !important;
+}
+
+.settings-dialog.p-dialog .p-dialog-footer {
+  padding: 10px 16px !important;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  border-top: none;
+  z-index: 2;
+  height: var(--settings-footer-height, 72px);
+  min-height: var(--settings-footer-height, 72px);
+  box-sizing: border-box;
 }
 </style>
