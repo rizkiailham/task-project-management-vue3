@@ -42,12 +42,9 @@ import {
   Palette,
   Rocket,
   Star,
-  Settings,
   TestTube2,
-  Trash2,
   TriangleAlert,
   User,
-  UserPlus,
   Users,
   Video,
   Wallet,
@@ -66,40 +63,12 @@ const projectStore = useProjectStore()
 // User menu items for DropdownMenu component
 const userMenuItems = computed(() => [
   {
-    id: 'account',
-    type: 'item',
-    label: 'Account',
-    action: goToAccount
-  },
-  {
-    id: 'invite',
-    type: 'item',
-    label: 'Invite teammates',
-    action: inviteTeammates
-  },
-  {
-    id: 'settings',
-    type: 'item',
-    label: 'Settings',
-    action: goToSettings
-  },
-  {
-    id: 'trash',
-    type: 'item',
-    label: 'Trash',
-    shortcut: 'G then R',
-    action: goToTrash
-  },
-  { type: 'divider' },
-  {
     id: 'logout',
     type: 'item',
     label: 'Log out',
-    shortcut: 'Alt ↑ Q',
+    shortcut: 'Alt+Q',
     action: handleLogout
-  },
-  { type: 'divider' },
-
+  }
 ])
 
 // Resizable sidebar - Optimized with RAF
@@ -288,18 +257,6 @@ function goToSettings() {
   }
 }
 
-function goToAccount() {
-  router.push({ name: 'SettingsAccount' })
-}
-
-function goToTrash() {
-  // TODO: Navigate to trash when implemented
-}
-
-function inviteTeammates() {
-  // TODO: Open invite teammates modal when implemented
-}
-
 function notify(message) {
   uiStore.showInfo(message)
 }
@@ -359,18 +316,6 @@ async function handleLogout() {
                   </template>
 
                 <!-- Custom icons for menu items -->
-                <template #icon-account>
-                  <User class="w-4 h-4 text-gray-700" />
-                </template>
-                <template #icon-invite>
-                  <UserPlus class="w-4 h-4 text-gray-700" />
-                </template>
-                <template #icon-settings>
-                  <Settings class="w-4 h-4 text-gray-700" />
-                </template>
-                <template #icon-trash>
-                  <Trash2 class="w-4 h-4 text-gray-700" />
-                </template>
                 <template #icon-logout>
                   <LogOut class="w-4 h-4 text-gray-700" />
                 </template>

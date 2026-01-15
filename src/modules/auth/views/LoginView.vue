@@ -93,7 +93,8 @@ const onSubmit = handleSubmit(async (values) => {
 function handleSocialLogin(provider) {
   const route = socialAuthRoutes[provider]
   if (!route) return
-  window.location.href = `${apiBaseUrl}${route}`
+  // Trigger OAuth with a full-page GET redirect.
+  window.location.assign(`${apiBaseUrl}${route}`)
 }
 </script>
 

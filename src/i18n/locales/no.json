@@ -44,6 +44,9 @@
       "rememberMe": "Husk meg",
       "forgotPassword": "Glemt passord?",
       "signIn": "Logg inn",
+      "loginWithGoogle": "Fortsett med Google",
+      "loginWithEntra": "Fortsett med Microsoft",
+      "loginWithLink": "Logg inn med lenke",
       "noAccount": "Har du ikke en konto?",
       "signUpFree": "Registrer deg gratis",
       "orContinueWith": "eller fortsett med",
@@ -52,7 +55,8 @@
       "microsoft": "Microsoft",
       "invalidCredentials": "Ugyldig e-post eller passord",
       "welcomeBack": "Velkommen tilbake!",
-      "loginSuccessful": "Innlogging vellykket"
+      "loginSuccessful": "Innlogging vellykket",
+      "loginFailed": "Innlogging mislyktes"
     },
     "register": {
       "title": "Opprett din konto",
@@ -79,11 +83,13 @@
       "subtitle": "Skriv inn e-posten din, så sender vi deg en tilbakestillingslenke",
       "email": "E-postadresse",
       "emailPlaceholder": "deg{'@'}eksempel.no",
+      "emailSent": "E-post sendt",
       "sendResetLink": "Send tilbakestillingslenke",
       "backToSignIn": "Tilbake til innlogging",
       "checkEmail": "Sjekk e-posten din",
       "resetLinkSent": "Vi har sendt en tilbakestillingslenke til",
-      "failedToSend": "Kunne ikke sende tilbakestillings-e-post"
+      "failedToSend": "Kunne ikke sende tilbakestillings-e-post",
+      "requestFailed": "Foresporsel mislyktes"
     },
     "resetPassword": {
       "title": "Sett nytt passord",
@@ -95,10 +101,66 @@
       "confirmPassword": "Bekreft nytt passord",
       "confirmPasswordPlaceholder": "Bekreft passordet ditt",
       "resetPassword": "Tilbakestill passord",
+      "invalidLinkTitle": "Ugyldig lenke",
       "invalidLink": "Ugyldig tilbakestillingslenke",
       "linkExpired": "Denne tilbakestillingslenken er ugyldig eller har utløpt.",
       "requestNewLink": "Be om en ny tilbakestillingslenke",
-      "passwordResetSuccess": "Passord tilbakestilt!"
+      "passwordResetSuccess": "Passord tilbakestilt!",
+      "resetSuccessTitle": "Passord tilbakestilt",
+      "resetFailedTitle": "Tilbakestilling mislyktes",
+      "resetFailed": "Kunne ikke tilbakestille passord"
+    },
+    "loginLink": {
+      "title": "Logg inn med lenke",
+      "checkEmail": "Sjekk e-posten din",
+      "sentTo": "Vi sendte en innloggingslenke til",
+      "email": "E-postadresse",
+      "emailPlaceholder": "deg{'@'}eksempel.no",
+      "sendLink": "Send innloggingslenke",
+      "requestedTitle": "Lenke sendt",
+      "requestedDetail": "Vi har sendt deg en innloggingslenke.",
+      "requestFailedTitle": "Foresporsel mislyktes",
+      "requestFailed": "Kunne ikke sende innloggingslenke",
+      "verifyTitle": "Bekreft innloggingslenke",
+      "token": "Innloggingstoken",
+      "tokenPlaceholder": "Skriv inn innloggingstoken",
+      "tokenRequired": "Innloggingstoken er pakrevd",
+      "verifyFailedTitle": "Bekreftelse mislyktes",
+      "verifyFailed": "Kunne ikke bekrefte innloggingslenke"
+    },
+    "invite": {
+      "title": "Du er invitert til {project}",
+      "subtitle": "Fyll inn detaljene dine for a bli med.",
+      "loading": "Laster invitasjon...",
+      "avatarFallback": "B",
+      "fields": {
+        "firstName": "Fornavn",
+        "lastName": "Etternavn",
+        "email": "E-postadresse",
+        "phone": "Telefon",
+        "organization": "Organisasjon",
+        "salary": "Lonn",
+        "language": "Sprak",
+        "password": "Passord",
+        "confirmPassword": "Bekreft passord"
+      },
+      "actions": {
+        "register": "Fullfor registrering",
+        "goToLogin": "Ga til innlogging"
+      },
+      "messages": {
+        "registered": "Registrering fullfort"
+      },
+      "validation": {
+        "firstNameRequired": "Fornavn er pakrevd",
+        "lastNameRequired": "Etternavn er pakrevd"
+      },
+      "errors": {
+        "title": "Invitasjonsfeil",
+        "noToken": "Invitasjonstoken mangler.",
+        "invalid": "Denne invitasjonen er ugyldig eller har utlopt.",
+        "registerFailed": "Kunne ikke fullfore registrering"
+      }
     },
     "validation": {
       "emailRequired": "E-post er påkrevd",

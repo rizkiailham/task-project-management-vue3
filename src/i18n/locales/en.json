@@ -44,6 +44,9 @@
       "rememberMe": "Remember me",
       "forgotPassword": "Forgot password?",
       "signIn": "Sign in",
+      "loginWithGoogle": "Continue with Google",
+      "loginWithEntra": "Continue with Microsoft",
+      "loginWithLink": "Sign in with a login link",
       "noAccount": "Don't have an account?",
       "signUpFree": "Sign up for free",
       "orContinueWith": "or continue with",
@@ -52,7 +55,8 @@
       "microsoft": "Microsoft",
       "invalidCredentials": "Invalid email or password",
       "welcomeBack": "Welcome back!",
-      "loginSuccessful": "Login successful"
+      "loginSuccessful": "Login successful",
+      "loginFailed": "Login failed"
     },
     "register": {
       "title": "Create your account",
@@ -79,11 +83,13 @@
       "subtitle": "Enter your email and we'll send you a reset link",
       "email": "Email address",
       "emailPlaceholder": "you{'@'}example.com",
+      "emailSent": "Email sent",
       "sendResetLink": "Send reset link",
       "backToSignIn": "Back to sign in",
       "checkEmail": "Check your email",
       "resetLinkSent": "We've sent a password reset link to",
-      "failedToSend": "Failed to send reset email"
+      "failedToSend": "Failed to send reset email",
+      "requestFailed": "Request failed"
     },
     "resetPassword": {
       "title": "Set new password",
@@ -95,10 +101,66 @@
       "confirmPassword": "Confirm new password",
       "confirmPasswordPlaceholder": "Confirm your password",
       "resetPassword": "Reset password",
+      "invalidLinkTitle": "Invalid link",
       "invalidLink": "Invalid reset link",
       "linkExpired": "This password reset link is invalid or has expired.",
       "requestNewLink": "Request a new reset link",
-      "passwordResetSuccess": "Password reset successfully!"
+      "passwordResetSuccess": "Password reset successfully!",
+      "resetSuccessTitle": "Password reset",
+      "resetFailedTitle": "Reset failed",
+      "resetFailed": "Unable to reset password"
+    },
+    "loginLink": {
+      "title": "Sign in with a login link",
+      "checkEmail": "Check your email",
+      "sentTo": "We sent a sign-in link to",
+      "email": "Email address",
+      "emailPlaceholder": "you{'@'}example.com",
+      "sendLink": "Send login link",
+      "requestedTitle": "Link sent",
+      "requestedDetail": "We've emailed you a login link.",
+      "requestFailedTitle": "Request failed",
+      "requestFailed": "Failed to send login link",
+      "verifyTitle": "Verify login link",
+      "token": "Login token",
+      "tokenPlaceholder": "Enter your login token",
+      "tokenRequired": "Login token is required",
+      "verifyFailedTitle": "Verification failed",
+      "verifyFailed": "Unable to verify login link"
+    },
+    "invite": {
+      "title": "You're invited to {project}",
+      "subtitle": "Complete your details to join the workspace.",
+      "loading": "Loading invitation...",
+      "avatarFallback": "U",
+      "fields": {
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email address",
+        "phone": "Phone number",
+        "organization": "Organization",
+        "salary": "Salary",
+        "language": "Language",
+        "password": "Password",
+        "confirmPassword": "Confirm password"
+      },
+      "actions": {
+        "register": "Complete registration",
+        "goToLogin": "Go to login"
+      },
+      "messages": {
+        "registered": "Registration completed"
+      },
+      "validation": {
+        "firstNameRequired": "First name is required",
+        "lastNameRequired": "Last name is required"
+      },
+      "errors": {
+        "title": "Invitation error",
+        "noToken": "Invitation token is missing.",
+        "invalid": "This invitation is invalid or has expired.",
+        "registerFailed": "Failed to complete registration"
+      }
     },
     "validation": {
       "emailRequired": "Email is required",
