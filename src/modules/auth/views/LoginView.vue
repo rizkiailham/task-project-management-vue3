@@ -30,6 +30,10 @@ const authStore = useAuthStore()
 const toast = useToast()
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const socialAuthRoutes = {
+  google: '/auth/google',
+  microsoft: '/auth/microsoft'
+}
 
 // Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
@@ -87,7 +91,9 @@ const onSubmit = handleSubmit(async (values) => {
 })
 
 function handleSocialLogin(provider) {
-  window.location.href = `${apiBaseUrl}/auth/${provider}`
+  const route = socialAuthRoutes[provider]
+  if (!route) return
+  window.location.href = `${apiBaseUrl}${route}`
 }
 </script>
 
