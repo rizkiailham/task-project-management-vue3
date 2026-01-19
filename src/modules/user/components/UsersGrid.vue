@@ -144,8 +144,6 @@ const pageSize = ref(10)
 // Computed from meta props
 const currentPage = computed(() => props.meta?.currentPage || 1)
 const totalPages = computed(() => props.meta?.totalPages || 1)
-const showPagination = computed(() => totalPages.value > 1)
-
 // Visible page numbers (max 5)
 const visiblePages = computed(() => {
   const maxVisible = 5
