@@ -1,0 +1,439 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Default module",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/bulletins": {
+      "get": {
+        "summary": "Find All",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "10",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "title:DESC",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isPublished",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "041022bf-7be1-4b2a-91e5-cd7c8dd67b27",
+                      "title": "Test aja",
+                      "slug": "test-aja",
+                      "description": "Cuma description",
+                      "thumbnail": null,
+                      "isPublished": false,
+                      "categoryId": null,
+                      "category": null,
+                      "groupAccess": "all",
+                      "content": null,
+                      "createdAt": "2026-01-14T19:03:30.548Z",
+                      "updatedAt": "2026-01-14T19:03:30.548Z"
+                    },
+                    {
+                      "id": "c773b3f9-ba70-4f4c-8a19-c6a48dbfe9a3",
+                      "title": "Test aja",
+                      "slug": "test-aja-1",
+                      "description": "Cuma description",
+                      "thumbnail": null,
+                      "isPublished": false,
+                      "categoryId": null,
+                      "category": null,
+                      "groupAccess": [
+                        "f5a69b8c-eaa5-4727-9f28-6988f71d1af1"
+                      ],
+                      "content": "Test",
+                      "createdAt": "2026-01-14T19:04:42.541Z",
+                      "updatedAt": "2026-01-14T19:04:42.541Z"
+                    }
+                  ],
+                  "meta": {
+                    "itemsPerPage": 10,
+                    "totalItems": 2,
+                    "currentPage": 1,
+                    "totalPages": 1,
+                    "sortBy": [
+                      [
+                        "title",
+                        "DESC"
+                      ]
+                    ]
+                  },
+                  "links": {
+                    "current": "http://localhost:3333/bulletins?page=1&limit=10&sortBy=title:DESC"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Create",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "title": "Test aja",
+                "description": "Cuma description",
+                "groupIds": [
+                  "f5a69b8c-eaa5-4727-9f28-6988f71d1af1"
+                ],
+                "content": "Test",
+                "categoryId": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Bulletin created successfully",
+                  "bulletin": {
+                    "id": "f52de8a9-f6e9-4a46-92bc-230b3a58b982",
+                    "title": "Test aja",
+                    "slug": "test-aja-2",
+                    "description": "Cuma description",
+                    "thumbnail": null,
+                    "isPublished": false,
+                    "categoryId": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c",
+                    "category": {
+                      "id": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c",
+                      "name": "Test 1",
+                      "description": "Description Test 1",
+                      "parentId": null,
+                      "createdAt": "2026-01-14T00:22:52.947Z",
+                      "updatedAt": "2026-01-14T00:22:52.947Z"
+                    },
+                    "groupAccess": [
+                      "f5a69b8c-eaa5-4727-9f28-6988f71d1af1"
+                    ],
+                    "content": "Test",
+                    "createdAt": "2026-01-14T19:13:16.120Z",
+                    "updatedAt": "2026-01-14T19:13:16.120Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/bulletins/{id}": {
+      "get": {
+        "summary": "Find One",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "f52de8a9-f6e9-4a46-92bc-230b3a58b982",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "id": "f52de8a9-f6e9-4a46-92bc-230b3a58b982",
+                  "title": "Test aja",
+                  "slug": "test-aja-2",
+                  "description": "Cuma description",
+                  "thumbnail": null,
+                  "isPublished": false,
+                  "categoryId": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c",
+                  "category": {
+                    "id": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c",
+                    "name": "Test 1",
+                    "description": "Description Test 1",
+                    "parentId": null,
+                    "createdAt": "2026-01-14T00:22:52.947Z",
+                    "updatedAt": "2026-01-14T00:22:52.947Z"
+                  },
+                  "groupAccess": [
+                    "f5a69b8c-eaa5-4727-9f28-6988f71d1af1"
+                  ],
+                  "content": "Test",
+                  "createdAt": "2026-01-14T19:13:16.120Z",
+                  "updatedAt": "2026-01-14T19:13:16.120Z"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "Update",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "f52de8a9-f6e9-4a46-92bc-230b3a58b982",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "title": "Test aja",
+                "description": "Cuma description sd",
+                "groupIds": [],
+                "content": "Test 123",
+                "categoryId": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Bulletin updated successfully",
+                  "bulletin": {
+                    "id": "f52de8a9-f6e9-4a46-92bc-230b3a58b982",
+                    "title": "Test aja",
+                    "slug": "test-aja-2",
+                    "description": "Cuma description",
+                    "thumbnail": null,
+                    "isPublished": false,
+                    "categoryId": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c",
+                    "category": {
+                      "id": "c39ca5e2-6cac-4c7b-a334-9c2b989ef90c",
+                      "name": "Test 1",
+                      "description": "Description Test 1",
+                      "parentId": null,
+                      "createdAt": "2026-01-14T00:22:52.947Z",
+                      "updatedAt": "2026-01-14T00:22:52.947Z"
+                    },
+                    "groupAccess": "all",
+                    "content": "Test 123",
+                    "createdAt": "2026-01-14T19:13:16.120Z",
+                    "updatedAt": "2026-01-14T19:13:16.120Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "Delete",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "041022bf-7be1-4b2a-91e5-cd7c8dd67b27",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Bulletin deleted successfully"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}
