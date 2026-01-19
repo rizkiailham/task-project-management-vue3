@@ -840,7 +840,7 @@ onUnmounted(() => {
 .settings-custom::after {
   content: '';
   position: absolute;
-  left: calc(12px + var(--settings-list-width, 280px));
+  left: 0;
   right: 0;
   bottom: var(--settings-footer-height, 72px);
   height: 1px;
@@ -870,6 +870,7 @@ onUnmounted(() => {
   background: #ffffff;
   pointer-events: none;
 }
+
 
 .settings-list-header {
   padding: 19px;
