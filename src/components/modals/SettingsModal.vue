@@ -225,9 +225,9 @@ function handleSave() {
   padding: 10px 16px;
   position: absolute;
   bottom: 0;
-  left: 0;
+  left: 220px;
   right: 0;
-  background: transparent;
+  background: #ffffff;
   border-top: none;
   z-index: 2;
   height: var(--settings-footer-height, 72px);
@@ -266,13 +266,23 @@ function handleSave() {
   padding: 10px 16px !important;
   position: absolute;
   bottom: 0;
-  left: 0;
+  left: 220px;
   right: 0;
-  background: transparent;
+  background: #ffffff;
   border-top: none;
   z-index: 2;
   height: var(--settings-footer-height, 72px);
   min-height: var(--settings-footer-height, 72px);
   box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .settings-modal :deep(.p-dialog-footer) {
+    left: 0;
+  }
+
+  .settings-dialog.p-dialog .p-dialog-footer {
+    left: 0;
+  }
 }
 </style>
