@@ -3,6 +3,8 @@
     "appName": "Desidia",
     "loading": "Loading...",
     "save": "Save",
+    "saveChanges": "Save changes",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -192,10 +194,57 @@
     "projects": "Projects",
     "workspaces": "Workspaces",
     "settings": "Settings",
+    "bulletin": "Bulletin",
     "newProject": "New Project",
     "newTask": "New Task",
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar"
+  },
+  "bulletin": {
+    "tabs": {
+      "bulletin": "Bulletin",
+      "category": "Category"
+    },
+    "search": {
+      "bulletin": "Search bulletin",
+      "category": "Search category"
+    },
+    "actions": {
+      "newBulletin": "New Bulletin",
+      "newCategory": "New Category"
+    },
+    "modal": {
+      "bulletin": {
+        "addTitle": "Add Bulletin Item",
+        "editTitle": "Edit Bulletin Item"
+      },
+      "category": {
+        "addTitle": "Add Category",
+        "editTitle": "Edit Category"
+      }
+    },
+    "fields": {
+      "titleLabel": "Title *",
+      "description": "Description",
+      "category": "Item Category",
+      "accessGroup": "Access Group",
+      "content": "Content",
+      "thumbnail": "Thumbnail",
+      "published": "Published",
+      "categoryNameLabel": "Name *"
+    },
+    "placeholders": {
+      "title": "Type in bulletin item title",
+      "description": "Bulletin item description",
+      "selectCategory": "Select category",
+      "content": "Write bulletin content",
+      "categoryName": "Category name",
+      "categoryDescription": "Category description"
+    },
+    "validation": {
+      "titleRequired": "Title is required",
+      "categoryNameRequired": "Name is required"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

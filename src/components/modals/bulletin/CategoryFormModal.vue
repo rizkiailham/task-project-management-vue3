@@ -4,6 +4,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useCategoryStore, useUIStore } from '@/stores'
+import { useI18n } from 'vue-i18n'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import FormInput from '@/components/ui/FormInput.vue'
 
@@ -16,6 +17,7 @@ const emit = defineEmits(['update:visible', 'saved'])
 
 const categoryStore = useCategoryStore()
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 const formData = ref({
   name: '',
@@ -24,7 +26,11 @@ const formData = ref({
 const isSubmitting = ref(false)
 
 const isEditing = computed(() => !!props.category?.id)
-const modalTitle = computed(() => (isEditing.value ? 'Edit Category' : 'Add Category'))
+const modalTitle = computed(() => (
+  isEditing.value
+    ? t('bulletin.modal.category.editTitle')
+    : t('bulletin.modal.category.addTitle')
+))
 
 const dialogVisible = computed({
   get: () => props.visible,
@@ -76,7 +82,7 @@ function closeModal() {
 
 async function handleSubmit() {
   if (!formData.value.name.trim()) {
-    uiStore.showError('Name is required')
+    uiStore.showError(t('bulletin.validation.categoryNameRequired'))
     return
   }
 
@@ -122,9 +128,9 @@ async function handleSubmit() {
       <FormInput
         id="category-name"
         v-model="formData.name"
-        label="Name *"
+        :label="t('bulletin.fields.categoryNameLabel')"
         labelClass="block text-xs text-gray-500 mb-1"
-        placeholder="Category name"
+        :placeholder="t('bulletin.placeholders.categoryName')"
         class="w-full"
       />
 
@@ -132,9 +138,9 @@ async function handleSubmit() {
         id="category-description"
         v-model="formData.description"
         as="textarea"
-        label="Description"
+        :label="t('bulletin.fields.description')"
         labelClass="block text-xs text-gray-500 mb-1"
-        placeholder="Category description"
+        :placeholder="t('bulletin.placeholders.categoryDescription')"
         rows="4"
         class="w-full"
       />
@@ -148,7 +154,7 @@ async function handleSubmit() {
           @click="closeModal"
           :disabled="isSubmitting"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -156,7 +162,7 @@ async function handleSubmit() {
           @click="handleSubmit"
           :disabled="isSubmitting"
         >
-          {{ isSubmitting ? 'Saving...' : 'Save changes' }}
+          {{ isSubmitting ? t('common.saving') : t('common.saveChanges') }}
         </button>
       </div>
     </template>

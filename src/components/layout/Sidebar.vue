@@ -16,6 +16,7 @@ import { useUIStore, useWorkspaceStore, useNotificationStore, useAuthStore, useP
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
+import { useI18n } from 'vue-i18n'
 import {
   Activity,
   BarChart3,
@@ -54,6 +55,7 @@ import {
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 const uiStore = useUIStore()
 const workspaceStore = useWorkspaceStore()
 const notificationStore = useNotificationStore()
@@ -467,7 +469,7 @@ async function handleLogout() {
               @click="router.push({ name: 'Bulletin' })"
             >
               <Newspaper class="w-[18px] h-[18px] opacity-70" />
-              <span>Bulletin</span>
+              <span>{{ t('sidebar.bulletin') }}</span>
             </button>
             <button
               type="button"

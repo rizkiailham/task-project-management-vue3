@@ -9,6 +9,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import FormInput from '@/components/ui/FormInput.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { Plus, Upload, Trash2 } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -21,6 +22,7 @@ const emit = defineEmits(['update:visible', 'saved'])
 
 const bulletinStore = useBulletinStore()
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 const fileInputRef = ref(null)
 const isSubmitting = ref(false)
@@ -37,7 +39,11 @@ const formData = ref({
 })
 
 const isEditing = computed(() => !!props.bulletin?.id)
-const modalTitle = computed(() => (isEditing.value ? 'Edit Bulletin Item' : 'Add Bulletin Item'))
+const modalTitle = computed(() => (
+  isEditing.value
+    ? t('bulletin.modal.bulletin.editTitle')
+    : t('bulletin.modal.bulletin.addTitle')
+))
 
 const dialogVisible = computed({
   get: () => props.visible,
@@ -158,7 +164,7 @@ function removeThumbnail() {
 
 async function handleSubmit() {
   if (!formData.value.title.trim()) {
-    uiStore.showError('Title is required')
+    uiStore.showError(t('bulletin.validation.titleRequired'))
     return
   }
 
@@ -209,9 +215,9 @@ async function handleSubmit() {
       <FormInput
         id="bulletin-title"
         v-model="formData.title"
-        label="Title *"
+        :label="t('bulletin.fields.titleLabel')"
         labelClass="block text-xs text-gray-500 mb-1"
-        placeholder="Type in bulletin item title"
+        :placeholder="t('bulletin.placeholders.title')"
         class="w-full"
       />
 
@@ -219,9 +225,9 @@ async function handleSubmit() {
         id="bulletin-description"
         v-model="formData.description"
         as="textarea"
-        label="Description"
+        :label="t('bulletin.fields.description')"
         labelClass="block text-xs text-gray-500 mb-1"
-        placeholder="Bulletin item description"
+        :placeholder="t('bulletin.placeholders.description')"
         rows="3"
         class="w-full"
       />
@@ -229,7 +235,7 @@ async function handleSubmit() {
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col">
           <label for="bulletin-category" class="mb-1.5 text-xs text-gray-500">
-            Item Category
+            {{ t('bulletin.fields.category') }}
           </label>
           <FormInput
             id="bulletin-category"
@@ -238,14 +244,14 @@ async function handleSubmit() {
             :options="categoryOptions"
             optionLabel="label"
             optionValue="value"
-            placeholder="Select category"
+            :placeholder="t('bulletin.placeholders.selectCategory')"
             class="w-full"
           />
         </div>
 
         <div class="flex flex-col">
           <label for="bulletin-access-group" class="mb-1.5 text-xs text-gray-500">
-            Access Group
+            {{ t('bulletin.fields.accessGroup') }}
           </label>
           <FormInput
             id="bulletin-access-group"
@@ -254,7 +260,7 @@ async function handleSubmit() {
             :options="groupOptions"
             optionLabel="label"
             optionValue="value"
-            placeholder="All"
+            :placeholder="t('common.all')"
             class="w-full"
             display="chip"
           />
@@ -265,15 +271,15 @@ async function handleSubmit() {
         id="bulletin-content"
         v-model="formData.content"
         as="textarea"
-        label="Content"
+        :label="t('bulletin.fields.content')"
         labelClass="block text-xs text-gray-500 mb-1"
-        placeholder="Write bulletin content"
+        :placeholder="t('bulletin.placeholders.content')"
         rows="4"
         class="w-full"
       />
 
       <div class="space-y-2">
-        <div class="text-xs text-gray-500 font-medium">Thumbnail</div>
+        <div class="text-xs text-gray-500 font-medium">{{ t('bulletin.fields.thumbnail') }}</div>
         <div class="flex items-center gap-4">
           <div
             v-if="formData.thumbnail"
@@ -320,7 +326,7 @@ async function handleSubmit() {
 
       <div class="flex items-center gap-3 pt-2">
         <ToggleSwitch v-model="formData.isPublished" class="min-w-[40px] max-h-[26px]" />
-        <span class="text-sm text-gray-600">Published</span>
+        <span class="text-sm text-gray-600">{{ t('bulletin.fields.published') }}</span>
       </div>
     </div>
 
@@ -332,7 +338,7 @@ async function handleSubmit() {
           @click="closeModal"
           :disabled="isSubmitting"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -340,7 +346,7 @@ async function handleSubmit() {
           @click="handleSubmit"
           :disabled="isSubmitting"
         >
-          {{ isSubmitting ? 'Saving...' : 'Save changes' }}
+          {{ isSubmitting ? t('common.saving') : t('common.saveChanges') }}
         </button>
       </div>
     </template>

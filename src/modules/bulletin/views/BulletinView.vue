@@ -13,11 +13,13 @@ import CategoryFormModal from '@/components/modals/bulletin/CategoryFormModal.vu
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import AIChatButton from '@/components/ai/AIChatButton.vue'
 import { Menu, Search, Plus } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 const bulletinStore = useBulletinStore()
 const categoryStore = useCategoryStore()
 const groupStore = useGroupStore()
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 const activeTab = ref('bulletin')
 const searchQuery = ref('')
@@ -40,13 +42,15 @@ function toggleSidebar() {
   }
 }
 
-const tabs = [
-  { id: 'bulletin', label: 'Bulletin' },
-  { id: 'category', label: 'Category' }
-]
+const tabs = computed(() => [
+  { id: 'bulletin', label: t('bulletin.tabs.bulletin') },
+  { id: 'category', label: t('bulletin.tabs.category') }
+])
 
 const searchPlaceholder = computed(() => (
-  activeTab.value === 'category' ? 'Search category' : 'Search bulletin'
+  activeTab.value === 'category'
+    ? t('bulletin.search.category')
+    : t('bulletin.search.bulletin')
 ))
 
 const filteredBulletins = computed(() => {
@@ -248,7 +252,7 @@ async function handleCategoryPaginationChange({ page, limit }) {
               class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
             >
               <Plus class="w-4 h-4" />
-              New Bulletin
+              {{ t('bulletin.actions.newBulletin') }}
             </button>
           </template>
           <template v-else>
@@ -257,7 +261,7 @@ async function handleCategoryPaginationChange({ page, limit }) {
               class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
             >
               <Plus class="w-4 h-4" />
-              New Category
+              {{ t('bulletin.actions.newCategory') }}
             </button>
           </template>
 

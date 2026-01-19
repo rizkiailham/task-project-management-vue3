@@ -3,6 +3,8 @@
     "appName": "Desidia",
     "loading": "Laster...",
     "save": "Lagre",
+    "saveChanges": "Lagre endringer",
+    "saving": "Lagrer...",
     "cancel": "Avbryt",
     "delete": "Slett",
     "edit": "Rediger",
@@ -12,6 +14,7 @@
     "sort": "Sorter",
     "actions": "Handlinger",
     "settings": "Innstillinger",
+    "bulletin": "Bulletin",
     "logout": "Logg ut",
     "back": "Tilbake",
     "next": "Neste",
@@ -196,6 +199,52 @@
     "newTask": "Ny oppgave",
     "collapse": "Skjul sidefelt",
     "expand": "Vis sidefelt"
+  },
+  "bulletin": {
+    "tabs": {
+      "bulletin": "Bulletin",
+      "category": "Kategori"
+    },
+    "search": {
+      "bulletin": "SAA,k bulletin",
+      "category": "SAA,k kategori"
+    },
+    "actions": {
+      "newBulletin": "Ny bulletin",
+      "newCategory": "Ny kategori"
+    },
+    "modal": {
+      "bulletin": {
+        "addTitle": "Legg til bulletin",
+        "editTitle": "Rediger bulletin"
+      },
+      "category": {
+        "addTitle": "Legg til kategori",
+        "editTitle": "Rediger kategori"
+      }
+    },
+    "fields": {
+      "titleLabel": "Tittel *",
+      "description": "Beskrivelse",
+      "category": "Kategori",
+      "accessGroup": "Tilgangsgruppe",
+      "content": "Innhold",
+      "thumbnail": "Miniatyrbilde",
+      "published": "Publisert",
+      "categoryNameLabel": "Navn *"
+    },
+    "placeholders": {
+      "title": "Skriv inn bulletin-tittel",
+      "description": "Bulletin-beskrivelse",
+      "selectCategory": "Velg kategori",
+      "content": "Skriv bulletin-innhold",
+      "categoryName": "Kategorinavn",
+      "categoryDescription": "Kategoribeskrivelse"
+    },
+    "validation": {
+      "titleRequired": "Tittel er pakrevd",
+      "categoryNameRequired": "Navn er pakrevd"
+    }
   },
   "dashboard": {
     "title": "Dashbord",
