@@ -147,7 +147,7 @@ function closeModal() {
           optionLabel="label"
           optionValue="value"
           :placeholder="t('users.invite.placeholders.projects')"
-          display="comma"
+          display="chip"
           filter
           filterPlaceholder="Search..."
           class="w-full"
