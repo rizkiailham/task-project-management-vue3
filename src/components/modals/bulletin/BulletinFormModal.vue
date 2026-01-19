@@ -283,10 +283,10 @@ async function handleSubmit() {
         <div class="flex items-center gap-4">
           <div
             v-if="formData.thumbnail"
-            class="relative h-24 w-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-50"
+            class="group relative h-24 w-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-50"
           >
             <img :src="formData.thumbnail" alt="" class="h-full w-full object-cover" />
-            <div class="absolute inset-0 flex items-center justify-center gap-2 bg-white/70">
+            <div class="absolute inset-0 flex items-center justify-center gap-2 bg-white/70 opacity-0 transition-opacity group-hover:opacity-100">
               <button
                 type="button"
                 class="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
