@@ -54,6 +54,18 @@ function selectSection(sectionId) {
   overflow: auto;
   box-sizing: border-box;
   padding-bottom: calc(20px + var(--settings-footer-height, 56px));
+  position: relative;
+}
+
+.settings-nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--settings-footer-height, 56px);
+  background: #f3f4f6;
+  pointer-events: none;
 }
 
 .settings-nav-group {
