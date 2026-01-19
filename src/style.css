@@ -416,6 +416,7 @@ textarea,
 
 .p-select-header,
 .p-multiselect-header {
+  padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
   background: #f8fafc;
 }

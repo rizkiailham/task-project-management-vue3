@@ -19,6 +19,7 @@ These rules apply to all future work in this repository.
 - For AG Grid pagination footers, only render them when total items exceed the current page size (or totalPages > 1).
 - For delete confirmations, use the existing `DeleteConfirmModal` pattern used in the Users UI.
 - For toasts tied to API calls, show backend response messages for success/error instead of hardcoding frontend strings.
+- Always localize user-facing strings using the project's localization system.
 
 ## Implementation approach
 - Search the codebase for similar patterns before implementing a feature.
