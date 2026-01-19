@@ -1,7 +1,10 @@
 <script setup>
 import { computed } from 'vue'
+import { DatePicker as VDatePicker } from 'v-calendar'
+import 'v-calendar/style.css'
 import FormInput from '@/components/ui/FormInput.vue'
 import Checkbox from 'primevue/checkbox'
+import InputText from 'primevue/inputtext'
 
 const props = defineProps({
   fields: {
@@ -28,11 +31,6 @@ function getFieldKey(field) {
 
 function updateValue(key, value) {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
-}
-
-function updateRangeValue(key, part, value) {
-  const nextRange = { ...(props.modelValue?.[key] || {}), [part]: value }
-  emit('update:modelValue', { ...props.modelValue, [key]: nextRange })
 }
 
 function normalizeOptions(options) {
@@ -73,6 +71,32 @@ function getNumberProps(field) {
     return { suffix: '%' }
   }
   return { mode: 'decimal' }
+}
+
+function updateDateRangeValue(key, value) {
+  const start = value?.start || ''
+  const end = value?.end || ''
+  emit('update:modelValue', { ...props.modelValue, [key]: { start, end } })
+}
+
+const dateModelConfig = { type: 'string', mask: 'YYYY-MM-DD' }
+const dateMasks = { input: 'YYYY-MM-DD' }
+
+function formatRangeInput(range) {
+  const start = range?.start || ''
+  const end = range?.end || ''
+  if (start && end) return `${start} - ${end}`
+  return start || end || ''
+}
+
+function mapInputListeners(events) {
+  if (!events || typeof events !== 'object') return {}
+  return Object.entries(events).reduce((acc, [key, handler]) => {
+    if (typeof handler !== 'function') return acc
+    const onKey = `on${key.charAt(0).toUpperCase()}${key.slice(1)}`
+    acc[onKey] = handler
+    return acc
+  }, {})
 }
 </script>
 
@@ -138,7 +162,7 @@ function getNumberProps(field) {
           :options="normalizeOptions(field.settings?.options)"
           optionLabel="label"
           optionValue="value"
-          display="comma"
+          display="chip"
           class="w-full"
           @update:modelValue="(value) => updateValue(getFieldKey(field), value)"
         />
@@ -154,44 +178,63 @@ function getNumberProps(field) {
           :options="userOptions"
           optionLabel="label"
           optionValue="value"
-          display="comma"
+          display="chip"
           class="w-full"
           @update:modelValue="(value) => updateValue(getFieldKey(field), value)"
         />
       </template>
 
       <template v-else-if="field.type === 'date' && field.settings?.isDateRange">
-        <div class="grid gap-3 sm:grid-cols-2">
-          <FormInput
-            :id="`custom-${getFieldKey(field)}-start`"
-            :modelValue="modelValue[getFieldKey(field)]?.start || ''"
-            type="date"
-            :label="field.label"
-            labelClass="mb-1.5 text-xs text-gray-500"
-            class="w-full"
-            @update:modelValue="(value) => updateRangeValue(getFieldKey(field), 'start', value)"
-          />
-          <FormInput
-            :id="`custom-${getFieldKey(field)}-end`"
-            :modelValue="modelValue[getFieldKey(field)]?.end || ''"
-            type="date"
-            labelClass="mb-1.5 text-xs text-gray-500"
-            class="w-full"
-            @update:modelValue="(value) => updateRangeValue(getFieldKey(field), 'end', value)"
-          />
-        </div>
+        <VDatePicker
+          :modelValue="modelValue[getFieldKey(field)]"
+          is-range
+          :model-config="dateModelConfig"
+          :masks="dateMasks"
+          class="w-full"
+          :popover="{ visibility: 'click' }"
+          @update:modelValue="(value) => updateDateRangeValue(getFieldKey(field), value)"
+        >
+          <template #default="{ inputValue, inputEvents }">
+            <FormInput
+              :id="`custom-${getFieldKey(field)}`"
+              :modelValue="formatRangeInput(inputValue)"
+              :as="InputText"
+              :label="field.label"
+              labelClass="mb-1.5 text-xs text-gray-500"
+              class="w-full"
+              inputClass="w-full"
+              readonly
+              aria-label="Date range"
+              :pt="{ root: mapInputListeners(inputEvents?.start) }"
+            />
+          </template>
+        </VDatePicker>
       </template>
 
       <template v-else-if="field.type === 'date'">
-        <FormInput
-          :id="`custom-${getFieldKey(field)}`"
+        <VDatePicker
           :modelValue="modelValue[getFieldKey(field)]"
-          type="date"
-          :label="field.label"
-          labelClass="mb-1.5 text-xs text-gray-500"
+          :model-config="dateModelConfig"
+          :masks="dateMasks"
           class="w-full"
+          :popover="{ visibility: 'click' }"
           @update:modelValue="(value) => updateValue(getFieldKey(field), value)"
-        />
+        >
+          <template #default="{ inputValue, inputEvents }">
+            <div class="flex flex-col">
+              <FormInput
+                :id="`custom-${getFieldKey(field)}`"
+                :modelValue="inputValue || ''"
+                :as="InputText"
+                :label="field.label"
+                labelClass="mb-1.5 text-xs text-gray-500"
+                class="w-full"
+                inputClass="w-full"
+                :pt="{ root: mapInputListeners(inputEvents) }"
+              />
+            </div>
+          </template>
+        </VDatePicker>
       </template>
 
       <template v-else>
