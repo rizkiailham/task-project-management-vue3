@@ -1,0 +1,164 @@
+<script setup>
+/**
+ * CategoryFormModal - Modal for creating/editing bulletin categories
+ */
+import { computed, ref, watch } from 'vue'
+import { useCategoryStore, useUIStore } from '@/stores'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import FormInput from '@/components/ui/FormInput.vue'
+
+const props = defineProps({
+  visible: { type: Boolean, default: false },
+  category: { type: Object, default: null }
+})
+
+const emit = defineEmits(['update:visible', 'saved'])
+
+const categoryStore = useCategoryStore()
+const uiStore = useUIStore()
+
+const formData = ref({
+  name: '',
+  description: ''
+})
+const isSubmitting = ref(false)
+
+const isEditing = computed(() => !!props.category?.id)
+const modalTitle = computed(() => (isEditing.value ? 'Edit Category' : 'Add Category'))
+
+const dialogVisible = computed({
+  get: () => props.visible,
+  set: (val) => emit('update:visible', val)
+})
+
+function applyCategory(category) {
+  formData.value = {
+    name: category?.name || '',
+    description: category?.description || ''
+  }
+}
+
+function resetForm() {
+  formData.value = {
+    name: '',
+    description: ''
+  }
+}
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) return
+    if (props.category) {
+      applyCategory(props.category)
+    } else {
+      resetForm()
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.category,
+  (category) => {
+    if (!props.visible) return
+    if (category) {
+      applyCategory(category)
+    } else {
+      resetForm()
+    }
+  }
+)
+
+function closeModal() {
+  dialogVisible.value = false
+}
+
+async function handleSubmit() {
+  if (!formData.value.name.trim()) {
+    uiStore.showError('Name is required')
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const payload = {
+      name: formData.value.name.trim(),
+      description: formData.value.description.trim()
+    }
+
+    let response
+    if (isEditing.value) {
+      response = await categoryStore.updateCategory(props.category.id, payload)
+    } else {
+      response = await categoryStore.createCategory(payload)
+    }
+
+    uiStore.showApiSuccess(response)
+    emit('saved')
+    closeModal()
+  } catch (error) {
+    uiStore.showApiError(error)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+</script>
+
+<template>
+  <BaseModal
+    v-model:visible="dialogVisible"
+    :title="modalTitle"
+    width="520px"
+    :closable="!isSubmitting"
+    :closeOnEscape="!isSubmitting"
+    :loading="isSubmitting"
+  >
+    <template #header>
+      <h2 class="text-base font-semibold text-gray-900">{{ modalTitle }}</h2>
+    </template>
+
+    <div class="max-h-[60vh] overflow-y-auto -my-5 -mx-6 px-6 py-5 space-y-4">
+      <FormInput
+        id="category-name"
+        v-model="formData.name"
+        label="Name *"
+        labelClass="block text-xs text-gray-500 mb-1"
+        placeholder="Category name"
+        class="w-full"
+      />
+
+      <FormInput
+        id="category-description"
+        v-model="formData.description"
+        as="textarea"
+        label="Description"
+        labelClass="block text-xs text-gray-500 mb-1"
+        placeholder="Category description"
+        rows="4"
+        class="w-full"
+      />
+    </div>
+
+    <template #footer>
+      <div class="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="closeModal"
+          :disabled="isSubmitting"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="handleSubmit"
+          :disabled="isSubmitting"
+        >
+          {{ isSubmitting ? 'Saving...' : 'Save changes' }}
+        </button>
+      </div>
+    </template>
+  </BaseModal>
+</template>

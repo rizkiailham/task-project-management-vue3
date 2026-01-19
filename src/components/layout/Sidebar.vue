@@ -206,6 +206,7 @@ const isSettingsActive = computed(() => {
 })
 
 const isUsersActive = computed(() => route.name === 'Users')
+const isBulletinActive = computed(() => route.name === 'Bulletin')
 
 // Fetch projects on mount
 onMounted(async () => {
@@ -459,9 +460,11 @@ async function handleLogout() {
               type="button"
               :class="[
                 'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
-                'text-gray-900 hover:bg-white/70'
+                isBulletinActive
+                  ? 'bg-gray-300 text-gray-900 shadow-sm'
+                  : 'text-gray-900 hover:bg-white/70'
               ]"
-              @click="notify('Bulletin')"
+              @click="router.push({ name: 'Bulletin' })"
             >
               <Newspaper class="w-[18px] h-[18px] opacity-70" />
               <span>Bulletin</span>

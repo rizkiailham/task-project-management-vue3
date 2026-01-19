@@ -140,6 +140,14 @@ const routes = [
           title: 'Users'
         }
       },
+      {
+        path: 'bulletins',
+        name: 'Bulletin',
+        component: () => import('@/modules/bulletin/views/BulletinView.vue'),
+        meta: {
+          title: 'Bulletin'
+        }
+      },
       // Workspace routes
       {
         path: 'workspaces/:workspaceId',

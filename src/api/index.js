@@ -11,6 +11,8 @@ export * as taskApi from './task.api'
 export * as aiApi from './ai.api'
 export * as aiChatApi from './aiChat.api'
 export * as notificationApi from './notification.api'
+export * as bulletinApi from './bulletin.api'
+export * as categoryApi from './category.api'
 
 export {
   default as httpClient,
