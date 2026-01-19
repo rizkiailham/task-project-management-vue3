@@ -82,19 +82,33 @@ const menuStyle = computed(() => {
   }
 
   const rect = triggerRef.value.getBoundingClientRect()
-  
+  const viewportPadding = 8
+  const menuWidth = Number.parseFloat(props.width) || 0
+  const viewportHeight = window.innerHeight
+  const availableTop = rect.top - viewportPadding
+  const availableBottom = viewportHeight - rect.bottom - viewportPadding
+  const shouldOpenUp = props.openUp && availableTop >= 120
+
   // Calculate vertical position
   let verticalStyle = {}
-  if (props.openUp) {
+  if (shouldOpenUp) {
     // Open upwards: position bottom of menu at top of trigger
-    verticalStyle = { bottom: `${window.innerHeight - rect.top + 8}px`, top: 'auto' }
+    verticalStyle = {
+      bottom: `${viewportHeight - rect.top + 8}px`,
+      top: 'auto',
+      maxHeight: `${Math.max(availableTop, 120)}px`
+    }
   } else {
     // Open downwards: position top of menu at bottom of trigger
-    verticalStyle = { top: `${rect.bottom + 8}px`, bottom: 'auto' }
+    verticalStyle = {
+      top: `${Math.max(rect.bottom + 8, viewportPadding)}px`,
+      bottom: 'auto',
+      maxHeight: `${Math.max(availableBottom, 120)}px`
+    }
   }
 
   if (props.position === 'right') {
-    const right = Math.max(0, viewportWidth.value - rect.right)
+    const right = Math.max(viewportPadding, viewportWidth.value - rect.right)
     return {
       width: props.width,
       ...verticalStyle,
@@ -103,10 +117,13 @@ const menuStyle = computed(() => {
     }
   }
 
+  const maxLeft = Math.max(viewportPadding, viewportWidth.value - menuWidth - viewportPadding)
+  const left = Math.min(Math.max(rect.left, viewportPadding), maxLeft)
+
   return {
     width: props.width,
     ...verticalStyle,
-    left: `${rect.left}px`,
+    left: `${left}px`,
     right: 'auto'
   }
 })
