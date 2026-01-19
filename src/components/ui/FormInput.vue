@@ -96,6 +96,9 @@ const inputAttrs = computed(() => {
   if (isMultiSelect && !('showToggleAll' in attrs)) {
     next.showToggleAll = false
   }
+  if (isMultiSelect && !('display' in attrs)) {
+    next.display = 'chip'
+  }
 
   if (hasLabel.value && isSelectLike.value && placeholder) {
     next['aria-label'] = ariaLabel || placeholder
