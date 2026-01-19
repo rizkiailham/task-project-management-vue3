@@ -551,10 +551,6 @@ a.text-primary:hover,
   color: var(--color-primary-700) !important;
 }
 
-.p-button {
-  padding: 4px 4px !important;
-}
-
 .p-button-label {
   font-size: 14px !important;
   font-weight: 400 !important;
