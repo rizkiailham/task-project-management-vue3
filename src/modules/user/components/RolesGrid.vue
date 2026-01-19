@@ -2,11 +2,12 @@
 /**
  * RolesGrid - AG Grid component for displaying roles table
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next'
 
 // Cell renderer components
 import RoleNameCell from './cells/RoleNameCell.vue'
@@ -18,13 +19,32 @@ LicenseManager.setLicenseKey(
 ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
 
 const props = defineProps({
-  roles: { type: Array, default: () => [] }
+  roles: { type: Array, default: () => [] },
+  meta: {
+    type: Object,
+    default: () => ({
+      currentPage: 1,
+      totalPages: 1,
+      itemsPerPage: 10,
+      totalItems: 0
+    })
+  }
 })
 
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits(['edit', 'delete', 'paginationChange'])
 
 const gridApi = ref(null)
 const rowData = ref([])
+const pageSizeOptions = [10, 20, 50]
+const pageSize = ref(10)
+const currentPage = ref(1)
+const totalPages = ref(1)
+
+const showPagination = computed(() => {
+  const totalItems = props.meta?.totalItems || 0
+  const itemsPerPage = props.meta?.itemsPerPage || pageSize.value
+  return (props.meta?.totalPages || 1) > 1 || totalItems > itemsPerPage
+})
 
 // Transform roles data for the grid
 watch(
@@ -38,6 +58,52 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+watch(
+  () => props.meta,
+  (meta) => {
+    currentPage.value = meta?.currentPage || 1
+    totalPages.value = meta?.totalPages || 1
+    if (meta?.itemsPerPage && meta.itemsPerPage !== pageSize.value) {
+      pageSize.value = meta.itemsPerPage
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+function emitPaginationChange(page, limit) {
+  emit('paginationChange', { page, limit })
+}
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value || page === currentPage.value) return
+  emitPaginationChange(page, pageSize.value)
+}
+
+function goToFirst() {
+  if (currentPage.value <= 1) return
+  emitPaginationChange(1, pageSize.value)
+}
+
+function goToLast() {
+  if (currentPage.value >= totalPages.value) return
+  emitPaginationChange(totalPages.value, pageSize.value)
+}
+
+function goToPrev() {
+  if (currentPage.value <= 1) return
+  emitPaginationChange(currentPage.value - 1, pageSize.value)
+}
+
+function goToNext() {
+  if (currentPage.value >= totalPages.value) return
+  emitPaginationChange(currentPage.value + 1, pageSize.value)
+}
+
+function changePageSize(newSize) {
+  pageSize.value = newSize
+  emitPaginationChange(1, newSize)
+}
 
 // Handlers for cell actions
 function handleEdit(role) {
@@ -123,6 +189,63 @@ const getRowId = (params) => params.data?.id
         @grid-ready="onGridReady"
       />
     </div>
+    <div v-if="showPagination" class="footer-bar">
+      <div class="footer-pagination">
+        <div class="flex items-center gap-1">
+          <button
+            @click="goToFirst"
+            :disabled="currentPage <= 1"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': currentPage <= 1 }"
+            title="First page"
+          >
+            <ChevronsLeft class="w-4 h-4" />
+          </button>
+          <button
+            @click="goToPrev"
+            :disabled="currentPage <= 1"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': currentPage <= 1 }"
+            title="Previous page"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          <span class="text-xs text-gray-500 px-2">
+            Page {{ currentPage }} of {{ totalPages }}
+          </span>
+          <button
+            @click="goToNext"
+            :disabled="currentPage >= totalPages"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': currentPage >= totalPages }"
+            title="Next page"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </button>
+          <button
+            @click="goToLast"
+            :disabled="currentPage >= totalPages"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': currentPage >= totalPages }"
+            title="Last page"
+          >
+            <ChevronsRight class="w-4 h-4" />
+          </button>
+          <div class="page-size-selector ml-2">
+            <select
+              :value="pageSize"
+              @change="changePageSize(Number($event.target.value))"
+              class="page-size-select"
+            >
+              <option v-for="size in pageSizeOptions" :key="size" :value="size">
+                {{ size }}
+              </option>
+            </select>
+            <ChevronDown class="w-3 h-3 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -137,9 +260,92 @@ const getRowId = (params) => params.data?.id
 
 .roles-grid {
   width: 100%;
-  height: 100%;
+  height: calc(100% - 52px);
   display: flex;
   flex-direction: column;
+}
+
+.footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width, 280px);
+  right: 0;
+  z-index: 101;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 52px;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-pagination {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.pagination-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
+
+.page-size-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.page-size-select {
+  appearance: none;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 28px 6px 10px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  height: 32px;
+  transition: all 0.15s ease;
+}
+
+.page-size-select:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.page-size-selector .w-3 {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 :deep(.ag-theme-quartz) {

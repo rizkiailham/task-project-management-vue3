@@ -128,13 +128,27 @@ const usersMeta = computed(() => ({
   totalItems: userStore.pagination.total
 }))
 
+const groupsMeta = computed(() => ({
+  currentPage: groupStore.pagination.page,
+  totalPages: groupStore.pagination.totalPages,
+  itemsPerPage: groupStore.pagination.limit,
+  totalItems: groupStore.pagination.total
+}))
+
+const rolesMeta = computed(() => ({
+  currentPage: roleStore.pagination.page,
+  totalPages: roleStore.pagination.totalPages,
+  itemsPerPage: roleStore.pagination.limit,
+  totalItems: roleStore.pagination.total
+}))
+
 const userRoleOptions = computed(() => userStore.availableRoles)
 
 // Watch for tab changes to fetch data
 watch(activeTab, async (newTab) => {
   if (newTab === 'role' && roleStore.roles.length === 0) {
     try {
-      await roleStore.fetchRoles()
+      await roleStore.fetchRoles({ page: 1, limit: rolesMeta.value.itemsPerPage })
     } catch (error) {
       console.error('Error fetching roles:', error)
       uiStore.showApiError(error, 'Failed to load roles')
@@ -143,7 +157,7 @@ watch(activeTab, async (newTab) => {
 
   if (newTab === 'groups' && groupStore.groups.length === 0) {
     try {
-      await groupStore.fetchGroups()
+      await groupStore.fetchGroups({ page: 1, limit: groupsMeta.value.itemsPerPage })
     } catch (error) {
       console.error('Error fetching groups:', error)
       uiStore.showApiError(error, 'Failed to load groups')
@@ -182,6 +196,24 @@ async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
     uiStore.showApiError(error, 'Failed to load users')
   } finally {
     isLoading.value = false
+  }
+}
+
+async function handleGroupPaginationChange({ page, limit }) {
+  try {
+    await groupStore.fetchGroups({ page, limit })
+  } catch (error) {
+    console.error('Error fetching groups:', error)
+    uiStore.showApiError(error, 'Failed to load groups')
+  }
+}
+
+async function handleRolePaginationChange({ page, limit }) {
+  try {
+    await roleStore.fetchRoles({ page, limit })
+  } catch (error) {
+    console.error('Error fetching roles:', error)
+    uiStore.showApiError(error, 'Failed to load roles')
   }
 }
 
@@ -445,8 +477,10 @@ function handleGroupSaved() {
         <div class="flex-1">
           <GroupsGrid
             :groups="filteredGroups"
+            :meta="groupsMeta"
             @edit="openEditGroupModal"
             @delete="openGroupDeleteModal"
+            @paginationChange="handleGroupPaginationChange"
           />
         </div>
       </div>
@@ -457,8 +491,10 @@ function handleGroupSaved() {
         <div class="flex-1">
           <RolesGrid
             :roles="filteredRoles"
+            :meta="rolesMeta"
             @edit="openEditRoleModal"
             @delete="openRoleDeleteModal"
+            @paginationChange="handleRolePaginationChange"
           />
         </div>
       </div>

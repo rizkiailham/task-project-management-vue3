@@ -144,6 +144,7 @@ const pageSize = ref(10)
 // Computed from meta props
 const currentPage = computed(() => props.meta?.currentPage || 1)
 const totalPages = computed(() => props.meta?.totalPages || 1)
+const showPagination = computed(() => totalPages.value > 1)
 
 // Visible page numbers (max 5)
 const visiblePages = computed(() => {
@@ -166,6 +167,11 @@ const visiblePages = computed(() => {
 
 const isFirstPage = computed(() => currentPage.value <= 1)
 const isLastPage = computed(() => currentPage.value >= totalPages.value)
+const showPagination = computed(() => {
+  const totalItems = props.meta?.totalItems || 0
+  const itemsPerPage = props.meta?.itemsPerPage || pageSize.value
+  return (props.meta?.totalPages || 1) > 1 || totalItems > itemsPerPage
+})
 
 // Emit pagination change for server-side pagination
 function emitPaginationChange(page, limit) {
@@ -407,7 +413,7 @@ const getRowId = (params) => params.data?.id
       />
     </div>
     <!-- Fixed Footer - Filter buttons on left, Pagination on right -->
-    <div class="footer-bar">
+    <div v-if="showPagination" class="footer-bar">
       <!-- Left: Filters -->
       <div class="footer-filters">
         <div class="flex items-center gap-3">

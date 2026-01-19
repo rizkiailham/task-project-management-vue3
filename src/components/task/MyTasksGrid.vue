@@ -573,6 +573,10 @@ const gridOptions = ref({
   }
 })
 
+const paginationPageSize = computed(() => gridOptions.value.paginationPageSize || 50)
+const totalRows = computed(() => rowData.value.filter((row) => !row.isPlaceholder).length)
+const showPagination = computed(() => totalRows.value > paginationPageSize.value)
+
 /**
  * Handle opening task detail sidebar when user clicks the detail button
  * @param {Object} taskData - The task data from the grid row
@@ -629,6 +633,7 @@ function onGridReady(params) {
       :pagination="true"
       :paginationPageSize="50"
       :paginationPageSizeSelector="[50, 100, 500, 1000]"
+      :suppressPaginationPanel="!showPagination"
       domLayout="autoHeight"
       @row-clicked="gridOptions.onRowClicked"
       @grid-ready="onGridReady"
