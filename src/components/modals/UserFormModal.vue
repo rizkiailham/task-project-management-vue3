@@ -715,7 +715,7 @@ const avatarInitial = computed(() => {
                   optionLabel="label"
                   optionValue="value"
                   :placeholder="t('users.placeholders.projects')"
-                  display="comma"
+                  display="chip"
                   filter
                   :filterPlaceholder="t('common.search')"
                   class="w-full"
@@ -745,7 +745,7 @@ const avatarInitial = computed(() => {
                 optionLabel="label"
                 optionValue="value"
                 :placeholder="t('users.placeholders.groups')"
-                display="comma"
+                display="chip"
                 filter
                 :filterPlaceholder="t('common.search')"
                 class="w-full"
@@ -849,6 +849,5 @@ const avatarInitial = computed(() => {
 }
 
 .user-form :deep(.p-multiselect-label) {
-  padding: 10px 12px;
 }
 </style>
