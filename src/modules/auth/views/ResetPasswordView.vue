@@ -67,11 +67,23 @@ function parseResetPayload() {
   const queryKeys = Object.keys(route.query || {})
   const hasSingleEncodedParam = queryKeys.length === 1 && route.query[queryKeys[0]] === ''
 
-  if (!hasSingleEncodedParam) return
+  if (hasSingleEncodedParam) {
+    const rawEncoded = queryKeys[0]
+    parseBase64Params(rawEncoded)
+    return
+  }
 
-  const rawEncoded = queryKeys[0]
+  if (!token.value && !email.value) {
+    const rawSearch = window.location.search?.slice(1) || ''
+    if (rawSearch) {
+      parseBase64Params(rawSearch)
+    }
+  }
+}
+
+function parseBase64Params(rawValue) {
   try {
-    const normalized = decodeURIComponent(rawEncoded).replace(/-/g, '+').replace(/_/g, '/')
+    const normalized = decodeURIComponent(rawValue).replace(/-/g, '+').replace(/_/g, '/')
     const decoded = atob(normalized)
     const params = new URLSearchParams(decoded)
     const decodedToken = params.get('token')
