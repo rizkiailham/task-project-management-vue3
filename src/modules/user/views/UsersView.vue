@@ -115,6 +115,18 @@ const rolesMeta = computed(() => ({
 
 const userRoleOptions = computed(() => userStore.availableRoles)
 
+const USER_ACTIVE_TAB_KEY = 'users.activeTab'
+
+function resolveInitialTab() {
+  const storedTab = localStorage.getItem(USER_ACTIVE_TAB_KEY)
+  const validTabs = tabs.map(tab => tab.id)
+  return validTabs.includes(storedTab) ? storedTab : 'users'
+}
+
+function persistActiveTab(tabId) {
+  localStorage.setItem(USER_ACTIVE_TAB_KEY, tabId)
+}
+
 function buildSearchParams(params = {}) {
   return searchKeywords.value ? { ...params, keywords: searchKeywords.value } : params
 }
@@ -187,6 +199,18 @@ watch(searchQuery, (query) => {
 
 // Watch for tab changes to fetch data
 watch(activeTab, async (newTab) => {
+  persistActiveTab(newTab)
+  if (searchQuery.value || searchKeywords.value) {
+    searchQuery.value = ''
+    searchKeywords.value = ''
+    if (newTab === 'users') {
+      await handleUserSearch()
+    } else if (newTab === 'groups') {
+      await handleGroupSearch()
+    } else if (newTab === 'role') {
+      await handleRoleSearch()
+    }
+  }
   if (newTab === 'users' && searchKeywords.value) {
     await handleUserSearch()
   }
@@ -211,6 +235,7 @@ watch(activeTab, async (newTab) => {
 
 onMounted(async () => {
   try {
+    activeTab.value = resolveInitialTab()
     await userStore.initializeOptions()
     await userStore.fetchUsers({ page: 1, limit: 10 })
   } catch (error) {

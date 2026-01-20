@@ -74,6 +74,18 @@ const categoryMeta = computed(() => ({
   totalItems: categoryStore.pagination.total
 }))
 
+const BULLETIN_ACTIVE_TAB_KEY = 'bulletin.activeTab'
+
+function resolveInitialTab() {
+  const storedTab = localStorage.getItem(BULLETIN_ACTIVE_TAB_KEY)
+  const validTabs = tabs.value.map(tab => tab.id)
+  return validTabs.includes(storedTab) ? storedTab : 'bulletin'
+}
+
+function persistActiveTab(tabId) {
+  localStorage.setItem(BULLETIN_ACTIVE_TAB_KEY, tabId)
+}
+
 async function fetchAll() {
   isLoading.value = true
   try {
@@ -89,9 +101,22 @@ async function fetchAll() {
   }
 }
 
-onMounted(fetchAll)
+onMounted(async () => {
+  activeTab.value = resolveInitialTab()
+  await fetchAll()
+})
 
 watch(activeTab, async (tab) => {
+  persistActiveTab(tab)
+  if (searchQuery.value || searchKeywords.value) {
+    searchQuery.value = ''
+    searchKeywords.value = ''
+    if (tab === 'bulletin') {
+      await handleBulletinSearch()
+    } else {
+      await handleCategorySearch()
+    }
+  }
   if (tab === 'category' && (categoryStore.categories.length === 0 || searchKeywords.value)) {
     await fetchCategoriesWithSearch({ page: 1, limit: categoryMeta.value.itemsPerPage || 20 })
   }

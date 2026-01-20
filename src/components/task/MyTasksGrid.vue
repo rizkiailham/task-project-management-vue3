@@ -10,6 +10,7 @@ import TagEditorDropdown from '@/components/task/TagEditorDropdown.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
 import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import { useTaskStore, useUIStore } from '@/stores'
+import SortHeader from '@/components/ag/SortHeader.vue'
 
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
@@ -464,7 +465,11 @@ const columnDefs = [
 const defaultColDef = {
   sortable: true,
   resizable: true,
-  filter: true
+  filter: true,
+  suppressMenu: true,
+  suppressHeaderMenuButton: true,
+  suppressHeaderFilterButton: true,
+  headerComponent: 'SortHeader'
 }
 
 const myTheme = themeQuartz.withParams({
@@ -501,6 +506,8 @@ const autoGroupColumnDef = {
   headerName: 'Title',
   minWidth: 320,
   suppressHeaderMenuButton: true,
+  suppressHeaderFilterButton: true,
+  headerComponent: 'SortHeader',
   cellRendererParams: {
     suppressCount: true,
     suppressDoubleClickExpand: true,
@@ -518,6 +525,14 @@ const gridOptions = ref({
   pagination: true,
   paginationPageSize: 50,
   paginationPageSizeSelector: [50, 100, 500, 1000],
+  components: {
+    SortHeader,
+    StatusEditorDropdown,
+    AssigneeEditorDropdown,
+    TagEditorDropdown,
+    DartboardCell,
+    TrackingTimeCell
+  },
   context: {
     addSubtask,
     updateTitle,
@@ -563,13 +578,6 @@ const gridOptions = ref({
       return
     }
     // No-op on collapse to keep empty subtasks around
-  },
-  components: {
-    StatusEditorDropdown,
-    AssigneeEditorDropdown,
-    TagEditorDropdown,
-    DartboardCell,
-    TrackingTimeCell
   }
 })
 

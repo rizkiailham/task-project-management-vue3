@@ -8,6 +8,7 @@ import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-communi
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-vue-next'
+import SortHeader from '@/components/ag/SortHeader.vue'
 
 import BulletinThumbnailCell from './cells/BulletinThumbnailCell.vue'
 import BulletinTitleCell from './cells/BulletinTitleCell.vue'
@@ -134,7 +135,11 @@ const columnDefs = ref([
 const defaultColDef = {
   sortable: true,
   resizable: true,
-  filter: true
+  filter: true,
+  suppressMenu: true,
+  suppressHeaderMenuButton: true,
+  suppressHeaderFilterButton: true,
+  headerComponent: 'SortHeader'
 }
 
 const pageSizeOptions = [10, 20, 50]
@@ -259,6 +264,10 @@ function onGridReady(params) {
 }
 
 const getRowId = (params) => params.data?.id
+
+const gridComponents = {
+  SortHeader
+}
 </script>
 
 <template>
@@ -270,6 +279,7 @@ const getRowId = (params) => params.data?.id
         :columnDefs="columnDefs"
         :defaultColDef="defaultColDef"
         :theme="myTheme"
+        :components="gridComponents"
         :getRowId="getRowId"
         :rowHeight="56"
         :headerHeight="40"
