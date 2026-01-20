@@ -89,3 +89,42 @@ export async function searchProjectUsers(projectId, query = {}) {
 export async function removeProjectUsers(projectId, userIds) {
   return del(`/projects/${projectId}/users`, { data: { userIds } })
 }
+
+/**
+ * Get project access entries
+ * @param {string} projectId
+ * @returns {Promise<Object>}
+ */
+export async function getProjectAccesses(projectId) {
+  return get(`/projects/${projectId}/accesses`)
+}
+
+/**
+ * Add users/groups to a project access list
+ * @param {string} projectId
+ * @param {Object} payload
+ * @returns {Promise<Object>}
+ */
+export async function addProjectAccesses(projectId, payload) {
+  return post(`/projects/${projectId}/accesses`, payload)
+}
+
+/**
+ * Remove users/groups from a project access list
+ * @param {string} projectId
+ * @param {Object} payload
+ * @returns {Promise<Object>}
+ */
+export async function removeProjectAccesses(projectId, payload) {
+  return del(`/projects/${projectId}/accesses`, { data: payload })
+}
+
+/**
+ * Search users/groups for project access
+ * @param {string} projectId
+ * @param {Object} query
+ * @returns {Promise<Object>}
+ */
+export async function searchProjectAccesses(projectId, query = {}) {
+  return get(`/projects/${projectId}/accesses/search`, query)
+}

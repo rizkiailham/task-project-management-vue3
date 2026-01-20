@@ -11,6 +11,7 @@ import { useUIStore } from '@/stores'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import SettingsSidebar from '@/components/modals/settings/SettingsSidebar.vue'
 import SettingsCustomFields from '@/components/modals/settings/SettingsCustomFields.vue'
+import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
 import Button from 'primevue/button'
 import { X } from 'lucide-vue-next'
 
@@ -63,20 +64,43 @@ const navGroups = computed(() => ([
 
 const activeSection = ref('custom-fields')
 const customFieldsRef = ref(null)
+const projectAccessRef = ref(null)
 const canSave = ref(false)
 const isSaving = ref(false)
+const hasPendingChanges = ref(false)
 
 function selectSection(sectionId) {
+  if (hasPendingChanges.value && sectionId !== activeSection.value) {
+    const confirmLeave = window.confirm(t('settings.project.unsaved.confirm'))
+    if (!confirmLeave) return
+    hasPendingChanges.value = false
+  }
   activeSection.value = sectionId
+  if (sectionId === 'project') {
+    canSave.value = hasPendingChanges.value
+    isSaving.value = false
+    return
+  }
+  if (sectionId !== 'custom-fields') {
+    canSave.value = false
+    isSaving.value = false
+  }
 }
 
 function closeModal() {
+  if (hasPendingChanges.value) {
+    const confirmClose = window.confirm(t('settings.project.unsaved.confirm'))
+    if (!confirmClose) return
+  }
   uiStore.closeModal()
 }
 
 function handleSave() {
   if (activeSection.value === 'custom-fields') {
     customFieldsRef.value?.saveSelectedField?.()
+  }
+  if (activeSection.value === 'project') {
+    projectAccessRef.value?.saveChanges?.()
   }
 }
 </script>
@@ -105,8 +129,15 @@ function handleSave() {
       />
 
       <section class="settings-content">
+        <SettingsProjectAccess
+          v-if="activeSection === 'project'"
+          ref="projectAccessRef"
+          @update:canSave="canSave = $event"
+          @update:isSaving="isSaving = $event"
+          @update:hasPendingChanges="hasPendingChanges = $event"
+        />
         <SettingsCustomFields
-          v-if="activeSection === 'custom-fields'"
+          v-else-if="activeSection === 'custom-fields'"
           ref="customFieldsRef"
           :active="activeSection === 'custom-fields'"
           :visible="isVisible"

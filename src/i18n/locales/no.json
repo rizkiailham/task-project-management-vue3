@@ -34,7 +34,8 @@
     "error": "Feil",
     "success": "Suksess",
     "warning": "Advarsel",
-    "info": "Informasjon"
+    "info": "Informasjon",
+    "continue": "Fortsett"
   },
   "auth": {
     "login": {
@@ -498,6 +499,72 @@
       },
       "comingSoon": "Coming soon",
       "comingSoonDescription": "This section will be available in the settings hub."
+    },
+    "project": {
+      "title": "Tilgangskontroll",
+      "descriptionPrefix": "Brukere, grupper eller agenter mAÝ bli ",
+      "descriptionHighlight": "opprettet eller invitert",
+      "descriptionSuffix": " for AÝ fAÝ tilgang til dette prosjektet.",
+      "searchPlaceholder": "SAA,k bruker eller gruppe",
+      "addAccess": "Legg til tilgang",
+      "columns": {
+        "user": "Bruker",
+        "lastLogin": "Sist innlogging",
+        "role": "Rolle"
+      },
+      "roles": {
+        "admin": "Administrator",
+        "member": "Medlem",
+        "guest": "Gjest",
+        "external": "Ekstern"
+      },
+      "labels": {
+        "group": "Gruppe"
+      },
+      "lastLogin": {
+        "justNow": "Akkurat nAÝ",
+        "hoursAgo": "{hours} t siden",
+        "never": "Aldri",
+        "none": "-"
+      },
+      "actions": {
+        "viewProfile": "Se profil",
+        "removeAccess": "Fjern fra dette prosjektet"
+      },
+      "search": {
+        "add": "Legg til",
+        "added": "Lagt til",
+        "users": "Bruker",
+        "groups": "Gruppe",
+        "showMore": "Vis mer",
+        "minChars": "SAA,k med minst 3 tegn."
+      },
+      "unsaved": {
+        "confirm": "Du har ulagrede endringer. Vil du forlate uten AÝ lagre?"
+      },
+      "empty": {
+        "title": "Velg et prosjekt fAÝrst",
+        "description": "Velg et prosjekt for AÝ administrere tilgang."
+      },
+      "profile": {
+        "title": "Brukerprofil",
+        "role": "Rolle",
+        "lastLogin": "Sist innlogging"
+      },
+      "remove": {
+        "title": "Fjern tilgang",
+        "message": "Dette fjerner brukeren eller gruppen fra dette prosjektet."
+      },
+      "menu": {
+        "title": "Prosjektinnstillinger",
+        "items": {
+          "general": "Generelt",
+          "accessControl": "Tilgangskontroll",
+          "reports": "Rapporter",
+          "instruction": "Instruksjon",
+          "email": "E-post"
+        }
+      }
     },
     "customFields": {
       "title": "Custom user fields",
