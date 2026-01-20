@@ -17,6 +17,8 @@ import RoleFormModal from '@/components/modals/RoleFormModal.vue'
 import GroupFormModal from '@/components/modals/GroupFormModal.vue'
 import { Search, Plus, UserPlus, Menu } from 'lucide-vue-next'
 import AIChatButton from '@/components/ai/AIChatButton.vue'
+import { debounce } from '@/utils/debounce'
+import { resolveSearchKeywords } from '@/utils/search'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
@@ -26,6 +28,7 @@ const groupStore = useGroupStore()
 // State
 const activeTab = ref('users')
 const searchQuery = ref('')
+const searchKeywords = ref('')
 const statusFilter = ref(null)
 const roleFilter = ref(null)
 const userStatusFilter = ref(null)
@@ -77,47 +80,15 @@ const searchPlaceholder = computed(() => {
 })
 
 const filteredUsers = computed(() => {
-  let users = [...userStore.users]
-
-  // Search filter (client-side for quick filtering)
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    users = users.filter(u => 
-      u.firstName?.toLowerCase().includes(query) ||
-      u.lastName?.toLowerCase().includes(query) ||
-      u.email?.toLowerCase().includes(query)
-    )
-  }
-
-  return users
+  return userStore.users
 })
 
 const filteredRoles = computed(() => {
-  let roles = [...roleStore.roles]
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    roles = roles.filter(role =>
-      role.name?.toLowerCase().includes(query) ||
-      role.description?.toLowerCase().includes(query)
-    )
-  }
-
-  return roles
+  return roleStore.roles
 })
 
 const filteredGroups = computed(() => {
-  let groups = [...groupStore.groups]
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    groups = groups.filter(group =>
-      group.name?.toLowerCase().includes(query) ||
-      group.description?.toLowerCase().includes(query)
-    )
-  }
-
-  return groups
+  return groupStore.groups
 })
 
 // Users meta data for pagination (from store)
@@ -144,20 +115,93 @@ const rolesMeta = computed(() => ({
 
 const userRoleOptions = computed(() => userStore.availableRoles)
 
+function buildSearchParams(params = {}) {
+  return searchKeywords.value ? { ...params, keywords: searchKeywords.value } : params
+}
+
+async function fetchUsersWithSearch(params) {
+  return userStore.fetchUsers(buildSearchParams(params))
+}
+
+async function fetchGroupsWithSearch(params) {
+  return groupStore.fetchGroups(buildSearchParams(params))
+}
+
+async function fetchRolesWithSearch(params) {
+  return roleStore.fetchRoles(buildSearchParams(params))
+}
+
+async function handleUserSearch() {
+  isLoading.value = true
+  try {
+    await fetchUsersWithSearch({
+      page: 1,
+      limit: usersMeta.value.itemsPerPage,
+      sortBy: userSortBy.value,
+      orderBy: userOrderBy.value,
+      isActive: userStatusFilter.value,
+      roleId: userRoleFilter.value
+    })
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    uiStore.showApiError(error, 'Failed to load users')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleGroupSearch() {
+  try {
+    await fetchGroupsWithSearch({ page: 1, limit: groupsMeta.value.itemsPerPage })
+  } catch (error) {
+    console.error('Error fetching groups:', error)
+    uiStore.showApiError(error, 'Failed to load groups')
+  }
+}
+
+async function handleRoleSearch() {
+  try {
+    await fetchRolesWithSearch({ page: 1, limit: rolesMeta.value.itemsPerPage })
+  } catch (error) {
+    console.error('Error fetching roles:', error)
+    uiStore.showApiError(error, 'Failed to load roles')
+  }
+}
+
+const debouncedSearch = debounce(async (query) => {
+  const keywords = resolveSearchKeywords(query)
+  if (keywords === null) return
+  searchKeywords.value = keywords
+  if (activeTab.value === 'users') {
+    await handleUserSearch()
+  } else if (activeTab.value === 'groups') {
+    await handleGroupSearch()
+  } else if (activeTab.value === 'role') {
+    await handleRoleSearch()
+  }
+}, 300)
+
+watch(searchQuery, (query) => {
+  debouncedSearch(query)
+})
+
 // Watch for tab changes to fetch data
 watch(activeTab, async (newTab) => {
-  if (newTab === 'role' && roleStore.roles.length === 0) {
+  if (newTab === 'users' && searchKeywords.value) {
+    await handleUserSearch()
+  }
+  if (newTab === 'role' && (roleStore.roles.length === 0 || searchKeywords.value)) {
     try {
-      await roleStore.fetchRoles({ page: 1, limit: rolesMeta.value.itemsPerPage })
+      await fetchRolesWithSearch({ page: 1, limit: rolesMeta.value.itemsPerPage })
     } catch (error) {
       console.error('Error fetching roles:', error)
       uiStore.showApiError(error, 'Failed to load roles')
     }
   }
 
-  if (newTab === 'groups' && groupStore.groups.length === 0) {
+  if (newTab === 'groups' && (groupStore.groups.length === 0 || searchKeywords.value)) {
     try {
-      await groupStore.fetchGroups({ page: 1, limit: groupsMeta.value.itemsPerPage })
+      await fetchGroupsWithSearch({ page: 1, limit: groupsMeta.value.itemsPerPage })
     } catch (error) {
       console.error('Error fetching groups:', error)
       uiStore.showApiError(error, 'Failed to load groups')
@@ -183,7 +227,7 @@ async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
   userSortBy.value = sortBy
   userOrderBy.value = orderBy
   try {
-    await userStore.fetchUsers({
+    await fetchUsersWithSearch({
       page,
       limit,
       sortBy,
@@ -201,7 +245,7 @@ async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
 
 async function handleGroupPaginationChange({ page, limit }) {
   try {
-    await groupStore.fetchGroups({ page, limit })
+    await fetchGroupsWithSearch({ page, limit })
   } catch (error) {
     console.error('Error fetching groups:', error)
     uiStore.showApiError(error, 'Failed to load groups')
@@ -210,7 +254,7 @@ async function handleGroupPaginationChange({ page, limit }) {
 
 async function handleRolePaginationChange({ page, limit }) {
   try {
-    await roleStore.fetchRoles({ page, limit })
+    await fetchRolesWithSearch({ page, limit })
   } catch (error) {
     console.error('Error fetching roles:', error)
     uiStore.showApiError(error, 'Failed to load roles')
@@ -222,7 +266,7 @@ async function handleUserFilter({ isActive, roleId }) {
   userRoleFilter.value = roleId
   isLoading.value = true
   try {
-    await userStore.fetchUsers({
+    await fetchUsersWithSearch({
       page: 1,
       limit: usersMeta.value.itemsPerPage,
       sortBy: userSortBy.value,

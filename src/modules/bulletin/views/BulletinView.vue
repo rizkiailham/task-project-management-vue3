@@ -14,6 +14,8 @@ import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import AIChatButton from '@/components/ai/AIChatButton.vue'
 import { Menu, Search, Plus } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import { debounce } from '@/utils/debounce'
+import { resolveSearchKeywords } from '@/utils/search'
 
 const bulletinStore = useBulletinStore()
 const categoryStore = useCategoryStore()
@@ -23,6 +25,7 @@ const { t } = useI18n()
 
 const activeTab = ref('bulletin')
 const searchQuery = ref('')
+const searchKeywords = ref('')
 const isLoading = ref(false)
 
 const showBulletinModal = ref(false)
@@ -53,25 +56,9 @@ const searchPlaceholder = computed(() => (
     : t('bulletin.search.bulletin')
 ))
 
-const filteredBulletins = computed(() => {
-  const items = bulletinStore.bulletins || []
-  if (!searchQuery.value) return items
-  const query = searchQuery.value.toLowerCase()
-  return items.filter((item) => (
-    item?.title?.toLowerCase().includes(query) ||
-    item?.description?.toLowerCase().includes(query)
-  ))
-})
+const filteredBulletins = computed(() => bulletinStore.bulletins || [])
 
-const filteredCategories = computed(() => {
-  const items = categoryStore.categories || []
-  if (!searchQuery.value) return items
-  const query = searchQuery.value.toLowerCase()
-  return items.filter((item) => (
-    item?.name?.toLowerCase().includes(query) ||
-    item?.description?.toLowerCase().includes(query)
-  ))
-})
+const filteredCategories = computed(() => categoryStore.categories || [])
 
 const bulletinMeta = computed(() => ({
   currentPage: bulletinStore.pagination.page,
@@ -91,8 +78,8 @@ async function fetchAll() {
   isLoading.value = true
   try {
     await Promise.all([
-      bulletinStore.fetchBulletins({ page: 1, limit: bulletinMeta.value.itemsPerPage || 10 }),
-      categoryStore.fetchCategories({ page: 1, limit: categoryMeta.value.itemsPerPage || 20 }),
+      fetchBulletinsWithSearch({ page: 1, limit: bulletinMeta.value.itemsPerPage || 10 }),
+      fetchCategoriesWithSearch({ page: 1, limit: categoryMeta.value.itemsPerPage || 20 }),
       groupStore.fetchGroups({ limit: 100 })
     ])
   } catch (error) {
@@ -105,11 +92,11 @@ async function fetchAll() {
 onMounted(fetchAll)
 
 watch(activeTab, async (tab) => {
-  if (tab === 'category' && categoryStore.categories.length === 0) {
-    await categoryStore.fetchCategories({ page: 1, limit: categoryMeta.value.itemsPerPage || 20 })
+  if (tab === 'category' && (categoryStore.categories.length === 0 || searchKeywords.value)) {
+    await fetchCategoriesWithSearch({ page: 1, limit: categoryMeta.value.itemsPerPage || 20 })
   }
-  if (tab === 'bulletin' && bulletinStore.bulletins.length === 0) {
-    await bulletinStore.fetchBulletins({ page: 1, limit: bulletinMeta.value.itemsPerPage || 10 })
+  if (tab === 'bulletin' && (bulletinStore.bulletins.length === 0 || searchKeywords.value)) {
+    await fetchBulletinsWithSearch({ page: 1, limit: bulletinMeta.value.itemsPerPage || 10 })
   }
 })
 
@@ -182,7 +169,7 @@ async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
   isLoading.value = true
   try {
     const sortParam = sortBy && orderBy ? `${sortBy}:${orderBy}` : undefined
-    await bulletinStore.fetchBulletins({
+    await fetchBulletinsWithSearch({
       page,
       limit,
       sortBy: sortParam
@@ -196,11 +183,57 @@ async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
 
 async function handleCategoryPaginationChange({ page, limit }) {
   try {
-    await categoryStore.fetchCategories({ page, limit })
+    await fetchCategoriesWithSearch({ page, limit })
   } catch (error) {
     uiStore.showApiError(error)
   }
 }
+
+function buildSearchParams(params = {}) {
+  return searchKeywords.value ? { ...params, keywords: searchKeywords.value } : params
+}
+
+async function fetchBulletinsWithSearch(params) {
+  return bulletinStore.fetchBulletins(buildSearchParams(params))
+}
+
+async function fetchCategoriesWithSearch(params) {
+  return categoryStore.fetchCategories(buildSearchParams(params))
+}
+
+async function handleBulletinSearch() {
+  isLoading.value = true
+  try {
+    await fetchBulletinsWithSearch({ page: 1, limit: bulletinMeta.value.itemsPerPage || 10 })
+  } catch (error) {
+    uiStore.showApiError(error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleCategorySearch() {
+  try {
+    await fetchCategoriesWithSearch({ page: 1, limit: categoryMeta.value.itemsPerPage || 20 })
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+const debouncedSearch = debounce(async (query) => {
+  const keywords = resolveSearchKeywords(query)
+  if (keywords === null) return
+  searchKeywords.value = keywords
+  if (activeTab.value === 'bulletin') {
+    await handleBulletinSearch()
+  } else {
+    await handleCategorySearch()
+  }
+}, 300)
+
+watch(searchQuery, (query) => {
+  debouncedSearch(query)
+})
 </script>
 
 <template>
