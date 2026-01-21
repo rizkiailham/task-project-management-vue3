@@ -922,13 +922,14 @@ defineExpose({ saveChanges, pendingChanges })
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: #ffffff;
+  background: #f3f4f6;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
   z-index: 5;
   max-height: 220px;
   overflow: auto;
+  min-width: 100%;
 }
 
 .settings-project-search-state {
@@ -940,11 +941,13 @@ defineExpose({ saveChanges, pendingChanges })
 .settings-project-search-list {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .settings-project-search-section {
   padding: 6px 0;
   border-top: 1px solid #f3f4f6;
+  width: 100%;
 }
 
 .settings-project-search-section:first-child {
@@ -968,10 +971,11 @@ defineExpose({ saveChanges, pendingChanges })
   text-align: left;
   font-size: 12px;
   color: #374151;
+  width: 100%;
 }
 
 .settings-project-search-item:hover:not(.is-disabled) {
-  background: #f9fafb;
+  background: #e5e7eb;
 }
 
 .settings-project-search-item.is-disabled {
