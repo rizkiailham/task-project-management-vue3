@@ -25,27 +25,36 @@ const aiChatStore = useAIChatStore()
 // Extract reactive refs from aiChatStore for proper reactivity in computed
 const { isChatSidebarOpen, chatSidebarWidth, isResizingChatSidebar } = storeToRefs(aiChatStore)
 
+const isFullPage = computed(() => route.meta?.layout === 'fullpage')
+
 // Pages that have their own custom header (no global topbar)
 const pagesWithCustomHeader = ['Users', 'Bulletin']
 
 const showGlobalTopbar = computed(() => {
-  return !pagesWithCustomHeader.includes(route.name)
+  return !pagesWithCustomHeader.includes(route.name) && !isFullPage.value
 })
+
+const showSidebars = computed(() => !isFullPage.value)
 
 // Computed values for responsive sidebar widths
 const taskDetailWidth = computed(() => {
-  if (!uiStore.isTaskPanelOpen) return 0
+  if (!uiStore.isTaskPanelOpen || !showSidebars.value) return 0
   return uiStore.taskDetailSidebarWidth
 })
 
 const aiChatWidth = computed(() => {
-  if (!isChatSidebarOpen.value) return 0
+  if (!isChatSidebarOpen.value || !showSidebars.value) return 0
   return chatSidebarWidth.value
 })
 
 // Total right sidebars width for main content adjustment
 const totalRightSidebarsWidth = computed(() => {
   return taskDetailWidth.value + aiChatWidth.value
+})
+
+const leftOffset = computed(() => {
+  if (uiStore.isMobile) return '0'
+  return showSidebars.value ? uiStore.sidebarWidth : '0'
 })
 
 // Initialize data on mount
@@ -93,7 +102,7 @@ watch(
 <template>
   <div class="app-layout h-screen overflow-hidden bg-white">
     <!-- Left Sidebar -->
-    <Sidebar />
+    <Sidebar v-if="showSidebars" />
 
     <!-- Topbar - Fixed at top, full width (AI Chat overlays on top) -->
     <Topbar
@@ -101,7 +110,7 @@ watch(
       class="fixed top-0 z-50"
       :class="uiStore.isResizingSidebar ? 'transition-none' : 'transition-all duration-300'"
       :style="{
-        left: uiStore.isMobile ? '0' : uiStore.sidebarWidth,
+        left: leftOffset,
         right: '0'
       }"
     />
@@ -115,7 +124,7 @@ watch(
       ]"
       :style="{
         top: showGlobalTopbar ? '56px' : '0',
-        left: uiStore.isMobile ? '0' : uiStore.sidebarWidth,
+        left: leftOffset,
         right: `${totalRightSidebarsWidth}px`,
         bottom: '0'
       }"
@@ -130,10 +139,10 @@ watch(
     </main>
 
     <!-- Task Detail Sidebar (positioned to the left of AI Chat) -->
-    <TaskDetailSidebar />
+    <TaskDetailSidebar v-if="showSidebars" />
 
     <!-- AI Chat Sidebar (always on far right) -->
-    <AIChatSidebar :top-offset="showGlobalTopbar ? 56 : 0" />
+    <AIChatSidebar v-if="showSidebars" :top-offset="showGlobalTopbar ? 56 : 0" />
   </div>
 </template>
 

@@ -34,7 +34,10 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Information",
-    "continue": "Continue"
+    "continue": "Continue",
+    "undo": "Undo",
+    "redo": "Redo",
+    "preview": "Preview"
   },
   "auth": {
     "login": {
@@ -212,7 +215,14 @@
     },
     "actions": {
       "newBulletin": "New Bulletin",
-      "newCategory": "New Category"
+      "newCategory": "New Category",
+      "contentEditor": "Content Editor"
+    },
+    "contentEditor": {
+      "title": "Content Editor",
+      "confirmLeave": "You have unsaved changes. Do you really want to leave?",
+      "loadError": "Unable to load content editor assets.",
+      "untitled": "Untitled bulletin"
     },
     "modal": {
       "bulletin": {

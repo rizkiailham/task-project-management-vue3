@@ -5,6 +5,7 @@
  * Mirrors UsersView layout with tabs, search, and action buttons.
  */
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useBulletinStore, useCategoryStore, useGroupStore, useUIStore } from '@/stores'
 import BulletinGrid from '@/modules/bulletin/components/BulletinGrid.vue'
 import CategoryGrid from '@/modules/bulletin/components/CategoryGrid.vue'
@@ -21,6 +22,7 @@ const bulletinStore = useBulletinStore()
 const categoryStore = useCategoryStore()
 const groupStore = useGroupStore()
 const uiStore = useUIStore()
+const router = useRouter()
 const { t } = useI18n()
 
 const activeTab = ref('bulletin')
@@ -136,8 +138,8 @@ function openEditBulletinModal(bulletin) {
 }
 
 function openContentEditor(bulletin) {
-  selectedBulletin.value = bulletin
-  showBulletinModal.value = true
+  if (!bulletin?.id) return
+  router.push({ name: 'BulletinContentEditor', params: { bulletinId: bulletin.id } })
 }
 
 function openDeleteBulletinModal(bulletin) {

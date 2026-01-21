@@ -35,7 +35,10 @@
     "success": "Suksess",
     "warning": "Advarsel",
     "info": "Informasjon",
-    "continue": "Fortsett"
+    "continue": "Fortsett",
+    "undo": "Angre",
+    "redo": "Gjør om",
+    "preview": "Forhåndsvisning"
   },
   "auth": {
     "login": {
@@ -212,7 +215,14 @@
     },
     "actions": {
       "newBulletin": "Ny bulletin",
-      "newCategory": "Ny kategori"
+      "newCategory": "Ny kategori",
+      "contentEditor": "Innholdsredigering"
+    },
+    "contentEditor": {
+      "title": "Innholdsredigering",
+      "confirmLeave": "Du har ulagrede endringer. Vil du forlate siden?",
+      "loadError": "Kunne ikke laste inn innholdsredigeringsressurser.",
+      "untitled": "Uten tittel"
     },
     "modal": {
       "bulletin": {
