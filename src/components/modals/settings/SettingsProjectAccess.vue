@@ -1040,15 +1040,13 @@ defineExpose({ saveChanges, pendingChanges })
   font-size: 11px;
   font-weight: 600;
   color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .settings-project-row {
   display: grid;
   grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(140px, 1fr) 40px;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 8px 4px;
   align-items: center;
   border-top: 1px solid #f3f4f6;
   background: #ffffff;
@@ -1115,9 +1113,7 @@ defineExpose({ saveChanges, pendingChanges })
   align-items: center;
   gap: 6px;
   height: 30px;
-  padding: 0 10px;
   border-radius: 8px;
-  background: #ffffff;
   font-size: 12px;
   color: #374151;
 }
