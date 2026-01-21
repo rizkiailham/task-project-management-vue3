@@ -76,6 +76,30 @@ const menuRef = ref(null)
 const instanceId = `dropdown-${Math.random().toString(36).slice(2, 9)}`
 const viewportWidth = ref(0)
 
+function resolveMenuWidth() {
+  if (menuRef.value) {
+    const rect = menuRef.value.getBoundingClientRect()
+    if (rect.width) return rect.width
+  }
+
+  if (typeof props.width === 'number') return props.width
+  if (typeof props.width !== 'string') return 0
+
+  const parsed = Number.parseFloat(props.width)
+  if (Number.isNaN(parsed)) return 0
+  if (props.width.endsWith('rem')) {
+    const rootSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+    return parsed * rootSize
+  }
+  if (props.width.endsWith('em')) {
+    const baseSize = triggerRef.value
+      ? Number.parseFloat(getComputedStyle(triggerRef.value).fontSize)
+      : Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+    return parsed * baseSize
+  }
+  return parsed
+}
+
 const menuStyle = computed(() => {
   if (!triggerRef.value) {
     return { width: props.width, top: '0', left: '0' }
@@ -83,7 +107,7 @@ const menuStyle = computed(() => {
 
   const rect = triggerRef.value.getBoundingClientRect()
   const viewportPadding = 8
-  const menuWidth = Number.parseFloat(props.width) || 0
+  const menuWidth = resolveMenuWidth()
   const viewportHeight = window.innerHeight
   const availableTop = rect.top - viewportPadding
   const availableBottom = viewportHeight - rect.bottom - viewportPadding
@@ -236,7 +260,7 @@ defineExpose({ open, close, toggle, isOpen })
         <div
           v-if="isOpen"
           ref="menuRef"
-          class="dropdown-menu fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]"
+          class="dropdown-menu fixed bg-gray-50 rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]"
           :style="menuStyle"
         >
           <template v-if="contentPosition === 'before'">
@@ -261,7 +285,7 @@ defineExpose({ open, close, toggle, isOpen })
                 'flex items-center justify-between w-full px-3 py-2 text-sm transition-colors',
                 item.disabled
                   ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-700 hover:bg-gray-100'
               ]"
             >
               <slot name="item" :item="item" :index="index">
