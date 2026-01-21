@@ -133,7 +133,8 @@ export const useGroupStore = defineStore('group', () => {
     async function removeUsers(groupId, userIds) {
         isLoading.value = true
         try {
-            const response = await groupApi.removeUsersFromGroup(groupId, userIds)
+            const payload = Array.isArray(userIds) ? userIds : [userIds]
+            const response = await groupApi.removeUsersFromGroup(groupId, payload)
             const updatedGroup = response.group || response
 
             const index = groups.value.findIndex(g => g.id === groupId)

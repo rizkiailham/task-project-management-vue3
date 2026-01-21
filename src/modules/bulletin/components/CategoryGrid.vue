@@ -310,7 +310,6 @@ const gridComponents = {
 .pagination-btn:hover:not(:disabled) {
   background-color: #f9fafb;
   border-color: #d1d5db;
-  color: #374151;
 }
 
 .pagination-btn-disabled {
@@ -331,8 +330,6 @@ const gridComponents = {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   padding: 6px 28px 6px 10px;
-  font-size: 13px;
-  color: #374151;
   cursor: pointer;
   height: 32px;
   transition: all 0.15s ease;
@@ -357,7 +354,7 @@ const gridComponents = {
 }
 
 :deep(.ag-theme-quartz) {
-  --ag-row-hover-color: #fefce8;
+  --ag-row-hover-color: #f3f4f6;
   --ag-header-height: 44px;
   --ag-borders: none;
   height: 100%;
@@ -383,8 +380,6 @@ const gridComponents = {
 }
 
 :deep(.ag-theme-quartz .ag-header-row) {
-  font-weight: 500;
-  font-size: 13px;
 }
 
 :deep(.ag-theme-quartz .ag-header-cell) {
@@ -393,7 +388,6 @@ const gridComponents = {
 }
 
 :deep(.ag-theme-quartz .ag-header-cell-text) {
-  color: #374151;
 }
 
 :deep(.ag-theme-quartz .ag-header-icon) {
@@ -411,7 +405,7 @@ const gridComponents = {
 }
 
 :deep(.ag-theme-quartz .ag-row-hover) {
-  background-color: #fefce8 !important;
+  background-color: #f3f4f6 !important;
 }
 
 :deep(.ag-theme-quartz .ag-cell) {
@@ -442,3 +436,5 @@ const gridComponents = {
   color: #9ca3af;
 }
 </style>
+
+
