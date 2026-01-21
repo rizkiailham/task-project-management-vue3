@@ -49,7 +49,10 @@ function stopGlobalLoader() {
 // ================================
 httpClient.interceptors.request.use(
   (config) => {
-    startGlobalLoader()
+    const skipGlobalLoader = config?.metadata?.skipGlobalLoader
+    if (!skipGlobalLoader) {
+      startGlobalLoader()
+    }
     // Get access token from localStorage
     const token = localStorage.getItem('accessToken')
     
@@ -76,7 +79,10 @@ httpClient.interceptors.request.use(
 // ================================
 httpClient.interceptors.response.use(
   (response) => {
-    stopGlobalLoader()
+    const skipGlobalLoader = response?.config?.metadata?.skipGlobalLoader
+    if (!skipGlobalLoader) {
+      stopGlobalLoader()
+    }
     // Return data directly for convenience
     return response.data
   },
@@ -85,7 +91,10 @@ httpClient.interceptors.response.use(
     let loaderStopped = false
     const finalizeLoader = () => {
       if (loaderStopped) return
-      stopGlobalLoader()
+      const skipGlobalLoader = originalRequest?.metadata?.skipGlobalLoader
+      if (!skipGlobalLoader) {
+        stopGlobalLoader()
+      }
       loaderStopped = true
     }
 
@@ -194,8 +203,8 @@ export function clearAuth() {
  * @param {Object} params - Query parameters
  * @returns {Promise<any>}
  */
-export async function get(url, params = {}) {
-  return httpClient.get(url, { params })
+export async function get(url, params = {}, config = {}) {
+  return httpClient.get(url, { params, ...config })
 }
 
 /**
@@ -204,8 +213,8 @@ export async function get(url, params = {}) {
  * @param {Object} data - Request body
  * @returns {Promise<any>}
  */
-export async function post(url, data = {}) {
-  return httpClient.post(url, data)
+export async function post(url, data = {}, config = {}) {
+  return httpClient.post(url, data, config)
 }
 
 /**
@@ -214,8 +223,8 @@ export async function post(url, data = {}) {
  * @param {Object} data - Request body
  * @returns {Promise<any>}
  */
-export async function put(url, data = {}) {
-  return httpClient.put(url, data)
+export async function put(url, data = {}, config = {}) {
+  return httpClient.put(url, data, config)
 }
 
 /**
@@ -224,17 +233,18 @@ export async function put(url, data = {}) {
  * @param {Object} data - Request body
  * @returns {Promise<any>}
  */
-export async function patch(url, data = {}) {
-  return httpClient.patch(url, data)
+export async function patch(url, data = {}, config = {}) {
+  return httpClient.patch(url, data, config)
 }
 
 /**
  * Generic DELETE request
  * @param {string} url - Endpoint URL
+ * @param {Object} config - Axios request config
  * @returns {Promise<any>}
  */
-export async function del(url) {
-  return httpClient.delete(url)
+export async function del(url, config = {}) {
+  return httpClient.delete(url, config)
 }
 
 /**

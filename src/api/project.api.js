@@ -95,8 +95,8 @@ export async function removeProjectUsers(projectId, userIds) {
  * @param {string} projectId
  * @returns {Promise<Object>}
  */
-export async function getProjectAccesses(projectId) {
-  return get(`/projects/${projectId}/accesses`)
+export async function getProjectAccesses(projectId, config = {}) {
+  return get(`/projects/${projectId}/accesses`, {}, config)
 }
 
 /**
@@ -105,18 +105,18 @@ export async function getProjectAccesses(projectId) {
  * @param {Object} payload
  * @returns {Promise<Object>}
  */
-export async function addProjectAccesses(projectId, payload) {
-  return post(`/projects/${projectId}/accesses`, payload)
+export async function addProjectAccesses(projectId, payload, config = {}) {
+  return post(`/projects/${projectId}/accesses`, payload, config)
 }
 
 /**
  * Remove users/groups from a project access list
  * @param {string} projectId
- * @param {Object} payload
+ * @param {string[]} accessIds
  * @returns {Promise<Object>}
  */
-export async function removeProjectAccesses(projectId, payload) {
-  return del(`/projects/${projectId}/accesses`, { data: payload })
+export async function removeProjectAccesses(projectId, accessIds, config = {}) {
+  return del(`/projects/${projectId}/accesses`, { data: { accessIds }, ...config })
 }
 
 /**
@@ -125,6 +125,17 @@ export async function removeProjectAccesses(projectId, payload) {
  * @param {Object} query
  * @returns {Promise<Object>}
  */
-export async function searchProjectAccesses(projectId, query = {}) {
-  return get(`/projects/${projectId}/accesses/search`, query)
+export async function searchProjectAccesses(projectId, query = {}, config = {}) {
+  return get(`/projects/${projectId}/accesses/search`, query, config)
+}
+
+/**
+ * Update role for a project access entry
+ * @param {string} projectId
+ * @param {string} accessId
+ * @param {string} roleId
+ * @returns {Promise<Object>}
+ */
+export async function updateAccessRole(projectId, accessId, roleId, config = {}) {
+  return patch(`/projects/${projectId}/accesses/${accessId}/role`, { roleId }, config)
 }

@@ -68,7 +68,7 @@ function handleKeyboardShortcuts(event) {
 
     <!-- Global Components -->
     <Toast position="bottom-right" />
-    <ConfirmDialog />
+    <ConfirmDialog class="app-confirm-dialog" />
     <ToastNotifications />
     <GlobalLoader />
     <CommandPalette />
@@ -83,5 +83,20 @@ function handleKeyboardShortcuts(event) {
 <style scoped>
 #app-container {
   font-family: var(--font-sans);
+}
+</style>
+
+<style>
+.app-confirm-dialog .p-dialog-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app-confirm-dialog .p-dialog-content {
+  font-size: 14px;
+}
+
+.app-confirm-dialog .p-dialog-footer .p-button {
+  font-size: 14px;
 }
 </style>

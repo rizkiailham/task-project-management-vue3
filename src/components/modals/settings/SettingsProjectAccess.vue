@@ -6,11 +6,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
 import * as projectApi from '@/api/project.api'
+import { getRoles } from '@/api/role.api'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Button from 'primevue/button'
-import BaseModal from '@/components/ui/BaseModal.vue'
+import UserProfileModal from '@/components/modals/UserProfileModal.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
-import { MoreHorizontal, Search, X } from 'lucide-vue-next'
+import { MoreHorizontal, Search, X, ChevronDown } from 'lucide-vue-next'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
 
@@ -26,12 +27,16 @@ const isLoadingAccesses = ref(false)
 const accessEntries = ref([])
 const pendingAdds = ref([])
 const pendingRemovals = ref(new Set())
+const pendingRoleChanges = ref({})
 const isSaving = ref(false)
 const selectedProfile = ref(null)
 const showProfileModal = ref(false)
 const showRemoveModal = ref(false)
 const isRemoving = ref(false)
 const pendingRemoveEntry = ref(null)
+const roles = ref([])
+const isLoadingRoles = ref(false)
+const updatingRoleIds = ref(new Set())
 
 const sideItems = computed(() => ([
   { id: 'general', label: t('settings.project.menu.items.general') },
@@ -45,14 +50,8 @@ const activeSideItem = ref('access-control')
 const projectId = computed(() => projectStore.currentProjectId)
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
 
-const roleOptions = computed(() => ([
-  { id: 'admin', label: t('settings.project.roles.admin') },
-  { id: 'member', label: t('settings.project.roles.member') },
-  { id: 'guest', label: t('settings.project.roles.guest') },
-  { id: 'external', label: t('settings.project.roles.external') }
-]))
-
 const filteredEntries = computed(() => accessEntries.value)
+const hasTableData = computed(() => filteredEntries.value.length > 0)
 
 const existingUserIds = computed(() => new Set(
   accessEntries.value.filter(entry => entry.type === 'user').map(entry => entry.id)
@@ -62,8 +61,14 @@ const existingGroupIds = computed(() => new Set(
   accessEntries.value.filter(entry => entry.type === 'group').map(entry => entry.id)
 ))
 
+const pendingAddEntries = computed(() =>
+  accessEntries.value.filter(entry => entry.isPendingAdd)
+)
+
 const pendingChanges = computed(() =>
-  pendingAdds.value.length > 0 || pendingRemovals.value.size > 0
+  pendingAddEntries.value.length > 0 ||
+  pendingRemovals.value.size > 0 ||
+  Object.keys(pendingRoleChanges.value).length > 0
 )
 
 const groupedResults = computed(() => ([
@@ -85,18 +90,22 @@ const visibleSearchSections = computed(() =>
   groupedResults.value.filter(section => section.items.length > 0)
 )
 
-function getRoleLabel(roleId) {
-  return roleOptions.value.find((role) => role.id === roleId)?.label || roleId
-}
-
 function getLastLoginLabel(entry) {
-  if (entry.lastLoginKey === 'hoursAgo') {
-    return t('settings.project.lastLogin.hoursAgo', { hours: entry.lastLoginValue || 0 })
-  }
-  if (entry.lastLoginKey === 'custom') {
-    return entry.lastLoginValue || '-'
-  }
-  return t(`settings.project.lastLogin.${entry.lastLoginKey}`)
+  if (!entry.lastLoginValue) return 'Never'
+  
+  const loginDate = new Date(entry.lastLoginValue)
+  const now = new Date()
+  const diffMs = now - loginDate
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  
+  if (diffMinutes < 5) return 'Just now'
+  if (diffMinutes < 60) return `${diffMinutes} mins ago`
+  if (diffHours < 24) return `${diffHours} hrs ago`
+  if (diffDays < 7) return `${diffDays} days ago`
+  
+  return loginDate.toLocaleDateString()
 }
 
 function getAvatarInitials(name) {
@@ -134,13 +143,17 @@ function normalizeAccessResponse(response) {
   const list = Array.isArray(data) ? data : data?.accesses || data?.data || []
   return list.map((entry) => ({
     id: entry?.userId || entry?.groupId || entry?.id,
+    accessId: entry?.id || entry?.accessId,
     name: entry?.user?.fullName || entry?.user?.name || entry?.group?.name || entry?.name || '-',
     email: entry?.user?.email || entry?.email || t('settings.project.labels.group'),
     lastLoginKey: entry?.user?.loginAt ? 'custom' : (entry?.lastLoginKey || 'none'),
     lastLoginValue: entry?.user?.loginAt,
     role: entry?.role?.name || entry?.access || entry?.role || 'Guest',
+    roleId: entry?.role?.id || entry?.roleId,
+    originalRoleId: entry?.role?.id || entry?.roleId,
     type: entry?.groupId || entry?.group ? 'group' : 'user',
-    raw: entry
+    raw: entry,
+    isPendingAdd: false
   }))
 }
 
@@ -150,11 +163,55 @@ async function fetchAccesses() {
   try {
     const response = await projectApi.getProjectAccesses(projectId.value)
     accessEntries.value = normalizeAccessResponse(response)
+    return accessEntries.value
   } catch (error) {
     uiStore.showApiError(error)
   } finally {
     isLoadingAccesses.value = false
   }
+}
+
+async function fetchRoles() {
+  isLoadingRoles.value = true
+  try {
+    const response = await getRoles({ limit: 9999 })
+    const data = response?.data || response || []
+    roles.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    uiStore.showApiError(error)
+  } finally {
+    isLoadingRoles.value = false
+  }
+}
+
+function queueRoleChange(entry, roleId) {
+  const originalRoleId = entry?.originalRoleId ?? entry?.roleId
+  const role = roles.value.find(r => r.id === roleId)
+  entry.roleId = roleId
+  entry.role = role?.name || entry.role
+
+  if (!entry?.accessId || entry.isPendingAdd) return
+
+  const accessId = entry.accessId
+
+  if (roleId === originalRoleId) {
+    const { [accessId]: _removed, ...rest } = pendingRoleChanges.value
+    pendingRoleChanges.value = rest
+  } else {
+    pendingRoleChanges.value = {
+      ...pendingRoleChanges.value,
+      [accessId]: roleId
+    }
+  }
+}
+
+function getRoleMenuItems(entry) {
+  return roles.value.map(role => ({
+    id: role.id,
+    label: role.name,
+    action: () => queueRoleChange(entry, role.id),
+    disabled: entry.roleId === role.id
+  }))
 }
 
 async function fetchSearchResults(query) {
@@ -168,7 +225,6 @@ async function fetchSearchResults(query) {
   try {
     const response = await projectApi.searchProjectAccesses(projectId.value, {
       keywords: trimmed,
-      limit: searchLimit.value
     })
     const users = Array.isArray(response?.users) ? response.users : []
     const groups = Array.isArray(response?.groups) ? response.groups : []
@@ -200,10 +256,7 @@ async function fetchSearchResults(query) {
 
 function handleAddAccess(item) {
   if (!item || isResultDisabled(item)) return
-  pendingAdds.value.push({
-    ...item,
-    role: t('settings.project.roles.guest')
-  })
+  pendingAdds.value.push({ ...item })
   searchQuery.value = ''
   searchResults.value = { users: [], groups: [], matched: 0, matchedGroups: 0 }
   searchLimit.value = 6
@@ -231,7 +284,20 @@ function confirmRemove(entry) {
 
 async function handleRemoveAccess() {
   if (!pendingRemoveEntry.value) return
-  pendingRemovals.value.add(pendingRemoveEntry.value.id)
+  const entry = pendingRemoveEntry.value
+  if (entry.isPendingAdd) {
+    accessEntries.value = accessEntries.value.filter(
+      (pending) => !(pending.isPendingAdd && pending.id === entry.id && pending.type === entry.type)
+    )
+  } else {
+    if (entry.accessId) {
+      pendingRemovals.value.add(entry.accessId)
+    }
+    if (entry.accessId) {
+      const { [entry.accessId]: _removed, ...rest } = pendingRoleChanges.value
+      pendingRoleChanges.value = rest
+    }
+  }
   showRemoveModal.value = false
   pendingRemoveEntry.value = null
 }
@@ -264,14 +330,17 @@ watch(isSaving, (value) => {
 
 onMounted(() => {
   fetchAccesses()
+  fetchRoles()
 })
 
 function removePending(item) {
-  pendingAdds.value = pendingAdds.value.filter((pending) => !(pending.id === item.id && pending.type === item.type))
+  pendingAdds.value = pendingAdds.value.filter(
+    (pending) => !(pending.id === item.id && pending.type === item.type)
+  )
 }
 
 function isPendingRemoval(entry) {
-  return pendingRemovals.value.has(entry.id)
+  return entry.accessId ? pendingRemovals.value.has(entry.accessId) : false
 }
 
 function showMoreResults() {
@@ -283,29 +352,110 @@ function showMoreResults() {
 
 const hasPendingAdds = computed(() => pendingAdds.value.length > 0)
 
+function addPendingAccesses() {
+  if (!pendingAdds.value.length) return
+
+  const pendingEntries = pendingAdds.value.map(item => ({
+    id: item.id,
+    accessId: null,
+    name: item.name,
+    email: item.email,
+    lastLoginKey: 'none',
+    lastLoginValue: null,
+    role: t('settings.project.roles.guest'),
+    roleId: null,
+    originalRoleId: null,
+    type: item.type,
+    raw: item,
+    isPendingAdd: true
+  }))
+
+  accessEntries.value = [...pendingEntries, ...accessEntries.value]
+  pendingAdds.value = []
+}
+
 async function saveChanges() {
   if (!projectId.value || !pendingChanges.value) return
   isSaving.value = true
+  const requestConfig = { metadata: { skipGlobalLoader: true } }
   try {
-    if (pendingAdds.value.length > 0) {
-      const userIds = pendingAdds.value.filter(item => item.type === 'user').map(item => item.id)
-      const groupIds = pendingAdds.value.filter(item => item.type === 'group').map(item => item.id)
-      const response = await projectApi.addProjectAccesses(projectId.value, { userIds, groupIds })
-      uiStore.showApiSuccess(response)
+    let successResponse = null
+    const pendingAddRoleUpdates = pendingAddEntries.value
+      .filter(item => item.roleId)
+      .map(item => ({ id: item.id, type: item.type, roleId: item.roleId }))
+
+    if (pendingAddEntries.value.length > 0) {
+      const userIds = pendingAddEntries.value.filter(item => item.type === 'user').map(item => item.id)
+      const groupIds = pendingAddEntries.value.filter(item => item.type === 'group').map(item => item.id)
+      const response = await projectApi.addProjectAccesses(
+        projectId.value,
+        { userIds, groupIds },
+        requestConfig
+      )
+      successResponse = response
     }
     if (pendingRemovals.value.size > 0) {
-      const toRemove = accessEntries.value.filter(entry => pendingRemovals.value.has(entry.id))
-      const userIds = toRemove.filter(item => item.type === 'user').map(item => item.id)
-      const groupIds = toRemove.filter(item => item.type === 'group').map(item => item.id)
-      const response = await projectApi.removeProjectAccesses(projectId.value, { userIds, groupIds })
-      uiStore.showApiSuccess(response)
+      const accessIds = Array.from(pendingRemovals.value)
+      const response = await projectApi.removeProjectAccesses(projectId.value, accessIds, requestConfig)
+      successResponse = response
     }
+    const roleUpdates = Object.entries(pendingRoleChanges.value)
+    if (roleUpdates.length > 0) {
+      updatingRoleIds.value = new Set(roleUpdates.map(([accessId]) => accessId))
+      await Promise.all(roleUpdates.map(async ([accessId, roleId]) => {
+        const response = await projectApi.updateAccessRole(
+          projectId.value,
+          accessId,
+          roleId,
+          requestConfig
+        )
+        successResponse = response
+      }))
+    }
+    const refreshedEntries = await projectApi.getProjectAccesses(projectId.value, requestConfig)
+      .then((response) => {
+        accessEntries.value = normalizeAccessResponse(response)
+        return accessEntries.value
+      })
+    if (pendingAddRoleUpdates.length > 0 && refreshedEntries?.length) {
+      const updates = pendingAddRoleUpdates
+        .map((update) => ({
+          ...update,
+          entry: refreshedEntries.find(
+            (entry) => entry.id === update.id && entry.type === update.type
+          )
+        }))
+        .filter((update) => update.entry?.accessId && update.entry.roleId !== update.roleId)
+
+      if (updates.length > 0) {
+        updatingRoleIds.value = new Set(updates.map((update) => update.entry.accessId))
+        await Promise.all(updates.map(async (update) => {
+          const response = await projectApi.updateAccessRole(
+            projectId.value,
+            update.entry.accessId,
+            update.roleId,
+            requestConfig
+          )
+          const role = roles.value.find(r => r.id === update.roleId)
+          update.entry.roleId = update.roleId
+          update.entry.role = role?.name || update.entry.role
+          update.entry.originalRoleId = update.roleId
+          successResponse = response
+        }))
+      }
+    }
+
+    if (successResponse) {
+      uiStore.showApiSuccess(successResponse)
+    }
+
     pendingAdds.value = []
     pendingRemovals.value = new Set()
-    await fetchAccesses()
+    pendingRoleChanges.value = {}
   } catch (error) {
     uiStore.showApiError(error)
   } finally {
+    updatingRoleIds.value = new Set()
     isSaving.value = false
   }
 }
@@ -349,7 +499,7 @@ defineExpose({ saveChanges, pendingChanges })
             </p>
           </div>
 
-          <div class="settings-project-controls">
+          <div class="settings-project-controls mt-4">
             <div class="settings-project-search">
               <Search class="settings-project-search-icon" />
               <div class="settings-project-search-input">
@@ -429,12 +579,14 @@ defineExpose({ saveChanges, pendingChanges })
                 type="button"
                 :label="t('settings.project.addAccess')"
                 class="settings-project-add"
-                :disabled="!hasPendingAdds"
+                :disabled="!hasPendingAdds || isSaving"
+                :loading="isSaving"
+                @click="addPendingAccesses"
               />
             </div>
           </div>
-          <div class="settings-project-table">
-            <div class="settings-project-table-head">
+          <div class="settings-project-table mt-10">
+            <div v-if="hasTableData" class="settings-project-table-head">
               <span class="settings-project-col-user"></span>
               <span class="settings-project-col-login">{{ t('settings.project.columns.lastLogin') }}</span>
               <span class="settings-project-col-role">{{ t('settings.project.columns.role') }}</span>
@@ -462,7 +614,23 @@ defineExpose({ saveChanges, pendingChanges })
               </div>
               <div class="settings-project-login">{{ getLastLoginLabel(entry) }}</div>
               <div class="settings-project-role-cell">
-                <span class="settings-project-role-pill">{{ getRoleLabel(entry.role) }}</span>
+                <DropdownMenu
+                  :items="getRoleMenuItems(entry)"
+                  position="left"
+                  width="10rem"
+                >
+                  <template #trigger>
+                    <button
+                      type="button"
+                      class="settings-project-role-pill settings-project-role-dropdown"
+                      :class="{ 'is-loading': updatingRoleIds.has(entry.accessId) }"
+                      :disabled="isPendingRemoval(entry) || updatingRoleIds.has(entry.accessId)"
+                    >
+                      {{ entry.role || 'Guest' }}
+                      <ChevronDown class="w-3 h-3 ml-1" />
+                    </button>
+                  </template>
+                </DropdownMenu>
               </div>
               <div class="settings-project-actions-cell">
                 <DropdownMenu
@@ -492,30 +660,10 @@ defineExpose({ saveChanges, pendingChanges })
     </div>
   </div>
 
-  <BaseModal
+  <UserProfileModal
     v-model:visible="showProfileModal"
-    :title="t('settings.project.profile.title')"
-    width="420px"
-    maxWidth="90vw"
-  >
-    <div v-if="selectedProfile" class="settings-project-profile">
-      <div class="settings-project-profile-avatar" :style="{ backgroundColor: getAvatarColor(selectedProfile.name) }">
-        {{ getAvatarInitials(selectedProfile.name) }}
-      </div>
-      <div class="settings-project-profile-name">{{ selectedProfile.name }}</div>
-      <div class="settings-project-profile-email">{{ selectedProfile.email }}</div>
-      <div class="settings-project-profile-meta">
-        <div>
-          <div class="settings-project-profile-label">{{ t('settings.project.profile.role') }}</div>
-          <div class="settings-project-profile-value">{{ getRoleLabel(selectedProfile.role) }}</div>
-        </div>
-        <div>
-          <div class="settings-project-profile-label">{{ t('settings.project.profile.lastLogin') }}</div>
-          <div class="settings-project-profile-value">{{ getLastLoginLabel(selectedProfile) }}</div>
-        </div>
-      </div>
-    </div>
-  </BaseModal>
+    :entry="selectedProfile"
+  />
 
   <DeleteConfirmModal
     v-model:visible="showRemoveModal"
@@ -950,7 +1098,7 @@ defineExpose({ saveChanges, pendingChanges })
 .settings-project-login {
   font-size: 12px;
   color: #6b7280;
-  text-align: right;
+  text-align: left;
 }
 
 .settings-project-role-cell {
@@ -968,6 +1116,25 @@ defineExpose({ saveChanges, pendingChanges })
   background: #ffffff;
   font-size: 12px;
   color: #374151;
+}
+
+.settings-project-role-dropdown {
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.settings-project-role-dropdown:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.settings-project-role-dropdown:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-project-role-dropdown.is-loading {
+  opacity: 0.6;
 }
 
 .settings-project-actions-cell {
@@ -995,58 +1162,6 @@ defineExpose({ saveChanges, pendingChanges })
   cursor: not-allowed;
 }
 
-.settings-project-profile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 8px;
-}
-
-.settings-project-profile-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.settings-project-profile-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.settings-project-profile-email {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.settings-project-profile-meta {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
-}
-
-.settings-project-profile-label {
-  font-size: 11px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.settings-project-profile-value {
-  font-size: 13px;
-  color: #374151;
-  font-weight: 600;
-  margin-top: 2px;
-}
 
 @media (max-width: 900px) {
   .settings-project {

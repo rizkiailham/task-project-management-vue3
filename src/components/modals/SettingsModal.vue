@@ -13,10 +13,12 @@ import SettingsSidebar from '@/components/modals/settings/SettingsSidebar.vue'
 import SettingsCustomFields from '@/components/modals/settings/SettingsCustomFields.vue'
 import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
 import Button from 'primevue/button'
+import { useConfirm } from 'primevue/useconfirm'
 import { X } from 'lucide-vue-next'
 
 const uiStore = useUIStore()
 const { t } = useI18n()
+const confirm = useConfirm()
 
 const isVisible = computed({
   get: () => uiStore.activeModal === 'settings',
@@ -69,9 +71,35 @@ const canSave = ref(false)
 const isSaving = ref(false)
 const hasPendingChanges = ref(false)
 
-function selectSection(sectionId) {
+function confirmUnsavedChanges(options = {}) {
+  const { closeOnAccept = false } = options
+  return new Promise((resolve) => {
+    confirm.require({
+      message: t('settings.project.unsaved.confirm'),
+      header: t('common.confirm'),
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: t('common.confirm'),
+      rejectLabel: t('common.cancel'),
+      acceptClass: 'p-button-primary p-button-sm',
+      rejectClass: 'p-button-outlined p-button-secondary p-button-sm',
+      accept: () => {
+        confirm.close()
+        if (closeOnAccept) {
+          uiStore.closeModal()
+        }
+        resolve(true)
+      },
+      reject: () => {
+        confirm.close()
+        resolve(false)
+      }
+    })
+  })
+}
+
+async function selectSection(sectionId) {
   if (hasPendingChanges.value && sectionId !== activeSection.value) {
-    const confirmLeave = window.confirm(t('settings.project.unsaved.confirm'))
+    const confirmLeave = await confirmUnsavedChanges()
     if (!confirmLeave) return
     hasPendingChanges.value = false
   }
@@ -87,10 +115,11 @@ function selectSection(sectionId) {
   }
 }
 
-function closeModal() {
+async function closeModal() {
   if (hasPendingChanges.value) {
-    const confirmClose = window.confirm(t('settings.project.unsaved.confirm'))
+    const confirmClose = await confirmUnsavedChanges({ closeOnAccept: true })
     if (!confirmClose) return
+    return
   }
   uiStore.closeModal()
 }
@@ -306,6 +335,7 @@ function handleSave() {
   min-height: var(--settings-footer-height, 72px);
   box-sizing: border-box;
 }
+
 
 @media (max-width: 900px) {
   .settings-modal :deep(.p-dialog-footer) {
