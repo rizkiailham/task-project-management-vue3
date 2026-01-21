@@ -148,6 +148,15 @@ const routes = [
           title: 'Bulletin'
         }
       },
+      {
+        path: 'bulletins/:bulletinId/content',
+        name: 'BulletinContentEditor',
+        component: () => import('@/modules/bulletin/views/BulletinContentEditorView.vue'),
+        meta: {
+          title: 'Bulletin Content',
+          layout: 'fullpage'
+        }
+      },
       // Workspace routes
       {
         path: 'workspaces/:workspaceId',

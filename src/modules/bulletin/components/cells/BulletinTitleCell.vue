@@ -1,10 +1,14 @@
 <script setup>
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import { FilePenLine, MoreHorizontal, Pencil, Trash2 } from 'lucide-vue-next'
 
 const props = defineProps({
   params: Object
 })
+
+const { t } = useI18n()
 
 function onEdit() {
   props.params.onEdit?.(props.params.data)
@@ -18,11 +22,11 @@ function onDelete() {
   props.params.onDelete?.(props.params.data)
 }
 
-const menuItems = [
-  { id: 'edit', label: 'Edit', icon: Pencil, action: onEdit },
-  { id: 'content', label: 'Content Editor', icon: FilePenLine, action: onContent },
-  { id: 'delete', label: 'Delete', icon: Trash2, action: onDelete }
-]
+const menuItems = computed(() => ([
+  { id: 'edit', label: t('common.edit'), icon: Pencil, action: onEdit },
+  { id: 'content', label: t('bulletin.actions.contentEditor'), icon: FilePenLine, action: onContent },
+  { id: 'delete', label: t('common.delete'), icon: Trash2, action: onDelete }
+]))
 </script>
 
 <template>
