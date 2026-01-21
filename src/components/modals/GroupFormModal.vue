@@ -6,7 +6,7 @@ import { ref, computed, watch } from 'vue'
 import { useGroupStore, useUIStore } from '@/stores'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import FormInput from '@/components/ui/FormInput.vue'
-import { ChevronDown, Search, Trash2, Plus } from 'lucide-vue-next'
+import { ChevronDown, Search, Trash2, Plus, X } from 'lucide-vue-next'
 import { getUsers } from '@/api/user.api'
 
 const props = defineProps({
@@ -178,6 +178,11 @@ function closeModal() {
   resetForm()
 }
 
+function clearSearch() {
+  searchQuery.value = ''
+  searchResults.value = []
+}
+
 function getUserId(user) {
   return user?.id || user?.userId || user?._id || null
 }
@@ -340,13 +345,18 @@ async function handleSubmit() {
       <h2 class="text-base font-semibold text-gray-900">{{ modalTitle }}</h2>
     </template>
 
+    <!-- Wrapper for positioning context (non-scrollable) -->
     <div
-      :class="[
-        'relative -my-5 -mx-6 px-4 py-5 space-y-0',
-        isEditing ? (searchQuery ? 'overflow-hidden' : 'overflow-y-auto') : 'overflow-visible'
-      ]"
+      class="relative -my-5 -mx-6"
       :style="{ height: isEditing ? '60vh' : 'auto' }"
     >
+      <!-- Scrollable content area -->
+      <div
+        :class="[
+          'px-4 py-5 space-y-0 h-full',
+          isEditing ? (searchQuery ? 'overflow-hidden' : 'overflow-y-auto') : 'overflow-visible'
+        ]"
+      >
       <!-- Details Section -->
       <div :class="['border-gray-100', isEditing ? 'border-b' : 'border-b-0']">
         <button
@@ -466,24 +476,24 @@ async function handleSubmit() {
           </div>
         </div>
       </div>
-      
+      </div>
 
-      <!-- Search Results-->
-      <div v-if="isEditing" v-show="searchQuery" class="absolute inset-0 z-20 w-full">
-        <div class="absolute inset-0 bg-slate-900/35 w-full"></div>
-        <div class="absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 w-full">
+      <!-- Search Results Overlay - Inside the wrapper but outside the scrollable content -->
+      <div v-if="isEditing && searchQuery" class="search-overlay-container">
+        <div class="search-backdrop" @click="clearSearch"></div>
+        <div class="search-panel">
           <div class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Search results
           </div>
-          <div class="relative max-h-72 min-h-full overflow-hidden">
+          <div class="search-panel-content">
             <div
               v-if="isLoadingUsers"
-              class="absolute inset-x-0 top-0 flex items-center justify-center bg-white/80 py-2 text-xs text-gray-400"
+              class="px-4 py-6 text-center text-sm text-gray-400"
             >
               Loading users...
             </div>
             <div
-              v-if="!isLoadingUsers && searchResults.length === 0"
+              v-else-if="searchResults.length === 0"
               class="px-4 py-6 text-center text-sm text-gray-400"
             >
               No users found
@@ -549,7 +559,7 @@ async function handleSubmit() {
             label="Search users"
             labelClass="sr-only"
             placeholder="Search users"
-            class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-blue-500"
           />
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
@@ -574,3 +584,47 @@ async function handleSubmit() {
     </template>
   </BaseModal>
 </template>
+
+<style scoped>
+/* Search Overlay - Positioned within the content area */
+.search-overlay-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-bottom: -4px;
+  background-color: rgba(15, 23, 42, 0.35);
+  margin-top: -10px;
+}
+
+.search-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.35);
+}
+
+.search-panel {
+  position: relative;
+  background-color: white;
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  max-height: 72%;
+  overflow: hidden;
+  border-top: 1px solid #e5e7eb;
+}
+
+.search-panel-content {
+  flex: 1;
+  overflow-y: auto;
+}
+</style>
