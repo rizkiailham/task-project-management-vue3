@@ -107,7 +107,8 @@ function isOverdue(task) {
 </script>
 
 <template>
-  <div class="kanban-board h-full overflow-x-auto p-6">
+  <div v-if="isBoardHidden" class="h-full"></div>
+  <div v-else class="kanban-board h-full overflow-x-auto p-6">
     <!-- Header -->
     <div class="mb-6 flex items-center justify-between">
       <div>
