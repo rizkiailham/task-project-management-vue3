@@ -2,7 +2,7 @@
  * Desidia v2 - Project API
  */
 
-import { get, post, patch, del } from './httpClient'
+import { get, post, put, del } from './httpClient'
 
 /**
  * Get all projects
@@ -38,7 +38,7 @@ export async function createProject(data) {
  * @returns {Promise<Project>}
  */
 export async function updateProject(projectId, data) {
-  return patch(`/projects/${projectId}`, data)
+  return put(`/projects/${projectId}`, data)
 }
 
 /**
