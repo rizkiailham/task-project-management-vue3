@@ -56,7 +56,8 @@ const onSubmit = handleSubmit(async (values) => {
   try {
     const response = await projectStore.createNewProject({
       name: values.name,
-      description: values.description
+      description: values.description,
+      color: `#${color.value}`
     })
     // Refresh the projects list to ensure sidebar updates
     await projectStore.fetchProjects()
@@ -73,19 +74,6 @@ function closeModal() {
   uiStore.closeModal()
 }
 
-// Preset colors
-const presetColors = [
-  '6366f1', // Indigo
-  '8b5cf6', // Violet
-  'ec4899', // Pink
-  'ef4444', // Red
-  'f97316', // Orange
-  'eab308', // Yellow
-  '22c55e', // Green
-  '14b8a6', // Teal
-  '06b6d4', // Cyan
-  '3b82f6'  // Blue
-]
 </script>
 
 <template>
@@ -105,17 +93,7 @@ const presetColors = [
     }"
   >
     <template #header>
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
-          <svg class="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </div>
-        <div>
-          <h2 class="text-lg font-semibold text-gray-900">{{ t('projects.createModal.title') }}</h2>
-          <p class="text-sm text-gray-500">{{ t('projects.createModal.subtitle') }}</p>
-        </div>
-      </div>
+      <h2 class="text-lg font-semibold text-gray-900">{{ t('projects.createModal.title') }}</h2>
     </template>
 
     <form @submit="onSubmit" class="space-y-5">
@@ -151,49 +129,6 @@ const presetColors = [
         />
       </div>
 
-      <!-- Color -->
-      <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">
-          {{ t('projects.fields.color') }}
-        </label>
-
-        <!-- Preset Colors -->
-        <div class="mb-3 flex flex-wrap gap-2">
-          <button
-            v-for="preset in presetColors"
-            :key="preset"
-            type="button"
-            @click="color = preset"
-            :class="[
-              'h-8 w-8 rounded-full transition-transform hover:scale-110',
-              color === preset ? 'ring-2 ring-offset-2 ring-orange-400' : ''
-            ]"
-            :style="{ backgroundColor: `#${preset}` }"
-          />
-        </div>
-
-        <!-- Custom Color Picker -->
-        <div class="flex items-center gap-3">
-          <ColorPicker v-model="color" />
-          <span class="text-sm text-gray-500">#{{ color }}</span>
-        </div>
-      </div>
-
-      <!-- Preview -->
-      <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
-        <p class="mb-2 text-xs text-gray-500">{{ t('projects.createModal.previewLabel') }}</p>
-        <div class="flex items-center gap-3">
-          <span
-            class="flex h-10 w-10 items-center justify-center rounded-lg text-white font-medium"
-            :style="{ backgroundColor: `#${color}` }"
-          >
-            {{ name ? name.charAt(0).toUpperCase() : 'P' }}
-          </span>
-          <span class="font-medium text-gray-900">
-            {{ name || t('projects.fields.name') }}
-          </span>
-        </div>
-      </div>
     </form>
 
     <template #footer>
@@ -208,7 +143,7 @@ const presetColors = [
         </button>
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           @click="onSubmit"
           :disabled="!meta.valid || isLoading"
         >
