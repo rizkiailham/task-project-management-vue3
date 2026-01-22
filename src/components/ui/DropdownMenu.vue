@@ -65,6 +65,13 @@ const props = defineProps({
     type: String,
     default: 'after',
     validator: (val) => ['before', 'after'].includes(val)
+  },
+  /**
+   * Visual variant for menu styling
+   */
+  variant: {
+    type: String,
+    default: 'default'
   }
 })
 
@@ -150,6 +157,41 @@ const menuStyle = computed(() => {
     left: `${left}px`,
     right: 'auto'
   }
+})
+
+const menuClass = computed(() => {
+  if (props.variant === 'sidebar') {
+    return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]'
+  }
+  return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]'
+})
+
+const dividerClass = computed(() => {
+  if (props.variant === 'sidebar') {
+    return 'border-t border-gray-200 my-1'
+  }
+  return 'border-t border-gray-100 my-1'
+})
+
+const itemBaseClass = computed(() => {
+  if (props.variant === 'sidebar') {
+    return 'flex items-center justify-between w-full px-3 py-2 text-sm transition-colors'
+  }
+  return 'flex items-center justify-between w-full px-3 py-2 text-sm transition-colors'
+})
+
+const itemActiveClass = computed(() => {
+  if (props.variant === 'sidebar') {
+    return 'text-gray-700 hover:bg-[#e5e6ec]'
+  }
+  return 'text-gray-700 hover:bg-[#e5e6ec]'
+})
+
+const headerClass = computed(() => {
+  if (props.variant === 'sidebar') {
+    return 'px-3 py-2'
+  }
+  return 'px-3 py-2'
 })
 
 function toggle() {
@@ -260,7 +302,7 @@ defineExpose({ open, close, toggle, isOpen })
         <div
           v-if="isOpen"
           ref="menuRef"
-          class="dropdown-menu fixed bg-gray-50 rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]"
+          :class="menuClass"
           :style="menuStyle"
         >
           <template v-if="contentPosition === 'before'">
@@ -269,10 +311,10 @@ defineExpose({ open, close, toggle, isOpen })
 
           <template v-for="(item, index) in items" :key="index">
             <!-- Divider -->
-            <div v-if="item.type === 'divider'" class="border-t border-gray-100 my-1"></div>
+            <div v-if="item.type === 'divider'" :class="dividerClass"></div>
             
             <!-- Section Header -->
-            <div v-else-if="item.type === 'header'" class="px-3 py-2">
+            <div v-else-if="item.type === 'header'" :class="headerClass">
               <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{{ item.label }}</span>
             </div>
             
@@ -282,10 +324,10 @@ defineExpose({ open, close, toggle, isOpen })
               @click="handleItemClick(item, $event)"
               :disabled="item.disabled"
               :class="[
-                'flex items-center justify-between w-full px-3 py-2 text-sm transition-colors',
+                itemBaseClass,
                 item.disabled
                   ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : itemActiveClass
               ]"
             >
               <slot name="item" :item="item" :index="index">
