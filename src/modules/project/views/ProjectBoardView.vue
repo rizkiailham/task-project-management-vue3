@@ -18,6 +18,8 @@ const uiStore = useUIStore()
 const workspaceStore = useWorkspaceStore()
 const { t, locale } = useI18n()
 
+const isBoardHidden = ref(true)
+
 // State
 const draggedTask = ref(null)
 
