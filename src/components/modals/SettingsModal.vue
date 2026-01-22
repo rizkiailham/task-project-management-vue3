@@ -5,13 +5,13 @@
  * Provides scalable navigation for settings categories with
  * a dedicated custom fields editor view.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUIStore } from '@/stores'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import SettingsSidebar from '@/components/modals/settings/SettingsSidebar.vue'
 import SettingsCustomFields from '@/components/modals/settings/SettingsCustomFields.vue'
-import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
+import SettingsProjectHub from '@/components/modals/settings/SettingsProjectHub.vue'
 import Button from 'primevue/button'
 import { useConfirm } from 'primevue/useconfirm'
 import { X } from 'lucide-vue-next'
@@ -70,6 +70,20 @@ const projectAccessRef = ref(null)
 const canSave = ref(false)
 const isSaving = ref(false)
 const hasPendingChanges = ref(false)
+const availableSections = computed(() => navGroups.value.flatMap(group => group.items.map(item => item.id)))
+
+function setActiveSectionFromModalData(data) {
+  if (!data?.section) return
+  if (!availableSections.value.includes(data.section)) return
+  activeSection.value = data.section
+  if (data.section === 'project') {
+    canSave.value = hasPendingChanges.value
+    isSaving.value = false
+  } else if (data.section !== 'custom-fields') {
+    canSave.value = false
+    isSaving.value = false
+  }
+}
 
 function confirmUnsavedChanges(options = {}) {
   const { closeOnAccept = false } = options
@@ -132,6 +146,11 @@ function handleSave() {
     projectAccessRef.value?.saveChanges?.()
   }
 }
+
+watch([isVisible, () => uiStore.modalData], ([visible, data]) => {
+  if (!visible) return
+  setActiveSectionFromModalData(data)
+})
 </script>
 
 <template>
@@ -158,7 +177,7 @@ function handleSave() {
       />
 
       <section class="settings-content">
-        <SettingsProjectAccess
+        <SettingsProjectHub
           v-if="activeSection === 'project'"
           ref="projectAccessRef"
           @update:canSave="canSave = $event"

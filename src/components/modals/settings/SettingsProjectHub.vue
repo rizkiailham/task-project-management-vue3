@@ -1,0 +1,330 @@
+<script setup>
+/**
+ * SettingsProjectHub - Project settings container with sidebar navigation.
+ */
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useUIStore } from '@/stores'
+import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
+import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
+
+const { t } = useI18n()
+const uiStore = useUIStore()
+
+const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
+
+const sideItems = computed(() => ([
+  { id: 'general', label: t('settings.project.menu.items.general') },
+  { id: 'access-control', label: t('settings.project.menu.items.accessControl') },
+  { id: 'reports', label: t('settings.project.menu.items.reports') },
+  { id: 'instruction', label: t('settings.project.menu.items.instruction') },
+  { id: 'email', label: t('settings.project.menu.items.email') }
+]))
+
+const activeSideItem = ref('general')
+const generalSectionRef = ref(null)
+const accessSectionRef = ref(null)
+const generalCanSave = ref(false)
+const generalIsSaving = ref(false)
+const generalHasPendingChanges = ref(false)
+const accessCanSave = ref(false)
+const accessIsSaving = ref(false)
+const accessHasPendingChanges = ref(false)
+const listWidth = ref(280)
+const isResizing = ref(false)
+let resizeStartX = 0
+let resizeStartWidth = 0
+
+watch(() => uiStore.modalData, (data) => {
+  if (data?.section !== 'project') return
+  if (!data?.projectTab) return
+  const tab = data.projectTab
+  if (!sideItems.value.some(item => item.id === tab)) return
+  activeSideItem.value = tab
+}, { immediate: true })
+
+function startResize(event) {
+  event.preventDefault()
+  isResizing.value = true
+  resizeStartX = event.clientX
+  resizeStartWidth = listWidth.value
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+function handleResize(event) {
+  if (!isResizing.value) return
+  const nextWidth = Math.max(220, Math.min(360, resizeStartWidth + (event.clientX - resizeStartX)))
+  listWidth.value = nextWidth
+}
+
+function stopResize() {
+  isResizing.value = false
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
+
+onUnmounted(() => {
+  if (isResizing.value) stopResize()
+})
+
+function syncState() {
+  if (activeSideItem.value === 'general') {
+    emit('update:canSave', generalCanSave.value)
+    emit('update:isSaving', generalIsSaving.value)
+    emit('update:hasPendingChanges', generalHasPendingChanges.value)
+    return
+  }
+  if (activeSideItem.value === 'access-control') {
+    emit('update:canSave', accessCanSave.value)
+    emit('update:isSaving', accessIsSaving.value)
+    emit('update:hasPendingChanges', accessHasPendingChanges.value)
+    return
+  }
+  emit('update:canSave', false)
+  emit('update:isSaving', false)
+  emit('update:hasPendingChanges', false)
+}
+
+watch(activeSideItem, syncState, { immediate: true })
+watch([generalCanSave, generalIsSaving, generalHasPendingChanges], () => {
+  if (activeSideItem.value !== 'general') return
+  syncState()
+})
+watch([accessCanSave, accessIsSaving, accessHasPendingChanges], () => {
+  if (activeSideItem.value !== 'access-control') return
+  syncState()
+})
+
+function saveChanges() {
+  if (activeSideItem.value === 'general') {
+    generalSectionRef.value?.saveChanges?.()
+    return
+  }
+  if (activeSideItem.value === 'access-control') {
+    accessSectionRef.value?.saveChanges?.()
+  }
+}
+
+const pendingChanges = computed(() => {
+  if (activeSideItem.value === 'general') return generalHasPendingChanges.value
+  if (activeSideItem.value === 'access-control') return accessHasPendingChanges.value
+  return false
+})
+
+defineExpose({ saveChanges, pendingChanges })
+</script>
+
+<template>
+  <div class="settings-custom" :style="{ '--settings-list-width': `${listWidth}px` }">
+    <aside class="settings-list" :style="{ width: `${listWidth}px` }">
+      <div class="settings-list-header">
+        <div class="settings-list-title">{{ t('settings.project.menu.title') }}</div>
+      </div>
+      <div class="settings-list-body pl-1">
+        <button
+          v-for="item in sideItems"
+          :key="item.id"
+          type="button"
+          class="settings-list-row pl-3 py-1"
+          :class="{ 'is-selected': activeSideItem === item.id }"
+          @click="activeSideItem = item.id"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+    </aside>
+
+    <div class="settings-divider" @mousedown="startResize"></div>
+
+    <div class="settings-editor">
+      <div v-if="activeSideItem === 'general'">
+        <SettingsProjectGeneral
+          ref="generalSectionRef"
+          @update:canSave="generalCanSave = $event"
+          @update:isSaving="generalIsSaving = $event"
+          @update:hasPendingChanges="generalHasPendingChanges = $event"
+        />
+      </div>
+      <div v-else-if="activeSideItem === 'access-control'">
+        <SettingsProjectAccess
+          ref="accessSectionRef"
+          @update:canSave="accessCanSave = $event"
+          @update:isSaving="accessIsSaving = $event"
+          @update:hasPendingChanges="accessHasPendingChanges = $event"
+        />
+      </div>
+      <div v-else class="settings-project-placeholder">
+        <div class="settings-project-empty-title">{{ t('settings.modal.comingSoon') }}</div>
+        <p class="settings-project-empty-text">{{ t('settings.modal.comingSoonDescription') }}</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.settings-custom {
+  display: grid;
+  grid-template-columns: auto 12px 1fr;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  position: relative;
+}
+
+.settings-custom::before {
+  content: '';
+  position: absolute;
+  left: calc(12px + var(--settings-list-width, 280px));
+  right: 0;
+  bottom: 0;
+  height: var(--settings-footer-height, 72px);
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.settings-custom::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--settings-footer-height, 72px);
+  height: 1px;
+  background: #e5e7eb;
+  pointer-events: none;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  min-height: 240px;
+  max-height: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.settings-list::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.settings-list-header {
+  padding: 19px;
+  padding-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.settings-list-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.settings-list-body {
+  flex-direction: column;
+  overflow: auto;
+  padding-bottom: calc(18px + var(--settings-footer-height, 72px));
+  width: 100%;
+  display: flex;
+  gap: 2px;
+}
+
+.settings-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  border-radius: 8px;
+  color: #374151;
+  text-align: left;
+  min-height: 30px;
+}
+
+.settings-list-row:hover {
+  background: #f9fafb;
+}
+
+.settings-list-row.is-selected {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.settings-divider {
+  width: 12px;
+  position: relative;
+  cursor: col-resize;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.settings-divider::before {
+  content: '';
+  width: 1px;
+  background: #f3f4f6;
+  height: 100%;
+}
+
+.settings-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 28px;
+  padding-bottom: calc(30px + var(--settings-footer-height, 72px));
+  height: 100%;
+  overflow: auto;
+}
+
+.settings-project-placeholder {
+  padding: 28px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+}
+
+.settings-project-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.settings-project-empty-text {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 6px;
+}
+
+@media (max-width: 900px) {
+  .settings-custom {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-divider {
+    display: none;
+  }
+
+  .settings-editor {
+    padding: 18px 16px;
+  }
+
+  .settings-custom::before {
+    left: 0;
+  }
+}
+</style>
