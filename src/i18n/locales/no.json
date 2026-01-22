@@ -199,10 +199,63 @@
     "projects": "Prosjekter",
     "workspaces": "Arbeidsområder",
     "settings": "Innstillinger",
+    "helpResources": "Hjelp og ressurser",
     "newProject": "Nytt prosjekt",
     "newTask": "Ny oppgave",
     "collapse": "Skjul sidefelt",
-    "expand": "Vis sidefelt"
+    "expand": "Vis sidefelt",
+    "projectSection": {
+      "title": "Prosjekt",
+      "addProject": "Legg til prosjekt",
+      "emptyTitle": "Ingen prosjekter ennå",
+      "emptyAction": "Opprett ditt første prosjekt"
+    },
+    "projectItems": {
+      "board": "Tavle",
+      "report": "Rapport",
+      "note": "Notat",
+      "folder": "Mappe"
+    },
+    "projectActions": {
+      "addItem": "Legg til element",
+      "newBoard": "Ny tavle",
+      "newReport": "Ny rapport",
+      "newNote": "Nye notater",
+      "newFolder": "Ny docs mappe"
+    },
+    "context": {
+      "openMenu": "Åpne meny",
+      "rename": "Gi nytt navn",
+      "copyLink": "Kopier lenke",
+      "settings": "Innstillinger",
+      "projectSettings": "Prosjektinnstillinger",
+      "replicateProject": "Kopier prosjekt",
+      "replicateBoard": "Kopier tavle",
+      "replicateNote": "Kopier notat",
+      "replicateFolder": "Kopier mappe",
+      "saveAsTemplate": "Lagre som mal"
+    },
+    "messages": {
+      "comingSoon": "Kommer snart",
+      "linkCopied": "Lenke kopiert",
+      "linkCopyFailed": "Kunne ikke kopiere lenke",
+      "itemAlreadyExists": "Elementet finnes allerede",
+      "projectRenamed": "Prosjekt oppdatert",
+      "projectRenameFailed": "Kunne ikke oppdatere prosjekt",
+      "projectDeleted": "Prosjekt slettet",
+      "projectDeleteFailed": "Kunne ikke slette prosjekt",
+      "replicateProject": "Kopier prosjekt",
+      "replicateBoard": "Kopier tavle",
+      "replicateNote": "Kopier notat",
+      "replicateFolder": "Kopier mappe",
+      "saveAsTemplate": "Lagre som mal"
+    },
+    "delete": {
+      "projectTitle": "Slett {name}",
+      "childTitle": "Slett {name}",
+      "projectMessage": "Dette vil slette prosjektet og alle elementene permanent.",
+      "childMessage": "Dette vil slette dette elementet permanent."
+    }
   },
   "bulletin": {
     "tabs": {

@@ -199,10 +199,63 @@
     "workspaces": "Workspaces",
     "settings": "Settings",
     "bulletin": "Bulletin",
+    "helpResources": "Help & Resources",
     "newProject": "New Project",
     "newTask": "New Task",
     "collapse": "Collapse sidebar",
-    "expand": "Expand sidebar"
+    "expand": "Expand sidebar",
+    "projectSection": {
+      "title": "Project",
+      "addProject": "Add project",
+      "emptyTitle": "No projects yet",
+      "emptyAction": "Create your first project"
+    },
+    "projectItems": {
+      "board": "Board",
+      "report": "Report",
+      "note": "Note",
+      "folder": "Folder"
+    },
+    "projectActions": {
+      "addItem": "Add item",
+      "newBoard": "New Board",
+      "newReport": "New Report",
+      "newNote": "New Notes",
+      "newFolder": "New Docs folder"
+    },
+    "context": {
+      "openMenu": "Open menu",
+      "rename": "Rename",
+      "copyLink": "Copy link",
+      "settings": "Settings",
+      "projectSettings": "Project settings",
+      "replicateProject": "Replicate project",
+      "replicateBoard": "Replicate board",
+      "replicateNote": "Replicate note",
+      "replicateFolder": "Replicate folder",
+      "saveAsTemplate": "Save as template"
+    },
+    "messages": {
+      "comingSoon": "Coming soon",
+      "linkCopied": "Link copied",
+      "linkCopyFailed": "Failed to copy link",
+      "itemAlreadyExists": "Item already exists",
+      "projectRenamed": "Project renamed",
+      "projectRenameFailed": "Failed to rename project",
+      "projectDeleted": "Project deleted",
+      "projectDeleteFailed": "Failed to delete project",
+      "replicateProject": "Replicate project",
+      "replicateBoard": "Replicate board",
+      "replicateNote": "Replicate note",
+      "replicateFolder": "Replicate folder",
+      "saveAsTemplate": "Save as template"
+    },
+    "delete": {
+      "projectTitle": "Delete {name}",
+      "childTitle": "Delete {name}",
+      "projectMessage": "This will permanently delete the project and all of its items.",
+      "childMessage": "This will permanently delete this item."
+    }
   },
   "bulletin": {
     "tabs": {
