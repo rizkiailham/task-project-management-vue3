@@ -414,12 +414,12 @@ const columnDefs = [
       return false
     }
   },
-  {
-    field: 'status',
-    headerName: 'Status',
-    flex: 1,
-    cellRenderer: 'StatusEditorDropdown'
-  },
+  // {
+  //   field: 'status',
+  //   headerName: 'Status',
+  //   flex: 1,
+  //   cellRenderer: 'StatusEditorDropdown'
+  // },
   {
     field: 'assignee',
     headerName: 'Assignee',
@@ -450,16 +450,16 @@ const columnDefs = [
         .join(', ')
     }
   },
-  {
-    field: 'dueDate',
-    headerName: 'Due date',
-    flex: 0.8,
-    editable: true,
-    valueSetter: (params) => {
-      updateField(params.data?.pathKey, 'dueDate', params.newValue)
-      return false
-    }
-  }
+  // {
+  //   field: 'dueDate',
+  //   headerName: 'Due date',
+  //   flex: 0.8,
+  //   editable: true,
+  //   valueSetter: (params) => {
+  //     updateField(params.data?.pathKey, 'dueDate', params.newValue)
+  //     return false
+  //   }
+  // }
 ]
 
 const defaultColDef = {

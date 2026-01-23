@@ -75,19 +75,11 @@ function onInput(event) {
   }
 }
 
-const inputStyle = computed(() => {
-  const text = inputValue.value || ''
-  // Use a clamped width so long titles don't crush icons, but short titles stay tidy
-  const minCh = 10
-  const maxCh = 48
-  const charCount = Math.min(Math.max(text.length || minCh, minCh), maxCh)
-  return {
-    width: `${charCount + 1}ch`,
-    minWidth: `${minCh}ch`,
-    maxWidth: `${maxCh}ch`,
-    flex: '1 1 auto'
-  }
-})
+const inputStyle = computed(() => ({
+  width: '100%',
+  minWidth: 0,
+  flex: '1 1 0'
+}))
 
 function onKeydown(event) {
   if (event.ctrlKey && (event.key === 'a' || event.key === 'A')) {
@@ -260,7 +252,9 @@ defineExpose({ refresh })
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .dartboard-input.p-inputtext:hover {
