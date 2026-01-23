@@ -34,12 +34,13 @@ const { handleSubmit, meta, resetForm } = useForm({
 const { value: name, errorMessage: nameError } = useField('name')
 const { value: description } = useField('description')
 
-const canSave = computed(() => !isSaving.value)
+const hasPendingChanges = computed(() => Boolean(meta.value?.dirty))
+const canSave = computed(() => hasPendingChanges.value && !isSaving.value)
 
-watch([canSave, isSaving, () => meta.dirty], () => {
+watch([canSave, isSaving, hasPendingChanges], () => {
   emit('update:canSave', canSave.value)
   emit('update:isSaving', isSaving.value)
-  emit('update:hasPendingChanges', !!meta.dirty)
+  emit('update:hasPendingChanges', hasPendingChanges.value)
 }, { immediate: true })
 
 watch(project, (value) => {
