@@ -448,6 +448,15 @@
     "status": "Status",
     "members": "Medlemmer",
     "tasks": "Oppgaver",
+    "tasksCount": "{count} oppgaver",
+    "boardDemo": {
+      "tasks": {
+        "discovery": "Oppdagelsessprint",
+        "prototype": "Prototyp nÃ¸kkelskjermer",
+        "review": "Interessentgjennomgang",
+        "launch": "Lanseringssjekkliste"
+      }
+    },
     "views": {
       "board": "Tavle",
       "list": "Liste",

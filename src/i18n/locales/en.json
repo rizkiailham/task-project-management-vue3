@@ -448,6 +448,15 @@
     "status": "Status",
     "members": "Members",
     "tasks": "Tasks",
+    "tasksCount": "{count} tasks",
+    "boardDemo": {
+      "tasks": {
+        "discovery": "Discovery sprint",
+        "prototype": "Prototype key screens",
+        "review": "Stakeholder review",
+        "launch": "Launch checklist"
+      }
+    },
     "views": {
       "board": "Board",
       "list": "List",
