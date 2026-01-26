@@ -465,8 +465,13 @@ function resolveChildLink(projectId, item) {
   return ''
 }
 
-function openChildItem(projectId, item) {
+async function openChildItem(projectId, item) {
   if (item.key === 'report' && isReportDisabled(projectId)) return
+  try {
+    await selectProject(projectId)
+  } catch (error) {
+    uiStore.showApiError(error, t('projects.errors.loadFailed'))
+  }
   if (item.routeName) {
     router.push({ name: item.routeName, params: { projectId } })
     if (uiStore.isMobile) {
