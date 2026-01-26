@@ -92,12 +92,21 @@ const inputAttrs = computed(() => {
   const { class: _class, placeholder, 'aria-label': ariaLabel, ...rest } = attrs
   const next = { ...rest, placeholder }
   const isMultiSelect = props.as === 'multiselect' || resolvedComponent.value === MultiSelect
+  const options = attrs.options
+  const shouldEnableFilter =
+    isSelectLike.value &&
+    !('filter' in attrs) &&
+    Array.isArray(options) &&
+    options.length > 5
 
   if (isMultiSelect && !('showToggleAll' in attrs)) {
     next.showToggleAll = false
   }
   if (isMultiSelect && !('display' in attrs)) {
     next.display = 'chip'
+  }
+  if (shouldEnableFilter) {
+    next.filter = true
   }
 
   if (hasLabel.value && isSelectLike.value && placeholder) {
