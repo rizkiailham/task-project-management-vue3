@@ -316,7 +316,7 @@ export const useTaskStore = defineStore('task', () => {
     if (!projectStore.currentProjectId) return
 
     try {
-      await taskApi.reorderTasks(projectStore.currentProjectId, {
+      const response = await taskApi.reorderTasks(projectStore.currentProjectId, {
         taskId,
         targetStatus,
         newOrder
@@ -328,6 +328,7 @@ export const useTaskStore = defineStore('task', () => {
         task.status = targetStatus
         task.order = newOrder
       }
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to reorder task'
       throw err
