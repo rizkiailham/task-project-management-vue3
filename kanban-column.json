@@ -1,0 +1,466 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Default module",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/kanban-columns": {
+      "get": {
+        "summary": "Find All",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "10",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "index:ASC",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "ca7852c5-9c85-4a00-afde-b53c7781a84c",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "change name",
+                      "description": null,
+                      "index": 1,
+                      "createdAt": "2026-01-26T19:09:49.857Z",
+                      "updatedAt": "2026-01-26T19:09:49.857Z"
+                    },
+                    {
+                      "id": "1c04dc9c-0369-4084-a13a-2767891393a2",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 2",
+                      "description": "Test description",
+                      "index": 2,
+                      "createdAt": "2026-01-26T19:11:43.978Z",
+                      "updatedAt": "2026-01-26T19:11:43.978Z"
+                    },
+                    {
+                      "id": "ada718fd-a83f-46bd-913e-742bec4753b9",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 3",
+                      "description": "Test description",
+                      "index": 3,
+                      "createdAt": "2026-01-26T19:11:51.232Z",
+                      "updatedAt": "2026-01-26T19:11:51.232Z"
+                    }
+                  ],
+                  "meta": {
+                    "itemsPerPage": 10,
+                    "totalItems": 3,
+                    "currentPage": 1,
+                    "totalPages": 1,
+                    "sortBy": [
+                      [
+                        "index",
+                        "ASC"
+                      ]
+                    ]
+                  },
+                  "links": {
+                    "current": "http://localhost:3333/kanban-columns?page=1&limit=10&sortBy=index:ASC"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Create",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                "name": "Test name 313",
+                "description": "Test description"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Kanban column created successfully",
+                  "column": {
+                    "id": "ca7852c5-9c85-4a00-afde-b53c7781a84c",
+                    "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                    "name": "Test name",
+                    "description": "Test description",
+                    "index": 1,
+                    "createdAt": "2026-01-26T19:09:49.857Z",
+                    "updatedAt": "2026-01-26T19:09:49.857Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/kanban-columns/{id}": {
+      "patch": {
+        "summary": "Update",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "ca7852c5-9c85-4a00-afde-b53c7781a84c",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "name": "change name",
+                "description": null
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Kanban column updated successfully",
+                  "column": {
+                    "id": "ca7852c5-9c85-4a00-afde-b53c7781a84c",
+                    "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                    "name": "change name",
+                    "description": null,
+                    "index": 1,
+                    "createdAt": "2026-01-26T19:09:49.857Z",
+                    "updatedAt": "2026-01-26T19:09:49.857Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "get": {
+        "summary": "Find One",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "ca7852c5-9c85-4a00-afde-b53c7781a84c",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "id": "ca7852c5-9c85-4a00-afde-b53c7781a84c",
+                  "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                  "name": "change name",
+                  "description": null,
+                  "index": 1,
+                  "createdAt": "2026-01-26T19:09:49.857Z",
+                  "updatedAt": "2026-01-26T19:09:49.857Z"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "Delete",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "765dd6dd-7fc3-4d5c-a218-05c8efb2cd3d",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Kanban column deleted successfully"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/kanban-columns/reorder": {
+      "post": {
+        "summary": "Reorder",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                "columnIds": [
+                  "1c04dc9c-0369-4084-a13a-2767891393a2",
+                  "ada718fd-a83f-46bd-913e-742bec4753b9",
+                  "ca7852c5-9c85-4a00-afde-b53c7781a84c"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Kanban columns reordered successfully",
+                  "columns": [
+                    {
+                      "id": "1c04dc9c-0369-4084-a13a-2767891393a2",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 2",
+                      "description": "Test description",
+                      "index": 1,
+                      "createdAt": "2026-01-26T19:11:43.978Z",
+                      "updatedAt": "2026-01-26T19:11:43.978Z"
+                    },
+                    {
+                      "id": "ada718fd-a83f-46bd-913e-742bec4753b9",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 3",
+                      "description": "Test description",
+                      "index": 2,
+                      "createdAt": "2026-01-26T19:11:51.232Z",
+                      "updatedAt": "2026-01-26T19:11:51.232Z"
+                    },
+                    {
+                      "id": "ca7852c5-9c85-4a00-afde-b53c7781a84c",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "change name",
+                      "description": null,
+                      "index": 3,
+                      "createdAt": "2026-01-26T19:09:49.857Z",
+                      "updatedAt": "2026-01-26T19:09:49.857Z"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}
