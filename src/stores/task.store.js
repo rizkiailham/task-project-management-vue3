@@ -7,7 +7,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as taskApi from '@/api/task.api'
-import { createTask, createSubtask, createComment, TaskStatus, TaskPriority } from '@/models'
+import { createTask, createSubtask, createComment, TaskStatus } from '@/models'
 import { useProjectStore } from './project.store'
 
 export const useTaskStore = defineStore('task', () => {
@@ -31,8 +31,7 @@ export const useTaskStore = defineStore('task', () => {
   const filters = ref({
     status: null,
     priority: null,
-    assigneeId: null,
-    search: ''
+    assigneeId: null
   })
 
   // ================================
@@ -59,11 +58,60 @@ export const useTaskStore = defineStore('task', () => {
 
     // Sort by order within each status
     Object.keys(grouped).forEach(status => {
-      grouped[status].sort((a, b) => a.order - b.order)
+      grouped[status].sort((a, b) => {
+        const orderA = Number.isFinite(a.order) ? a.order : Number(a.order) || 0
+        const orderB = Number.isFinite(b.order) ? b.order : Number(b.order) || 0
+        if (orderA !== orderB) return orderA - orderB
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      })
     })
 
     return grouped
   })
+
+  const kanbanColumns = computed(() => {
+    const map = new Map()
+    tasks.value.forEach((task) => {
+      const column = task.kanbanColumn
+      const columnId = column?.id || task.kanbanColumnId
+      if (!columnId || map.has(columnId)) return
+      map.set(columnId, {
+        id: columnId,
+        name: column?.name || '',
+        index: column?.index ?? 0
+      })
+    })
+    return Array.from(map.values()).sort((a, b) => {
+      const indexA = Number.isFinite(a.index) ? a.index : Number(a.index) || 0
+      const indexB = Number.isFinite(b.index) ? b.index : Number(b.index) || 0
+      if (indexA !== indexB) return indexA - indexB
+      return a.name.localeCompare(b.name)
+    })
+  })
+
+  const tasksByKanbanColumn = computed(() => {
+    const grouped = {}
+    tasks.value.forEach((task) => {
+      const columnId = task.kanbanColumnId || 'unassigned'
+      if (!grouped[columnId]) {
+        grouped[columnId] = []
+      }
+      grouped[columnId].push(task)
+    })
+
+    Object.keys(grouped).forEach((columnId) => {
+      grouped[columnId].sort((a, b) => {
+        const orderA = Number.isFinite(a.order) ? a.order : Number(a.order) || 0
+        const orderB = Number.isFinite(b.order) ? b.order : Number(b.order) || 0
+        if (orderA !== orderB) return orderA - orderB
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      })
+    })
+
+    return grouped
+  })
+
+  const hasKanbanColumns = computed(() => kanbanColumns.value.length > 0)
 
   const tasksByPriority = computed(() => {
     return tasks.value.reduce((acc, task) => {
@@ -125,14 +173,6 @@ export const useTaskStore = defineStore('task', () => {
       result = result.filter(t => t.assigneeId === filters.value.assigneeId)
     }
 
-    if (filters.value.search) {
-      const search = filters.value.search.toLowerCase()
-      result = result.filter(t =>
-        t.title.toLowerCase().includes(search) ||
-        t.description?.toLowerCase().includes(search)
-      )
-    }
-
     return result
   })
 
@@ -153,16 +193,32 @@ export const useTaskStore = defineStore('task', () => {
 
     try {
       const response = await taskApi.getTasks(projectStore.currentProjectId, {
-        page: pagination.value.page,
-        limit: pagination.value.limit,
         ...filters.value,
         ...params
       })
 
-      tasks.value = (response.tasks || response).map(t => createTask(t))
+      const payload = Array.isArray(response?.data?.tasks)
+        ? response.data.tasks
+        : Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.tasks)
+            ? response.tasks
+            : Array.isArray(response)
+              ? response
+              : []
 
-      if (response.total !== undefined) {
+      tasks.value = payload.map(t => createTask(t))
+
+      if (response?.total !== undefined) {
         pagination.value.total = response.total
+      } else if (response?.data?.total !== undefined) {
+        pagination.value.total = response.data.total
+      } else if (response?.meta?.totalItems !== undefined) {
+        pagination.value.total = response.meta.totalItems
+        pagination.value.page = response.meta.currentPage || pagination.value.page
+        pagination.value.limit = response.meta.itemsPerPage || pagination.value.limit
+      } else {
+        pagination.value.total = tasks.value.length
       }
 
       return tasks.value
@@ -184,14 +240,21 @@ export const useTaskStore = defineStore('task', () => {
 
     try {
       const data = await taskApi.getTask(taskId)
-      currentTask.value = createTask(data)
+      const taskData = data?.task || data?.data || data
+      currentTask.value = createTask(taskData)
 
-      // Fetch subtasks and comments in parallel
-      await Promise.all([
+      const results = await Promise.allSettled([
         fetchSubtasks(taskId),
         fetchComments(taskId),
         fetchActivity(taskId)
       ])
+      results.forEach((result) => {
+        if (result.status === 'rejected') {
+          if (import.meta.env.DEV) {
+            console.warn('[task.store] related task data failed to load', result.reason)
+          }
+        }
+      })
 
       return currentTask.value
     } catch (err) {
@@ -217,6 +280,17 @@ export const useTaskStore = defineStore('task', () => {
       const response = await taskApi.createTask(projectStore.currentProjectId, data)
       const taskData = response.task || response.data || response
       const task = createTask(taskData)
+      if (!task.kanbanColumnId && data?.kanbanColumnId) {
+        task.kanbanColumnId = data.kanbanColumnId
+      }
+      if (task.kanbanColumnId) {
+        const columnTasks = tasks.value.filter(t => t.kanbanColumnId === task.kanbanColumnId)
+        const minOrder = columnTasks.reduce((min, item) => {
+          const order = Number.isFinite(item.order) ? item.order : Number(item.order) || 0
+          return Math.min(min, order)
+        }, 0)
+        task.order = minOrder - 1
+      }
       tasks.value.unshift(task)
       return response
     } catch (err) {
@@ -284,6 +358,22 @@ export const useTaskStore = defineStore('task', () => {
    * @param {string} status
    */
   async function changeTaskStatus(taskId, status) {
+    if (status === TaskStatus.DONE || status === TaskStatus.TODO) {
+      const apiStatus = status === TaskStatus.DONE ? 'completed' : 'incompleted'
+      const response = await taskApi.updateTaskStatus(taskId, apiStatus)
+      const taskData = response.task || response.data || response
+      const task = createTask(taskData)
+
+      const index = tasks.value.findIndex(t => t.id === taskId)
+      if (index !== -1) {
+        tasks.value[index] = task
+      }
+      if (currentTask.value?.id === taskId) {
+        currentTask.value = task
+      }
+
+      return response
+    }
     return updateTask(taskId, { status })
   }
 
@@ -293,7 +383,25 @@ export const useTaskStore = defineStore('task', () => {
    * @param {string|null} assigneeId
    */
   async function changeTaskAssignee(taskId, assigneeId) {
-    return updateTask(taskId, { assigneeId })
+    try {
+      const response = await taskApi.updateTaskAssignee(taskId, assigneeId)
+      const taskData = response.task || response.data || response
+      const task = createTask(taskData)
+
+      const index = tasks.value.findIndex(t => t.id === taskId)
+      if (index !== -1) {
+        tasks.value[index] = task
+      }
+
+      if (currentTask.value?.id === taskId) {
+        currentTask.value = task
+      }
+
+      return response
+    } catch (err) {
+      error.value = err.message || 'Failed to update task assignee'
+      throw err
+    }
   }
 
   /**
@@ -316,18 +424,61 @@ export const useTaskStore = defineStore('task', () => {
     if (!projectStore.currentProjectId) return
 
     try {
-      const response = await taskApi.reorderTasks(projectStore.currentProjectId, {
-        taskId,
-        targetStatus,
-        newOrder
+      const taskIds = tasks.value
+        .filter(task => task.kanbanColumnId === targetStatus)
+        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0))
+        .map(task => task.id)
+      if (!taskIds.length) return
+
+      const response = await taskApi.reorderTasks({
+        projectId: projectStore.currentProjectId,
+        kanbanColumnId: targetStatus,
+        taskIds
       })
 
       // Update local state
       const task = tasks.value.find(t => t.id === taskId)
       if (task) {
-        task.status = targetStatus
+        task.kanbanColumnId = targetStatus
         task.order = newOrder
       }
+      return response
+    } catch (err) {
+      error.value = err.message || 'Failed to reorder task'
+      throw err
+    }
+  }
+
+  /**
+   * Reorder tasks for Kanban columns
+   * @param {string} taskId
+   * @param {string} kanbanColumnId
+   * @param {string[]} taskIds
+   */
+  async function reorderKanbanTasks(taskId, kanbanColumnId, taskIds) {
+    const projectStore = useProjectStore()
+    if (!projectStore.currentProjectId || !kanbanColumnId) return
+
+    try {
+      const orderedIds = Array.from(new Set(taskIds.filter(Boolean)))
+      if (!orderedIds.length) return
+
+      const response = await taskApi.reorderTasks({
+        projectId: projectStore.currentProjectId,
+        kanbanColumnId,
+        taskIds: orderedIds
+      })
+
+      const orderMap = new Map(orderedIds.map((id, index) => [id, index]))
+      tasks.value = tasks.value.map((task) => {
+        if (!orderMap.has(task.id)) return task
+        return {
+          ...task,
+          kanbanColumnId,
+          order: orderMap.get(task.id)
+        }
+      })
+
       return response
     } catch (err) {
       error.value = err.message || 'Failed to reorder task'
@@ -486,8 +637,7 @@ export const useTaskStore = defineStore('task', () => {
     filters.value = {
       status: null,
       priority: null,
-      assigneeId: null,
-      search: ''
+      assigneeId: null
     }
   }
 
@@ -552,6 +702,9 @@ export const useTaskStore = defineStore('task', () => {
     currentTaskId,
     taskCount,
     tasksByStatus,
+    kanbanColumns,
+    tasksByKanbanColumn,
+    hasKanbanColumns,
     tasksByPriority,
     tasksByAssignee,
     completedTasks,
@@ -570,6 +723,7 @@ export const useTaskStore = defineStore('task', () => {
     changeTaskAssignee,
     updateTaskDescription,
     reorderTask,
+    reorderKanbanTasks,
     fetchMyTasks,
 
     // Subtask Actions

@@ -11,7 +11,7 @@ import { get, post, patch, del } from './httpClient'
  * @returns {Promise<{tasks: Task[], total: number, page: number, limit: number}>}
  */
 export async function getTasks(projectId, params = {}) {
-  return get(`/projects/${projectId}/tasks`, params)
+  return get('/tasks', { projectId, ...params })
 }
 
 /**
@@ -30,7 +30,7 @@ export async function getTask(taskId) {
  * @returns {Promise<Task>}
  */
 export async function createTask(projectId, data) {
-  return post(`/projects/${projectId}/tasks`, data)
+  return post('/tasks', { projectId, ...data })
 }
 
 /**
@@ -78,20 +78,19 @@ export async function updateTaskStatus(taskId, status) {
  * @returns {Promise<Task>}
  */
 export async function updateTaskAssignee(taskId, assigneeId) {
-  return patch(`/tasks/${taskId}/assignee`, { assigneeId })
+  return patch(`/tasks/${taskId}/assign`, { assignTo: assigneeId })
 }
 
 /**
  * Reorder tasks (for drag & drop)
- * @param {string} projectId
  * @param {Object} data
- * @param {string} data.taskId
- * @param {string} data.targetStatus - New status column
- * @param {number} data.newOrder - New position
+ * @param {string} data.projectId
+ * @param {string} data.kanbanColumnId
+ * @param {string[]} data.taskIds
  * @returns {Promise<void>}
  */
-export async function reorderTasks(projectId, data) {
-  return post(`/projects/${projectId}/tasks/reorder`, data)
+export async function reorderTasks(data) {
+  return post('/tasks/reorder', data)
 }
 
 /**
@@ -270,4 +269,3 @@ export async function addWatcher(taskId, userId) {
 export async function removeWatcher(taskId, userId) {
   return del(`/tasks/${taskId}/watchers/${userId}`)
 }
-
