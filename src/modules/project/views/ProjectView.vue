@@ -2,14 +2,16 @@
 /**
  * ProjectView - Project container view with nested routes
  */
-import { onMounted, watch } from 'vue'
+import { watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useProjectStore, useUIStore } from '@/stores'
+import { useProjectStore, useTaskStore, useKanbanColumnStore, useUIStore } from '@/stores'
 
 const route = useRoute()
 const { t } = useI18n()
 const projectStore = useProjectStore()
+const taskStore = useTaskStore()
+const kanbanColumnStore = useKanbanColumnStore()
 const uiStore = useUIStore()
 
 // Load project data when route changes
@@ -18,10 +20,21 @@ watch(
   async (projectId) => {
     if (projectId) {
       try {
+        taskStore.clearState()
+        kanbanColumnStore.clearState()
         await projectStore.selectProject(projectId)
+        const results = await Promise.allSettled([
+          kanbanColumnStore.fetchColumns(),
+          taskStore.fetchTasks()
+        ])
+        results.forEach((result) => {
+          if (result.status === 'rejected') {
+            uiStore.showApiError(result.reason)
+          }
+        })
       } catch (error) {
         console.error(t('projects.errors.loadFailed'), error)
-        uiStore.showApiError(error, t('projects.errors.loadFailed'))
+        uiStore.showApiError(error)
       }
     }
   },
