@@ -457,6 +457,34 @@
         "launch": "Launch checklist"
       }
     },
+    "kanban": {
+      "columns": {
+        "empty": {
+          "title": "Create your first column",
+          "description": "Columns organize tasks on the board. Add one to get started.",
+          "placeholder": "Column name",
+          "cta": "Add column"
+        },
+        "addSection": "Add section",
+        "addTask": "Add task",
+        "renamePrompt": "Rename column",
+        "validation": {
+          "nameRequired": "Column name is required"
+        },
+        "menu": {
+          "open": "Open column menu",
+          "rename": "Rename section",
+          "addLeft": "Add section to left",
+          "addRight": "Add section to right",
+          "hideEmpty": "Hide all empty columns",
+          "delete": "Delete section"
+        },
+        "delete": {
+          "title": "Delete section",
+          "message": "This will permanently delete {name}."
+        }
+      }
+    },
     "views": {
       "board": "Board",
       "list": "List",

@@ -457,6 +457,34 @@
         "launch": "Lanseringssjekkliste"
       }
     },
+    "kanban": {
+      "columns": {
+        "empty": {
+          "title": "Opprett din forste kolonne",
+          "description": "Kolonner organiserer oppgaver pa tavlen. Legg til en for a komme i gang.",
+          "placeholder": "Kolonnenavn",
+          "cta": "Legg til kolonne"
+        },
+        "validation": {
+          "nameRequired": "Kolonnenavn er pakrevd"
+        },
+        "addSection": "Legg til kolonne",
+        "addTask": "Legg til oppgave",
+        "renamePrompt": "Gi nytt navn til kolonne",
+        "menu": {
+          "open": "Apne kolonnemeny",
+          "rename": "Gi nytt navn til seksjon",
+          "addLeft": "Legg til seksjon til venstre",
+          "addRight": "Legg til seksjon til hoyre",
+          "hideEmpty": "Skjul alle tome kolonner",
+          "delete": "Slett seksjon"
+        },
+        "delete": {
+          "title": "Slett seksjon",
+          "message": "Dette vil slette {name} permanent."
+        }
+      }
+    },
     "views": {
       "board": "Tavle",
       "list": "Liste",
