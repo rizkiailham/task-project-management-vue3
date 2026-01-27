@@ -47,7 +47,8 @@ const { handleSubmit, meta, resetForm, setFieldValue } = useForm({
     projectId: projectStore.currentProjectId || '',
     status: uiStore.modalData?.defaultStatus || TaskStatus.TODO,
     priority: TaskPriority.MEDIUM,
-    dueDate: null
+    dueDate: null,
+    kanbanColumnId: uiStore.modalData?.kanbanColumnId || null
   }
 })
 
@@ -57,6 +58,7 @@ const { value: projectId, errorMessage: projectError } = useField('projectId')
 const { value: status } = useField('status')
 const { value: priority } = useField('priority')
 const { value: dueDate } = useField('dueDate')
+const { value: kanbanColumnId } = useField('kanbanColumnId')
 
 // Options
 const projectOptions = computed(() => 
@@ -86,7 +88,8 @@ watch(visible, (isVisible) => {
         projectId: projectStore.currentProjectId || '',
         status: uiStore.modalData?.defaultStatus || TaskStatus.TODO,
         priority: TaskPriority.MEDIUM,
-        dueDate: null
+        dueDate: null,
+        kanbanColumnId: uiStore.modalData?.kanbanColumnId || null
       }
     })
   }
