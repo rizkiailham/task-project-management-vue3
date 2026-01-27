@@ -48,6 +48,67 @@ export const TaskPriority = {
   URGENT: 'urgent'
 }
 
+// ================================
+// Task Normalizers
+// ================================
+
+function normalizeTaskStatus(status) {
+  if (!status) return TaskStatus.TODO
+  const normalized = String(status).toLowerCase()
+  if (Object.values(TaskStatus).includes(normalized)) {
+    return normalized
+  }
+  if (['completed', 'complete', 'done'].includes(normalized)) {
+    return TaskStatus.DONE
+  }
+  if (['incompleted', 'incomplete', 'open'].includes(normalized)) {
+    return TaskStatus.TODO
+  }
+  return TaskStatus.TODO
+}
+
+function normalizeTaskPriority(priority) {
+  if (!priority) return TaskPriority.MEDIUM
+  const normalized = String(priority).toLowerCase()
+  if (Object.values(TaskPriority).includes(normalized)) {
+    return normalized
+  }
+  return TaskPriority.MEDIUM
+}
+
+function normalizeAssignee(data) {
+  if (!data) return null
+  if (typeof data === 'string') {
+    return { name: data }
+  }
+  if (data.name) {
+    return {
+      id: data.id || null,
+      name: data.name,
+      email: data.email || '',
+      avatar: data.avatar || null
+    }
+  }
+  const firstName = data.firstName || ''
+  const lastName = data.lastName || ''
+  const name = `${firstName} ${lastName}`.trim() || data.email || ''
+  return {
+    id: data.id || null,
+    name,
+    email: data.email || '',
+    avatar: data.avatar || null
+  }
+}
+
+function normalizeDate(value) {
+  if (!value) return null
+  const raw = String(value)
+  if (/^\d{8}$/.test(raw)) {
+    return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+  }
+  return raw
+}
+
 /**
  * Project status options
  * @readonly
@@ -171,29 +232,36 @@ export function createProject(data = {}) {
  * @returns {Task}
  */
 export function createTask(data = {}) {
+  const children = Array.isArray(data.children) ? data.children : []
+  const completedChildren = children.filter((child) => {
+    if (child?.isCompleted) return true
+    return normalizeTaskStatus(child?.status) === TaskStatus.DONE
+  })
   return {
     id: data.id || null,
-    projectId: data.projectId || null,
-    parentTaskId: data.parentTaskId || null,
+    projectId: data.projectId || data.project?.id || null,
+    parentTaskId: data.parentTaskId || data.parentId || null,
     title: data.title || '',
     description: data.description || '',
-    status: data.status || TaskStatus.TODO,
-    priority: data.priority || TaskPriority.MEDIUM,
-    assigneeId: data.assigneeId || null,
-    assignee: data.assignee || null,
-    reporterId: data.reporterId || null,
-    reporter: data.reporter || null,
-    dueDate: data.dueDate || null,
+    status: normalizeTaskStatus(data.status),
+    priority: normalizeTaskPriority(data.priority),
+    assigneeId: data.assigneeId || data.assignToId || data.assignTo?.id || null,
+    assignee: normalizeAssignee(data.assignee || data.assignTo),
+    reporterId: data.reporterId || data.createdById || null,
+    reporter: data.reporter || data.createdBy || null,
+    dueDate: normalizeDate(data.dueDate),
     startDate: data.startDate || null,
     estimatedHours: data.estimatedHours || null,
     actualHours: data.actualHours || null,
     tags: data.tags || [],
     attachments: data.attachments || [],
     watchers: data.watchers || [],
-    subtaskCount: data.subtaskCount || 0,
-    completedSubtaskCount: data.completedSubtaskCount || 0,
-    commentCount: data.commentCount || 0,
-    order: data.order || 0,
+    subtaskCount: data.subtaskCount ?? children.length ?? 0,
+    completedSubtaskCount: data.completedSubtaskCount ?? completedChildren.length ?? 0,
+    commentCount: data.commentCount ?? data.comments?.length ?? 0,
+    order: data.order ?? data.index ?? 0,
+    kanbanColumnId: data.kanbanColumnId || data.kanbanColumn?.id || null,
+    kanbanColumn: data.kanbanColumn || null,
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: data.updatedAt || new Date().toISOString(),
     completedAt: data.completedAt || null
@@ -289,6 +357,23 @@ export function createActivityLog(data = {}) {
   }
 }
 
+/**
+ * Create a new Kanban Column object
+ * @param {Partial<KanbanColumn>} data
+ * @returns {KanbanColumn}
+ */
+export function createKanbanColumn(data = {}) {
+  return {
+    id: data.id || null,
+    projectId: data.projectId || null,
+    name: data.name || '',
+    description: data.description ?? null,
+    index: Number.isFinite(data.index) ? data.index : Number(data.index) || 0,
+    createdAt: data.createdAt || new Date().toISOString(),
+    updatedAt: data.updatedAt || new Date().toISOString()
+  }
+}
+
 // ================================
 // Type Definitions (JSDoc for IDE support)
 // ================================
@@ -377,6 +462,8 @@ export function createActivityLog(data = {}) {
  * @property {number} completedSubtaskCount
  * @property {number} commentCount
  * @property {number} order
+ * @property {string|null} kanbanColumnId
+ * @property {Object|null} kanbanColumn
  * @property {string} createdAt
  * @property {string} updatedAt
  * @property {string|null} completedAt
@@ -451,3 +538,13 @@ export function createActivityLog(data = {}) {
  * @property {string} createdAt
  */
 
+/**
+ * @typedef {Object} KanbanColumn
+ * @property {string|null} id
+ * @property {string|null} projectId
+ * @property {string} name
+ * @property {string|null} description
+ * @property {number} index
+ * @property {string} createdAt
+ * @property {string} updatedAt
+ */
