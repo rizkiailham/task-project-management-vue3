@@ -120,7 +120,7 @@ const displayColumns = computed(() => {
   return base
 })
 
-const isDragEnabled = computed(() => !isLoading.value && (hasApiColumns.value || hasTaskColumns.value))
+const isDragEnabled = computed(() => !isInitialLoading.value && columns.value.length > 0)
 
 // Methods
 function getColumnTasks(status) {
@@ -134,12 +134,14 @@ function ensureColumnTasks(status) {
   return columnTasks[status]
 }
 
-function onDragStart(event, task) {
-  draggedTask.value = task
+function onDragStart() {
+  isDragging.value = true
 }
 
 function onDragEnd() {
   draggedTask.value = null
+  isDragging.value = false
+  // Removed manual syncColumnTasks here to avoid race conditions with API updates
 }
 
 function openTaskPanel(task) {
@@ -383,8 +385,10 @@ function syncColumnTasks() {
   })
 }
 
-function handleDragStart() {
+function handleDragStart(event) {
   isDragging.value = true
+  // Sortable.js stores the dragged element in event.item
+  // We can try to find the task by id if needed, but usually not required for visual dragging
 }
 
 async function handleDragChange(event, targetColumnId) {
@@ -412,7 +416,6 @@ async function handleDragChange(event, targetColumnId) {
 function handleDragEnd() {
   isDragging.value = false
   onDragEnd()
-  syncColumnTasks()
 }
 
 columns.value.forEach(({ id }) => {
@@ -584,10 +587,12 @@ taskStore.fetchTasks()
                 </div>
 
                 <Draggable
-                  :list="ensureColumnTasks(column.id)"
+                  v-model="columnTasks[column.id]"
                   group="kanban-board"
+                  tag="div"
+                  :item-key="'id'"
                   :disabled="!isDragEnabled"
-                  class="kanban-column-content min-h-[50px] flex-1 space-y-2.5 pb-2"
+                  class="kanban-column-content min-h-[100px] flex-1 space-y-2.5 pb-2"
                   ghost-class="kanban-card--ghost"
                   drag-class="kanban-card--dragging"
                   @start="handleDragStart"
@@ -595,10 +600,9 @@ taskStore.fetchTasks()
                   @change="handleDragChange($event, column.id)"
                 >
                   <div
-                    v-for="task in ensureColumnTasks(column.id)"
+                    v-for="task in columnTasks[column.id]"
                     :key="task.id"
                     data-kanban-card="true"
-                    @dragstart="onDragStart($event, task)"
                     @click="openTaskPanel(task)"
                     :class="[
                       'kanban-card cursor-pointer rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-black/5 transition-all hover:shadow-md dark-edit:bg-gray-800 dark-edit:ring-white/10',
@@ -658,7 +662,7 @@ taskStore.fetchTasks()
                       <span
                         v-if="task.tags.length > 3"
                         class="text-[10px] text-gray-400"
-                      >
+                       >
                         +{{ task.tags.length - 3 }}
                       </span>
                     </div>
