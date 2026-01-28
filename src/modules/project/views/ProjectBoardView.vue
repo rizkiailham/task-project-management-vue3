@@ -4,7 +4,7 @@
  */
 import { computed, ref, watch, reactive, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useProjectStore, useKanbanColumnStore, useUIStore } from '@/stores'
+import { useTaskStore, useProjectStore, useKanbanColumnStore, useUIStore, useUserStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
@@ -15,11 +15,15 @@ import Avatar from 'primevue/avatar'
 import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
 import { VueDraggableNext as Draggable } from 'vue-draggable-next'
+import { DatePicker as VDatePicker } from 'v-calendar'
+import 'v-calendar/style.css'
+import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
 
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const kanbanColumnStore = useKanbanColumnStore()
 const uiStore = useUIStore()
+const userStore = useUserStore()
 const { t, locale } = useI18n()
 
 // State
@@ -156,7 +160,6 @@ async function createColumn() {
   isCreatingColumn.value = true
   try {
     const response = await kanbanColumnStore.createColumn({ name })
-    uiStore.showApiSuccess(response)
     const created = response?.column || response?.data || response
     if (pendingInsertIndex.value !== null && created?.id) {
       const orderedIds = columns.value
@@ -283,7 +286,6 @@ async function saveNewTaskInline(columnId) {
       title,
       kanbanColumnId: columnId
     })
-    uiStore.showApiSuccess(response)
     cancelAddTaskInline()
   } catch (error) {
     uiStore.showApiError(error)
@@ -307,7 +309,6 @@ async function deleteColumn() {
   deleteConfirmLoading.value = true
   try {
     const response = await kanbanColumnStore.deleteColumn(deleteTargetColumn.value.id)
-    uiStore.showApiSuccess(response)
     deleteConfirmVisible.value = false
     deleteTargetColumn.value = null
   } catch (error) {
@@ -384,6 +385,25 @@ function isOverdue(task) {
   return new Date(task.dueDate) < new Date()
 }
 
+
+async function handleUpdateAssignee(taskId, user) {
+  try {
+    const userId = user ? user.id : null
+    await taskStore.changeTaskAssignee(taskId, userId)
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+async function handleUpdateDueDate(taskId, date) {
+  try {
+    const formattedDate = date ? new Date(date).toISOString().split('T')[0] : null
+    await taskStore.updateTask(taskId, { dueDate: formattedDate })
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
 function syncColumnTasks() {
   columns.value.forEach(({ id }) => {
     ensureColumnTasks(id)
@@ -423,7 +443,6 @@ async function handleDragChange(event, targetColumnId) {
 
   try {
     const response = await taskStore.reorderKanbanTasks(task.id, targetColumnId, taskIds)
-    uiStore.showApiSuccess(response)
   } catch (error) {
     uiStore.showApiError(error)
     syncColumnTasks()
@@ -453,6 +472,7 @@ watch(columns, (next) => {
 
 kanbanColumnStore.fetchColumns()
 taskStore.fetchTasks()
+userStore.fetchUsers({ limit: 100 })
 </script>
 
 <template>
@@ -587,7 +607,7 @@ taskStore.fetchTasks()
                   </DropdownMenu>
                 </div>
               </div>
-              <div class="kanban-column-body flex-1 overflow-y-auto px-2 py-2">
+              <div class="kanban-column-body flex-1 flex flex-col overflow-y-auto px-2 py-2">
                 <div
                   v-if="creatingTaskColumnId === column.id"
                   class="kanban-card--composer mb-3 rounded-lg border border-transparent bg-white p-2 shadow-sm ring-1 ring-black/5 dark-edit:bg-gray-800"
@@ -610,7 +630,7 @@ taskStore.fetchTasks()
                   tag="div"
                   :item-key="'id'"
                   :disabled="!isDragEnabled"
-                  class="kanban-column-content min-h-[100px] flex-1 space-y-2.5 pb-2"
+                  class="kanban-column-content flex-1 space-y-2.5 pb-4"
                   ghost-class="kanban-card--ghost"
                   drag-class="kanban-card--dragging"
                   @start="handleDragStart"
@@ -633,21 +653,32 @@ taskStore.fetchTasks()
 
                     <div class="mt-2 flex items-center justify-between">
                       <div class="flex items-center gap-2">
-                        <span
-                          v-if="task.dueDate"
-                          :class="[
-                            'flex items-center gap-1 text-[10px]',
-                            isOverdue(task) ? 'text-red-600' : 'text-gray-500 dark-edit:text-gray-400'
-                          ]"
+                        <VDatePicker
+                          :model-value="task.dueDate"
+                          :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
+                          @update:model-value="(val) => handleUpdateDueDate(task.id, val)"
                         >
-                          <i class="pi pi-calendar text-[10px]"></i>
-                          {{ formatDate(task.dueDate) }}
-                        </span>
+                          <template #default="{ togglePopover }">
+                            <span
+                              @click.stop="togglePopover"
+                              :class="[
+                                'flex items-center gap-1 text-[10px] cursor-pointer hover:bg-black/5 dark-edit:hover:bg-white/5 px-1 rounded transition-colors',
+                                task.dueDate ? (isOverdue(task) ? 'text-red-600' : 'text-gray-500 dark-edit:text-gray-400') : 'text-gray-400'
+                              ]"
+                            >
+                              <i class="pi pi-calendar text-[10px]"></i>
+                              {{ task.dueDate ? formatDate(task.dueDate) : 'Add date' }}
+                            </span>
+                          </template>
+                        </VDatePicker>
                         <span
                           v-if="task.subtaskCount > 0"
                           class="flex items-center gap-1 text-[10px] text-gray-500 dark-edit:text-gray-400"
                         >
-                          <i class="pi pi-check-square text-[10px]"></i>
+                          <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                          </svg>
                           {{ task.completedSubtaskCount }}/{{ task.subtaskCount }}
                         </span>
                         <span
@@ -658,14 +689,31 @@ taskStore.fetchTasks()
                           {{ task.commentCount }}
                         </span>
                       </div>
-                      <Avatar
-                        v-if="task.assignee"
-                        :label="task.assignee.name?.charAt(0)"
-                        shape="circle"
-                        size="small"
-                        class="bg-primary-100 text-primary-700 text-xs"
-                        v-tooltip="task.assignee.name"
-                      />
+                      
+                      <div @click.stop>
+                        <UserSearchDropdown
+                          :model-value="task.assignee"
+                          @select="(user) => handleUpdateAssignee(task.id, user)"
+                        >
+                          <template #trigger>
+                            <Avatar
+                              v-if="task.assignee"
+                              :label="task.assignee.name?.charAt(0)"
+                              shape="circle"
+                              size="small"
+                              class="bg-primary-100 text-primary-700 text-xs cursor-pointer hover:ring-2 hover:ring-primary-300 transition-all"
+                              v-tooltip="task.assignee.name"
+                            />
+                            <div 
+                              v-else 
+                              class="w-6 h-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-500 hover:text-gray-600 cursor-pointer transition-colors"
+                              v-tooltip="'Assign user'"
+                            >
+                              <i class="pi pi-user text-[10px]"></i>
+                            </div>
+                          </template>
+                        </UserSearchDropdown>
+                      </div>
                     </div>
 
                     <div v-if="task.tags?.length > 0" class="mt-2 flex flex-wrap gap-1">
@@ -685,14 +733,15 @@ taskStore.fetchTasks()
                       </span>
                     </div>
                   </div>
-                </Draggable>
 
-                <div
-                  v-if="ensureColumnTasks(column.id).length === 0"
-                  class="flex h-24 items-center justify-center text-xs text-gray-400"
-                >
-                  {{ t('tasks.emptyState.title') }}
-                </div>
+                  <!-- Empty state inside Draggable -->
+                  <div
+                    v-if="ensureColumnTasks(column.id).length === 0"
+                    class="flex h-full min-h-[140px] items-center justify-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-xl"
+                  >
+                    {{ t('tasks.emptyState.title') }}
+                  </div>
+                </Draggable>
               </div>
             </div>
             </template>
@@ -791,7 +840,7 @@ taskStore.fetchTasks()
 
 
 .kanban-column-body {
-  min-height: 240px;
+  min-height: 0;
 }
 
 @keyframes composer-enter {
