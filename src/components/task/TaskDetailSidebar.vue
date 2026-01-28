@@ -11,18 +11,23 @@
  */
 import { ref, computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useUIStore, useAIChatStore } from '@/stores'
-import { TaskStatus } from '@/models'
+import { useTaskStore, useUIStore, useAIChatStore, useProjectStore } from '@/stores'
+import { TaskStatus, TaskPriority } from '@/models'
 import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
 import Skeleton from 'primevue/skeleton'
 import NotionEditor from '@/components/editor/NotionEditor.vue'
-import { Sparkles } from 'lucide-vue-next'
+import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import { DatePicker as VDatePicker } from 'v-calendar'
+import 'v-calendar/style.css'
+import { Sparkles, ChevronRight, User as UserIcon } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
 const aiChatStore = useAIChatStore()
+const projectStore = useProjectStore()
 
 // Topbar height constant
 const TOPBAR_HEIGHT = 56
@@ -69,11 +74,17 @@ const sidebarStyle = computed(() => ({
   height: `calc(100vh - ${TOPBAR_HEIGHT}px)`
 }))
 
-// Dummy activity data for production-ready appearance
-const activityItems = ref([
-  { id: 'a1', type: 'created', user: 'Hari W', date: 'Monday', icon: '+' },
-  { id: 'a2', type: 'updated', user: 'Hari W', date: 'just now', icon: '✏️' }
-])
+// Activity data from store
+const activityLog = computed(() => taskStore.activityLog)
+
+function getActivityIcon(action) {
+  if (action?.includes('created')) return '+'
+  if (action?.includes('updated')) return '✏️'
+  if (action?.includes('status')) return '📊'
+  if (action?.includes('priority')) return '⚡'
+  if (action?.includes('assignee')) return '👤'
+  return '•'
+}
 
 // Resize handlers
 function startResize(e) {
@@ -111,6 +122,31 @@ function close() {
   taskStore.clearCurrentTask()
 }
 
+const newSubtaskTitle = ref('')
+const isAddingSubtask = ref(false)
+
+async function handleAddSubtask() {
+  if (!newSubtaskTitle.value.trim() || !task.value) return
+  try {
+    await taskStore.addSubtask({
+      title: newSubtaskTitle.value.trim()
+    })
+    newSubtaskTitle.value = ''
+    isAddingSubtask.value = false
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+async function handleDeleteSubtask(subtaskId) {
+  if (!task.value) return
+  try {
+    await taskStore.deleteSubtaskItem(subtaskId)
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
 function getStatusLabel(status) {
   const labels = {
     [TaskStatus.TODO]: 'To Do',
@@ -135,11 +171,35 @@ function getStatusIcon(status) {
 
 function formatDate(date) {
   if (!date) return t('taskDetail.none')
-  return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric'
-  })
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch (e) {
+    return date
+  }
+}
+
+function getPriorityLabel(priority) {
+  const labels = {
+    [TaskPriority.LOW]: 'Low',
+    [TaskPriority.MEDIUM]: 'Medium',
+    [TaskPriority.HIGH]: 'High',
+    [TaskPriority.URGENT]: 'Urgent'
+  }
+  return labels[priority] || priority
+}
+
+function getPriorityColor(priority) {
+  const colors = {
+    [TaskPriority.LOW]: 'text-blue-500 bg-blue-50',
+    [TaskPriority.MEDIUM]: 'text-gray-500 bg-gray-50',
+    [TaskPriority.HIGH]: 'text-orange-500 bg-orange-50',
+    [TaskPriority.URGENT]: 'text-red-500 bg-red-50'
+  }
+  return colors[priority] || 'text-gray-500 bg-gray-50'
 }
 
 // Description editing methods
@@ -340,6 +400,64 @@ function toggleSection(section) {
   if (section === 'subtasks') isSubtasksOpen.value = !isSubtasksOpen.value
   if (section === 'activity') isActivityOpen.value = !isActivityOpen.value
 }
+
+async function handleUpdateAssignee(user) {
+  if (!task.value) return
+  try {
+    const userId = user ? user.id : null
+    await taskStore.changeTaskAssignee(task.value.id, userId)
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+async function handleUpdateStatus(status) {
+  if (!task.value) return
+  try {
+    await taskStore.changeTaskStatus(task.value.id, status)
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+async function handleUpdatePriority(priority) {
+  if (!task.value) return
+  try {
+    await taskStore.updateTask(task.value.id, { priority })
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+async function handleUpdateDueDate(val) {
+  if (!task.value) return
+  try {
+    await taskStore.updateTask(task.value.id, { dueDate: val })
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+async function handleUpdateProject(projectId) {
+  if (!task.value) return
+  try {
+    await taskStore.updateTask(task.value.id, { projectId })
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+const newComment = ref('')
+
+async function handleAddComment() {
+  if (!newComment.value.trim() || !task.value) return
+  try {
+    await taskStore.addCommentToTask(newComment.value.trim())
+    newComment.value = ''
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
 </script>
 
 <template>
@@ -459,53 +577,180 @@ function toggleSection(section) {
               <!-- Status -->
               <div>
                 <span class="text-gray-500">{{ t('taskDetail.status') }}</span>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="text-gray-700">{{ getStatusIcon(task.status) }}</span>
-                  <span>{{ getStatusLabel(task.status) }}</span>
-                  <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
+                <div class="mt-1">
+                  <DropdownMenu width="12rem">
+                    <template #trigger>
+                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group">
+                        <span class="text-gray-700">{{ getStatusIcon(task.status) }}</span>
+                        <span class="font-medium">{{ getStatusLabel(task.status) }}</span>
+                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      </div>
+                    </template>
+                    <template #content>
+                      <div class="py-1">
+                        <button
+                          v-for="(label, key) in TaskStatus"
+                          :key="key"
+                          type="button"
+                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 transition-colors"
+                          :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.status === label }"
+                          @click="handleUpdateStatus(label)"
+                        >
+                          <span>{{ getStatusIcon(label) }}</span>
+                          <span class="flex-1 text-left">{{ getStatusLabel(label) }}</span>
+                          <i v-if="task.status === label" class="pi pi-check text-[10px]"></i>
+                        </button>
+                      </div>
+                    </template>
+                  </DropdownMenu>
                 </div>
               </div>
               
               <!-- Assignee -->
               <div>
                 <span class="text-gray-500">{{ t('taskDetail.assignee') }}</span>
-                <div class="flex items-center gap-2 mt-1">
-                  <Avatar 
-                    v-if="task.assignee"
-                    :label="task.assignee.name?.charAt(0)"
-                    shape="circle"
-                    size="small"
-                    class="bg-orange-100 text-orange-700"
-                    style="width: 20px; height: 20px; font-size: 10px;"
-                  />
-                  <span>{{ task.assignee?.name || t('taskDetail.none') }}</span>
+                <div class="mt-1">
+                  <UserSearchDropdown
+                    :model-value="task.assignee"
+                    @select="handleUpdateAssignee"
+                  >
+                    <template #trigger>
+                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors transition-all group">
+                        <Avatar 
+                          v-if="task.assignee"
+                          :label="task.assignee.name?.charAt(0)"
+                          shape="circle"
+                          size="small"
+                          class="bg-blue-100 text-blue-700 font-semibold"
+                          style="width: 20px; height: 20px; font-size: 10px;"
+                        />
+                        <div 
+                          v-else 
+                          class="w-5 h-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 group-hover:border-gray-500 group-hover:text-gray-600 transition-colors"
+                        >
+                          <UserIcon class="w-2.5 h-2.5" />
+                        </div>
+                        <span :class="task.assignee ? 'text-gray-700' : 'text-gray-400'">
+                          {{ task.assignee?.name || t('taskDetail.unassigned') || 'Unassigned' }}
+                        </span>
+                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      </div>
+                    </template>
+                  </UserSearchDropdown>
                 </div>
               </div>
               
+              <!-- Priority -->
+              <div>
+                <span class="text-gray-500">{{ t('taskDetail.priority') }}</span>
+                <div class="mt-1">
+                  <DropdownMenu width="10rem">
+                    <template #trigger>
+                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group">
+                        <span
+                          class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                          :class="getPriorityColor(task.priority)"
+                        >
+                          {{ getPriorityLabel(task.priority) }}
+                        </span>
+                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      </div>
+                    </template>
+                    <template #content>
+                      <div class="py-1">
+                        <button
+                          v-for="(label, key) in TaskPriority"
+                          :key="key"
+                          type="button"
+                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 transition-colors"
+                          :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.priority === label }"
+                          @click="handleUpdatePriority(label)"
+                        >
+                          <span
+                            class="w-2 h-2 rounded-full"
+                            :class="getPriorityColor(label).split(' ')[0].replace('text-', 'bg-')"
+                          ></span>
+                          <span class="flex-1 text-left">{{ getPriorityLabel(label) }}</span>
+                          <i v-if="task.priority === label" class="pi pi-check text-[10px]"></i>
+                        </button>
+                      </div>
+                    </template>
+                  </DropdownMenu>
+                </div>
+              </div>
+
               <!-- Dartboard -->
               <div>
                 <span class="text-gray-500">{{ t('taskDetail.dartboard') }}</span>
-                <div class="flex items-center gap-2 mt-1">
-                  <span>🎯</span>
-                  <span>{{ task.projectName || 'Tasks' }}</span>
+                <div class="mt-1">
+                  <DropdownMenu width="14rem">
+                    <template #trigger>
+                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group">
+                        <span>🎯</span>
+                        <span class="font-medium text-gray-700">{{ task.projectName || 'Tasks' }}</span>
+                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      </div>
+                    </template>
+                    <template #content>
+                      <div class="py-1 max-h-60 overflow-y-auto custom-scrollbar">
+                        <button
+                          v-for="project in projectStore.projects"
+                          :key="project.id"
+                          type="button"
+                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 transition-colors"
+                          :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.projectId === project.id }"
+                          @click="handleUpdateProject(project.id)"
+                        >
+                          <span>📁</span>
+                          <span class="flex-1 text-left">{{ project.name }}</span>
+                          <i v-if="task.projectId === project.id" class="pi pi-check text-[10px]"></i>
+                        </button>
+                      </div>
+                    </template>
+                  </DropdownMenu>
                 </div>
               </div>
-              
+
               <!-- Tags -->
               <div>
                 <span class="text-gray-500">{{ t('taskDetail.tags') }}</span>
-                <div class="mt-1">
-                  <span class="text-gray-400">{{ t('taskDetail.none') }}</span>
+                <div class="mt-1 flex flex-wrap gap-1">
+                  <template v-if="task.tags?.length > 0">
+                    <span
+                      v-for="tag in task.tags"
+                      :key="tag.id"
+                      class="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                      :style="{ backgroundColor: tag.color + '20', color: tag.color }"
+                    >
+                      {{ tag.name }}
+                    </span>
+                  </template>
+                  <span v-else class="text-gray-400 italic px-1.5 py-1 -ml-1.5">{{ t('taskDetail.none') }}</span>
                 </div>
               </div>
-              
+
               <!-- Due Date -->
-              <div class="col-span-2">
+              <div>
                 <span class="text-gray-500">{{ t('taskDetail.dueDate') }}</span>
                 <div class="mt-1">
-                  <span>{{ formatDate(task.dueDate) }}</span>
+                  <VDatePicker
+                    :model-value="task.dueDate"
+                    :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
+                    @update:model-value="handleUpdateDueDate"
+                  >
+                    <template #default="{ togglePopover }">
+                      <div
+                        @click="togglePopover"
+                        class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group"
+                      >
+                        <i class="pi pi-calendar text-gray-400"></i>
+                        <span :class="task.dueDate ? 'text-gray-700 font-medium' : 'text-gray-400'">
+                          {{ formatDate(task.dueDate) }}
+                        </span>
+                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      </div>
+                    </template>
+                  </VDatePicker>
                 </div>
               </div>
             </div>
@@ -605,7 +850,7 @@ function toggleSection(section) {
                 <button
                   class="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                   type="button"
-                  @click="notify(t('taskDetail.addSubtask'))"
+                  @click="isAddingSubtask = true"
                 >
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -639,46 +884,54 @@ function toggleSection(section) {
               </div>
 
               <!-- Subtask Items -->
-              <div class="space-y-2">
+              <div class="space-y-1">
                 <div
                   v-for="subtask in subtasks"
                   :key="subtask.id"
-                  class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 transition-colors"
-                  role="button"
-                  tabindex="0"
-                  @click="notify(subtask.title)"
-                  @keydown.enter.prevent="notify(subtask.title)"
+                  class="group flex items-center gap-3 p-2 rounded hover:bg-gray-50 transition-colors"
                 >
-                  <div class="flex items-center gap-2 flex-1">
-                    <Avatar
-                      v-if="subtask.assignee"
-                      :label="subtask.assignee?.name?.charAt(0) || '?'"
-                      shape="circle"
-                      size="small"
-                      class="bg-orange-100 text-orange-700"
-                      style="width: 24px; height: 24px; font-size: 11px;"
-                    />
-                    <span
-                      class="text-sm"
-                      :class="subtask.isCompleted ? 'text-gray-400 line-through' : 'text-gray-700'"
-                    >
-                      {{ subtask.title }}
-                    </span>
-                  </div>
                   <input
                     type="checkbox"
                     :checked="subtask.isCompleted"
-                    class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    @click.stop
+                    class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                     @change="taskStore.toggleSubtaskCompletion(subtask.id)"
+                  />
+                  <span
+                    class="text-sm flex-1"
+                    :class="subtask.isCompleted ? 'text-gray-400 line-through' : 'text-gray-700'"
+                  >
+                    {{ subtask.title }}
+                  </span>
+                  <button
+                    type="button"
+                    class="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                    @click="handleDeleteSubtask(subtask.id)"
+                  >
+                    <i class="pi pi-trash text-[10px]"></i>
+                  </button>
+                </div>
+
+                <!-- Inline Add Subtask -->
+                <div v-if="isAddingSubtask" class="flex items-center gap-3 p-2 border-t border-gray-100">
+                  <div class="w-4 h-4 rounded border border-gray-300"></div>
+                  <input
+                    v-model="newSubtaskTitle"
+                    type="text"
+                    class="flex-1 text-sm bg-transparent border-none focus:outline-none placeholder-gray-400"
+                    placeholder="Subtask title..."
+                    @keyup.enter="handleAddSubtask"
+                    @blur="!newSubtaskTitle && (isAddingSubtask = false)"
+                    ref="newSubtaskInput"
+                    v-focus
                   />
                 </div>
 
                 <!-- Add Subtask Button -->
                 <button
+                  v-else
                   class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors p-2"
                   type="button"
-                  @click="notify(t('taskDetail.addSubtask'))"
+                  @click="isAddingSubtask = true"
                 >
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -720,24 +973,23 @@ function toggleSection(section) {
             </div>
 
             <!-- Activity Items -->
-            <div v-show="isActivityOpen" class="space-y-3">
+            <div v-show="isActivityOpen" class="space-y-3 pb-4">
               <div
-                v-for="activity in activityItems"
+                v-for="activity in activityLog"
                 :key="activity.id"
-                class="flex items-start gap-3 text-sm cursor-pointer"
-                role="button"
-                tabindex="0"
-                @click="notify(`${activity.type} · ${activity.user}`)"
-                @keydown.enter.prevent="notify(`${activity.type} · ${activity.user}`)"
+                class="flex items-start gap-3 text-sm"
               >
-                <span class="text-gray-400 mt-0.5">{{ activity.icon }}</span>
+                <span class="text-gray-400 mt-0.5">{{ getActivityIcon(activity.action) }}</span>
                 <div>
-                  <span class="text-gray-600">
-                    {{ activity.type === 'created' ? t('taskDetail.createdAt') : t('taskDetail.lastUpdated') }}
-                  </span>
-                  <span class="text-gray-500"> {{ activity.date }} {{ t('taskDetail.by') }} </span>
-                  <span class="text-gray-700 font-medium">{{ activity.user }}</span>
+                  <span class="text-gray-600 font-medium">{{ activity.user?.name || 'User' }}</span>
+                  <span class="text-gray-500"> {{ activity.action }} </span>
+                  <div class="text-[10px] text-gray-400 mt-0.5">
+                    {{ formatDate(activity.createdAt) }}
+                  </div>
                 </div>
+              </div>
+              <div v-if="activityLog.length === 0" class="text-center py-4 text-xs text-gray-400 italic">
+                No activity yet
               </div>
             </div>
           </div>
@@ -756,18 +1008,21 @@ function toggleSection(section) {
             style="width: 28px; height: 28px; font-size: 12px;"
           />
           <input
+            v-model="newComment"
             type="text"
             :placeholder="t('aiChat.addComment')"
             class="flex-1 text-sm text-gray-700 placeholder-gray-400 bg-transparent border-none focus:outline-none"
-            @focus="notify('Comment focus')"
+            @keyup.enter="handleAddComment"
           />
           <button
             class="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
             type="button"
-            @click="notify('Attach to comment')"
+            :disabled="!newComment.trim()"
+            @click="handleAddComment"
           >
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+              <path d="M22 2L11 13"></path>
+              <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
             </svg>
           </button>
         </div>

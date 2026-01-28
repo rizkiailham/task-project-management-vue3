@@ -4,8 +4,11 @@
  */
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useProjectStore, useUIStore, useAIStore } from '@/stores'
+import { useTaskStore, useProjectStore, useUIStore, useAIStore, useUserStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
+import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
+import Avatar from 'primevue/avatar'
+import { User as UserIcon } from 'lucide-vue-next'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
@@ -36,7 +39,8 @@ const validationSchema = yup.object({
   projectId: yup.string().required(t('tasks.validation.projectRequired')),
   status: yup.string().required(),
   priority: yup.string().required(),
-  dueDate: yup.date().nullable()
+  dueDate: yup.date().nullable(),
+  assigneeId: yup.string().nullable()
 })
 
 const { handleSubmit, meta, resetForm, setFieldValue } = useForm({
@@ -48,7 +52,9 @@ const { handleSubmit, meta, resetForm, setFieldValue } = useForm({
     status: uiStore.modalData?.defaultStatus || TaskStatus.TODO,
     priority: TaskPriority.MEDIUM,
     dueDate: null,
-    kanbanColumnId: uiStore.modalData?.kanbanColumnId || null
+    kanbanColumnId: uiStore.modalData?.kanbanColumnId || null,
+    assigneeId: null,
+    assignee: null
   }
 })
 
@@ -59,6 +65,8 @@ const { value: status } = useField('status')
 const { value: priority } = useField('priority')
 const { value: dueDate } = useField('dueDate')
 const { value: kanbanColumnId } = useField('kanbanColumnId')
+const { value: assigneeId } = useField('assigneeId')
+const { value: assignee } = useField('assignee')
 
 // Options
 const projectOptions = computed(() => 
@@ -89,7 +97,9 @@ watch(visible, (isVisible) => {
         status: uiStore.modalData?.defaultStatus || TaskStatus.TODO,
         priority: TaskPriority.MEDIUM,
         dueDate: null,
-        kanbanColumnId: uiStore.modalData?.kanbanColumnId || null
+        kanbanColumnId: uiStore.modalData?.kanbanColumnId || null,
+        assigneeId: null,
+        assignee: null
       }
     })
   }
@@ -99,11 +109,11 @@ watch(visible, (isVisible) => {
 const onSubmit = handleSubmit(async (values) => {
   isLoading.value = true
   try {
+    const { assignee, ...rest } = values
     const response = await taskStore.createNewTask({
-      ...values,
+      ...rest,
       dueDate: values.dueDate?.toISOString()
     })
-    uiStore.showApiSuccess(response, t('tasks.messages.created'))
     uiStore.closeModal()
   } catch (error) {
     uiStore.showApiError(error, t('tasks.errors.create'))
@@ -111,6 +121,11 @@ const onSubmit = handleSubmit(async (values) => {
     isLoading.value = false
   }
 })
+
+function handleAssigneeSelect(user) {
+  setFieldValue('assigneeId', user?.id || null)
+  setFieldValue('assignee', user)
+}
 
 async function generateDescription() {
   if (!title.value) {
@@ -229,6 +244,42 @@ function closeModal() {
           </template>
         </FormInput>
         <small v-if="projectError" class="mt-1 block text-sm text-red-500">{{ projectError }}</small>
+      </div>
+
+      <!-- Assignee -->
+      <div>
+        <label class="mb-2 block text-sm font-medium text-gray-700">
+          {{ t('taskDetail.assignee') }}
+        </label>
+        <UserSearchDropdown
+          :projectId="projectId"
+          @select="handleAssigneeSelect"
+        >
+          <template #trigger>
+            <div class="flex items-center gap-2 p-2 rounded-lg border border-gray-300 hover:border-gray-400 cursor-pointer transition-all bg-white">
+              <Avatar 
+                v-if="assignee"
+                :label="assignee.avatar || assignee.name?.charAt(0)"
+                shape="circle"
+                size="small"
+                class="bg-blue-100 text-blue-700 font-semibold"
+                style="width: 24px; height: 24px; font-size: 11px;"
+              />
+              <div 
+                v-else 
+                class="w-6 h-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 group-hover:border-gray-500 group-hover:text-gray-600 transition-colors"
+              >
+                <UserIcon class="w-3 h-3" />
+              </div>
+              <span :class="assignee ? 'text-gray-900' : 'text-gray-400'" class="text-sm">
+                {{ assignee?.name || t('taskDetail.unassigned') || 'Unassigned' }}
+              </span>
+              <svg class="ml-auto w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </template>
+        </UserSearchDropdown>
       </div>
 
       <!-- Status & Priority -->
