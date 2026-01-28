@@ -242,8 +242,25 @@ function setNewTaskInputRef(columnId, el) {
 async function startAddTaskInline(columnId) {
   creatingTaskColumnId.value = columnId
   newTaskTitle.value = ''
-  await nextTick()
-  newTaskInputRefs.value[columnId]?.focus?.()
+  
+  // Use a longer timeout to allow the 200ms animation to complete
+  setTimeout(() => {
+    const el = newTaskInputRefs.value[columnId]
+    if (el) {
+      // Try multiple ways to focus
+      if (typeof el.focus === 'function') {
+        el.focus()
+      } else if (el.$el && typeof el.$el.focus === 'function') {
+        el.$el.focus()
+      }
+      
+      // Fallback: finding the internal input element
+      const internalInput = el.$el ? el.$el.querySelector('input') : (el.querySelector ? el.querySelector('input') : null)
+      if (internalInput) {
+        internalInput.focus()
+      }
+    }
+  }, 300) // Increased to 300ms to clear the 200ms animation
 }
 
 function cancelAddTaskInline() {
@@ -578,11 +595,12 @@ taskStore.fetchTasks()
                   <InputText
                     :ref="(el) => setNewTaskInputRef(column.id, el)"
                     v-model="newTaskTitle"
-                    class="w-full !border-0 !shadow-none !ring-0 focus:!ring-0 p-0 text-xs font-medium placeholder:font-normal"
+                    class="w-full !border-0 !shadow-none !ring-0 focus:!ring-0 p-0 text-xs font-medium placeholder:font-normal bg-transparent"
                     :placeholder="t('tasks.placeholders.title')"
                     :disabled="isCreatingTask"
                     @keydown.enter.prevent="saveNewTaskInline(column.id)"
                     @blur="saveNewTaskInline(column.id)"
+                    autoFocus
                   />
                 </div>
 
