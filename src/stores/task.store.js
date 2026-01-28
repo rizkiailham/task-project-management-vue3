@@ -183,6 +183,14 @@ export const useTaskStore = defineStore('task', () => {
   /**
    * Fetch tasks for current project
    * @param {Object} params - Query parameters
+
+  // ================================
+  // Actions
+  // ================================
+
+  /**
+   * Fetch tasks for current project
+   * @param {Object} params - Query parameters
    */
   async function fetchTasks(params = {}) {
     const projectStore = useProjectStore()
@@ -197,25 +205,17 @@ export const useTaskStore = defineStore('task', () => {
         ...params
       })
 
-      const payload = Array.isArray(response?.data?.tasks)
-        ? response.data.tasks
-        : Array.isArray(response?.data)
-          ? response.data
-          : Array.isArray(response?.tasks)
-            ? response.tasks
-            : Array.isArray(response)
-              ? response
-              : []
+      const payload = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : []
 
       tasks.value = payload.map(t => createTask(t))
 
-      if (response?.total !== undefined) {
-        pagination.value.total = response.total
-      } else if (response?.data?.total !== undefined) {
-        pagination.value.total = response.data.total
-      } else if (response?.meta?.totalItems !== undefined) {
+      if (response?.meta?.totalItems !== undefined) {
         pagination.value.total = response.meta.totalItems
-        pagination.value.page = response.meta.currentPage || pagination.value.page
+        pagination.value.page = response.meta.currentPage || 1
         pagination.value.limit = response.meta.itemsPerPage || pagination.value.limit
       } else {
         pagination.value.total = tasks.value.length
@@ -244,9 +244,7 @@ export const useTaskStore = defineStore('task', () => {
       currentTask.value = createTask(taskData)
 
       const results = await Promise.allSettled([
-        fetchSubtasks(taskId),
-        fetchComments(taskId),
-        fetchActivity(taskId)
+        fetchSubtasks(taskId)
       ])
       results.forEach((result) => {
         if (result.status === 'rejected') {
@@ -277,21 +275,24 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null
 
     try {
-      const response = await taskApi.createTask(projectStore.currentProjectId, data)
+      const response = await taskApi.createTask({
+        projectId: projectStore.currentProjectId,
+        ...data
+      })
       const taskData = response.task || response.data || response
       const task = createTask(taskData)
-      if (!task.kanbanColumnId && data?.kanbanColumnId) {
-        task.kanbanColumnId = data.kanbanColumnId
-      }
+
+      // Basic order management for local UI consistency
       if (task.kanbanColumnId) {
         const columnTasks = tasks.value.filter(t => t.kanbanColumnId === task.kanbanColumnId)
-        const minOrder = columnTasks.reduce((min, item) => {
+        const maxOrder = columnTasks.reduce((max, item) => {
           const order = Number.isFinite(item.order) ? item.order : Number(item.order) || 0
-          return Math.min(min, order)
+          return Math.max(max, order)
         }, 0)
-        task.order = minOrder - 1
+        task.order = maxOrder + 1
       }
-      tasks.value.unshift(task)
+
+      tasks.value.push(task)
       return response
     } catch (err) {
       error.value = err.message || 'Failed to create task'
@@ -358,8 +359,12 @@ export const useTaskStore = defineStore('task', () => {
    * @param {string} status
    */
   async function changeTaskStatus(taskId, status) {
-    if (status === TaskStatus.DONE || status === TaskStatus.TODO) {
-      const apiStatus = status === TaskStatus.DONE ? 'completed' : 'incompleted'
+    let apiStatus = 'incompleted'
+    if (status === TaskStatus.DONE || status === 'completed') {
+      apiStatus = 'completed'
+    }
+
+    try {
       const response = await taskApi.updateTaskStatus(taskId, apiStatus)
       const taskData = response.task || response.data || response
       const task = createTask(taskData)
@@ -373,8 +378,10 @@ export const useTaskStore = defineStore('task', () => {
       }
 
       return response
+    } catch (err) {
+      error.value = err.message || 'Failed to update status'
+      throw err
     }
-    return updateTask(taskId, { status })
   }
 
   /**
@@ -518,9 +525,12 @@ export const useTaskStore = defineStore('task', () => {
   // ================================
 
   async function fetchSubtasks(taskId) {
+    if (!currentTask.value?.projectId) return []
     try {
-      const data = await taskApi.getSubtasks(taskId)
-      subtasks.value = data.map(s => createSubtask(s))
+      // Fetch tasks that have this taskId as parentId
+      const response = await taskApi.getTasks(currentTask.value.projectId, { parentId: taskId })
+      const payload = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : []
+      subtasks.value = payload.map(s => createTask(s))
       return subtasks.value
     } catch (err) {
       error.value = err.message || 'Failed to fetch subtasks'
@@ -532,8 +542,14 @@ export const useTaskStore = defineStore('task', () => {
     if (!currentTask.value) return null
 
     try {
-      const response = await taskApi.createSubtask(currentTask.value.id, data)
-      const subtask = createSubtask(response)
+      const response = await taskApi.createTask({
+        projectId: currentTask.value.projectId,
+        parentId: currentTask.value.id,
+        kanbanColumnId: currentTask.value.kanbanColumnId,
+        ...data
+      })
+      const taskData = response.task || response.data || response
+      const subtask = createTask(taskData)
       subtasks.value.push(subtask)
       return subtask
     } catch (err) {
@@ -546,10 +562,20 @@ export const useTaskStore = defineStore('task', () => {
     if (!currentTask.value) return
 
     try {
-      const response = await taskApi.toggleSubtask(currentTask.value.id, subtaskId)
+      const subtask = subtasks.value.find(s => s.id === subtaskId)
+      if (!subtask) return
+
+      const newStatus = subtask.status === 'completed' || subtask.status === TaskStatus.DONE
+        ? 'incompleted'
+        : 'completed'
+
+      const response = await taskApi.updateTaskStatus(subtaskId, newStatus)
+      const taskData = response.task || response.data || response
+      const updated = createTask(taskData)
+
       const index = subtasks.value.findIndex(s => s.id === subtaskId)
       if (index !== -1) {
-        subtasks.value[index] = createSubtask(response)
+        subtasks.value[index] = updated
       }
     } catch (err) {
       error.value = err.message || 'Failed to toggle subtask'
@@ -558,10 +584,8 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   async function deleteSubtaskItem(subtaskId) {
-    if (!currentTask.value) return
-
     try {
-      await taskApi.deleteSubtask(currentTask.value.id, subtaskId)
+      await taskApi.deleteTask(subtaskId)
       subtasks.value = subtasks.value.filter(s => s.id !== subtaskId)
     } catch (err) {
       error.value = err.message || 'Failed to delete subtask'

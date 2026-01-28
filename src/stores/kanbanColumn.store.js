@@ -59,11 +59,9 @@ export const useKanbanColumnStore = defineStore('kanbanColumn', () => {
 
       const payload = Array.isArray(response?.data)
         ? response.data
-        : Array.isArray(response?.columns)
-          ? response.columns
-          : Array.isArray(response)
-            ? response
-            : []
+        : Array.isArray(response)
+          ? response
+          : []
 
       columns.value = payload.map((column) => createKanbanColumn(column))
 
