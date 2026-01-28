@@ -137,15 +137,15 @@
     },
     "social": {
       "title": "Logger deg inn",
-      "processing": "Fullforer innlogging...",
-      "missingProvider": "Mangler leverandorinformasjon.",
+      "processing": "Fullfører innlogging...",
+      "missingProvider": "Mangler leverandørinformasjon.",
       "missingToken": "Mangler tilgangstoken.",
       "loginFailed": "Sosial innlogging mislyktes.",
       "backToLogin": "Tilbake til innlogging"
     },
     "invite": {
       "title": "Du er invitert til {project}",
-      "subtitle": "Fyll inn detaljene dine for a bli med.",
+      "subtitle": "Fyll inn detaljene dine for å bli med.",
       "loading": "Laster invitasjon...",
       "avatarFallback": "B",
       "fields": {
@@ -154,27 +154,27 @@
         "email": "E-postadresse",
         "phone": "Telefon",
         "organization": "Organisasjon",
-        "salary": "Lonn",
-        "language": "Sprak",
+        "salary": "Lønn",
+        "language": "Språk",
         "password": "Passord",
         "confirmPassword": "Bekreft passord"
       },
       "actions": {
-        "register": "Fullfor registrering",
-        "goToLogin": "Ga til innlogging"
+        "register": "Fullfør registrering",
+        "goToLogin": "Gå til innlogging"
       },
       "messages": {
-        "registered": "Registrering fullfort"
+        "registered": "Registrering fullført"
       },
       "validation": {
-        "firstNameRequired": "Fornavn er pakrevd",
-        "lastNameRequired": "Etternavn er pakrevd"
+        "firstNameRequired": "Fornavn er påkrevd",
+        "lastNameRequired": "Etternavn er påkrevd"
       },
       "errors": {
         "title": "Invitasjonsfeil",
-        "noToken": "Invitasjonstoken mangler.",
-        "invalid": "Denne invitasjonen er ugyldig eller har utlopt.",
-        "registerFailed": "Kunne ikke fullfore registrering"
+        "noToken": "Invitasjontoken mangler.",
+        "invalid": "Denne invitasjonen er ugyldig eller har utløpt.",
+        "registerFailed": "Kunne ikke fullføre registrering"
       }
     },
     "validation": {
@@ -240,7 +240,7 @@
       "linkCopied": "Lenke kopiert",
       "linkCopyFailed": "Kunne ikke kopiere lenke",
       "itemAlreadyExists": "Elementet finnes allerede",
-      "projectRenamed": "Prosjekt oppdatert",
+      "projectRenamed": "Prosjekt oppdatert Lucide",
       "projectRenameFailed": "Kunne ikke oppdatere prosjekt",
       "projectDeleted": "Prosjekt slettet",
       "projectDeleteFailed": "Kunne ikke slette prosjekt",
@@ -263,8 +263,8 @@
       "category": "Kategori"
     },
     "search": {
-      "bulletin": "SAA,k bulletin",
-      "category": "SAA,k kategori"
+      "bulletin": "Søk bulletin",
+      "category": "Søk kategori"
     },
     "actions": {
       "newBulletin": "Ny bulletin",
@@ -399,40 +399,40 @@
       "description": "Opprett din første oppgave for å komme i gang"
     },
     "fields": {
-      "title": "Task Title",
-      "description": "Description",
-      "project": "Project",
+      "title": "Oppgavetittel",
+      "description": "Beskrivelse",
+      "project": "Prosjekt",
       "status": "Status",
-      "priority": "Priority",
-      "dueDate": "Due Date"
+      "priority": "Prioritet",
+      "dueDate": "Forfallsdato"
     },
     "placeholders": {
-      "title": "Enter task title...",
-      "description": "Add a description...",
-      "project": "Select a project"
+      "title": "Skriv inn oppgavetittel...",
+      "description": "Legg til en beskrivelse...",
+      "project": "Velg et prosjekt"
     },
     "createModal": {
-      "title": "Create New Task",
-      "subtitle": "Add a new task to your project",
-      "cta": "Create Task",
-      "creating": "Creating...",
-      "aiGenerate": "AI Generate",
+      "title": "Opprett ny oppgave",
+      "subtitle": "Legg til en ny oppgave i prosjektet ditt",
+      "cta": "Opprett oppgave",
+      "creating": "Oppretter...",
+      "aiGenerate": "AI Generer",
       "placeholders": {
-        "title": "Enter task title..."
+        "title": "Skriv inn oppgavetittel..."
       }
     },
     "validation": {
-      "titleRequired": "Task title is required",
-      "titleMin": "Title must be at least 2 characters",
-      "projectRequired": "Please select a project"
+      "titleRequired": "Oppgavetittel er påkrevd",
+      "titleMin": "Tittelen må være minst 2 tegn",
+      "projectRequired": "Vennligst velg et prosjekt"
     },
     "messages": {
-      "created": "Task created successfully"
+      "created": "Oppgave opprettet"
     },
     "errors": {
-      "create": "Failed to create task",
-      "titleRequired": "Please enter a task title first",
-      "generateDescription": "Failed to generate description"
+      "create": "Kunne ikke opprette oppgave",
+      "titleRequired": "Vennligst skriv inn en oppgavetittel først",
+      "generateDescription": "Kunne ikke generere beskrivelse"
     }
   },
   "projects": {
@@ -502,30 +502,30 @@
       "description": "Opprett ditt første prosjekt for å komme i gang"
     },
     "fields": {
-      "name": "Project Name",
-      "description": "Description",
-      "color": "Project Color"
+      "name": "Prosjektnavn",
+      "description": "Beskrivelse",
+      "color": "Prosjektfarge"
     },
     "createModal": {
-      "title": "Create New Project",
-      "subtitle": "Add a new project to your workspace",
-      "cta": "Create Project",
-      "creating": "Creating...",
-      "previewLabel": "Preview",
+      "title": "Opprett nytt prosjekt",
+      "subtitle": "Legg til et nytt prosjekt i arbeidsområdet ditt",
+      "cta": "Opprett prosjekt",
+      "creating": "Oppretter...",
+      "previewLabel": "Forhåndsvisning",
       "placeholders": {
-        "name": "Enter project name...",
-        "description": "Add a description..."
+        "name": "Skriv inn prosjektnavn...",
+        "description": "Legg til en beskrivelse..."
       }
     },
     "validation": {
-      "nameRequired": "Project name is required",
-      "nameMin": "Name must be at least 2 characters"
+      "nameRequired": "Prosjektnavn er påkrevd",
+      "nameMin": "Navnet må være minst 2 tegn"
     },
     "messages": {
-      "created": "Project created successfully"
+      "created": "Prosjekt opprettet"
     },
     "errors": {
-      "create": "Failed to create project"
+      "create": "Kunne ikke opprette prosjekt"
     }
   },
   "workspace": {
@@ -576,36 +576,36 @@
     "changesSaved": "Endringer lagret",
     "modal": {
       "groups": {
-        "account": "Account",
-        "preferences": "Preferences",
+        "account": "Konto",
+        "preferences": "Innstillinger",
         "ai": "AI",
-        "apiAccess": "API Access"
+        "apiAccess": "API-tilgang"
       },
       "items": {
-        "profile": "Profile",
-        "project": "Project",
-        "notifications": "Notifications",
-        "dataTypes": "Data Types",
-        "customFields": "Custom Fields",
-        "formsBuilder": "Forms Builder",
-        "dataImport": "Data Import",
-        "dataExport": "Data Export",
-        "assistants": "Assistants",
-        "aiModels": "AI Models",
-        "promptLibrary": "Prompt Library",
-        "skillsTools": "Skills & Tools",
-        "integrations": "Integrations",
+        "profile": "Profil",
+        "project": "Prosjekt",
+        "notifications": "Varsler",
+        "dataTypes": "Datatyper",
+        "customFields": "Egendefinerte felt",
+        "formsBuilder": "Skjemabygger",
+        "dataImport": "Dataimport",
+        "dataExport": "Dataeksport",
+        "assistants": "Assistenter",
+        "aiModels": "AI-modeller",
+        "promptLibrary": "Ledetekst-bibliotek",
+        "skillsTools": "Ferdigheter og verktøy",
+        "integrations": "Integrasjoner",
         "webhooks": "Webhooks"
       },
-      "comingSoon": "Coming soon",
-      "comingSoonDescription": "This section will be available in the settings hub."
+      "comingSoon": "Kommer snart",
+      "comingSoonDescription": "Denne seksjonen vil være tilgjengelig i innstillingssenteret."
     },
     "project": {
       "title": "Tilgangskontroll",
-      "descriptionPrefix": "Brukere, grupper eller agenter mAÝ bli ",
+      "descriptionPrefix": "Brukere, grupper eller agenter må bli ",
       "descriptionHighlight": "opprettet eller invitert",
-      "descriptionSuffix": " for AÝ fAÝ tilgang til dette prosjektet.",
-      "searchPlaceholder": "SAA,k bruker eller gruppe",
+      "descriptionSuffix": " først for å få tilgang til dette prosjektet.",
+      "searchPlaceholder": "Søk bruker eller gruppe",
       "addAccess": "Legg til tilgang",
       "columns": {
         "user": "Bruker",
@@ -622,7 +622,7 @@
         "group": "Gruppe"
       },
       "lastLogin": {
-        "justNow": "Akkurat nAÝ",
+        "justNow": "Akkurat nå",
         "hoursAgo": "{hours} t siden",
         "never": "Aldri",
         "none": "-"
@@ -637,14 +637,14 @@
         "users": "Bruker",
         "groups": "Gruppe",
         "showMore": "Vis mer",
-        "minChars": "SAA,k med minst 3 tegn."
+        "minChars": "Søk med minst 3 tegn."
       },
       "unsaved": {
-        "confirm": "Du har ulagrede endringer. Vil du forlate uten AÝ lagre?"
+        "confirm": "Du har ulagrede endringer. Er du sikker på at du vil forlate?"
       },
       "empty": {
-        "title": "Velg et prosjekt fAÝrst",
-        "description": "Velg et prosjekt for AÝ administrere tilgang."
+        "title": "Velg et prosjekt først",
+        "description": "Velg et prosjekt for å administrere tilgang."
       },
       "profile": {
         "title": "Brukerprofil",
@@ -667,91 +667,91 @@
       }
     },
     "customFields": {
-      "title": "Custom user fields",
-      "subtitle": "Manage data captured in profiles and forms.",
-      "editorTitle": "Edit custom fields",
+      "title": "Egendefinerte brukerfelt",
+      "subtitle": "Administrer data fanget opp i profiler og skjemaer.",
+      "editorTitle": "Rediger egendefinerte felt",
       "columns": {
-        "name": "Name",
+        "name": "Navn",
         "type": "Type"
       },
       "sections": {
-        "general": "General",
-        "settings": "Settings"
+        "general": "Generelt",
+        "settings": "Innstillinger"
       },
       "fields": {
         "type": "Type",
-        "nameLabel": "Name/Label",
-        "description": "Description",
-        "show": "Show",
-        "numberFormat": "Number Format",
-        "currencySign": "Currency Sign",
-        "options": "Options",
-        "allowMultiple": "Allow multiple",
-        "displayName": "Display name",
-        "dateRange": "Date Range"
+        "nameLabel": "Navn/Etikett",
+        "description": "Beskrivelse",
+        "show": "Vis",
+        "numberFormat": "Tallformat",
+        "currencySign": "Valutategn",
+        "options": "Alternativer",
+        "allowMultiple": "Tillat flere",
+        "displayName": "Visnavn",
+        "dateRange": "Datointervall"
       },
       "placeholders": {
-        "name": "Department",
-        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla interdum"
+        "name": "Avdeling",
+        "description": "Legg til en beskrivelse..."
       },
       "help": {
-        "show": "Show this field on user profiles and forms by default. Hidden fields remain visible to admins.",
-        "numberFormat": "How the numbers should be displayed for this field",
-        "allowMultiple": "Enable this to assign multiple users to this field.",
-        "displayName": "Enable this to always show the user's name rather than just their avatar.",
-        "dateRange": "Enable this to add a second date and use a date range instead of a single date."
+        "show": "Vis dette feltet på brukerprofiler og skjemaer som standard. Skjulte felt forblir synlige for administratorer.",
+        "numberFormat": "Hvordan tall skal vises for dette feltet",
+        "allowMultiple": "Aktiver dette for å tildele flere brukere til dette feltet.",
+        "displayName": "Aktiver dette for å alltid vise brukerens navn i stedet for bare avataren.",
+        "dateRange": "Aktiver dette for å legge til en annen dato og bruke et datointervall i stedet for en enkelt dato."
       },
       "actions": {
-        "newOption": "+ New option",
-        "deleteField": "Delete field"
+        "newOption": "+ Nytt alternativ",
+        "deleteField": "Slett felt"
       },
       "options": {
-        "new": "New Option",
-        "addSubItem": "Add sub-item"
+        "new": "Nytt alternativ",
+        "addSubItem": "Legg til underelement"
       },
       "badges": {
-        "text": "Text",
-        "number": "Number",
-        "boolean": "Boolean",
-        "select": "Select",
-        "multiselect": "Multiselect",
-        "date": "Date",
-        "user": "User"
+        "text": "Tekst",
+        "number": "Tall",
+        "boolean": "Boolsk",
+        "select": "Valg",
+        "multiselect": "Flervalg",
+        "date": "Dato",
+        "user": "Bruker"
       },
       "types": {
-        "text": "Text",
-        "number": "Number",
-        "checkbox": "Checkbox",
-        "select": "Select",
-        "multiselect": "Multiselect",
-        "date": "Date",
-        "user": "User"
+        "text": "Tekst",
+        "number": "Tall",
+        "checkbox": "Avkrysningsboks",
+        "select": "Valg",
+        "multiselect": "Flervalg",
+        "date": "Dato",
+        "user": "Bruker"
       },
       "numberFormats": {
-        "number": "Number",
-        "percentage": "Percentage",
-        "currency": "Currency"
+        "number": "Tall",
+        "percentage": "Prosent",
+        "currency": "Valuta"
       },
       "labels": {
-        "customField": "Custom field"
+        "customField": "Egendefinert felt"
       },
       "messages": {
-        "created": "Custom field created successfully",
-        "updated": "Custom field updated successfully",
-        "deleted": "Custom field deleted successfully"
+        "created": "Egendefinert felt opprettet",
+        "updated": "Egendefinert felt oppdatert",
+        "deleted": "Egendefinert felt slettet"
       },
       "errors": {
-        "load": "Failed to load custom fields",
-        "save": "Failed to save custom field",
-        "delete": "Failed to delete custom field",
+        "load": "Kunne ikke laste egendefinerte felt",
+        "save": "Kunne ikke lagre egendefinert felt",
+        "delete": "Kunne ikke slette egendefinert felt",
         "nameRequired": "Navn er påkrevd"
       },
-      "loading": "Loading custom fields...",
-      "empty": "No custom fields yet.",
-      "newFieldLabel": "New Field {index}",
+      "loading": "Laster egendefinerte felt...",
+      "empty": "Ingen egendefinerte felt ennå.",
+      "newFieldLabel": "Nytt felt {index}",
       "delete": {
-        "title": "Delete {label}",
-        "message": "This action will permanently delete the custom field. This action cannot be undone."
+        "title": "Slett {label}",
+        "message": "Denne handlingen vil slette det egendefinerte feltet permanent. Handlingen kan ikke angres."
       }
     }
   },
@@ -806,28 +806,28 @@
       "uploadFailed": "Opplasting mislyktes"
     },
     "invite": {
-      "title": "Invite user",
-      "subtitle": "Users will complete their details after accepting the email invitation",
-      "cta": "Send Invitation",
-      "sending": "Sending...",
+      "title": "Inviter bruker",
+      "subtitle": "Brukere vil fylle ut informasjonen sin etter at de har akseptert e-postinvitasjonen",
+      "cta": "Send invitasjon",
+      "sending": "Sender...",
       "fields": {
-        "projects": "Project(s)"
+        "projects": "Prosjekt(er)"
       },
       "placeholders": {
-        "email": "user@email.address",
-        "projects": "Search for existing project(s)"
+        "email": "bruker@epost.adresse",
+        "projects": "Søk etter eksisterende prosjekt(er)"
       },
       "validation": {
-        "emailRequired": "Email is required",
-        "emailInvalid": "Invalid email format",
-        "projectRequired": "At least one project is required"
+        "emailRequired": "E-post er påkrevd",
+        "emailInvalid": "Ugyldig e-postformat",
+        "projectRequired": "Minst ett prosjekt er påkrevd"
       },
       "messages": {
-        "userExists": "User already exists and has been added to the project(s)",
-        "sent": "Invitation sent successfully"
+        "userExists": "Brukeren finnes allerede og har blitt lagt til i prosjektet(ene)",
+        "sent": "Invitasjon sendt"
       },
       "errors": {
-        "send": "Failed to send invitation"
+        "send": "Kunne ikke sende invitasjon"
       }
     }
   },
@@ -943,6 +943,7 @@
     "dartboard": "Dartboard",
     "tags": "Etiketter",
     "dueDate": "Forfallsdato",
+    "unassigned": "Ikke tildelt",
     "none": "Ingen",
     "description": "Beskrivelse",
     "addDescription": "Legg til en beskrivelse, / for AI",

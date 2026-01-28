@@ -943,6 +943,7 @@
     "dartboard": "Dartboard",
     "tags": "Tags",
     "dueDate": "Due date",
+    "unassigned": "Unassigned",
     "none": "None",
     "description": "Description",
     "addDescription": "Add a description, / for AI",
