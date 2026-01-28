@@ -6,7 +6,7 @@ import { get, post, patch, del } from './httpClient'
 
 /**
  * Get all kanban columns
- * @param {Object} params
+ * @param {Object} params - Should include projectId, page, limit, sortBy
  * @returns {Promise<any>}
  */
 export async function getKanbanColumns(params = {}) {

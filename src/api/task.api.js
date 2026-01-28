@@ -7,8 +7,8 @@ import { get, post, patch, del } from './httpClient'
 /**
  * Get all tasks in a project
  * @param {string} projectId
- * @param {Object} params - Query parameters (status, assignee, priority, etc.)
- * @returns {Promise<{tasks: Task[], total: number, page: number, limit: number}>}
+ * @param {Object} params - Query parameters (can include kanbanColumnId, parentId, etc.)
+ * @returns {Promise<any>}
  */
 export async function getTasks(projectId, params = {}) {
   return get('/tasks', { projectId, ...params })
@@ -17,7 +17,7 @@ export async function getTasks(projectId, params = {}) {
 /**
  * Get a single task by ID
  * @param {string} taskId
- * @returns {Promise<Task>}
+ * @returns {Promise<any>}
  */
 export async function getTask(taskId) {
   return get(`/tasks/${taskId}`)
@@ -25,19 +25,18 @@ export async function getTask(taskId) {
 
 /**
  * Create a new task
- * @param {string} projectId
- * @param {Object} data
- * @returns {Promise<Task>}
+ * @param {Object} data - Should include projectId, kanbanColumnId, title, etc.
+ * @returns {Promise<any>}
  */
-export async function createTask(projectId, data) {
-  return post('/tasks', { projectId, ...data })
+export async function createTask(data) {
+  return post('/tasks', data)
 }
 
 /**
  * Update a task
  * @param {string} taskId
  * @param {Object} data
- * @returns {Promise<Task>}
+ * @returns {Promise<any>}
  */
 export async function updateTask(taskId, data) {
   return patch(`/tasks/${taskId}`, data)
@@ -53,19 +52,10 @@ export async function deleteTask(taskId) {
 }
 
 /**
- * Get tasks assigned to current user (My Tasks)
- * @param {Object} params
- * @returns {Promise<{tasks: Task[], total: number}>}
- */
-export async function getMyTasks(params = {}) {
-  return get('/tasks/my-tasks', params)
-}
-
-/**
  * Update task status
  * @param {string} taskId
- * @param {string} status
- * @returns {Promise<Task>}
+ * @param {string} status - 'completed' or 'incompleted'
+ * @returns {Promise<any>}
  */
 export async function updateTaskStatus(taskId, status) {
   return patch(`/tasks/${taskId}/status`, { status })
@@ -75,7 +65,7 @@ export async function updateTaskStatus(taskId, status) {
  * Update task assignee
  * @param {string} taskId
  * @param {string|null} assigneeId
- * @returns {Promise<Task>}
+ * @returns {Promise<any>}
  */
 export async function updateTaskAssignee(taskId, assigneeId) {
   return patch(`/tasks/${taskId}/assign`, { assignTo: assigneeId })
@@ -83,97 +73,19 @@ export async function updateTaskAssignee(taskId, assigneeId) {
 
 /**
  * Reorder tasks (for drag & drop)
- * @param {Object} data
- * @param {string} data.projectId
- * @param {string} data.kanbanColumnId
- * @param {string[]} data.taskIds
+ * @param {Object} data - { projectId, kanbanColumnId, taskIds }
  * @returns {Promise<void>}
  */
 export async function reorderTasks(data) {
   return post('/tasks/reorder', data)
 }
 
-/**
- * Bulk update tasks
- * @param {string[]} taskIds
- * @param {Object} data - Fields to update
- * @returns {Promise<Task[]>}
- */
-export async function bulkUpdateTasks(taskIds, data) {
-  return post('/tasks/bulk-update', { taskIds, ...data })
-}
-
-/**
- * Bulk delete tasks
- * @param {string[]} taskIds
- * @returns {Promise<void>}
- */
-export async function bulkDeleteTasks(taskIds) {
-  return post('/tasks/bulk-delete', { taskIds })
-}
-
 // ================================
-// Subtasks
-// ================================
-
-/**
- * Get subtasks of a task
- * @param {string} taskId
- * @returns {Promise<Subtask[]>}
- */
-export async function getSubtasks(taskId) {
-  return get(`/tasks/${taskId}/subtasks`)
-}
-
-/**
- * Create a subtask
- * @param {string} taskId
- * @param {Object} data
- * @returns {Promise<Subtask>}
- */
-export async function createSubtask(taskId, data) {
-  return post(`/tasks/${taskId}/subtasks`, data)
-}
-
-/**
- * Update a subtask
- * @param {string} taskId
- * @param {string} subtaskId
- * @param {Object} data
- * @returns {Promise<Subtask>}
- */
-export async function updateSubtask(taskId, subtaskId, data) {
-  return patch(`/tasks/${taskId}/subtasks/${subtaskId}`, data)
-}
-
-/**
- * Delete a subtask
- * @param {string} taskId
- * @param {string} subtaskId
- * @returns {Promise<void>}
- */
-export async function deleteSubtask(taskId, subtaskId) {
-  return del(`/tasks/${taskId}/subtasks/${subtaskId}`)
-}
-
-/**
- * Toggle subtask completion
- * @param {string} taskId
- * @param {string} subtaskId
- * @returns {Promise<Subtask>}
- */
-export async function toggleSubtask(taskId, subtaskId) {
-  return post(`/tasks/${taskId}/subtasks/${subtaskId}/toggle`)
-}
-
-// ================================
-// Comments
+// Comments (Kept as placeholder, not in tasks-kanban.json but likely exists)
 // ================================
 
 /**
  * Get comments for a task
- * @param {string} taskId
- * @returns {Promise<Comment[]>}
  */
 export async function getComments(taskId) {
   return get(`/tasks/${taskId}/comments`)
@@ -181,43 +93,17 @@ export async function getComments(taskId) {
 
 /**
  * Add a comment to a task
- * @param {string} taskId
- * @param {Object} data
- * @returns {Promise<Comment>}
  */
 export async function addComment(taskId, data) {
   return post(`/tasks/${taskId}/comments`, data)
 }
 
-/**
- * Update a comment
- * @param {string} taskId
- * @param {string} commentId
- * @param {Object} data
- * @returns {Promise<Comment>}
- */
-export async function updateComment(taskId, commentId, data) {
-  return patch(`/tasks/${taskId}/comments/${commentId}`, data)
-}
-
-/**
- * Delete a comment
- * @param {string} taskId
- * @param {string} commentId
- * @returns {Promise<void>}
- */
-export async function deleteComment(taskId, commentId) {
-  return del(`/tasks/${taskId}/comments/${commentId}`)
-}
-
 // ================================
-// Activity Log
+// Activity Log (Kept as placeholder)
 // ================================
 
 /**
  * Get activity log for a task
- * @param {string} taskId
- * @returns {Promise<ActivityLog[]>}
  */
 export async function getTaskActivity(taskId) {
   return get(`/tasks/${taskId}/activity`)
