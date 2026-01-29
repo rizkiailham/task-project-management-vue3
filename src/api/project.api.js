@@ -139,3 +139,53 @@ export async function searchProjectAccesses(projectId, query = {}, config = {}) 
 export async function updateAccessRole(projectId, accessId, roleId, config = {}) {
   return patch(`/projects/${projectId}/accesses/${accessId}/role`, { roleId }, config)
 }
+
+/**
+ * Get project items (boards, reports, etc.)
+ * @param {string} projectId
+ * @returns {Promise<Object>}
+ */
+export async function getProjectItems(projectId) {
+  return get(`/projects/${projectId}/items`)
+}
+
+/**
+ * Create a project item
+ * @param {string} projectId
+ * @param {Object} data - { name, type, ... }
+ * @returns {Promise<Object>}
+ */
+export async function createProjectItem(projectId, data) {
+  return post(`/projects/${projectId}/items`, data)
+}
+
+/**
+ * Update a project item (e.g. rename)
+ * @param {string} projectId
+ * @param {string} itemId
+ * @param {Object} data - e.g. { name: 'New Name' }
+ * @returns {Promise<Object>}
+ */
+export async function updateProjectItem(projectId, itemId, data) {
+  return patch(`/projects/${projectId}/items/${itemId}`, data)
+}
+
+/**
+ * Delete a project item
+ * @param {string} projectId
+ * @param {string} itemId
+ * @returns {Promise<void>}
+ */
+export async function deleteProjectItem(projectId, itemId) {
+  return del(`/projects/${projectId}/items/${itemId}`)
+}
+
+/**
+ * Reorder project items
+ * @param {string} projectId
+ * @param {string[]} itemIds
+ * @returns {Promise<void>}
+ */
+export async function reorderProjectItems(projectId, itemIds) {
+  return post(`/projects/${projectId}/items/reorder`, { itemIds })
+}
