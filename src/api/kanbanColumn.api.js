@@ -6,7 +6,7 @@ import { get, post, patch, del } from './httpClient'
 
 /**
  * Get all kanban columns
- * @param {Object} params - Should include projectId, page, limit, sortBy
+ * @param {Object} params - Should include projectItemId, page, limit, sortBy
  * @returns {Promise<any>}
  */
 export async function getKanbanColumns(params = {}) {
@@ -53,7 +53,7 @@ export async function deleteKanbanColumn(columnId) {
 /**
  * Reorder kanban columns
  * @param {Object} data
- * @param {string} data.projectId
+ * @param {string} data.projectItemId
  * @param {string[]} data.columnIds
  * @returns {Promise<any>}
  */

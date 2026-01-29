@@ -9,6 +9,7 @@
  * - Data fetching and passing to child components
  */
 import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useKanbanColumnStore, useUIStore, useUserStore } from '@/stores'
 import { reorderTasks } from '@/api/task.api'
@@ -17,6 +18,7 @@ import ProjectTasksGrid from '@/components/task/ProjectTasksGrid.vue'
 import KanbanBoard from '@/components/task/KanbanBoard.vue'
 import { LayoutGrid, List, Calendar, Map } from 'lucide-vue-next'
 
+const route = useRoute()
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const kanbanColumnStore = useKanbanColumnStore()
@@ -104,12 +106,12 @@ function openTaskPanel(task) {
 }
 
 async function handleReorderTasks(taskIds) {
-  const projectId = projectStore.currentProjectId
+  const projectId = projectStore.activeProjectItemId
   if (!projectId || !taskIds.length) return
   
   try {
     await reorderTasks({
-      projectId,
+      projectItemId: projectId,
       taskIds
     })
     console.log('Tasks reordered successfully')
@@ -118,12 +120,21 @@ async function handleReorderTasks(taskIds) {
   }
 }
 
-async function handleCreateSubtask(parentId) {
+async function handleCreateSubtask(payload) {
+  const parentId = typeof payload === 'object' ? payload.parentId : payload
+  const kanbanColumnId = typeof payload === 'object' ? payload.kanbanColumnId : null
+  if (!parentId) return
   try {
-    await taskStore.createNewTask({
-      title: 'New task',
-      parentId
+    const response = await taskStore.createNewTask({
+      title: 'New Task',
+      parentId,
+      ...(kanbanColumnId ? { kanbanColumnId } : {})
     })
+    
+    // Refetch tasks to get updated parent with subTasks array
+    if (response?.task?.id || response?.data?.id || response?.id) {
+      await taskStore.fetchTasks()
+    }
   } catch (e) {
     console.error(e)
   }
@@ -137,9 +148,45 @@ async function handleUpdateTaskTitle({ taskId, title }) {
   }
 }
 
-// Fetch initial data
-kanbanColumnStore.fetchColumns()
-taskStore.fetchTasks()
+// Fetch data on mount and when item changes
+async function loadBoardData() {
+  if (!projectStore.activeProjectItemId) return
+  
+  // Clear previous state to prevent stale data
+  taskStore.clearState()
+  kanbanColumnStore.clearState()
+  
+  await Promise.all([
+    kanbanColumnStore.fetchColumns(),
+    taskStore.fetchTasks()
+  ])
+}
+
+
+
+// Sync route itemId with store (only if different)
+watch(
+  () => route.params.itemId,
+  (itemId) => {
+    if (itemId && String(itemId) !== String(projectStore.activeProjectItemId)) {
+      projectStore.selectProjectItem(itemId)
+    }
+  },
+  { immediate: true }
+)
+
+// Watch for item changes and load data
+watch(
+  () => projectStore.activeProjectItemId,
+  (newId, oldId) => {
+    // Only load if itemId actually changed
+    if (newId && String(newId) !== String(oldId)) {
+      loadBoardData()
+    }
+  },
+  { immediate: true }
+)
+
 userStore.fetchUsers({ limit: 100 })
 </script>
 

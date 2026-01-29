@@ -43,7 +43,11 @@ export const useKanbanColumnStore = defineStore('kanbanColumn', () => {
   // ================================
   async function fetchColumns(params = {}) {
     const projectStore = useProjectStore()
-    if (!projectStore.currentProjectId) return []
+    const projectId = projectStore.activeProjectItemId
+    if (!projectId) {
+      hasLoaded.value = true
+      return []
+    }
 
     isLoading.value = true
     error.value = null
@@ -53,7 +57,7 @@ export const useKanbanColumnStore = defineStore('kanbanColumn', () => {
         page: pagination.value.page,
         limit: pagination.value.limit,
         sortBy: 'index:ASC',
-        projectId: projectStore.currentProjectId,
+        projectItemId: projectId,
         ...params
       })
 
@@ -88,14 +92,15 @@ export const useKanbanColumnStore = defineStore('kanbanColumn', () => {
 
   async function createColumn(data) {
     const projectStore = useProjectStore()
-    if (!projectStore.currentProjectId) return null
+    const projectId = projectStore.activeProjectItemId
+    if (!projectId) return null
 
     isLoading.value = true
     error.value = null
 
     try {
       const response = await kanbanColumnApi.createKanbanColumn({
-        projectId: projectStore.currentProjectId,
+        projectItemId: projectId,
         ...data
       })
       const columnData = response.column || response.data || response
@@ -149,14 +154,15 @@ export const useKanbanColumnStore = defineStore('kanbanColumn', () => {
 
   async function reorderColumns(columnIds) {
     const projectStore = useProjectStore()
-    if (!projectStore.currentProjectId) return
+    const projectId = projectStore.activeProjectItemId
+    if (!projectId) return
 
     const orderedIds = Array.from(new Set(columnIds.filter(Boolean)))
     if (!orderedIds.length) return
 
     try {
       const response = await kanbanColumnApi.reorderKanbanColumns({
-        projectId: projectStore.currentProjectId,
+        projectItemId: projectId,
         columnIds: orderedIds
       })
       const orderMap = new Map(orderedIds.map((id, index) => [id, index + 1]))

@@ -23,9 +23,11 @@ watch(
         taskStore.clearState()
         kanbanColumnStore.clearState()
         await projectStore.selectProject(projectId)
+        if (route.params.itemId) {
+          projectStore.selectProjectItem(route.params.itemId)
+        }
         const results = await Promise.allSettled([
-          kanbanColumnStore.fetchColumns(),
-          taskStore.fetchTasks()
+          // View-specific data should be fetched by child views (ProjectBoardView, etc.)
         ])
         results.forEach((result) => {
           if (result.status === 'rejected') {
@@ -47,4 +49,3 @@ watch(
     <RouterView />
   </div>
 </template>
-

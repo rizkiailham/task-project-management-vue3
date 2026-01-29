@@ -192,7 +192,7 @@ const routes = [
         },
         children: [
           {
-            path: '',
+            path: ':itemId?',
             name: 'ProjectBoard',
             component: () => import('@/modules/project/views/ProjectBoardView.vue')
           },
