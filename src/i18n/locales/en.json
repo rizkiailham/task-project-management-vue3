@@ -459,6 +459,7 @@
     },
     "kanban": {
       "columns": {
+        "noTasks": "No tasks in this column",
         "empty": {
           "title": "Create your first column",
           "description": "Columns organize tasks on the board. Add one to get started.",

@@ -459,6 +459,7 @@
     },
     "kanban": {
       "columns": {
+        "noTasks": "Ingen oppgaver i denne kolonnen",
         "empty": {
           "title": "Opprett din forste kolonne",
           "description": "Kolonner organiserer oppgaver pa tavlen. Legg til en for a komme i gang.",
