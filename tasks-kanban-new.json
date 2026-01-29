@@ -1,0 +1,1167 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Default module",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/tasks": {
+      "get": {
+        "summary": "Find All",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "projectItemId",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kanbanColumnId",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "createdById",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "incompleted",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueDate",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "uhuy",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": [
+                  {
+                    "id": "011a35c2-069a-4bac-963d-a95ac96db974",
+                    "parentId": null,
+                    "subTasks": [],
+                    "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                    "assignToId": null,
+                    "assignTo": null,
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": null,
+                    "completedBy": null,
+                    "title": "Uhuy 34",
+                    "slug": "uhuy-34",
+                    "repetition": "week",
+                    "description": "asdasd",
+                    "status": "incompleted",
+                    "notes": "no",
+                    "index": 1,
+                    "dueDate": "2026-01-30",
+                    "completedAt": null,
+                    "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                    "kanbanColumn": {
+                      "id": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                      "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                      "name": "change name",
+                      "description": null,
+                      "index": 3,
+                      "createdAt": "2026-01-28T21:33:47.873Z",
+                      "updatedAt": "2026-01-28T21:33:47.873Z"
+                    },
+                    "createdAt": "2026-01-28T21:54:53.306Z",
+                    "updatedAt": "2026-01-28T21:54:53.306Z"
+                  },
+                  {
+                    "id": "01619751-7cfe-482f-b555-4e299d1ffb9b",
+                    "parentId": null,
+                    "subTasks": [],
+                    "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                    "assignToId": null,
+                    "assignTo": null,
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": null,
+                    "completedBy": null,
+                    "title": "Uhuy 1",
+                    "slug": "uhuy-1",
+                    "repetition": "week",
+                    "description": "asdasd",
+                    "status": "incompleted",
+                    "notes": "no",
+                    "index": 2,
+                    "dueDate": "2026-01-30",
+                    "completedAt": null,
+                    "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                    "kanbanColumn": {
+                      "id": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                      "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                      "name": "change name",
+                      "description": null,
+                      "index": 3,
+                      "createdAt": "2026-01-28T21:33:47.873Z",
+                      "updatedAt": "2026-01-28T21:33:47.873Z"
+                    },
+                    "createdAt": "2026-01-28T21:55:01.666Z",
+                    "updatedAt": "2026-01-28T21:55:01.666Z"
+                  },
+                  {
+                    "id": "96733c51-ec88-43af-adc6-f7a35e350079",
+                    "parentId": null,
+                    "subTasks": [],
+                    "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                    "assignToId": null,
+                    "assignTo": null,
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": null,
+                    "completedBy": null,
+                    "title": "Uhuy 2",
+                    "slug": "uhuy-2",
+                    "repetition": "week",
+                    "description": "asdasd",
+                    "status": "incompleted",
+                    "notes": "no",
+                    "index": 3,
+                    "dueDate": "2026-01-30",
+                    "completedAt": null,
+                    "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                    "kanbanColumn": {
+                      "id": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                      "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                      "name": "change name",
+                      "description": null,
+                      "index": 3,
+                      "createdAt": "2026-01-28T21:33:47.873Z",
+                      "updatedAt": "2026-01-28T21:33:47.873Z"
+                    },
+                    "createdAt": "2026-01-28T21:55:08.525Z",
+                    "updatedAt": "2026-01-28T21:55:08.525Z"
+                  },
+                  {
+                    "id": "edbca71a-8471-4860-898c-cf4d8a369482",
+                    "parentId": null,
+                    "subTasks": [
+                      {
+                        "id": "855cb703-13b8-4cdc-b5eb-999eb38cacd4",
+                        "parentId": "edbca71a-8471-4860-898c-cf4d8a369482",
+                        "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                        "assignToId": null,
+                        "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                        "completedById": null,
+                        "title": "Bocil 1",
+                        "slug": "bocil-1",
+                        "repetition": "none",
+                        "description": "asdasd",
+                        "status": "incompleted",
+                        "notes": "no",
+                        "index": 1,
+                        "dueDate": "2026-01-30",
+                        "completedAt": null,
+                        "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                        "createdAt": "2026-01-28T21:56:18.005Z",
+                        "updatedAt": "2026-01-28T21:56:18.005Z"
+                      },
+                      {
+                        "id": "7a050531-e045-4578-9736-cd9434d62fb7",
+                        "parentId": "edbca71a-8471-4860-898c-cf4d8a369482",
+                        "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                        "assignToId": null,
+                        "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                        "completedById": null,
+                        "title": "Bocil 2",
+                        "slug": "bocil-2",
+                        "repetition": "month",
+                        "description": "asdasd",
+                        "status": "incompleted",
+                        "notes": "no",
+                        "index": 2,
+                        "dueDate": "2026-01-30",
+                        "completedAt": null,
+                        "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                        "createdAt": "2026-01-28T21:56:52.067Z",
+                        "updatedAt": "2026-01-28T21:56:52.067Z"
+                      }
+                    ],
+                    "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                    "assignToId": null,
+                    "assignTo": null,
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": null,
+                    "completedBy": null,
+                    "title": "Uhuy 3",
+                    "slug": "uhuy-3",
+                    "repetition": "week",
+                    "description": "asdasd",
+                    "status": "incompleted",
+                    "notes": "no",
+                    "index": 4,
+                    "dueDate": "2026-01-30",
+                    "completedAt": null,
+                    "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                    "kanbanColumn": {
+                      "id": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                      "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                      "name": "change name",
+                      "description": null,
+                      "index": 3,
+                      "createdAt": "2026-01-28T21:33:47.873Z",
+                      "updatedAt": "2026-01-28T21:33:47.873Z"
+                    },
+                    "createdAt": "2026-01-28T21:55:15.383Z",
+                    "updatedAt": "2026-01-28T21:55:15.383Z"
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Create",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": "{\n    \"projectItemId\": \"28dfcb93-5367-4fde-938d-37ecc1608be1\",\n    \"kanbanColumnId\": \"9718858e-0cf7-4754-a5ef-3e488f83ec31\",\n    \"title\": \"Bapa\",\n    \"description\": \"asdasd\",\n    \"repetition\": \"year\", // none, week, month, or year\n    \"notes\": \"no\",\n    \"dueDate\": \"20260130\"\n}"
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "examples": {
+                  "1": {
+                    "summary": "Parent",
+                    "value": {
+                      "message": "Task created successfully",
+                      "task": {
+                        "id": "a4f606a6-e338-48cd-a72c-85530a5aaf6d",
+                        "parentId": null,
+                        "parent": null,
+                        "subTasks": [],
+                        "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                        "projectItem": {
+                          "id": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                          "projectId": "010d2fe0-acd5-4e7b-a2a3-626b7f68f265",
+                          "parentId": null,
+                          "type": "board",
+                          "name": "Test Board",
+                          "slug": "testboard",
+                          "index": 1,
+                          "meta": null,
+                          "createdAt": "2026-01-27T21:34:07.151Z",
+                          "updatedAt": "2026-01-27T21:34:07.151Z"
+                        },
+                        "assignToId": null,
+                        "assignTo": null,
+                        "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                        "createdBy": {
+                          "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                          "firstName": "Super",
+                          "lastName": "Admin",
+                          "email": "sanjaya.slegy@gmail.com",
+                          "avatar": null
+                        },
+                        "completedById": null,
+                        "completedBy": null,
+                        "title": "Bapa",
+                        "slug": "bapa",
+                        "repetition": "year",
+                        "description": "asdasd",
+                        "status": "incompleted",
+                        "notes": "no",
+                        "index": 5,
+                        "dueDate": "2026-01-30",
+                        "completedAt": null,
+                        "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                        "kanbanColumn": {
+                          "id": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                          "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                          "name": "change name",
+                          "description": null,
+                          "index": 3,
+                          "createdAt": "2026-01-28T21:33:47.873Z",
+                          "updatedAt": "2026-01-28T21:33:47.873Z"
+                        },
+                        "createdAt": "2026-01-28T21:57:25.119Z",
+                        "updatedAt": "2026-01-28T21:57:25.119Z"
+                      }
+                    }
+                  },
+                  "2": {
+                    "summary": "subTask",
+                    "value": {
+                      "message": "Task created successfully",
+                      "task": {
+                        "id": "855cb703-13b8-4cdc-b5eb-999eb38cacd4",
+                        "parentId": "edbca71a-8471-4860-898c-cf4d8a369482",
+                        "parent": {
+                          "id": "edbca71a-8471-4860-898c-cf4d8a369482",
+                          "parentId": null,
+                          "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                          "assignToId": null,
+                          "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                          "completedById": null,
+                          "title": "Uhuy 3",
+                          "slug": "uhuy-3",
+                          "repetition": "week",
+                          "description": "asdasd",
+                          "status": "incompleted",
+                          "notes": "no",
+                          "index": 4,
+                          "dueDate": "2026-01-30",
+                          "completedAt": null,
+                          "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                          "createdAt": "2026-01-28T21:55:15.383Z",
+                          "updatedAt": "2026-01-28T21:55:15.383Z"
+                        },
+                        "subTasks": [],
+                        "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                        "projectItem": {
+                          "id": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                          "projectId": "010d2fe0-acd5-4e7b-a2a3-626b7f68f265",
+                          "parentId": null,
+                          "type": "board",
+                          "name": "Test Board",
+                          "slug": "testboard",
+                          "index": 1,
+                          "meta": null,
+                          "createdAt": "2026-01-27T21:34:07.151Z",
+                          "updatedAt": "2026-01-27T21:34:07.151Z"
+                        },
+                        "assignToId": null,
+                        "assignTo": null,
+                        "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                        "createdBy": {
+                          "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                          "firstName": "Super",
+                          "lastName": "Admin",
+                          "email": "sanjaya.slegy@gmail.com",
+                          "avatar": null
+                        },
+                        "completedById": null,
+                        "completedBy": null,
+                        "title": "Bocil 1",
+                        "slug": "bocil-1",
+                        "repetition": "none",
+                        "description": "asdasd",
+                        "status": "incompleted",
+                        "notes": "no",
+                        "index": 1,
+                        "dueDate": "2026-01-30",
+                        "completedAt": null,
+                        "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                        "kanbanColumn": {
+                          "id": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                          "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                          "name": "change name",
+                          "description": null,
+                          "index": 3,
+                          "createdAt": "2026-01-28T21:33:47.873Z",
+                          "updatedAt": "2026-01-28T21:33:47.873Z"
+                        },
+                        "createdAt": "2026-01-28T21:56:18.005Z",
+                        "updatedAt": "2026-01-28T21:56:18.005Z"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/tasks/{id}": {
+      "get": {
+        "summary": "Find One",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "a4f606a6-e338-48cd-a72c-85530a5aaf6d",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "id": "a4f606a6-e338-48cd-a72c-85530a5aaf6d",
+                  "parentId": null,
+                  "parent": null,
+                  "subTasks": [],
+                  "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                  "assignToId": null,
+                  "assignTo": null,
+                  "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                  "createdBy": {
+                    "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "firstName": "Super",
+                    "lastName": "Admin",
+                    "email": "sanjaya.slegy@gmail.com",
+                    "avatar": null
+                  },
+                  "completedById": null,
+                  "completedBy": null,
+                  "title": "Bapa",
+                  "slug": "bapa",
+                  "repetition": "year",
+                  "description": "asdasd",
+                  "status": "incompleted",
+                  "notes": "no",
+                  "index": 5,
+                  "dueDate": "2026-01-30",
+                  "completedAt": null,
+                  "kanbanColumnId": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                  "kanbanColumn": {
+                    "id": "9718858e-0cf7-4754-a5ef-3e488f83ec31",
+                    "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                    "name": "change name",
+                    "description": null,
+                    "index": 3,
+                    "createdAt": "2026-01-28T21:33:47.873Z",
+                    "updatedAt": "2026-01-28T21:33:47.873Z"
+                  },
+                  "createdAt": "2026-01-28T21:57:25.119Z",
+                  "updatedAt": "2026-01-28T21:57:25.119Z"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "Update",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "011a35c2-069a-4bac-963d-a95ac96db974",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": "{\n    \"repetition\": \"month\", // none, week, month, or year\n}"
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Task updated successfully",
+                  "task": {
+                    "id": "849c54f2-3db9-4117-8c2b-d3bd125153f8",
+                    "parentId": "80a04e55-766c-4425-8ec3-9b07561ad08b",
+                    "parent": {
+                      "id": "80a04e55-766c-4425-8ec3-9b07561ad08b",
+                      "parentId": null,
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "assignToId": null,
+                      "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "completedById": null,
+                      "title": "Test1",
+                      "slug": "test1",
+                      "repetition": "none",
+                      "description": "asdasd",
+                      "status": "incompleted",
+                      "notes": "no",
+                      "index": 1,
+                      "dueDate": "2026-01-30",
+                      "completedAt": null,
+                      "kanbanColumnId": "ada718fd-a83f-46bd-913e-742bec4753b9",
+                      "createdAt": "2026-01-26T22:08:02.565Z",
+                      "updatedAt": "2026-01-26T22:08:02.565Z"
+                    },
+                    "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                    "project": {
+                      "id": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "NEW PROJEVT",
+                      "description": "",
+                      "createdAt": "2026-01-17T08:18:35.298Z",
+                      "updatedAt": "2026-01-17T08:18:35.298Z"
+                    },
+                    "assignToId": null,
+                    "assignTo": null,
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": null,
+                    "completedBy": null,
+                    "title": "Uhuy",
+                    "slug": "uhuy-1",
+                    "repetition": "month",
+                    "description": "asdasd",
+                    "status": "incompleted",
+                    "notes": "no",
+                    "index": 2,
+                    "dueDate": "2026-01-30",
+                    "completedAt": null,
+                    "kanbanColumnId": "667302d1-8d6e-4d0b-97d4-047a762a7da9",
+                    "kanbanColumn": {
+                      "id": "667302d1-8d6e-4d0b-97d4-047a762a7da9",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 1",
+                      "description": "Test description",
+                      "index": 2,
+                      "createdAt": "2026-01-26T19:32:37.579Z",
+                      "updatedAt": "2026-01-26T19:32:37.579Z"
+                    },
+                    "createdAt": "2026-01-26T22:17:51.950Z",
+                    "updatedAt": "2026-01-26T22:17:51.950Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "Delete",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "c4c6b4b1-4e77-4799-bfbd-5f490f1b2f3f",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Task deleted successfully"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/tasks/reorder": {
+      "post": {
+        "summary": "Reorder",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                "kanbanColumnId": "0abe12f9-699f-4c1a-a20a-b797f47716a4",
+                "taskIds": [
+                  "edbca71a-8471-4860-898c-cf4d8a369482",
+                  "a4f606a6-e338-48cd-a72c-85530a5aaf6d"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Tasks reordered successfully",
+                  "tasks": [
+                    {
+                      "id": "edbca71a-8471-4860-898c-cf4d8a369482",
+                      "parentId": null,
+                      "parent": null,
+                      "subTasks": [
+                        {
+                          "id": "855cb703-13b8-4cdc-b5eb-999eb38cacd4",
+                          "parentId": "edbca71a-8471-4860-898c-cf4d8a369482",
+                          "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                          "assignToId": null,
+                          "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                          "completedById": null,
+                          "title": "Bocil 1",
+                          "slug": "bocil-1",
+                          "repetition": "none",
+                          "description": "asdasd",
+                          "status": "incompleted",
+                          "notes": "no",
+                          "index": 1,
+                          "dueDate": "2026-01-30",
+                          "completedAt": null,
+                          "kanbanColumnId": "0abe12f9-699f-4c1a-a20a-b797f47716a4",
+                          "createdAt": "2026-01-28T21:56:18.005Z",
+                          "updatedAt": "2026-01-28T21:56:18.005Z"
+                        },
+                        {
+                          "id": "7a050531-e045-4578-9736-cd9434d62fb7",
+                          "parentId": "edbca71a-8471-4860-898c-cf4d8a369482",
+                          "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                          "assignToId": null,
+                          "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                          "completedById": null,
+                          "title": "Bocil 2",
+                          "slug": "bocil-2",
+                          "repetition": "month",
+                          "description": "asdasd",
+                          "status": "incompleted",
+                          "notes": "no",
+                          "index": 2,
+                          "dueDate": "2026-01-30",
+                          "completedAt": null,
+                          "kanbanColumnId": "0abe12f9-699f-4c1a-a20a-b797f47716a4",
+                          "createdAt": "2026-01-28T21:56:52.067Z",
+                          "updatedAt": "2026-01-28T21:56:52.067Z"
+                        }
+                      ],
+                      "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                      "assignToId": null,
+                      "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "completedById": null,
+                      "title": "Uhuy 3",
+                      "slug": "uhuy-3",
+                      "repetition": "week",
+                      "description": "asdasd",
+                      "status": "incompleted",
+                      "notes": "no",
+                      "index": 1,
+                      "dueDate": "2026-01-30",
+                      "completedAt": null,
+                      "kanbanColumnId": "0abe12f9-699f-4c1a-a20a-b797f47716a4",
+                      "kanbanColumn": {
+                        "id": "0abe12f9-699f-4c1a-a20a-b797f47716a4",
+                        "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                        "name": "Pre Case 1",
+                        "description": "Test description",
+                        "index": 2,
+                        "createdAt": "2026-01-28T21:44:23.092Z",
+                        "updatedAt": "2026-01-28T21:44:23.092Z"
+                      },
+                      "createdAt": "2026-01-28T21:55:15.383Z",
+                      "updatedAt": "2026-01-28T21:55:15.383Z"
+                    },
+                    {
+                      "id": "a4f606a6-e338-48cd-a72c-85530a5aaf6d",
+                      "parentId": null,
+                      "parent": null,
+                      "subTasks": [],
+                      "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                      "assignToId": null,
+                      "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "completedById": null,
+                      "title": "Bapa",
+                      "slug": "bapa",
+                      "repetition": "year",
+                      "description": "asdasd",
+                      "status": "incompleted",
+                      "notes": "no",
+                      "index": 2,
+                      "dueDate": "2026-01-30",
+                      "completedAt": null,
+                      "kanbanColumnId": "0abe12f9-699f-4c1a-a20a-b797f47716a4",
+                      "kanbanColumn": {
+                        "id": "0abe12f9-699f-4c1a-a20a-b797f47716a4",
+                        "projectItemId": "28dfcb93-5367-4fde-938d-37ecc1608be1",
+                        "name": "Pre Case 1",
+                        "description": "Test description",
+                        "index": 2,
+                        "createdAt": "2026-01-28T21:44:23.092Z",
+                        "updatedAt": "2026-01-28T21:44:23.092Z"
+                      },
+                      "createdAt": "2026-01-28T21:57:25.119Z",
+                      "updatedAt": "2026-01-28T21:57:25.119Z"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/tasks/{id}/assign": {
+      "patch": {
+        "summary": "Assign",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "80a04e55-766c-4425-8ec3-9b07561ad08b",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "assignTo": "aaa9c01d-1f20-44dc-8b3a-3ab6e85e0679"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Task assigned successfully",
+                  "task": {
+                    "id": "80a04e55-766c-4425-8ec3-9b07561ad08b",
+                    "parentId": null,
+                    "parent": null,
+                    "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                    "project": {
+                      "id": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "NEW PROJEVT",
+                      "description": "",
+                      "createdAt": "2026-01-17T08:18:35.298Z",
+                      "updatedAt": "2026-01-17T08:18:35.298Z"
+                    },
+                    "assignToId": "aaa9c01d-1f20-44dc-8b3a-3ab6e85e0679",
+                    "assignTo": {
+                      "id": "aaa9c01d-1f20-44dc-8b3a-3ab6e85e0679",
+                      "firstName": "Bannerbite",
+                      "lastName": "User",
+                      "email": "bannerbite@gmail.com",
+                      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKs817r_DNYNZGyDF9SdyOfn3m1JDAB3eSMDwUgr9ASRL0yZDc=s96-c"
+                    },
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": null,
+                    "completedBy": null,
+                    "title": "Test1",
+                    "slug": "test1",
+                    "repetition": "none",
+                    "description": "asdasd",
+                    "status": "incompleted",
+                    "notes": "no",
+                    "index": 4,
+                    "dueDate": "2026-01-30",
+                    "completedAt": null,
+                    "kanbanColumnId": "667302d1-8d6e-4d0b-97d4-047a762a7da9",
+                    "kanbanColumn": {
+                      "id": "667302d1-8d6e-4d0b-97d4-047a762a7da9",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 1",
+                      "description": "Test description",
+                      "index": 2,
+                      "createdAt": "2026-01-26T19:32:37.579Z",
+                      "updatedAt": "2026-01-26T19:32:37.579Z"
+                    },
+                    "createdAt": "2026-01-26T22:08:02.565Z",
+                    "updatedAt": "2026-01-26T22:08:02.565Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/tasks/{id}/status": {
+      "patch": {
+        "summary": "Set Status (Completed/incompleted)",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "dbcfff30-dff3-4ab6-acfd-6cd51be78304",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Task status updated successfully",
+                  "task": {
+                    "id": "dbcfff30-dff3-4ab6-acfd-6cd51be78304",
+                    "parentId": null,
+                    "parent": null,
+                    "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                    "project": {
+                      "id": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "NEW PROJEVT",
+                      "description": "",
+                      "createdAt": "2026-01-17T08:18:35.298Z",
+                      "updatedAt": "2026-01-17T08:18:35.298Z"
+                    },
+                    "assignToId": null,
+                    "assignTo": null,
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "completedBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "title": "Uhuy",
+                    "slug": "uhuy-3",
+                    "repetition": "month",
+                    "description": "asdasd",
+                    "status": "completed",
+                    "notes": "no",
+                    "index": 11,
+                    "dueDate": "2026-03-02",
+                    "completedAt": "2026-01-27T07:11:36.624Z",
+                    "kanbanColumnId": "ada718fd-a83f-46bd-913e-742bec4753b9",
+                    "kanbanColumn": {
+                      "id": "ada718fd-a83f-46bd-913e-742bec4753b9",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 3",
+                      "description": "Test description",
+                      "index": 1,
+                      "createdAt": "2026-01-26T19:11:51.232Z",
+                      "updatedAt": "2026-01-26T19:11:51.232Z"
+                    },
+                    "createdAt": "2026-01-27T00:09:36.428Z",
+                    "updatedAt": "2026-01-27T00:09:36.428Z"
+                  },
+                  "nextRecurringTask": {
+                    "id": "69ab84a8-ebbb-40bb-85da-42b3f255a3a3",
+                    "parentId": null,
+                    "parent": null,
+                    "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                    "project": {
+                      "id": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "NEW PROJEVT",
+                      "description": "",
+                      "createdAt": "2026-01-17T08:18:35.298Z",
+                      "updatedAt": "2026-01-17T08:18:35.298Z"
+                    },
+                    "assignToId": null,
+                    "assignTo": null,
+                    "createdById": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                    "createdBy": {
+                      "id": "8b523b3a-e173-41d3-ad2d-970fa9eec2f5",
+                      "firstName": "Super",
+                      "lastName": "Admin",
+                      "email": "sanjaya.slegy@gmail.com",
+                      "avatar": null
+                    },
+                    "completedById": null,
+                    "completedBy": null,
+                    "title": "Uhuy",
+                    "slug": "uhuy-4",
+                    "repetition": "month",
+                    "description": "asdasd",
+                    "status": "incompleted",
+                    "notes": "no",
+                    "index": 12,
+                    "dueDate": "2026-04-02",
+                    "completedAt": null,
+                    "kanbanColumnId": "ada718fd-a83f-46bd-913e-742bec4753b9",
+                    "kanbanColumn": {
+                      "id": "ada718fd-a83f-46bd-913e-742bec4753b9",
+                      "projectId": "21218d1e-4d9e-4923-b3fd-d57eb76d13b3",
+                      "name": "Test name 3",
+                      "description": "Test description",
+                      "index": 1,
+                      "createdAt": "2026-01-26T19:11:51.232Z",
+                      "updatedAt": "2026-01-26T19:11:51.232Z"
+                    },
+                    "createdAt": "2026-01-27T00:11:36.443Z",
+                    "updatedAt": "2026-01-27T00:11:36.443Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}
