@@ -5,7 +5,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import * as taskApi from '@/api/task.api'
 import { createTask, createSubtask, createComment, TaskStatus } from '@/models'
 import { useProjectStore } from './project.store'
@@ -33,6 +33,45 @@ export const useTaskStore = defineStore('task', () => {
     priority: null,
     assigneeId: null
   })
+
+  const projectStore = useProjectStore()
+  const inFlightTaskFetches = new Map()
+  const loadedSubtasksByParent = new Set()
+  let latestTaskFetchToken = 0
+
+  const buildSubtaskCacheKey = (projectItemId, parentId) =>
+    `${projectItemId}:${parentId}`
+
+  function resetTaskDetailState({ keepCurrentTask = false } = {}) {
+    if (!keepCurrentTask) {
+      currentTask.value = null
+    }
+    subtasks.value = []
+    comments.value = []
+    activityLog.value = []
+  }
+
+  function clearSubtaskCache() {
+    loadedSubtasksByParent.clear()
+  }
+
+  watch(
+    () => projectStore.activeProjectItemId,
+    (nextId, prevId) => {
+      if (!nextId || String(nextId) === String(prevId)) return
+      resetTaskDetailState()
+      clearSubtaskCache()
+    }
+  )
+
+  watch(
+    () => projectStore.currentProjectId,
+    (nextId, prevId) => {
+      if (!nextId || String(nextId) === String(prevId)) return
+      resetTaskDetailState()
+      clearSubtaskCache()
+    }
+  )
 
   // ================================
   // Getters
@@ -176,13 +215,37 @@ export const useTaskStore = defineStore('task', () => {
     return result
   })
 
-  // ================================
-  // Actions
-  // ================================
+  function upsertTasks(nextTasks) {
+    if (!Array.isArray(nextTasks) || nextTasks.length === 0) return
+    const indexById = new Map(tasks.value.map((task, index) => [String(task.id), index]))
+    nextTasks.forEach((task) => {
+      const key = String(task.id)
+      if (indexById.has(key)) {
+        tasks.value[indexById.get(key)] = task
+      } else {
+        tasks.value.push(task)
+      }
+    })
+  }
 
-  /**
-   * Fetch tasks for current project
-   * @param {Object} params - Query parameters
+  function flattenRawTasks(raw, acc = []) {
+    if (!raw) return acc
+    const { subTasks, children, ...rest } = raw
+    acc.push(rest)
+    const nested = Array.isArray(subTasks) ? subTasks : Array.isArray(children) ? children : []
+    nested.forEach((item) => flattenRawTasks(item, acc))
+    return acc
+  }
+
+  function resolveProjectItemId(projectItemId) {
+    return (
+      projectItemId ||
+      projectStore.activeProjectItemId ||
+      currentTask.value?.projectItemId ||
+      currentTask.value?.projectId ||
+      null
+    )
+  }
 
   // ================================
   // Actions
@@ -194,13 +257,15 @@ export const useTaskStore = defineStore('task', () => {
    */
   async function fetchTasks(params = {}) {
     const projectStore = useProjectStore()
-    if (!projectStore.currentProjectId) return []
+    const projectId = projectStore.activeProjectItemId
+    if (!projectId) return []
 
     isLoading.value = true
     error.value = null
 
     try {
-      const response = await taskApi.getTasks(projectStore.currentProjectId, {
+      const response = await taskApi.getTasks({
+        projectItemId: projectId,
         ...filters.value,
         ...params
       })
@@ -234,33 +299,57 @@ export const useTaskStore = defineStore('task', () => {
    * Fetch a single task with details
    * @param {string} taskId
    */
-  async function fetchTask(taskId) {
+  async function fetchTask(taskId, options = {}) {
+    if (!taskId) return null
+
+    const force = options.force === true
+    const currentId = currentTask.value?.id
+
+    if (!force && currentId && String(currentId) === String(taskId) && !isLoadingTask.value) {
+      return currentTask.value
+    }
+
+    if (inFlightTaskFetches.has(taskId)) {
+      return inFlightTaskFetches.get(taskId)
+    }
+
+    const isSwitchingTask = currentId && String(currentId) !== String(taskId)
+    resetTaskDetailState({ keepCurrentTask: !isSwitchingTask })
     isLoadingTask.value = true
     error.value = null
 
-    try {
-      const data = await taskApi.getTask(taskId)
-      const taskData = data?.task || data?.data || data
-      currentTask.value = createTask(taskData)
+    const fetchToken = ++latestTaskFetchToken
 
-      const results = await Promise.allSettled([
-        fetchSubtasks(taskId)
-      ])
-      results.forEach((result) => {
-        if (result.status === 'rejected') {
-          if (import.meta.env.DEV) {
-            console.warn('[task.store] related task data failed to load', result.reason)
-          }
+    const promise = (async () => {
+      try {
+        const data = await taskApi.getTask(taskId)
+        if (fetchToken !== latestTaskFetchToken) return null
+
+        const taskData = data?.task || data?.data || data
+        const nextTask = createTask(taskData)
+        currentTask.value = nextTask
+        upsertTasks([nextTask])
+        subtasks.value = Array.isArray(nextTask.children) ? nextTask.children : []
+
+        const projectItemId = resolveProjectItemId(nextTask.projectItemId || nextTask.projectId)
+        if (projectItemId) {
+          loadedSubtasksByParent.add(buildSubtaskCacheKey(projectItemId, nextTask.id))
         }
-      })
 
-      return currentTask.value
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch task'
-      throw err
-    } finally {
-      isLoadingTask.value = false
-    }
+        return currentTask.value
+      } catch (err) {
+        error.value = err.message || 'Failed to fetch task'
+        throw err
+      } finally {
+        if (fetchToken === latestTaskFetchToken) {
+          isLoadingTask.value = false
+        }
+        inFlightTaskFetches.delete(taskId)
+      }
+    })()
+
+    inFlightTaskFetches.set(taskId, promise)
+    return promise
   }
 
   /**
@@ -269,30 +358,69 @@ export const useTaskStore = defineStore('task', () => {
    */
   async function createNewTask(data) {
     const projectStore = useProjectStore()
-    if (!projectStore.currentProjectId) return null
+    const projectId = projectStore.activeProjectItemId
+    if (!projectId) return null
 
     isLoading.value = true
     error.value = null
 
     try {
+      const requestedParentId = data?.parentId || data?.parentTaskId || null
       const response = await taskApi.createTask({
-        projectId: projectStore.currentProjectId,
+        projectItemId: projectId,
         ...data
       })
       const taskData = response.task || response.data || response
-      const task = createTask(taskData)
+      let task = createTask(taskData)
+
+      // If creating a subtask, update parent's children array for immediate UI reflection
+      if (requestedParentId) {
+        const parentIndex = tasks.value.findIndex(t => String(t.id) === String(requestedParentId))
+        if (parentIndex !== -1) {
+          const parent = tasks.value[parentIndex]
+          const children = Array.isArray(parent.subTasks) ? parent.subTasks
+            : Array.isArray(parent.children) ? parent.children : []
+
+          tasks.value[parentIndex] = {
+            ...parent,
+            subTasks: [...children, task],
+            children: [...children, task]
+          }
+        }
+      }
+
+      if (requestedParentId && (taskData?.subTasks || taskData?.children)) {
+        const flattened = flattenRawTasks(taskData)
+        const mapped = flattened.map((item) => createTask(item))
+        upsertTasks(mapped)
+
+        const createdCandidates = mapped.filter((item) => {
+          const parentId = item.parentId || item.parentTaskId
+          return parentId && String(parentId) === String(requestedParentId)
+        })
+        if (createdCandidates.length) {
+          createdCandidates.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+          task = createdCandidates[0]
+        }
+      }
 
       // Basic order management for local UI consistency
       if (task.kanbanColumnId) {
         const columnTasks = tasks.value.filter(t => t.kanbanColumnId === task.kanbanColumnId)
-        const maxOrder = columnTasks.reduce((max, item) => {
+        const minOrder = columnTasks.reduce((min, item) => {
           const order = Number.isFinite(item.order) ? item.order : Number(item.order) || 0
-          return Math.max(max, order)
-        }, 0)
-        task.order = maxOrder + 1
+          return Math.min(min, order)
+        }, Number.MAX_SAFE_INTEGER)
+
+        const safeMin = minOrder === Number.MAX_SAFE_INTEGER ? 0 : minOrder
+        // Assign smaller order to put at top. 
+        // Note: Backend should support negative or float order, or handle reordering separately.
+        task.order = safeMin - 1
       }
 
-      tasks.value.push(task)
+      if (task?.id) {
+        upsertTasks([task])
+      }
       return response
     } catch (err) {
       error.value = err.message || 'Failed to create task'
@@ -428,7 +556,8 @@ export const useTaskStore = defineStore('task', () => {
    */
   async function reorderTask(taskId, targetStatus, newOrder) {
     const projectStore = useProjectStore()
-    if (!projectStore.currentProjectId) return
+    const projectId = projectStore.activeProjectItemId
+    if (!projectId) return
 
     try {
       const taskIds = tasks.value
@@ -438,7 +567,7 @@ export const useTaskStore = defineStore('task', () => {
       if (!taskIds.length) return
 
       const response = await taskApi.reorderTasks({
-        projectId: projectStore.currentProjectId,
+        projectItemId: projectId,
         kanbanColumnId: targetStatus,
         taskIds
       })
@@ -464,14 +593,15 @@ export const useTaskStore = defineStore('task', () => {
    */
   async function reorderKanbanTasks(taskId, kanbanColumnId, taskIds) {
     const projectStore = useProjectStore()
-    if (!projectStore.currentProjectId || !kanbanColumnId) return
+    const projectId = projectStore.activeProjectItemId
+    if (!projectId || !kanbanColumnId) return
 
     try {
       const orderedIds = Array.from(new Set(taskIds.filter(Boolean)))
       if (!orderedIds.length) return
 
       const response = await taskApi.reorderTasks({
-        projectId: projectStore.currentProjectId,
+        projectItemId: projectId,
         kanbanColumnId,
         taskIds: orderedIds
       })
@@ -524,18 +654,49 @@ export const useTaskStore = defineStore('task', () => {
   // Subtask Actions
   // ================================
 
-  async function fetchSubtasks(taskId) {
-    if (!currentTask.value?.projectId) return []
-    try {
-      // Fetch tasks that have this taskId as parentId
-      const response = await taskApi.getTasks(currentTask.value.projectId, { parentId: taskId })
-      const payload = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : []
-      subtasks.value = payload.map(s => createTask(s))
-      return subtasks.value
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch subtasks'
-      throw err
+  async function fetchSubtasksForParent(parentId, options = {}) {
+    const resolvedProjectItemId = resolveProjectItemId(options.projectItemId)
+    if (!parentId || !resolvedProjectItemId) return []
+
+    const cacheKey = buildSubtaskCacheKey(resolvedProjectItemId, parentId)
+    if (!options.force && loadedSubtasksByParent.has(cacheKey)) {
+      return tasks.value.filter((task) => {
+        const taskParentId = task.parentId || task.parentTaskId
+        return taskParentId && String(taskParentId) === String(parentId)
+      })
     }
+
+    const fromTasks = tasks.value.filter((task) => {
+      const taskParentId = task.parentId || task.parentTaskId
+      return taskParentId && String(taskParentId) === String(parentId)
+    })
+    if (fromTasks.length) {
+      loadedSubtasksByParent.add(cacheKey)
+      return fromTasks
+    }
+
+    const parentTask = currentTask.value?.id && String(currentTask.value.id) === String(parentId)
+      ? currentTask.value
+      : tasks.value.find((task) => String(task.id) === String(parentId))
+
+    const rawChildren = parentTask?.children || parentTask?.subTasks || []
+    const mapped = Array.isArray(rawChildren) ? rawChildren.map((item) => createTask(item)) : []
+    if (mapped.length) {
+      upsertTasks(mapped)
+      loadedSubtasksByParent.add(cacheKey)
+      return mapped
+    }
+
+    loadedSubtasksByParent.add(cacheKey)
+    return []
+  }
+
+  async function fetchSubtasks(taskId, options = {}) {
+    const results = await fetchSubtasksForParent(taskId, options)
+    if (currentTask.value?.id && String(currentTask.value.id) === String(taskId)) {
+      subtasks.value = results
+    }
+    return results
   }
 
   async function addSubtask(data) {
@@ -543,9 +704,9 @@ export const useTaskStore = defineStore('task', () => {
 
     try {
       const response = await taskApi.createTask({
-        projectId: currentTask.value.projectId,
-        parentId: currentTask.value.id,
+        projectItemId: currentTask.value.projectItemId || currentTask.value.projectId,
         kanbanColumnId: currentTask.value.kanbanColumnId,
+        parentId: currentTask.value.id,
         ...data
       })
       const taskData = response.task || response.data || response
@@ -678,6 +839,7 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   function setCurrentTask(task) {
+    resetTaskDetailState()
     currentTask.value = task
     // Reset related data when setting a new task
     subtasks.value = task?.children?.map((child, index) => ({
@@ -688,24 +850,26 @@ export const useTaskStore = defineStore('task', () => {
     })) || []
     comments.value = []
     activityLog.value = []
+
+    const projectItemId = resolveProjectItemId(task?.projectItemId || task?.projectId)
+    if (task?.id && projectItemId) {
+      loadedSubtasksByParent.add(buildSubtaskCacheKey(projectItemId, task.id))
+    }
   }
 
   function clearCurrentTask() {
-    currentTask.value = null
-    subtasks.value = []
-    comments.value = []
-    activityLog.value = []
+    resetTaskDetailState()
   }
 
   function clearState() {
     tasks.value = []
-    currentTask.value = null
-    subtasks.value = []
-    comments.value = []
-    activityLog.value = []
+    resetTaskDetailState()
     myTasks.value = []
     error.value = null
     clearFilters()
+    clearSubtaskCache()
+    inFlightTaskFetches.clear()
+    latestTaskFetchToken = 0
   }
 
   return {
@@ -751,6 +915,7 @@ export const useTaskStore = defineStore('task', () => {
     fetchMyTasks,
 
     // Subtask Actions
+    fetchSubtasksForParent,
     fetchSubtasks,
     addSubtask,
     toggleSubtaskCompletion,

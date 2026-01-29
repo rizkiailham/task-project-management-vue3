@@ -5,13 +5,12 @@
 import { get, post, patch, del } from './httpClient'
 
 /**
- * Get all tasks in a project
- * @param {string} projectId
- * @param {Object} params - Query parameters (can include kanbanColumnId, parentId, etc.)
+ * Get all tasks
+ * @param {Object} params - Query parameters (e.g. { projectItemId, kanbanColumnId, ... })
  * @returns {Promise<any>}
  */
-export async function getTasks(projectId, params = {}) {
-  return get('/tasks', { projectId, ...params })
+export async function getTasks(params = {}) {
+  return get('/tasks', params)
 }
 
 /**
@@ -25,7 +24,7 @@ export async function getTask(taskId) {
 
 /**
  * Create a new task
- * @param {Object} data - Should include projectId, kanbanColumnId, title, etc.
+ * @param {Object} data - Should include projectItemId, kanbanColumnId, title, etc.
  * @returns {Promise<any>}
  */
 export async function createTask(data) {
@@ -73,7 +72,7 @@ export async function updateTaskAssignee(taskId, assigneeId) {
 
 /**
  * Reorder tasks (for drag & drop)
- * @param {Object} data - { projectId, kanbanColumnId, taskIds }
+ * @param {Object} data - { projectItemId, kanbanColumnId, taskIds }
  * @returns {Promise<void>}
  */
 export async function reorderTasks(data) {
