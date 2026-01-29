@@ -211,17 +211,17 @@
       "emptyAction": "Create your first project"
     },
     "projectItems": {
-      "board": "Board",
+      "task": "Tasks",
       "report": "Report",
       "note": "Note",
-      "folder": "Folder"
+      "knowledge": "Knowledge"
     },
     "projectActions": {
       "addItem": "Add item",
-      "newBoard": "New Board",
+      "newBoard": "New Tasks",
       "newReport": "New Report",
       "newNote": "New Notes",
-      "newFolder": "New Docs folder"
+      "newFolder": "New Knowledge"
     },
     "context": {
       "openMenu": "Open menu",
@@ -237,9 +237,9 @@
     },
     "messages": {
       "comingSoon": "Coming soon",
-      "linkCopied": "Link copied",
-      "linkCopyFailed": "Failed to copy link",
       "itemAlreadyExists": "Item already exists",
+      "itemCreated": "Item created successfully",
+      "createFailed": "Failed to create item",
       "projectRenamed": "Project renamed",
       "projectRenameFailed": "Failed to rename project",
       "projectDeleted": "Project deleted",
@@ -248,7 +248,9 @@
       "replicateBoard": "Replicate board",
       "replicateNote": "Replicate note",
       "replicateFolder": "Replicate folder",
-      "saveAsTemplate": "Save as template"
+      "saveAsTemplate": "Save as template",
+      "linkCopied": "Link copied to clipboard",
+      "linkCopyFailed": "Failed to copy link"
     },
     "delete": {
       "projectTitle": "Delete {name}",
@@ -466,6 +468,7 @@
           "placeholder": "Column name",
           "cta": "Add column"
         },
+        "add": "Add Section",
         "addSection": "Add section",
         "addTask": "Add task",
         "renamePrompt": "Rename column",

@@ -466,6 +466,7 @@
           "placeholder": "Kolonnenavn",
           "cta": "Legg til kolonne"
         },
+        "add": "Legg til seksjon",
         "validation": {
           "nameRequired": "Kolonnenavn er pakrevd"
         },

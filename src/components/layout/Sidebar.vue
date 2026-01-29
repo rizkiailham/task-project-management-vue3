@@ -22,41 +22,26 @@ import {
   Activity,
   BarChart3,
   Bell,
-  Book,
-  BookOpen,
-  Building2,
-  CheckSquare,
   CircleHelp,
   ChevronDown,
   ChevronRight,
   Home,
-  Code,
-  Crown,
-  FilePenLine,
   FileChartColumn,
-  Flame,
   Grid2X2,
+  GripVertical,
   LayoutDashboard,
   ListTodo,
   LogOut,
-  Monitor,
   NotebookText,
   Newspaper,
-  Palette,
-  Rocket,
-  Star,
-  TestTube2,
   Columns2,
-  TriangleAlert,
   User,
   Users,
-  Video,
-  Wallet,
   BotMessageSquare,
   Ellipsis,
-  Plus,
-  Wrench
+  Plus
 } from 'lucide-vue-next'
+import { VueDraggableNext as Draggable } from 'vue-draggable-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -191,14 +176,6 @@ function isProjectExpanded(projectId) {
   return expandedProjects.value.has(projectId)
 }
 
-function toggleProject(projectId) {
-  if (expandedProjects.value.has(projectId)) {
-    expandedProjects.value.delete(projectId)
-  } else {
-    expandedProjects.value.add(projectId)
-  }
-}
-
 function toggleProjects() {
   projectsExpanded.value = !projectsExpanded.value
 }
@@ -207,7 +184,7 @@ function isProjectActive(projectId) {
   if (currentProjectId.value && String(currentProjectId.value) === String(projectId)) {
     return true
   }
-  return route.name === 'Project' && String(route.params.projectId) === String(projectId)
+  return String(route.name).startsWith('Project') && String(route.params.projectId) === String(projectId)
 }
 
 async function selectProject(projectId) {
@@ -226,7 +203,6 @@ const isSettingsActive = computed(() => {
 const isUsersActive = computed(() => route.name === 'Users')
 const isBulletinActive = computed(() => route.name === 'Bulletin')
 
-const projectChildItems = ref({})
 const projectRenameId = ref(null)
 const projectRenameValue = ref('')
 const childRenameTarget = ref({ projectId: null, key: null })
@@ -235,45 +211,13 @@ const deleteConfirmVisible = ref(false)
 const deleteConfirmLoading = ref(false)
 const deleteTarget = ref({ type: '', projectId: null, childKey: null, label: '' })
 
-const defaultProjectChildren = computed(() => ([
-  {
-    key: 'board',
-    labelKey: 'sidebar.projectItems.board',
-    icon: Columns2,
-    routeName: 'ProjectBoard'
-  },
-  {
-    key: 'report',
-    labelKey: 'sidebar.projectItems.report',
-    icon: FileChartColumn
-  },
-  {
-    key: 'note',
-    labelKey: 'sidebar.projectItems.note',
-    icon: NotebookText
-  },
-  {
-    key: 'folder',
-    labelKey: 'sidebar.projectItems.folder',
-    icon: BotMessageSquare
-  }
-]))
-
-watch(projects, (list) => {
-  list.forEach((project) => {
-    if (!projectChildItems.value[project.id]) {
-      projectChildItems.value[project.id] = defaultProjectChildren.value.map(item => ({
-        ...item,
-        label: ''
-      }))
-    }
-  })
-}, { immediate: true })
+// Local project child items logic removed in favor of store items
+// watch(projects, (list) => { ... }, { immediate: true })
 
 // Fetch projects on mount
 onMounted(async () => {
   try {
-    await projectStore.fetchProjects()
+    await projectStore.fetchProjects({ limit: 9999 })
   } catch (error) {
     console.error('Failed to fetch projects:', error)
   }
@@ -290,13 +234,14 @@ function navigateTo(item) {
   }
 }
 
+
 function toggleDashboards() {
   dashboardsOpen.value = !dashboardsOpen.value
 }
 
 function navigateToProject(project) {
   router.push({
-    name: 'Project',
+    name: 'ProjectBoard',
     params: {
       projectId: project.id
     }
@@ -307,35 +252,84 @@ function navigateToProject(project) {
 }
 
 function getProjectChildren(projectId) {
-  return projectChildItems.value[projectId] || []
+  const items = projectStore.getProjectItems(projectId)
+  if (!items || !items.length) return []
+
+  const iconMap = {
+    task: Columns2,
+    report: FileChartColumn,
+    note: NotebookText,
+    knowledge: BotMessageSquare
+  }
+
+  return items.map(item => ({
+    key: item.id,
+    label: item.name,
+    type: item.type,
+    icon: iconMap[item.type] || BotMessageSquare,
+    routeName: item.type === 'task' ? 'ProjectBoard' : undefined
+  }))
 }
 
 function getChildLabel(item) {
-  return item.label || t(item.labelKey)
+  return item.label || item.name || (item.labelKey ? t(item.labelKey) : '')
 }
 
-function hasChildItem(projectId, key) {
-  return getProjectChildren(projectId).some(item => item.key === key)
+function hasChildType(projectId, type) {
+  const items = projectStore.getProjectItems(projectId)
+  return items && items.some(item => item.type === type)
 }
 
 function isReportDisabled(projectId) {
-  return !hasChildItem(projectId, 'board')
+  // Report creation is disabled if there is NO task board in the project
+  return !hasChildType(projectId, 'task')
 }
 
 async function openProjectSettings(project) {
   navigateToProject(project)
-  await selectProject(project.id)
+  if (String(project.id) !== String(currentProjectId.value)) {
+    await selectProject(project.id)
+  }
   uiStore.openModal('settings', { section: 'project' })
   if (uiStore.isMobile) {
     uiStore.closeMobileSidebar()
   }
 }
 
-function handleProjectClick(project) {
-  selectProject(project.id)
-  toggleProject(project.id)
-  navigateToProject(project)
+async function handleProjectClick(project) {
+  // Only fetch/update if changing projects
+  if (String(project.id) !== String(currentProjectId.value)) {
+    // selectProject(project.id) // Let the view/route watcher handle data loading to avoid double fetch
+  }
+
+  // Toggle expansion
+  if (expandedProjects.value.has(project.id)) {
+    expandedProjects.value.delete(project.id)
+  } else {
+    expandedProjects.value.add(project.id)
+    
+    // Always fetch (deduped in store) before rendering children
+    await projectStore.fetchProjectItems(project.id)
+  }
+  
+  // Don't navigate to project - only expand/collapse
 }
+
+watch(
+  () => [route.params.projectId, route.params.itemId],
+  ([nextProjectId, nextItemId], [prevProjectId, prevItemId]) => {
+    if (
+      String(nextProjectId || '') !== String(prevProjectId || '') ||
+      String(nextItemId || '') !== String(prevItemId || '')
+    ) {
+      cancelProjectRename()
+      cancelChildRename()
+      deleteConfirmVisible.value = false
+      deleteConfirmLoading.value = false
+      deleteTarget.value = { type: '', projectId: null, childKey: null, label: '' }
+    }
+  }
+)
 
 function startProjectRename(project) {
   navigateToProject(project)
@@ -382,38 +376,47 @@ function cancelChildRename() {
   childRenameValue.value = ''
 }
 
-function saveChildRename(projectId, item) {
+async function saveChildRename(projectId, item) {
   const nextName = childRenameValue.value.trim()
   if (!nextName || nextName === getChildLabel(item)) {
     cancelChildRename()
     return
   }
 
-  const items = getProjectChildren(projectId)
-  projectChildItems.value[projectId] = items.map((child) => {
-    if (child.key !== item.key) return child
-    return { ...child, label: nextName }
-  })
+  try {
+    const response = await projectStore.updateProjectItem(projectId, item.key, { name: nextName })
+    uiStore.showApiSuccess(response, t('sidebar.messages.itemRenamed'))
+  } catch (error) {
+    uiStore.showApiError(error, t('sidebar.messages.itemRenameFailed'))
+  }
   cancelChildRename()
 }
 
-function addChildItem(projectId, key) {
-  if (hasChildItem(projectId, key)) {
-    uiStore.showInfo(t('sidebar.messages.itemAlreadyExists'))
-    return
+async function addChildItem(projectId, type) {
+  // Map type to default name
+  const defaultNames = {
+    'task': 'New Tasks',
+    'report': 'New Report',
+    'note': 'New Notes',
+    'knowledge': 'New Knowledge'
   }
-  const defaults = defaultProjectChildren.value.find(item => item.key === key)
-  if (!defaults) return
-  projectChildItems.value[projectId] = [
-    ...getProjectChildren(projectId),
-    { ...defaults, label: '' }
-  ]
-  expandedProjects.value.add(projectId)
+  
+  const name = defaultNames[type] || 'New Item'
+  
+  try {
+    const response = await projectStore.createProjectItem(projectId, { name, type })
+    uiStore.showApiSuccess(response, t('sidebar.messages.itemCreated'))
+    
+    // Ensure project is expanded
+    if (!expandedProjects.value.has(projectId)) {
+      expandedProjects.value.add(projectId)
+    }
+  } catch (error) {
+    uiStore.showApiError(error, t('sidebar.messages.createFailed'))
+  }
 }
 
-function removeChildItem(projectId, key) {
-  projectChildItems.value[projectId] = getProjectChildren(projectId).filter(item => item.key !== key)
-}
+// function removeChildItem(projectId, key) { ... } // Replaced by deleteProjectItem logic
 
 function openDeleteConfirm(target) {
   deleteTarget.value = target
@@ -428,15 +431,29 @@ async function confirmDelete() {
     if (deleteTarget.value.type === 'project') {
       const response = await projectStore.deleteProject(deleteTarget.value.projectId)
       uiStore.showApiSuccess(response, t('sidebar.messages.projectDeleted'))
-      delete projectChildItems.value[deleteTarget.value.projectId]
     } else if (deleteTarget.value.type === 'child') {
-      removeChildItem(deleteTarget.value.projectId, deleteTarget.value.childKey)
+      const response = await projectStore.deleteProjectItem(deleteTarget.value.projectId, deleteTarget.value.childKey)
+      uiStore.showApiSuccess(response, t('sidebar.messages.itemDeleted'))
     }
     deleteConfirmVisible.value = false
   } catch (error) {
-    uiStore.showApiError(error, t('sidebar.messages.projectDeleteFailed'))
+    uiStore.showApiError(error, t('sidebar.messages.deleteFailed'))
   } finally {
     deleteConfirmLoading.value = false
+  }
+}
+
+async function handleItemReorder(event, projectId) {
+  const items = projectStore.getProjectItems(projectId)
+  if (!items) return
+  
+  // Map current items to IDs in order
+  const itemIds = items.map(i => i.id)
+  
+  try {
+    await projectStore.reorderProjectItems(projectId, itemIds)
+  } catch (error) {
+    // Error handled in store (console error)
   }
 }
 
@@ -455,10 +472,18 @@ function copyLink(link) {
 }
 
 function resolveChildLink(projectId, item) {
-  if (item.routeName) {
+  // Determine routeName based on item type
+  const routeName = item.type === 'task' ? 'ProjectBoard' : undefined
+  const query = item.type ? { type: item.type } : {}
+  
+  if (routeName) {
     const routeData = router.resolve({
-      name: item.routeName,
-      params: { projectId }
+      name: routeName,
+      params: { 
+        projectId,
+        itemId: item.id || item.key
+      },
+      query
     })
     return `${window.location.origin}${routeData.fullPath}`
   }
@@ -466,20 +491,30 @@ function resolveChildLink(projectId, item) {
 }
 
 async function openChildItem(projectId, item) {
-  if (item.key === 'report' && isReportDisabled(projectId)) return
-  try {
-    await selectProject(projectId)
-  } catch (error) {
-    uiStore.showApiError(error, t('projects.errors.loadFailed'))
-  }
-  if (item.routeName) {
-    router.push({ name: item.routeName, params: { projectId } })
+  if (item.type === 'report' && isReportDisabled(projectId)) return
+  
+  // Determine routeName based on item type
+  const routeName = item.type === 'task' ? 'ProjectBoard' : undefined
+  
+  // Only navigate if route exists
+  if (routeName) {
+    // Navigate - ProjectView's route watcher will handle selectProject
+    // and ProjectBoardView's route watcher will handle selectProjectItem
+    router.push({ 
+      name: routeName, 
+      params: { 
+        projectId,
+        itemId: item.id || item.key
+      },
+      query: item.type ? { type: item.type } : {}
+    })
     if (uiStore.isMobile) {
       uiStore.closeMobileSidebar()
     }
-    return
+  } else {
+    // For items without routes, just show toast without activating
+    uiStore.showInfo(t('sidebar.messages.comingSoon'))
   }
-  uiStore.showInfo(t('sidebar.messages.comingSoon'))
 }
 
 function getProjectMenuItems(project) {
@@ -522,7 +557,7 @@ function getProjectAddItems(projectId) {
       id: 'new-board',
       type: 'item',
       label: t('sidebar.projectActions.newBoard'),
-      action: () => addChildItem(projectId, 'board')
+      action: () => addChildItem(projectId, 'task')
     },
     {
       id: 'new-report',
@@ -541,7 +576,7 @@ function getProjectAddItems(projectId) {
       id: 'new-folder',
       type: 'item',
       label: t('sidebar.projectActions.newFolder'),
-      action: () => addChildItem(projectId, 'folder')
+      action: () => addChildItem(projectId, 'knowledge')
     }
   ]
 }
@@ -559,52 +594,7 @@ function getChildMenuItems(projectId, item) {
       type: 'item',
       label: t('sidebar.context.copyLink'),
       action: () => copyLink(resolveChildLink(projectId, item))
-    }
-  ]
-
-  if (item.key === 'board') {
-    baseItems.push(
-      {
-        id: 'settings',
-        type: 'item',
-        label: t('sidebar.context.settings'),
-        action: () => openProjectSettings({ id: projectId })
-      },
-      {
-        id: 'replicate',
-        type: 'item',
-        label: t('sidebar.context.replicateBoard'),
-        action: () => uiStore.showInfo(t('sidebar.messages.replicateBoard'))
-      },
-      {
-        id: 'template',
-        type: 'item',
-        label: t('sidebar.context.saveAsTemplate'),
-        action: () => uiStore.showInfo(t('sidebar.messages.saveAsTemplate'))
-      }
-    )
-  }
-
-  if (item.key === 'note') {
-    baseItems.push({
-      id: 'replicate-note',
-      type: 'item',
-      label: t('sidebar.context.replicateNote'),
-      action: () => uiStore.showInfo(t('sidebar.messages.replicateNote'))
-    })
-  }
-
-  if (item.key === 'folder') {
-    baseItems.push({
-      id: 'replicate-folder',
-      type: 'item',
-      label: t('sidebar.context.replicateFolder'),
-      action: () => uiStore.showInfo(t('sidebar.messages.replicateFolder'))
-    })
-  }
-
-  return [
-    ...baseItems,
+    },
     { type: 'divider' },
     {
       id: 'delete',
@@ -613,12 +603,37 @@ function getChildMenuItems(projectId, item) {
       action: () => openDeleteConfirm({
         type: 'child',
         projectId,
-        childKey: item.key,
-        label: getChildLabel(item)
+        childKey: item.id,
+        label: item.name
       })
     }
   ]
+  
+  // Board specific items
+  if (item.type === 'task') {
+      baseItems.push(
+      {
+        id: 'settings',
+        type: 'item',
+        label: t('sidebar.context.settings'),
+        action: () => openProjectSettings({ id: projectId })
+      }
+    )
+  }
+
+  if (item.key === 'knowledge') {
+    baseItems.push({
+      id: 'replicate-folder',
+      type: 'item',
+      label: t('sidebar.context.replicateFolder'),
+      action: () => uiStore.showInfo(t('sidebar.messages.replicateFolder'))
+    })
+  }
+
+  return baseItems
 }
+
+
 
 function openCreateTaskModal() {
   uiStore.openModal('createTask')
@@ -791,7 +806,7 @@ async function handleLogout() {
                 <div
                   :class="[
                     'sidebar-project-row flex items-center gap-2.5 px-3 rounded-md text-sm transition-colors w-full min-w-0 group',
-                    isProjectActive(project.id)
+                    isProjectActive(project.id) && !projectStore.activeProjectItemId
                       ? 'bg-[#e5e6ec] text-gray-900'
                       : 'text-gray-900 hover:bg-[#e5e6ec]'
                   ]"
@@ -867,63 +882,76 @@ async function handleLogout() {
                 </div>
 
                 <div v-show="isProjectExpanded(project.id)" class="mt-1 space-y-1">
-                  <div
-                    v-for="item in getProjectChildren(project.id)"
-                    :key="`${project.id}-${item.key}`"
-                    :class="[
-                      'sidebar-child-row submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-[13px] cursor-pointer transition-all group',
-                      (item.key === 'report' && isReportDisabled(project.id))
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-gray-900 hover:bg-[#e5e6ec] hover:text-gray-900'
-                    ]"
-                    @click="openChildItem(project.id, item)"
+                  <Draggable
+                    :list="projectStore.getProjectItems(project.id) || []"
+                    class="space-y-1"
+                    handle=".drag-handle"
+                    :group="`project-${project.id}`"
+                    :item-key="'id'"
+                    :animation="200"
+                    @change="(e) => handleItemReorder(e, project.id)"
                   >
-                    <span class="w-[18px] h-[18px] flex items-center justify-center text-gray-900">
-                      <component :is="item.icon" class="w-[16px] h-[16px] text-gray-900" />
-                    </span>
-                    <span class="flex-1 min-w-0 text-left truncate">
-                      <span
-                        v-if="childRenameTarget.projectId === project.id && childRenameTarget.key === item.key"
-                        class="sidebar-rename-wrapper sidebar-rename-wrapper--child inline-flex w-full items-center"
-                        :data-child-rename="`${project.id}-${item.key}`"
-                      >
-                        <InputText
-                          v-model="childRenameValue"
-                          class="sidebar-rename-input sidebar-rename-input--child w-full text-[13px]"
-                          @keydown.enter.prevent="saveChildRename(project.id, item)"
-                          @keydown.esc.prevent="cancelChildRename"
-                          @blur="saveChildRename(project.id, item)"
-                        />
+                    <div
+                      v-for="item in projectStore.getProjectItems(project.id) || []"
+                      :key="item.id"
+                      :class="[
+                        'sidebar-child-row submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-[13px] cursor-pointer transition-all group relative',
+                        (item.type === 'report' && isReportDisabled(project.id))
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : 'text-gray-900 hover:bg-[#e5e6ec] hover:text-gray-900',
+                          { 'bg-[#e5e6ec] font-medium': isProjectActive(project.id) && item.id === projectStore.activeProjectItemId }
+                      ]"
+                      @click="openChildItem(project.id, { key: item.id, ...item })"
+                    >
+                      <!-- Drag Handle (visible on hover) -->
+                      <span class="drag-handle absolute left-4 w-4 h-full flex items-center justify-center opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing hover:opacity-100 transition-opacity">
+                        <GripVertical class="w-3 h-3" />
                       </span>
-                      <span v-else class="truncate">{{ getChildLabel(item) }}</span>
-                    </span>
-                    <DropdownMenu
-                      v-if="!(item.key === 'report' && isReportDisabled(project.id))"
-                      :items="getChildMenuItems(project.id, item)"
-                      position="left"
-                      width="12rem"
-                      variant="sidebar"
-                    >
-                      <template #trigger>
-                        <button
-                          type="button"
-                          class="child-menu-ellipsis w-6 h-6 flex items-center justify-center rounded text-gray-900 hover:text-gray-900 transition-colors cursor-pointer"
-                          :aria-label="t('sidebar.context.openMenu')"
+
+                      <span class="w-[18px] h-[18px] flex items-center justify-center text-gray-900">
+                         <!-- Simple Icon Logic based on type -->
+                         <Columns2 v-if="item.type === 'task'" class="w-[16px] h-[16px]" />
+                         <FileChartColumn v-else-if="item.type === 'report'" class="w-[16px] h-[16px]" />
+                         <NotebookText v-else-if="item.type === 'note'" class="w-[16px] h-[16px]" />
+                         <BotMessageSquare v-else class="w-[16px] h-[16px]" />
+                      </span>
+                      <span class="flex-1 min-w-0 text-left truncate">
+                        <span
+                          v-if="childRenameTarget.projectId === project.id && childRenameTarget.key === item.id"
+                          class="sidebar-rename-wrapper sidebar-rename-wrapper--child inline-flex w-full items-center"
+                          :data-child-rename="`${project.id}-${item.id}`"
+                          @click.stop
                         >
-                          <Ellipsis class="w-4 h-4" />
-                        </button>
-                      </template>
-                    </DropdownMenu>
-                    <button
-                      v-else
-                      type="button"
-                      class="child-menu-ellipsis w-6 h-6 flex items-center justify-center rounded text-gray-400 cursor-not-allowed"
-                      :aria-label="t('sidebar.context.openMenu')"
-                      disabled
-                    >
-                      <Ellipsis class="w-4 h-4" />
-                    </button>
-                  </div>
+                          <InputText
+                            v-model="childRenameValue"
+                            class="sidebar-rename-input sidebar-rename-input--child w-full text-[13px]"
+                            @keydown.enter.prevent="saveChildRename(project.id, { key: item.id, ...item })"
+                            @keydown.esc.prevent="cancelChildRename"
+                            @blur="saveChildRename(project.id, { key: item.id, ...item })"
+                            autoFocus
+                          />
+                        </span>
+                        <span v-else class="truncate">{{ item.name }}</span>
+                      </span>
+                      <DropdownMenu
+                        v-if="!(item.type === 'report' && isReportDisabled(project.id))"
+                        :items="getChildMenuItems(project.id, { key: item.id, ...item })"
+                        position="left"
+                        width="12rem"
+                        variant="sidebar"
+                      >
+                        <template #trigger>
+                          <button
+                            type="button"
+                            class="child-menu-ellipsis w-6 h-6 flex items-center justify-center rounded text-gray-900 hover:text-gray-900 transition-colors cursor-pointer"
+                            :aria-label="t('sidebar.context.openMenu')"
+                          >
+                            <Ellipsis class="w-4 h-4" />
+                          </button>
+                        </template>
+                      </DropdownMenu>
+                    </div>
+                  </Draggable>
                 </div>
               </div>
             </div>
