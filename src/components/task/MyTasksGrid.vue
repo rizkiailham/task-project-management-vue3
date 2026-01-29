@@ -512,6 +512,7 @@ const autoGroupColumnDef = {
     suppressCount: true,
     suppressDoubleClickExpand: true,
     suppressEnterExpand: true,
+    suppressPadding: true,
     innerRenderer: 'DartboardCell'
   },
   cellRenderer: 'agGroupCellRenderer'
@@ -764,9 +765,9 @@ function onGridReady(params) {
   opacity: 1;
 }
 
-/* Ensure caret is always visible for rows with children (not just on hover) show when there is subtask */ 
-:deep(.row-has-children .ag-group-contracted .ag-icon-tree-closed),
-:deep(.row-has-children .ag-group-expanded .ag-icon-tree-open) {
-  opacity: 1 !important;
+/* Hide default AG Grid expand/collapse icons since we use custom ones in DartboardCell */
+:deep(.ag-group-contracted),
+:deep(.ag-group-expanded) {
+  display: none !important;
 }
 </style>

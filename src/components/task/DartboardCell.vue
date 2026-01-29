@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, shallowRef, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import FormInput from '@/components/ui/FormInput.vue'
-import { ChevronsLeft } from 'lucide-vue-next'
+import { ChevronsLeft, ChevronDown, ChevronRight } from 'lucide-vue-next'
 
 const props = defineProps({
   params: {
@@ -10,16 +10,37 @@ const props = defineProps({
   }
 })
 
-const inputValue = ref(props.params.value ?? '')
+
+
+const localParams = shallowRef(props.params)
+
+const inputValue = ref(localParams.value.value ?? '')
 const isFocused = ref(false)
 const isHovered = ref(false)
-const level = computed(() => props.params?.node?.level || 0)
-const pathKey = computed(() => props.params?.data?.pathKey || props.params?.data?.id || props.params?.data?.title)
-const focusKey = computed(() => props.params?.context?.focusKey?.value || null)
 const childCount = ref(0)
 const showSubtaskSummary = computed(() => childCount.value > 0)
 
-function syncChildCount(nextParams = props.params) {
+// Expand/collapse state
+const hasChildren = computed(() => {
+  const p = localParams.value
+  const fromData = Array.isArray(p.data?.children) && p.data.children.length > 0
+  const fromNode = (p.node?.childrenAfterGroup || []).filter((child) => !child.data?.isPlaceholder).length > 0
+  const hasChildrenFlag = p.data?.hasChildren === true
+  return fromNode || fromData || hasChildrenFlag
+})
+
+const isExpanded = ref(localParams.value.node?.expanded || false)
+
+// Indentation based on level (20px per level like DartAI)
+const level = computed(() => localParams.value.node?.level || 0)
+const indentStyle = computed(() => ({
+  paddingLeft: `${level.value * 20}px`
+}))
+
+const pathKey = computed(() => localParams.value.data?.pathKey || localParams.value.data?.id || localParams.value.data?.title)
+const focusKey = computed(() => localParams.value.context?.focusKey?.value || null)
+
+function syncChildCount(nextParams = localParams.value) {
   const nonPlaceholder = (nextParams?.node?.childrenAfterGroup || []).filter((child) => !child.data?.isPlaceholder)
   const fromNode = nonPlaceholder.length
   const fromData = Array.isArray(nextParams?.data?.children) ? nextParams.data.children.length : 0
@@ -28,6 +49,9 @@ function syncChildCount(nextParams = props.params) {
   // Take the maximum value to ensure we show the count immediately after adding
   childCount.value = Math.max(fromNode, fromData, hasChildrenFlag ? 1 : 0)
 }
+
+
+
 
 watch(
   () => props.params?.data?.children?.length,
@@ -120,7 +144,11 @@ function handleBlur() {
 }
 
 function tryFocus() {
-  if (focusKey.value && focusKey.value === pathKey.value) {
+  const targetMatches = focusKey.value && (
+    focusKey.value === pathKey.value || 
+    focusKey.value === props.params?.data?.id
+  )
+  if (targetMatches) {
     let attempts = 0
     const attemptFocus = () => {
       const input = document.getElementById(`dartboard-input-${pathKey.value}`)
@@ -150,7 +178,9 @@ function openSidebar() {
 }
 
 function refresh(nextParams) {
+  localParams.value = nextParams
   inputValue.value = nextParams.value ?? ''
+  isExpanded.value = nextParams.node?.expanded || false
   syncChildCount(nextParams)
   return true // tell ag-Grid to reuse this component, keeping focus
 }
@@ -164,12 +194,20 @@ onMounted(() => {
     if (event?.type === 'modelUpdated' || event?.type === 'rowDataUpdated') {
       syncChildCount()
     }
+    if (event?.type === 'rowGroupOpened') {
+      // Check if this node was involved or just refresh state
+      if (event.node === props.params.node) {
+        isExpanded.value = props.params.node.expanded
+      }
+    }
   }
   api.addEventListener('modelUpdated', handler)
   api.addEventListener('rowDataUpdated', handler)
+  api.addEventListener('rowGroupOpened', handler)
   modelListenerCleanup = () => {
     api.removeEventListener('modelUpdated', handler)
     api.removeEventListener('rowDataUpdated', handler)
+    api.removeEventListener('rowGroupOpened', handler)
   }
 })
 
@@ -183,9 +221,26 @@ defineExpose({ refresh })
 <template>
   <div
     class="dartboard-cell w-full h-full flex items-center gap-1"
+    :style="indentStyle"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
+    <!-- Expand/Collapse Chevron -->
+    <div
+      class="dart-subtask-expand flex-shrink-0 rounded cursor-pointer hover:bg-gray-900/10 dark:hover:bg-white/10"
+      :class="{
+        'opacity-100': hasChildren || isHovered,
+        'opacity-0': !hasChildren && !isHovered
+      }"
+      @click.stop="toggleExpand"
+      :title="hasChildren ? (isExpanded ? 'Collapse' : 'Expand') : 'Add subtask'"
+    >
+      <component
+        :is="isExpanded ? ChevronDown : ChevronRight"
+        class="w-5 h-5 text-gray-400"
+      />
+    </div>
+
     <FormInput
       v-model="inputValue"
       :style="inputStyle"
@@ -200,6 +255,7 @@ defineExpose({ refresh })
       @keydown="onKeydown"
       @blur.capture="handleBlur"
     />
+
 
     <!-- task info -->
     <button
