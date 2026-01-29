@@ -6,7 +6,7 @@
  * functionality of the Kanban board. It receives data from the parent
  * and emits events for mutations.
  */
-import { computed, ref, reactive, nextTick, watch } from 'vue'
+import { computed, ref, reactive, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTaskStore, useKanbanColumnStore, useUIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
@@ -439,11 +439,76 @@ watch(() => props.columns, (next) => {
     ensureColumnTasks(id)
   })
 }, { immediate: true })
+
+
+// Date Picker Logic
+const activeDatePicker = ref({
+  taskId: null,
+  date: null,
+  position: { top: 0, left: 0 }
+})
+
+function openDatePicker(event, task) {
+  // Prevent sidebar opening
+  event.stopPropagation()
+  
+  // If clicking same trigger, toggle close
+  if (activeDatePicker.value.taskId === task.id) {
+    closeDatePicker()
+    return
+  }
+
+  // Calculate position
+  const rect = event.currentTarget.getBoundingClientRect()
+  activeDatePicker.value = {
+    taskId: task.id,
+    date: task.dueDate,
+    position: {
+      top: rect.bottom + 8,
+      left: rect.left
+    }
+  }
+}
+
+function closeDatePicker() {
+  activeDatePicker.value = {
+    taskId: null,
+    date: null,
+    position: { top: 0, left: 0 }
+  }
+}
+
+function handleDateSelect(val) {
+  if (activeDatePicker.value.taskId) {
+    handleUpdateDueDate(activeDatePicker.value.taskId, val)
+  }
+  closeDatePicker()
+}
+
+// Close on outside click
+function handleClickOutside(event) {
+  if (!activeDatePicker.value.taskId) return
+  const popup = document.getElementById('kanban-datepicker-popup')
+  if (popup && popup.contains(event.target)) return
+  
+  // Check if click is on a trigger (handled by openDatePicker)
+  if (event.target.closest('.date-trigger')) return
+  
+  closeDatePicker()
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
   <div class="kanban-board-content flex-1 overflow-x-auto overflow-y-hidden px-6 pb-0">
-    <div class="h-full min-w-full inline-flex">
+    <div class="h-full min-w-full inline-flex gap-4">
       <!-- Loading State -->
       <div v-if="isInitialLoading" class="flex gap-4">
         <div v-for="i in 4" :key="i" class="w-72 flex-shrink-0">
@@ -455,7 +520,7 @@ watch(() => props.columns, (next) => {
       <!-- Empty State -->
       <div
         v-else-if="columns.length === 0 && hasLoadedColumns"
-        class="flex h-[320px] items-center justify-center"
+        class="flex h-[60vh] w-full items-center justify-center"
       >
         <div class="w-full max-w-md rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center shadow-sm dark-edit:border-gray-700 dark-edit:bg-gray-900">
           <h3 class="text-base font-semibold text-gray-900 dark-edit:text-white">
@@ -488,10 +553,11 @@ watch(() => props.columns, (next) => {
           v-for="(column, index) in displayColumns"
           :key="column.id"
           class="kanban-column w-80 flex-shrink-0 group"
+          :class="{ 'no-transition': column.isAddInput }"
         >
           <div
             v-if="column.isAddInput"
-            class="mb-3 rounded-xl border border-dashed border-gray-300 bg-white/60 p-3 text-xs text-gray-500 shadow-sm dark-edit:border-gray-700 dark-edit:bg-gray-900/70"
+            class="h-[52px] flex items-center px-4 rounded-xl border border-dashed border-gray-300 bg-white/60 text-xs text-gray-500 shadow-sm dark-edit:border-gray-700 dark-edit:bg-gray-900/70"
           >
             <InputText
               v-model="newColumnName"
@@ -605,24 +671,17 @@ watch(() => props.columns, (next) => {
 
                   <div class="mt-2 flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                      <VDatePicker
-                        :model-value="task.dueDate"
-                        :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
-                        @update:model-value="(val) => handleUpdateDueDate(task.id, val)"
+                      <span
+                        class="date-trigger flex items-center gap-1 text-[10px] cursor-pointer hover:bg-black/5 dark-edit:hover:bg-white/5 px-1 rounded transition-colors"
+                        :class="[
+                          task.dueDate ? (isOverdue(task) ? 'text-red-600' : 'text-gray-500 dark-edit:text-gray-400') : 'text-gray-400',
+                          { 'bg-black/10 dark-edit:bg-white/10': activeDatePicker.taskId === task.id }
+                        ]"
+                        @click="openDatePicker($event, task)"
                       >
-                        <template #default="{ togglePopover }">
-                          <span
-                            @click.stop="togglePopover"
-                            :class="[
-                              'flex items-center gap-1 text-[10px] cursor-pointer hover:bg-black/5 dark-edit:hover:bg-white/5 px-1 rounded transition-colors',
-                              task.dueDate ? (isOverdue(task) ? 'text-red-600' : 'text-gray-500 dark-edit:text-gray-400') : 'text-gray-400'
-                            ]"
-                          >
-                            <i class="pi pi-calendar text-[10px]"></i>
-                            {{ task.dueDate ? formatDate(task.dueDate) : 'Add date' }}
-                          </span>
-                        </template>
-                      </VDatePicker>
+                        <i class="pi pi-calendar text-[10px]"></i>
+                        {{ task.dueDate ? formatDate(task.dueDate) : 'Add date' }}
+                      </span>
                       <span
                         v-if="task.subtaskCount > 0"
                         class="flex items-center gap-1 text-[10px] text-gray-500 dark-edit:text-gray-400"
@@ -684,7 +743,42 @@ watch(() => props.columns, (next) => {
           </template>
         </div>
       </TransitionGroup>
+
+      <!-- Add Section Button -->
+      <div v-if="!isInitialLoading && columns.length > 0 && !showAddColumnInput" class="kanban-new-column w-80 flex-shrink-0">
+        <button
+          type="button"
+          class="flex h-[52px] w-full items-center justify-start gap-2 rounded-xl border border-dashed border-gray-300 bg-transparent px-4 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700 dark-edit:border-gray-700 dark-edit:text-gray-400 dark-edit:hover:bg-white/5 dark-edit:hover:text-gray-200"
+          @click="startAddColumn()"
+        >
+          <Plus class="h-4 w-4" />
+          {{ t('projects.kanban.columns.add') }}
+        </button>
+      </div>
     </div>
+
+    <!-- Shared DatePicker Popup -->
+    <Teleport to="body">
+      <div
+        v-if="activeDatePicker.taskId"
+        id="kanban-datepicker-popup"
+        :style="{
+          position: 'fixed',
+          top: activeDatePicker.position.top + 'px',
+          left: activeDatePicker.position.left + 'px',
+          zIndex: 99999
+        }"
+      >
+        <div class="rounded-lg bg-white shadow-xl dark-edit:bg-gray-800">
+          <VDatePicker
+            :model-value="activeDatePicker.date"
+            mode="date"
+            :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
+            @update:model-value="handleDateSelect"
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -764,6 +858,14 @@ watch(() => props.columns, (next) => {
 .column-list-enter-active,
 .column-list-leave-active {
   transition: all 0.4s ease;
+}
+
+/* Disable transition for add input */
+.column-list-enter-active.no-transition,
+.column-list-leave-active.no-transition,
+.column-list-move.no-transition {
+  transition: none !important;
+  transform: none !important; /* prevent transform */
 }
 
 .column-list-enter-from,
