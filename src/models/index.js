@@ -232,7 +232,14 @@ export function createProject(data = {}) {
  * @returns {Task}
  */
 export function createTask(data = {}) {
-  const children = Array.isArray(data.children) ? data.children : []
+  // Handle inconsistent API response naming (children vs subTasks)
+  const rawChildren = Array.isArray(data.children) ? data.children : (Array.isArray(data.subTasks) ? data.subTasks : [])
+
+  // Recursively normalize children to ensure they are also valid Task objects
+  // This avoids circular dependency issues if imported carefully, or just rely on function hoisting/reference
+  // Since we are inside the function, recursive call works.
+  const children = rawChildren.map(child => createTask(child))
+
   const completedChildren = children.filter((child) => {
     if (child?.isCompleted) return true
     return normalizeTaskStatus(child?.status) === TaskStatus.DONE
@@ -264,7 +271,8 @@ export function createTask(data = {}) {
     kanbanColumn: data.kanbanColumn || null,
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: data.updatedAt || new Date().toISOString(),
-    completedAt: data.completedAt || null
+    completedAt: data.completedAt || null,
+    children // Include normalized children in the model
   }
 }
 
