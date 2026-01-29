@@ -34,6 +34,7 @@ const userStore = useUserStore()
 const searchQuery = ref('')
 const isSearching = ref(false)
 const searchResults = ref([])
+const dropdownRef = ref(null)
 const activeProjectId = computed(() => props.projectId || projectStore.currentProjectId)
 
 // Local list of users to show when not searching
@@ -93,6 +94,8 @@ function handleSelect(user) {
   emit('update:modelValue', user)
   searchQuery.value = ''
   searchResults.value = []
+  // Close the dropdown after selection
+  dropdownRef.value?.close?.()
 }
 
 function handleUnassign() {
@@ -100,6 +103,8 @@ function handleUnassign() {
     emit('update:modelValue', null)
     searchQuery.value = ''
     searchResults.value = []
+    // Close the dropdown after unassign
+    dropdownRef.value?.close?.()
 }
 
 onMounted(() => {
@@ -110,7 +115,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <DropdownMenu position="right" width="18rem">
+  <DropdownMenu ref="dropdownRef" position="right" width="18rem">
     <template #trigger>
       <slot name="trigger"></slot>
     </template>
