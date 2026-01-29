@@ -33,12 +33,13 @@ const isExpanded = ref(localParams.value.node?.expanded || false)
 
 // Indentation based on level (20px per level like DartAI)
 const level = computed(() => localParams.value.node?.level || 0)
-const indentStyle = computed(() => ({
-  paddingLeft: `${level.value * 20}px`
-}))
 
 const pathKey = computed(() => localParams.value.data?.pathKey || localParams.value.data?.id || localParams.value.data?.title)
 const focusKey = computed(() => localParams.value.context?.focusKey?.value || null)
+
+// ...
+
+
 
 function syncChildCount(nextParams = localParams.value) {
   const nonPlaceholder = (nextParams?.node?.childrenAfterGroup || []).filter((child) => !child.data?.isPlaceholder)
@@ -143,27 +144,34 @@ function handleBlur() {
   props.params?.context?.handleCommit?.(pathKey.value)
 }
 
+const inputRef = ref(null)
+
 function tryFocus() {
   const targetMatches = focusKey.value && (
     focusKey.value === pathKey.value || 
     focusKey.value === props.params?.data?.id
   )
   if (targetMatches) {
-    let attempts = 0
-    const attemptFocus = () => {
-      const input = document.getElementById(`dartboard-input-${pathKey.value}`)
-      if (input) {
-        input.focus()
-        input.select?.()
+    nextTick(() => {
+      // Try component ref first
+      if (inputRef.value?.focus) {
+        inputRef.value.focus()
         return
       }
-      attempts += 1
-      if (attempts < 5) {
-        requestAnimationFrame(attemptFocus)
+      
+      // Fallback to DOM ID
+      const attemptFocus = (attempts = 0) => {
+        const input = document.getElementById(`dartboard-input-${pathKey.value}`)
+        if (input) {
+          input.focus()
+          input.select?.()
+          return
+        }
+        if (attempts < 5) {
+          requestAnimationFrame(() => attemptFocus(attempts + 1))
+        }
       }
-    }
-    nextTick(() => {
-      requestAnimationFrame(attemptFocus)
+      attemptFocus()
     })
   }
 }
@@ -221,7 +229,6 @@ defineExpose({ refresh })
 <template>
   <div
     class="dartboard-cell w-full h-full flex items-center gap-1"
-    :style="indentStyle"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
@@ -242,6 +249,7 @@ defineExpose({ refresh })
     </div>
 
     <FormInput
+      ref="inputRef"
       v-model="inputValue"
       :style="inputStyle"
       :id="`dartboard-input-${pathKey.value}`"

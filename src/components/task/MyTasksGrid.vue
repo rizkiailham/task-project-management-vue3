@@ -355,7 +355,7 @@ function focusOnPathKey(key) {
   })
 }
 
-function addSubtask(key) {
+function addSubtask(key, _options = {}) {
   const node = findNodeByKey(key)
   if (!node) return
   if (!node.children) node.children = []

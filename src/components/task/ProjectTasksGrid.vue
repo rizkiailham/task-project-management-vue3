@@ -13,7 +13,7 @@ import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
-import { useTaskStore, useUIStore, useProjectStore } from '@/stores'
+import { useProjectStore } from '@/stores'
 import SortHeader from '@/components/ag/SortHeader.vue'
 import AssigneeCell from '@/components/task/AssigneeCell.vue'
 import DueDateCell from '@/components/task/DueDateCell.vue'
@@ -23,8 +23,6 @@ import DartboardCell from '@/components/task/DartboardCell.vue'
 import ProjectCell from '@/components/task/ProjectCell.vue'
 
 
-const taskStore = useTaskStore()
-const uiStore = useUIStore()
 const projectStore = useProjectStore()
 
 LicenseManager.setLicenseKey(
@@ -43,52 +41,68 @@ const emit = defineEmits(['task-click', 'update-assignee', 'update-due-date', 'r
 const gridApi = ref(null)
 const focusKey = ref(null)
 
-// Helper to build hierarchy from flat list
-// Helper to build hierarchy from flat list
+// Track which parent IDs should be auto-expanded after subtask creation
+const expandedParentIds = ref(new Set())
+
+// Helper to build hierarchy from flat list (supports nested subTasks/children)
 function buildTree(flatTasks) {
   const taskMap = new Map()
   const roots = []
-  
-  // Clone tasks and normalize children from subTasks if present
-  const tasks = flatTasks.map(t => ({ 
-    ...t, 
-    children: t.subTasks ? [...t.subTasks] : (t.children ? [...t.children] : [])
-  }))
-  
-  tasks.forEach(task => {
-    if (task.id) taskMap.set(String(task.id), task)
+
+  const seen = new Set()
+  const flattened = []
+
+  const flatten = (items) => {
+    if (!Array.isArray(items)) return
+    items.forEach((item) => {
+      if (!item || !item.id) return
+      const key = String(item.id)
+      if (!seen.has(key)) {
+        seen.add(key)
+        flattened.push(item)
+      }
+      const nested = Array.isArray(item.subTasks)
+        ? item.subTasks
+        : Array.isArray(item.children)
+          ? item.children
+          : []
+      if (nested.length) flatten(nested)
+    })
+  }
+
+  flatten(flatTasks)
+
+  flattened.forEach((task) => {
+    taskMap.set(String(task.id), { ...task, children: [] })
   })
-  
-  tasks.forEach(task => {
+
+  flattened.forEach((task) => {
     const parentId = task.parentId || task.parentTaskId
     const parentIdStr = parentId ? String(parentId) : null
-    
-    // Check if parent exists in our map
+    const node = taskMap.get(String(task.id))
     if (parentIdStr && taskMap.has(parentIdStr)) {
-      const parent = taskMap.get(parentIdStr)
-      // Avoid duplicates if already populated via subTasks
-      if (!parent.children.some(c => String(c.id) === String(task.id))) {
-        parent.children.push(task)
-      }
+      taskMap.get(parentIdStr).children.push(node)
     } else {
-      // If no parent found, it's a root (or parent is missing from current view)
-      roots.push(task)
+      roots.push(node)
     }
   })
-  
+
   return roots
 }
 
 // Helper function to flatten tree data with pathKey for AG Grid
-function flattenTree(nodes, parentPath = '') {
+function flattenTree(nodes, parentPathIds = []) {
   const result = []
   nodes.forEach((node, index) => {
-    const pathKey = parentPath ? `${parentPath}-${index}` : `${index}`
+    const nodeId = node.id || `${parentPathIds.join('-')}-${index}`
+    const pathIds = [...parentPathIds, String(nodeId)]
+    const pathKey = String(nodeId)
     const hasChildren = Array.isArray(node.children) && node.children.length > 0
     
     result.push({
       id: node.id,
       title: node.title,
+      path: pathIds,
       pathKey,
       dartboard: node.projectName || projectStore.currentProjectName || 'Project',
       status: node.status,
@@ -109,7 +123,7 @@ function flattenTree(nodes, parentPath = '') {
     
     // Recursively flatten children
     if (hasChildren) {
-      result.push(...flattenTree(node.children, pathKey))
+      result.push(...flattenTree(node.children, pathIds))
     }
   })
   return result
@@ -118,8 +132,7 @@ function flattenTree(nodes, parentPath = '') {
 // Local row data for manual drag and drop management
 const rowData = ref([])
 
-// Sync with tasks prop
-// Sync with tasks prop
+// Sync with tasks prop and restore expansion state
 watch(
   () => props.tasks,
   (newTasks) => {
@@ -128,65 +141,113 @@ watch(
       // Build tree first, then flatten
       const tree = buildTree(newTasks)
       rowData.value = flattenTree(tree)
+      
+      // Restore expansion for tracked parents after data refresh
+      // Use setTimeout to ensure AG Grid has processed the new transaction/data
+      setTimeout(() => {
+        if (expandedParentIds.value.size > 0 && gridApi.value) {
+          gridApi.value.forEachNode((node) => {
+            const nodeId = node.data?.id ? String(node.data.id) : null
+            if (nodeId && expandedParentIds.value.has(nodeId)) {
+              node.setExpanded(true)
+            }
+          })
+        }
+      }, 50)
     }
   },
   { immediate: true, deep: true }
 )
 
 // Get data path for tree structure
-const getDataPath = (data) => {
-  if (!data.pathKey) return [data.id || data.title]
-  return data.pathKey.split('-').map((_, i, arr) => arr.slice(0, i + 1).join('-'))
-}
+const getDataPath = (data) => data.path || [data.id || data.title]
 
 // Get row ID
-const getRowId = (params) => params.data?.pathKey || params.data?.id || params.data?.title
+const getRowId = (params) => params.data?.id || params.data?.pathKey || params.data?.title
 
 function updateField(pathKey, field, value) {
-  // Find task and update
-  const task = props.tasks.find(t => t.id === pathKey)
+  const resolvedKey = String(pathKey || '')
+  const task = props.tasks.find(t => String(t.id) === resolvedKey)
   if (task) {
     if (field === 'assignee') {
-      emit('update-assignee', { taskId: pathKey, user: value })
+      emit('update-assignee', { taskId: task.id, user: value })
     }
   }
 }
 
-function addSubtask(pathKey) {
+async function addSubtask(pathKey, options = {}) {
   const node = gridApi.value?.getRowNode(pathKey)
-  if (node) {
-    node.setExpanded(true)
-    const taskId = node.data?.id
-    if (taskId) {
-      emit('create-subtask', taskId)
-      
-      // Optimistic update: Add placeholder child immediately
-      if (!gridApi.value?.getDragStatus?.()) {
-        const optimisticTask = {
-          id: `temp-${Date.now()}`,
-          parentId: taskId,
-          title: 'New task',
-          status: 'incompleted',
-          children: [],
-          dartboard: node.data.dartboard || 'Project',
-          isPlaceholder: false // It's a real (optimistic) task
-        }
-        
-        // Create new list including optimistic task
-        const currentTasks = [...props.tasks, optimisticTask]
-        const tree = buildTree(currentTasks)
-        rowData.value = flattenTree(tree)
-        
-        // Set focus to the new task
-        focusKey.value = optimisticTask.id
+  if (!node) return
 
-        // Re-expand parent to show new child
-        nextTick(() => {
-          const freshNode = gridApi.value?.getRowNode(pathKey)
-          if (freshNode) freshNode.setExpanded(true)
-        })
-      }
+  const taskId = node.data?.id
+  const parentKanbanColumnId = node.data?.kanbanColumnId || node.data?._raw?.kanbanColumnId || null
+  if (!taskId) return
+
+  const { ensureEmpty = false, forceCreate = false } = options || {}
+
+  // Check if parent already has children - if so, just expand
+  // User Requirement: "for each parent only can make the subtask only one on this" (grid)
+  // Grid should strictly prevent creating multiple subtasks on the same parent
+  const existingChildren = props.tasks.filter((task) => {
+    const parentId = task.parentId || task.parentTaskId
+    return parentId && String(parentId) === String(taskId)
+  })
+  
+  const hasKnownChildren =
+    existingChildren.length > 0 ||
+    node.data?.hasChildren ||
+    (Array.isArray(node.data?.children) && node.data.children.length > 0) ||
+    (Number.isFinite(node.data?.subtaskCount) && node.data.subtaskCount > 0)
+
+  // Unless forceCreate is explicit (e.g. from context menu if supported later), deny creation
+  if (hasKnownChildren && !forceCreate) {
+    node.setExpanded(true)
+    expandedParentIds.value.add(String(taskId))
+    return
+  }
+
+  // Mark parent for auto-expansion (persists across data refreshes)
+  expandedParentIds.value.add(String(taskId))
+  
+  // Expand parent immediately
+  node.setExpanded(true)
+  
+  // Emit to parent to create subtask via API
+  emit('create-subtask', { parentId: taskId, kanbanColumnId: parentKanbanColumnId })
+
+  // Optimistic update: Add placeholder child immediately for instant UI feedback
+  if (!gridApi.value?.getDragStatus?.()) {
+    const optimisticTask = {
+      id: `temp-${Date.now()}`,
+      parentId: taskId,
+      title: 'New Task',
+      status: 'incompleted',
+      kanbanColumnId: parentKanbanColumnId,
+      children: [],
+      subTasks: [],
+      dartboard: node.data.dartboard || 'Project',
+      isOptimistic: true
     }
+    
+    // Create new list including optimistic task
+    const currentTasks = [...props.tasks, optimisticTask]
+    const tree = buildTree(currentTasks)
+    rowData.value = flattenTree(tree)
+
+    // Set focus to the new task
+    const optimisticRow = rowData.value.find((row) => String(row.id) === String(optimisticTask.id))
+    focusKey.value = optimisticRow?.pathKey || optimisticTask.id
+
+    // Re-expand parent to show new child - use delay to allow grid to update
+    setTimeout(() => {
+      gridApi.value?.forEachNode((gridNode) => {
+        const nodeId = gridNode.data?.id ? String(gridNode.data.id) : null
+        if (nodeId && expandedParentIds.value.has(nodeId)) {
+          gridNode.setExpanded(true)
+        }
+      })
+      gridApi.value?.refreshClientSideRowModel?.('group')
+    }, 50)
   }
 }
 
@@ -350,7 +411,6 @@ const autoGroupColumnDef = {
     suppressCount: true,
     suppressDoubleClickExpand: true,
     suppressEnterExpand: true,
-    suppressPadding: true, // Remove AG Grid's built-in padding (we use our own indentation)
     innerRenderer: 'DartboardCell'
   },
   cellRenderer: 'agGroupCellRenderer',
@@ -427,8 +487,6 @@ const showPagination = computed(() => totalRows.value > paginationPageSize.value
 
 function handleOpenTaskDetail(task) {
   if (!task) return
-  taskStore.fetchTask(task.id)
-  uiStore.openTaskPanel()
   emit('task-click', task)
 }
 
@@ -521,7 +579,7 @@ function onGridReady(params) {
 
 :deep(.ag-theme-quartz .ag-group-leaf-indent),
 :deep(.ag-theme-quartz .ag-group-child-indent) {
-  width: 12px;
+  width: 20px;
 }
 
 :deep(.row-placeholder) {
