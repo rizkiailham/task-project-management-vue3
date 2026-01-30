@@ -12,7 +12,7 @@ export const useUIStore = defineStore('ui', () => {
   // ================================
   // State
   // ================================
-  
+
   // Sidebar state
   const isSidebarCollapsed = ref(false)
   const isSidebarMobileOpen = ref(false)
@@ -23,6 +23,7 @@ export const useUIStore = defineStore('ui', () => {
   // View state
   const currentView = ref(ViewType.LIST)
   const isTaskPanelOpen = ref(false)
+  const myTasksViewMode = ref(ViewType.LIST)
 
   // Task Detail Sidebar state
   const taskDetailSidebarWidth = ref(parseInt(localStorage.getItem('taskDetailSidebarWidth') || '420', 10))
@@ -62,7 +63,7 @@ export const useUIStore = defineStore('ui', () => {
 
   const hasActiveModal = computed(() => !!activeModal.value)
 
-  const unreadToastCount = computed(() => 
+  const unreadToastCount = computed(() =>
     toasts.value.filter(t => !t.dismissed).length
   )
 
@@ -136,6 +137,12 @@ export const useUIStore = defineStore('ui', () => {
     if (Object.values(ViewType).includes(view)) {
       currentView.value = view
       localStorage.setItem('preferredView', view)
+    }
+  }
+
+  function setMyTasksViewMode(view) {
+    if (Object.values(ViewType).includes(view)) {
+      myTasksViewMode.value = view
     }
   }
 
@@ -375,6 +382,7 @@ export const useUIStore = defineStore('ui', () => {
     sidebarCustomWidth,
     isResizingSidebar,
     currentView,
+    myTasksViewMode,
     isTaskPanelOpen,
     taskDetailSidebarWidth,
     isResizingTaskDetailSidebar,
@@ -407,6 +415,7 @@ export const useUIStore = defineStore('ui', () => {
 
     // View Actions
     setView,
+    setMyTasksViewMode,
     openTaskPanel,
     closeTaskPanel,
     toggleTaskPanel,

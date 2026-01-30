@@ -4,257 +4,58 @@
  * 
  * Shows all tasks assigned to the current user across all projects
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTaskStore, useUIStore, useWorkspaceStore } from '@/stores'
-import { TaskStatus, TaskPriority } from '@/models'
+import { useTaskStore, useUIStore, useProjectStore } from '@/stores'
+import { TaskStatus, TaskPriority, ViewType } from '@/models'
 
 // PrimeVue
 import Button from 'primevue/button'
 import FormInput from '@/components/ui/FormInput.vue'
-import Tag from 'primevue/tag'
-import Skeleton from 'primevue/skeleton'
-import Checkbox from 'primevue/checkbox'
-import MyTasksGrid from '@/components/task/MyTasksGrid.vue'
+import ProjectTasksGrid from '@/components/task/ProjectTasksGrid.vue'
+
+// PrimeVue & Icons
+import Dropdown from 'primevue/dropdown'
+import ProgressSpinner from 'primevue/progressspinner'
+import KanbanBoard from '@/components/task/KanbanBoard.vue'
+import { LayoutGrid, Calendar, CheckCircle, ListFilter, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ChevronDown } from 'lucide-vue-next'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import 'v-calendar/dist/style.css'
+import { DatePicker } from 'v-calendar'
 
 const router = useRouter()
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
-const workspaceStore = useWorkspaceStore()
+const projectStore = useProjectStore()
 
 // State
 const isLoading = ref(true)
-const searchQuery = ref('')
 const statusFilter = ref(null)
 const priorityFilter = ref(null)
-const selectedTasks = ref([])
-const generateId = (prefix = 'tree') => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return `${prefix}-${crypto.randomUUID()}`
+const projectFilter = ref(null)
+
+onMounted(async () => {
+  try {
+    isLoading.value = true
+    await taskStore.fetchMyTasks()
+    if (projectStore.projects.length === 0) {
+      await projectStore.fetchProjects()
+    }
+  } catch (error) {
+    console.error('Failed to load tasks:', error)
+  } finally {
+    isLoading.value = false
   }
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
-}
+})
 
-const addIdsToTree = (nodes, prefix = 'tree') =>
-  nodes.map(node => ({
-    ...node,
-    id: node.id || generateId(prefix),
-    children: node.children ? addIdsToTree(node.children, prefix) : []
-  }))
-
-const nestedTreeTasks = addIdsToTree([
-  {
-    title: 'A. What is DartAI app uses for frontend?',
-    dartboard: 'Product',
-    status: TaskStatus.IN_PROGRESS,
-    assignee: 'Bridge Team',
-    tags: ['Product'],
-    dueDate: '2025-12-17',
-    children: [
-      { title: 'B. Gather current stack', dartboard: 'Product', status: TaskStatus.TODO, assignee: 'Bridge Team', tags: ['Product'], dueDate: '' },
-      {
-        title: 'C. Draft migration options',
-        dartboard: 'Engineering',
-        status: TaskStatus.TODO,
-        assignee: 'Bridge Team',
-        tags: ['Engineering'],
-        dueDate: '',
-        children: [
-          {
-            title: 'C1. Compare frameworks',
-            dartboard: 'Engineering',
-            status: TaskStatus.TODO,
-            assignee: 'Bridge Team',
-            tags: ['Engineering'],
-            dueDate: '',
-            children: [
-              { title: 'C1.a. Evaluate SSR', dartboard: 'Engineering', status: TaskStatus.BLOCKED, assignee: 'Bridge Team', tags: ['Engineering'], dueDate: '' }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    title: 'D. Create initial Desidia UI library',
-    dartboard: 'Design',
-    status: TaskStatus.DONE,
-    assignee: 'Design Squad',
-    tags: ['Design', 'Engineering'],
-    dueDate: '2025-12-21',
-    children: [
-      {
-        title: 'E. Buttons',
-        dartboard: 'Engineering',
-        status: TaskStatus.IN_PROGRESS,
-        assignee: 'Design Squad',
-        tags: ['Engineering'],
-        dueDate: '',
-        children: [
-          {
-            title: 'F. States & interactions',
-            dartboard: 'Engineering',
-            status: TaskStatus.TODO,
-            assignee: 'Design Squad',
-            tags: ['Engineering'],
-            dueDate: '',
-            children: [
-              { title: 'G. Accessibility sweep', dartboard: 'Engineering', status: TaskStatus.TODO, assignee: 'Design Squad', tags: ['Engineering'], dueDate: '' }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-])
-
-const treeTasks = ref([...nestedTreeTasks])
-const baseTreeSnapshot = () => (typeof structuredClone === 'function' ? structuredClone(nestedTreeTasks) : JSON.parse(JSON.stringify(nestedTreeTasks)))
-const statusPool = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.IN_REVIEW, TaskStatus.DONE, TaskStatus.BLOCKED]
-const priorityPool = [TaskPriority.URGENT, TaskPriority.HIGH, TaskPriority.MEDIUM, TaskPriority.LOW]
-const sampleTitles = [
-  'Draft roadmap spike',
-  'Write integration tests',
-  'Align with design on CTA',
-  'Refine success metrics',
-  'Document API contracts'
-]
-const sampleTags = [['Product'], ['Engineering'], ['Design'], ['Product', 'Engineering'], []]
-const stressSeed = [
-  'Review cross-team dependencies and update timelines',
-  'Investigate memory overhead for large datasets in grid view',
-  'Prepare rollout notes for the next release',
-  'Coordinate with QA on regression checks',
-  'Follow up on feedback from stakeholders'
-]
-const stressWords = [
-  'dashboard', 'payload', 'pipeline', 'telemetry', 'render', 'virtualize',
-  'cache', 'snapshot', 'profiling', 'latency', 'throughput', 'bandwidth',
-  'handoff', 'milestone', 'deliverable', 'backlog', 'refactor', 'baseline'
-]
-const rootCounter = ref(0)
-function randomPick(list) {
-  return list[Math.floor(Math.random() * list.length)]
-}
-function randomDueDate() {
-  const dayOffset = Math.floor(Math.random() * 10) // within next 10 days
-  const d = new Date()
-  d.setDate(d.getDate() + dayOffset)
-  return d.toISOString().slice(0, 10)
-}
-
-function randomSentence(wordCount = 8) {
-  const words = []
-  for (let i = 0; i < wordCount; i += 1) words.push(randomPick(stressWords))
-  return words.join(' ')
-}
-
-function buildStressTasks(count) {
-  const tasks = []
-  for (let i = 0; i < count; i += 1) {
-    const id = `stress-${i}-${Math.random().toString(36).slice(2, 8)}`
-    tasks.push({
-      id,
-      title: `${randomPick(sampleTitles)} #${i + 1}`,
-      description: `${randomPick(stressSeed)}. ${randomSentence(12)}.`,
-      projectName: `Stress Project ${1 + (i % 12)}`,
-      status: randomPick(statusPool),
-      priority: randomPick(priorityPool),
-      assignee: `User ${1 + (i % 50)}`,
-      tags: randomPick(sampleTags),
-      dueDate: randomDueDate(),
-      children: [],
-      isNew: false
-    })
-  }
-  return tasks
-}
-
-function generateStressData() {
-  treeTasks.value = buildStressTasks(1000)
-}
-
-function resetStressData() {
-  treeTasks.value = baseTreeSnapshot()
-}
-
-const placeholderTasks = [
-  {
-    id: 'd1',
-    title: 'Audit current Desidia tech stack and hosting setup',
-    description: 'Review infra components and dependency licensing.',
-    projectName: 'Desidia Platform',
-    status: TaskStatus.IN_PROGRESS,
-    priority: TaskPriority.HIGH,
-    assignee: 'Demo User',
-    tags: ['Engineering'],
-    dueDate: '2025-12-21'
-  },
-  {
-    id: 'd2',
-    title: 'Define Desidia product vision and target users',
-    description: 'Clarify personas and value statements.',
-    projectName: 'Product Strategy',
-    status: TaskStatus.TODO,
-    priority: TaskPriority.MEDIUM,
-    assignee: 'Product Team',
-    tags: ['Product'],
-    dueDate: '2025-12-22'
-  },
-  {
-    id: 'd3',
-    title: 'Research DartAI backend architecture and services',
-    description: 'Map existing services and performance.',
-    projectName: 'Research',
-    status: TaskStatus.TODO,
-    priority: TaskPriority.MEDIUM,
-    assignee: 'Research Crew',
-    tags: ['Engineering'],
-    dueDate: '2025-12-25'
-  },
-  {
-    id: 'd4',
-    title: 'What is DartAI app uses for frontend?',
-    description: 'Document front-end stack and choices.',
-    projectName: 'Product Strategy',
-    status: TaskStatus.TODO,
-    priority: TaskPriority.LOW,
-    assignee: 'Bridge Team',
-    tags: ['Design', 'Product'],
-    dueDate: '2025-12-17'
-  },
-  {
-    id: 'd5',
-    title: 'Create initial Desidia frontend UI component library',
-    description: 'Scaffold shareable component repo.',
-    projectName: 'Design System',
-    status: TaskStatus.BLOCKED,
-    priority: TaskPriority.URGENT,
-    assignee: 'Design Squad',
-    tags: ['Design', 'Engineering'],
-    dueDate: ''
-  },
-  {
-    id: 'd6',
-    title: 'Draft Desidia core frontend user journeys',
-    description: 'Capture flows on onboarding and inbox.',
-    projectName: 'Design System',
-    status: TaskStatus.BLOCKED,
-    priority: TaskPriority.HIGH,
-    assignee: 'Product Team',
-    tags: ['Product', 'Design'],
-    dueDate: ''
-  }
-]
 
 // Filter options
 const statusOptions = [
-  { label: 'All Status', value: null },
-  { label: 'To Do', value: TaskStatus.TODO },
-  { label: 'In Progress', value: TaskStatus.IN_PROGRESS },
-  { label: 'In Review', value: TaskStatus.IN_REVIEW },
-  { label: 'Done', value: TaskStatus.DONE },
-  { label: 'Blocked', value: TaskStatus.BLOCKED }
+  { label: 'To Do', value: TaskStatus.TODO, color: 'bg-gray-500' },
+  { label: 'In Progress', value: TaskStatus.IN_PROGRESS, color: 'bg-blue-500' },
+  { label: 'In Review', value: TaskStatus.IN_REVIEW, color: 'bg-purple-500' },
+  { label: 'Done', value: TaskStatus.DONE, color: 'bg-green-500' },
+  { label: 'Blocked', value: TaskStatus.BLOCKED, color: 'bg-red-500' }
 ]
 
 const priorityOptions = [
@@ -267,70 +68,176 @@ const priorityOptions = [
 
 // Computed
 const filteredTasks = computed(() => {
-  const sourceTasks = taskStore.myTasks.length > 0 ? taskStore.myTasks : placeholderTasks
+  const sourceTasks = taskStore.myTasks
   let tasks = [...sourceTasks]
   
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+  if (uiStore.searchQuery) {
+    const query = uiStore.searchQuery.toLowerCase()
     tasks = tasks.filter(t => 
       t.title.toLowerCase().includes(query) ||
       t.description?.toLowerCase().includes(query)
     )
   }
   
+  // Filter by Status
   if (statusFilter.value) {
     tasks = tasks.filter(t => t.status === statusFilter.value)
   }
   
+  // Filter by Priority
   if (priorityFilter.value) {
     tasks = tasks.filter(t => t.priority === priorityFilter.value)
+  }
+  
+  // Filter by Project
+  if (projectFilter.value) {
+    tasks = tasks.filter(t => t.projectId === projectFilter.value)
+  }
+  
+  // Filter by Due Date
+  if (dateRange.value) {
+    const filterDate = new Date(dateRange.value)
+    filterDate.setHours(0,0,0,0) // Normalize
+    
+    tasks = tasks.filter(t => {
+      if (!t.dueDate) return false
+      const taskDate = new Date(t.dueDate)
+      taskDate.setHours(0,0,0,0)
+      return taskDate.getTime() === filterDate.getTime()
+    })
   }
   
   return tasks
 })
 
-const groupedTasks = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  
-  const nextWeek = new Date(today)
-  nextWeek.setDate(nextWeek.getDate() + 7)
-  
-  const groups = {
-    overdue: [],
-    today: [],
-    tomorrow: [],
-    thisWeek: [],
-    later: [],
-    noDueDate: []
+const treeTasks = computed(() => {
+  // Only paginate in List view
+  if (uiStore.myTasksViewMode === ViewType.LIST) {
+     const start = (currentPage.value - 1) * pageSize.value
+     const end = start + pageSize.value
+     return filteredTasks.value.slice(start, end)
+  }
+  return filteredTasks.value
+})
+
+// Menu Items
+const statusMenuItems = computed(() => 
+  statusOptions.map(opt => ({
+    id: opt.value,
+    label: opt.label,
+    action: () => {
+      statusFilter.value = opt.value
+    }
+  }))
+)
+
+const projectMenuItems = computed(() => {
+  if (!projectStore.projects) return []
+  return projectStore.projects.map(p => ({
+    id: p.id,
+    label: p.name,
+    action: () => {
+      projectFilter.value = p.id
+    }
+  }))
+})
+
+// Pagination State
+const pageSizeOptions = [10, 20, 50, 100]
+const pageSize = ref(10)
+const currentPage = ref(1)
+
+const totalPages = computed(() => Math.ceil(filteredTasks.value.length / pageSize.value))
+
+const visiblePages = computed(() => {
+  const maxVisible = 5
+  const total = totalPages.value
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
   }
   
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+  
+  if (end > total) {
+    end = total
+    start = end - maxVisible + 1
+  }
+  
+  return Array.from({ length: maxVisible }, (_, i) => start + i)
+})
+
+const isFirstPage = computed(() => currentPage.value <= 1)
+const isLastPage = computed(() => currentPage.value >= totalPages.value)
+
+const showPagination = computed(() => {
+  return totalPages.value > 1
+})
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value || page === currentPage.value) return
+  currentPage.value = page
+}
+
+function goToFirst() {
+  goToPage(1)
+}
+
+function goToLast() {
+  goToPage(totalPages.value)
+}
+
+function goToPrev() {
+  goToPage(currentPage.value - 1)
+}
+
+function goToNext() {
+  goToPage(currentPage.value + 1)
+}
+
+function changePageSize(newSize) {
+  pageSize.value = newSize
+  currentPage.value = 1
+}
+
+// Reset pagination when filters change
+watch([() => uiStore.searchQuery, statusFilter, priorityFilter], () => {
+  currentPage.value = 1
+})
+
+// Date Filter
+const dateRange = ref(null)
+
+// Kanban Data
+const kanbanColumns = computed(() => {
+  return statusOptions.map(opt => ({
+    id: opt.value,
+    label: opt.label,
+    color: opt.color
+  }))
+})
+
+const tasksByStatus = computed(() => {
+  const grouped = {}
+  statusOptions.forEach(opt => {
+    grouped[opt.value] = []
+  })
+  
+  // Also handle unassigned or unknown status
+  grouped['unassigned'] = []
+
   filteredTasks.value.forEach(task => {
-    if (!task.dueDate) {
-      groups.noDueDate.push(task)
-      return
-    }
-    
-    const dueDate = new Date(task.dueDate)
-    dueDate.setHours(0, 0, 0, 0)
-    
-    if (dueDate < today && task.status !== TaskStatus.DONE) {
-      groups.overdue.push(task)
-    } else if (dueDate.getTime() === today.getTime()) {
-      groups.today.push(task)
-    } else if (dueDate.getTime() === tomorrow.getTime()) {
-      groups.tomorrow.push(task)
-    } else if (dueDate < nextWeek) {
-      groups.thisWeek.push(task)
+    const status = task.status || 'unassigned'
+    if (grouped[status]) {
+      grouped[status].push(task)
     } else {
-      groups.later.push(task)
+      // If status matches a kanban column ID directly or mapping needed
+      // Assuming task.status matches the value in statusOptions
+      grouped[status] = [task]
     }
   })
   
-  return groups
+  return grouped
 })
 
 // Methods
@@ -344,163 +251,253 @@ onMounted(async () => {
   }
 })
 
-function navigateToTask(task) {
-  router.push({ name: 'TaskDetail', params: { taskId: task.id } })
+async function navigateToTask(task) {
+  try {
+    await taskStore.fetchTask(task.id)
+    uiStore.openTaskPanel()
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to open task details')
+  }
 }
 
 function openCreateTaskModal() {
   uiStore.openModal('createTask')
 }
 
-function addRootTask() {
-  const idSuffix = rootCounter.value++
-  const indexLabel = rootCounter.value
-  treeTasks.value = [
-    {
-      id: `${generateId('manual-root')}-${idSuffix}`,
-      title: `${randomPick(sampleTitles)} #${indexLabel}`,
-      dartboard: 'Product',
-      status: TaskStatus.TODO,
-      assignee: 'Dart AI',
-      tags: randomPick(sampleTags),
-      dueDate: randomDueDate(),
-      children: [],
-      isNew: true
-    },
-    ...treeTasks.value
-  ]
-}
-
-async function toggleTaskStatus(task) {
-  const newStatus = task.status === TaskStatus.DONE ? TaskStatus.TODO : TaskStatus.DONE
+// Grid Event Handlers
+async function handleUpdateTaskTitle({ taskId, title }) {
   try {
-    await taskStore.changeTaskStatus(task.id, newStatus)
+    await taskStore.updateTask(taskId, { title })
+    await taskStore.fetchMyTasks() // Refresh to ensure sync
   } catch (error) {
-    uiStore.showApiError(error, 'Failed to update task')
+    uiStore.showApiError(error, 'Failed to update task title')
   }
 }
 
-function getStatusSeverity(status) {
-  const severities = {
-    [TaskStatus.TODO]: 'secondary',
-    [TaskStatus.IN_PROGRESS]: 'info',
-    [TaskStatus.IN_REVIEW]: 'warn',
-    [TaskStatus.DONE]: 'success',
-    [TaskStatus.BLOCKED]: 'danger'
+async function handleCreateSubtask({ parentId }) {
+  try {
+    await taskStore.createNewTask({
+      parentId,
+      title: '',
+      status: TaskStatus.TODO,
+      priority: TaskPriority.MEDIUM
+    })
+    await taskStore.fetchMyTasks() // Refresh to show new subtask
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to create subtask')
   }
-  return severities[status] || 'secondary'
 }
 
-function getPriorityIcon(priority) {
-  const icons = {
-    [TaskPriority.URGENT]: 'pi pi-exclamation-circle text-red-600',
-    [TaskPriority.HIGH]: 'pi pi-arrow-up text-orange-500',
-    [TaskPriority.MEDIUM]: 'pi pi-minus text-yellow-500',
-    [TaskPriority.LOW]: 'pi pi-arrow-down text-gray-400'
+async function handleUpdateAssignee({ taskId, user }) {
+  try {
+    const assigneeId = user?.id || null
+    await taskStore.changeTaskAssignee(taskId, assigneeId)
+    await taskStore.fetchMyTasks()
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to update assignee')
   }
-  return icons[priority] || 'pi pi-minus text-gray-400'
 }
 
-function formatDate(date) {
-  if (!date) return ''
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  })
+async function handleUpdateDueDate({ taskId, date }) {
+  try {
+    await taskStore.updateTask(taskId, { dueDate: date })
+    await taskStore.fetchMyTasks()
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to update due date')
+  }
 }
 </script>
 
 <template>
-  <div class="p-6 lg:p-8">
-    <!-- Header -->
-    <div v-if="false" class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div class="h-full flex flex-col relative pb-[52px]">
+    <!-- Content -->
+    <div class="flex-1 overflow-hidden relative">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark-edit:text-white">My Tasks</h1>
-        <p class="mt-1 text-sm text-gray-600 dark-edit:text-gray-400">
-          {{ filteredTasks.length }} tasks assigned to you
-        </p>
-      </div>
-      <Button 
-        icon="pi pi-plus" 
-        label="New Task" 
-        @click="openCreateTaskModal"
-      />
-    </div>
+        <!-- List View -->
+        <div v-if="uiStore.myTasksViewMode === ViewType.LIST" class="h-full overflow-hidden">
+           <ProjectTasksGrid
+            :tasks="treeTasks"
+            @task-click="navigateToTask"
+            @update-task-title="handleUpdateTaskTitle"
+          />
+        </div>
 
-    <!-- Filters -->
-    <div v-if="false" class="mb-6 flex flex-wrap items-center gap-3">
-      <div class="relative flex-1 sm:max-w-xs">
-        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <FormInput
-          id="my-tasks-search"
-          v-model="searchQuery"
-          label="Search tasks"
-          labelClass="sr-only"
-          placeholder="Search tasks..."
-          class="w-full pl-10"
-        />
-      </div>
-      <FormInput
-        id="my-tasks-status"
-        v-model="statusFilter"
-        as="select"
-        label="Status"
-        labelClass="sr-only"
-        :options="statusOptions"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Status"
-        class="w-40"
-      />
-      <FormInput
-        id="my-tasks-priority"
-        v-model="priorityFilter"
-        as="select"
-        label="Priority"
-        labelClass="sr-only"
-        :options="priorityOptions"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Priority"
-        class="w-40"
-      />
-    </div>
+        <!-- Board View -->
+        <div v-else-if="uiStore.myTasksViewMode === ViewType.KANBAN" class="h-full overflow-hidden px-4 pb-4 pt-2">
+           <KanbanBoard
+            :columns="kanbanColumns"
+            :tasks-by-column="tasksByStatus"
+            :is-loading="isLoading"
+            :has-loaded-columns="true"
+            @open-task="navigateToTask"
+          />
+        </div>
 
-    <div class="mb-3 flex justify-end">
-      <div class="flex items-center gap-2">
-        <Button label="Add task" icon="pi pi-plus" size="small" @click="addRootTask" />
-        <Button label="Generate 1k" icon="pi pi-bolt" size="small" severity="secondary" @click="generateStressData" />
-        <Button label="Reset data" icon="pi pi-refresh" size="small" severity="secondary" @click="resetStressData" />
+        <!-- Calendar View -->
+        <div v-else-if="uiStore.myTasksViewMode === ViewType.CALENDAR" class="h-full flex items-center justify-center">
+             <div class="text-center">
+                <i class="pi pi-calendar text-4xl text-gray-300 mb-4 block"></i>
+                <h3 class="text-lg font-medium text-gray-900">Calendar View</h3>
+                <p class="text-sm text-gray-500">Coming soon</p>
+             </div>
+        </div>
+
+         <!-- Empty State -->
+         <div 
+           v-if="filteredTasks.length === 0 && !isLoading" 
+           class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+         >
+           <div class="pointer-events-auto text-center" v-if="uiStore.searchQuery || statusFilter || priorityFilter">
+              <i class="pi pi-search text-4xl text-gray-300 mb-4 block"></i>
+              <h3 class="text-lg font-medium text-gray-900">No tasks found</h3>
+              <p class="text-sm text-gray-500">Try adjusting your filters</p>
+           </div>
+           <div class="pointer-events-auto text-center" v-else-if="uiStore.myTasksViewMode === ViewType.LIST">
+              <i class="pi pi-inbox text-4xl text-gray-300 mb-4 block"></i>
+              <h3 class="text-lg font-medium text-gray-900">No tasks yet</h3>
+              <p class="text-sm text-gray-500 mb-4">Create your first task to get started</p>
+              <Button 
+                 v-if="!uiStore.searchQuery && !statusFilter && !priorityFilter"
+                 label="Create Task" 
+                 @click="openCreateTaskModal" 
+               />
+           </div>
+         </div>
       </div>
     </div>
 
-    <div class="mb-8">
-      <MyTasksGrid :tasks="treeTasks" />
-    </div>
+    <!-- Fixed Footer Bar -->
+    <div class="fixed bottom-0 left-[288px] right-0 h-[52px] bg-white border-t border-gray-200 px-4 flex items-center justify-between z-[101] transition-[left] duration-300" :style="{ left: uiStore.sidebarWidth }">
+      <!-- Left: Filters & Actions -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-[13px] text-gray-500">Filter by</span>
 
-    <!-- Loading State -->
-    <div v-if="isLoading" class="space-y-4">
-      <!-- <Skeleton v-for="i in 5" :key="i" height="60px" /> -->
-    </div>
+          <!-- Project Filter -->
+          <DropdownMenu :items="projectMenuItems" position="left" width="12rem" :openUp="true">
+             <template #trigger>
+                <button 
+                  class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                  :class="{ 'border-blue-300 bg-blue-50 text-blue-700': projectFilter }"
+                >
+                  <LayoutGrid class="w-4 h-4" :class="projectFilter ? 'text-blue-600' : 'text-gray-500'" />
+                  <span>{{ projectFilter ? (projectStore.projects?.find(p => p.id === projectFilter)?.name || 'Project') : 'Project' }}</span>
+                </button>
+             </template>
+          </DropdownMenu>
 
-    <!-- Empty State -->
-    <div 
-      v-else-if="filteredTasks.length === 0" 
-      class="flex flex-col items-center justify-center py-16"
-    >
-      <i class="pi pi-inbox text-6xl text-gray-300 dark-edit:text-gray-600"></i>
-      <h3 class="mt-4 text-lg font-medium text-gray-900 dark-edit:text-white">No tasks found</h3>
-      <p class="mt-1 text-gray-500 dark-edit:text-gray-400">
-        {{ searchQuery || statusFilter || priorityFilter ? 'Try adjusting your filters' : 'Create your first task to get started' }}
-      </p>
-      <Button 
-        v-if="!searchQuery && !statusFilter && !priorityFilter"
-        label="Create Task" 
-        class="mt-4"
-        @click="openCreateTaskModal"
-      />
-    </div>
+          <!-- Due Date Filter -->
+          <DatePicker v-model="dateRange" mode="date" :popover="{ visibility: 'click' }">
+            <template #default="{ togglePopover }">
+              <button 
+                @click="togglePopover"
+                class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                :class="{ 'border-blue-300 bg-blue-50 text-blue-700': dateRange }"
+              >
+                <Calendar class="w-4 h-4" :class="dateRange ? 'text-blue-600' : 'text-gray-500'" />
+                <span>{{ dateRange ? new Date(dateRange).toLocaleDateString() : 'Due Date' }}</span>
+              </button>
+            </template>
+          </DatePicker>
 
+          <!-- Status Filter -->
+           <DropdownMenu :items="statusMenuItems" position="left" width="10rem" :openUp="true">
+             <template #trigger>
+                <button 
+                  class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                  :class="{ 'border-blue-300 bg-blue-50 text-blue-700': statusFilter }"
+                >
+                  <CheckCircle class="w-4 h-4" :class="statusFilter ? 'text-blue-600' : 'text-gray-500'" />
+                  <span>{{ statusFilter ? statusOptions.find(o => o.value === statusFilter)?.label : 'Status' }}</span>
+                </button>
+             </template>
+           </DropdownMenu>
+
+           <!-- More Filters -->
+           <DropdownMenu :items="[]" position="left" width="10rem" :openUp="true">
+             <template #trigger>
+                <button class="flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors">
+                  <ListFilter class="w-4 h-4" />
+                </button>
+             </template>
+           </DropdownMenu>
+        </div>
+      </div>
+      
+      <!-- Right: Pagination -->
+      <div v-if="showPagination" class="footer-pagination">
+        <div class="flex items-center gap-1">
+          <!-- First Page -->
+          <button
+            @click="goToFirst"
+            :disabled="isFirstPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isFirstPage }"
+            title="First page"
+          >
+            <ChevronsLeft class="w-4 h-4" />
+          </button>
+          
+          <!-- Previous Page -->
+          <button
+            @click="goToPrev"
+            :disabled="isFirstPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isFirstPage }"
+            title="Previous page"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          
+          <!-- Page Numbers -->
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            @click="goToPage(page)"
+            class="pagination-btn pagination-page"
+            :class="{ 'pagination-page-active': page === currentPage }"
+          >
+            {{ page }}
+          </button>
+          
+          <!-- Next Page -->
+          <button
+            @click="goToNext"
+            :disabled="isLastPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isLastPage }"
+            title="Next page"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </button>
+          
+          <!-- Last Page -->
+          <button
+            @click="goToLast"
+            :disabled="isLastPage"
+            class="pagination-btn"
+            :class="{ 'pagination-btn-disabled': isLastPage }"
+            title="Last page"
+          >
+            <ChevronsRight class="w-4 h-4" />
+          </button>
+          
+          <!-- Page Size Selector -->
+          <div class="page-size-selector ml-2">
+            <select
+              :value="pageSize"
+              @change="changePageSize(Number($event.target.value))"
+              class="page-size-select"
+            >
+              <option v-for="size in pageSizeOptions" :key="size" :value="size">
+                {{ size }}
+              </option>
+            </select>
+            <ChevronDown class="w-3 h-3 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
