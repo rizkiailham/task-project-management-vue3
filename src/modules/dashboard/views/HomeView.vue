@@ -2,336 +2,189 @@
 /**
  * HomeView - Dashboard home page
  * 
- * Shows overview of tasks, recent activity, and quick actions
+ * Shows Priority Tasks and My Tasks with Mock Data
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore, useTaskStore, useProjectStore, useWorkspaceStore, useUIStore } from '@/stores'
-import { TaskStatus, TaskPriority } from '@/models'
-
-// PrimeVue
-import Card from 'primevue/card'
-import Button from 'primevue/button'
-import Avatar from 'primevue/avatar'
-import ProgressBar from 'primevue/progressbar'
+import { useI18n } from 'vue-i18n' // Keeping for consistency if used elsewhere, else can remove
+import { useAuthStore, useTaskStore, useProjectStore, useUIStore } from '@/stores'
+import { TaskStatus } from '@/models'
+import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
 import Skeleton from 'primevue/skeleton'
 
 const router = useRouter()
-const { t } = useI18n()
+// const { t } = useI18n() 
 const authStore = useAuthStore()
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
-const workspaceStore = useWorkspaceStore()
 const uiStore = useUIStore()
 
 // State
 const isLoading = ref(true)
 
 // Computed
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return t('dashboard.greeting.morning')
-  if (hour < 18) return t('dashboard.greeting.afternoon')
-  return t('dashboard.greeting.evening')
+const currentDate = computed(() => {
+  // Hardcoded to match image for demo, or keep dynamic? 
+  // User said "create dummy data like on image". 
+  // Let's keep date dynamic but formatted as requested: "Thursday, January 1st"
+  const date = new Date()
+  
+  // Helper for English ordinal
+  const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"]
+    const v = n % 100
+    return n + (s[(v - 20) % 10] || s[v] || s[0])
+  }
+  const day = getOrdinal(date.getDate())
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'long' })
+  const month = date.toLocaleDateString('en-US', { month: 'long' })
+  return `${weekday}, ${month} ${day}`
 })
 
-const todayTasks = computed(() => {
-  const today = new Date().toDateString()
-  return taskStore.myTasks.filter(task => {
-    if (!task.dueDate) return false
-    return new Date(task.dueDate).toDateString() === today
-  })
-})
+// Mock User Name for demo matching image "Jack"
+const userName = computed(() => 'Jack') 
 
-const overdueTasks = computed(() => taskStore.overdueTasks)
+// Dummy Data matching the image
+const priorityTasks = ref([
+  { id: 'p1', title: 'Review and validate tenant', projectName: 'Project Name', status: 'todo', progress: 0 },
+  { id: 'p2', title: 'Prepare monthly building report', projectName: 'Ad Astra', status: 'done', progress: 100 },
+  { id: 'p3', title: 'Coordinate for unit repair', projectName: 'Not Like Us', status: 'in_progress', progress: 75 },
+  { id: 'p4', title: 'Verify service request', projectName: 'Skylar', status: 'in_progress', progress: 25 },
+  { id: 'p5', title: 'Follow up previous meeting', projectName: 'Escapism', status: 'in_progress', progress: 50 },
+])
 
-const completedToday = computed(() => {
-  const today = new Date().toDateString()
-  return taskStore.myTasks.filter(task => {
-    if (task.status !== TaskStatus.DONE || !task.completedAt) return false
-    return new Date(task.completedAt).toDateString() === today
-  }).length
-})
+const myTasksList = ref([
+  { id: 'm1', title: 'Link Related Issues', projectName: 'Ad Astra', status: 'todo', progress: 0 },
+  { id: 'm2', title: 'Approve Service Completion', projectName: 'TwinPeaks', status: 'todo', progress: 0 },
+  { id: 'm3', title: 'Inspect Repair Work', projectName: 'Ad Astra', status: 'todo', progress: 0 },
+  { id: 'm4', title: 'Generate Monthly Report', projectName: 'TwinPeaks', status: 'todo', progress: 0 },
+  { id: 'm5', title: 'Follow Up Tenant', projectName: 'TwinPeaks', status: 'todo', progress: 0 },
+  { id: 'm6', title: 'Escalate Priority Issue', projectName: 'Ad Astra', status: 'todo', progress: 0 },
+  { id: 'm7', title: 'Archive Completed Tasks', projectName: 'Ad Astra', status: 'todo', progress: 0 },
+  { id: 'm8', title: 'Validate Safety Compliance', projectName: 'Ad Astra', status: 'todo', progress: 0 },
+  { id: 'm9', title: 'Prepare Meeting Agenda', projectName: 'Ad Astra', status: 'todo', progress: 0 },
+  { id: 'm10', title: 'Analyze Complaint Trends', projectName: 'Ad Astra', status: 'todo', progress: 0 },
+])
 
-const taskStats = computed(() => ({
-  total: taskStore.myTasks.length,
-  completed: taskStore.myTasks.filter(t => t.status === TaskStatus.DONE).length,
-  inProgress: taskStore.myTasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
-  overdue: overdueTasks.value.length
-}))
-
-const completionRate = computed(() => {
-  if (taskStats.value.total === 0) return 0
-  return Math.round((taskStats.value.completed / taskStats.value.total) * 100)
-})
 
 // Methods
 onMounted(async () => {
-  try {
-    await Promise.all([
-      taskStore.fetchMyTasks(),
-      projectStore.fetchProjects()
-    ])
-  } catch (error) {
-    uiStore.showApiError(error, t('dashboard.errors.loadFailed'))
-  } finally {
+  // Simulate loading
+  setTimeout(() => {
     isLoading.value = false
-  }
+  }, 500)
 })
 
 function navigateToTask(task) {
-  router.push({ name: 'TaskDetail', params: { taskId: task.id } })
+  // For dummy data, just log or simple push
+  console.log('Navigate to', task)
 }
 
-function navigateToProject(project) {
-  router.push({
-    name: 'Project',
-    params: {
-      workspaceId: workspaceStore.currentWorkspaceId,
-      projectId: project.id
-    }
-  })
-}
-
-function openCreateTaskModal() {
-  uiStore.openModal('createTask')
-}
-
-function getPriorityColor(priority) {
-  const colors = {
-    [TaskPriority.URGENT]: 'text-red-600',
-    [TaskPriority.HIGH]: 'text-orange-500',
-    [TaskPriority.MEDIUM]: 'text-yellow-500',
-    [TaskPriority.LOW]: 'text-gray-400'
-  }
-  return colors[priority] || 'text-gray-400'
-}
-
-function getStatusLabel(status) {
-  switch (status) {
-    case TaskStatus.TODO:
-      return t('tasks.statusOptions.todo')
-    case TaskStatus.IN_PROGRESS:
-      return t('tasks.statusOptions.inProgress')
-    case TaskStatus.IN_REVIEW:
-      return t('tasks.statusOptions.inReview')
-    case TaskStatus.DONE:
-      return t('tasks.statusOptions.done')
-    case TaskStatus.CANCELLED:
-      return t('tasks.statusOptions.cancelled')
-    default:
-      return status
-  }
+function getTaskProgress(task) {
+  return task.progress
 }
 </script>
 
 <template>
-  <div class="p-6 lg:p-8">
+  <div class="min-h-full bg-white p-8">
     <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 dark-edit:text-white">
-        {{ greeting }}, {{ authStore.userName.split(' ')[0] }}!
+    <div class="mb-12 text-center">
+      <p class="text-sm font-medium text-gray-500 mb-2">{{ currentDate }}</p>
+      <h1 class="text-4xl font-semibold text-gray-800 tracking-tight">
+        Good Morning, {{ userName }}
       </h1>
-      <p class="mt-1 text-gray-600 dark-edit:text-gray-400">
-        {{ t('dashboard.subheading') }}
-      </p>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <!-- Total Tasks -->
-      <Card class="shadow-sm">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.totalTasks') }}</p>
-              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
-                {{ taskStats.total }}
-              </p>
-              <Skeleton v-else width="60px" height="32px" />
-            </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark-edit:bg-primary-900/20">
-              <i class="pi pi-list text-xl text-primary-600 dark-edit:text-primary-400"></i>
-            </div>
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8 max-w-7xl mx-auto h-[600px]">
+      
+      <!-- Left Column: Priority Task -->
+      <div class="flex flex-col h-full">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Priority Task</h2>
+        
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 overflow-hidden flex flex-col">
+          <div v-if="isLoading" class="p-4 space-y-4">
+            <Skeleton v-for="i in 5" :key="i" height="50px" class="rounded-none" />
           </div>
-        </template>
-      </Card>
-
-      <!-- In Progress -->
-      <Card class="shadow-sm">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.inProgress') }}</p>
-              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
-                {{ taskStats.inProgress }}
-              </p>
-              <Skeleton v-else width="60px" height="32px" />
-            </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark-edit:bg-blue-900/20">
-              <i class="pi pi-spin pi-spinner text-xl text-blue-600 dark-edit:text-blue-400"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
-
-      <!-- Completed -->
-      <Card class="shadow-sm">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.completed') }}</p>
-              <p v-if="!isLoading" class="text-2xl font-bold text-gray-900 dark-edit:text-white">
-                {{ taskStats.completed }}
-              </p>
-              <Skeleton v-else width="60px" height="32px" />
-            </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark-edit:bg-green-900/20">
-              <i class="pi pi-check text-xl text-green-600 dark-edit:text-green-400"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
-
-      <!-- Overdue -->
-      <Card class="shadow-sm">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.stats.overdue') }}</p>
-              <p v-if="!isLoading" class="text-2xl font-bold" :class="taskStats.overdue > 0 ? 'text-red-600' : 'text-gray-900 dark-edit:text-white'">
-                {{ taskStats.overdue }}
-              </p>
-              <Skeleton v-else width="60px" height="32px" />
-            </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark-edit:bg-red-900/20">
-              <i class="pi pi-exclamation-triangle text-xl text-red-600 dark-edit:text-red-400"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
-    </div>
-
-    <div class="grid gap-6 lg:grid-cols-3">
-      <!-- Today's Tasks -->
-      <div class="lg:col-span-2">
-        <Card class="shadow-sm">
-          <template #title>
-            <div class="flex items-center justify-between">
-              <span>{{ t('dashboard.today.title') }}</span>
-              <Button 
-                icon="pi pi-plus" 
-                :label="t('dashboard.today.addTask')"
-                size="small" 
-                @click="openCreateTaskModal"
-              />
-            </div>
-          </template>
-          <template #content>
-            <div v-if="isLoading" class="space-y-3">
-              <Skeleton v-for="i in 3" :key="i" height="60px" />
-            </div>
-            
-            <div v-else-if="todayTasks.length === 0" class="py-8 text-center">
-              <i class="pi pi-check-circle text-4xl text-gray-300 dark-edit:text-gray-600"></i>
-              <p class="mt-2 text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.today.empty') }}</p>
-              <Button 
-                :label="t('dashboard.today.createTask')"
-                text 
-                size="small" 
-                class="mt-2"
-                @click="openCreateTaskModal"
-              />
-            </div>
-            
-            <div v-else class="space-y-2">
-              <div
-                v-for="task in todayTasks.slice(0, 5)"
+          <div v-else class="overflow-y-auto custom-scrollbar flex-1">
+             <!-- Using divide-y for separation lines as seen in image -->
+            <div class="divide-y divide-gray-100">
+              <div 
+                v-for="task in priorityTasks" 
                 :key="task.id"
                 @click="navigateToTask(task)"
-                class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-100 p-3 transition-colors hover:bg-gray-50 dark-edit:border-gray-700 dark-edit:hover:bg-gray-700/50"
+                class="group flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer"
+                :class="{ 'bg-blue-50/50': task.id === 'p2' }" 
               >
-                <i :class="['pi pi-flag-fill', getPriorityColor(task.priority)]"></i>
-                <div class="flex-1 min-w-0">
-                  <p class="truncate font-medium text-gray-900 dark-edit:text-white">{{ task.title }}</p>
-                  <p class="text-xs text-gray-500 dark-edit:text-gray-400">{{ task.projectName }}</p>
+                <!-- Added blue bg for the active/selected looking item in example 'Prepare monthly...' -->
+                
+                <span class="text-sm font-medium text-gray-700 truncate mr-4 flex-1">
+                  {{ task.title }}
+                </span>
+                <div class="flex items-center gap-6 flex-shrink-0">
+                  <span class="text-xs text-gray-500 font-medium text-right truncate w-24">
+                    {{ task.projectName }}
+                  </span>
+                  <TaskProgressIcon 
+                    :status="task.status" 
+                    :progress="task.progress" 
+                  />
                 </div>
-                <span 
-                  class="rounded-full px-2 py-1 text-xs font-medium"
-                  :class="{
-                    'bg-gray-100 text-gray-700 dark-edit:bg-gray-700 dark-edit:text-gray-300': task.status === TaskStatus.TODO,
-                    'bg-blue-100 text-blue-700 dark-edit:bg-blue-900/20 dark-edit:text-blue-400': task.status === TaskStatus.IN_PROGRESS,
-                    'bg-green-100 text-green-700 dark-edit:bg-green-900/20 dark-edit:text-green-400': task.status === TaskStatus.DONE
-                  }"
-                >
-                  {{ getStatusLabel(task.status) }}
-                </span>
-              </div>
-              
-              <router-link 
-                v-if="todayTasks.length > 5"
-                :to="{ name: 'MyTasks' }"
-                class="block text-center text-sm text-primary-600 hover:text-primary-500"
-              >
-                {{ t('dashboard.today.viewAll', { count: todayTasks.length }) }}
-              </router-link>
-            </div>
-          </template>
-        </Card>
-      </div>
-
-      <!-- Progress & Projects -->
-      <div class="space-y-6">
-        <!-- Progress Card -->
-        <Card class="shadow-sm">
-          <template #title>{{ t('dashboard.progress.title') }}</template>
-          <template #content>
-            <div class="text-center">
-              <div class="text-4xl font-bold text-primary-600">{{ completionRate }}%</div>
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.progress.completedLabel') }}</p>
-              <ProgressBar :value="completionRate" class="mt-4" :showValue="false" />
-              <p class="mt-2 text-xs text-gray-500 dark-edit:text-gray-400">
-                {{ t('dashboard.progress.completedCount', { completed: taskStats.completed, total: taskStats.total }) }}
-              </p>
-            </div>
-          </template>
-        </Card>
-
-        <!-- Recent Projects -->
-        <Card class="shadow-sm">
-          <template #title>{{ t('dashboard.projects.title') }}</template>
-          <template #content>
-            <div v-if="isLoading" class="space-y-3">
-              <Skeleton v-for="i in 3" :key="i" height="40px" />
-            </div>
-            
-            <div v-else-if="projectStore.projects.length === 0" class="py-4 text-center">
-              <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('dashboard.projects.empty') }}</p>
-            </div>
-            
-            <div v-else class="space-y-2">
-              <div
-                v-for="project in projectStore.projects.slice(0, 4)"
-                :key="project.id"
-                @click="navigateToProject(project)"
-                class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark-edit:hover:bg-gray-700/50"
-              >
-                <span 
-                  class="flex h-8 w-8 items-center justify-center rounded text-sm font-medium text-white"
-                  :style="{ backgroundColor: project.color || '#6366f1' }"
-                >
-                  {{ project.name.charAt(0).toUpperCase() }}
-                </span>
-                <span class="flex-1 truncate text-sm font-medium text-gray-900 dark-edit:text-white">
-                  {{ project.name }}
-                </span>
-                <i class="pi pi-chevron-right text-xs text-gray-400"></i>
               </div>
             </div>
-          </template>
-        </Card>
+          </div>
+        </div>
       </div>
+
+      <!-- Right Column: My Task -->
+      <div class="flex flex-col h-full">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">My Task</h2>
+
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 overflow-hidden flex flex-col">
+          <div v-if="isLoading" class="p-4 space-y-4">
+            <Skeleton v-for="i in 5" :key="i" height="50px" class="rounded-none" />
+          </div>
+           <!-- Added custom-scrollbar class for styling if needed, or rely on browser default -->
+          <div v-else class="overflow-y-auto custom-scrollbar flex-1">
+            <div class="divide-y divide-gray-100">
+              <div 
+                v-for="task in myTasksList" 
+                :key="task.id"
+                @click="navigateToTask(task)"
+                class="group flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <span class="text-sm font-medium text-gray-700 truncate mr-4 flex-1">
+                  {{ task.title }}
+                </span>
+                <div class="flex items-center gap-6 flex-shrink-0">
+                   <span class="text-xs text-gray-500 font-medium text-right truncate w-24">
+                    {{ task.projectName }}
+                  </span>
+                  <TaskProgressIcon 
+                    :status="task.status" 
+                    :progress="task.progress" 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Optional: Custom scrollbar styling to match clean UI */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #e5e7eb;
+  border-radius: 20px;
+}
+</style>
