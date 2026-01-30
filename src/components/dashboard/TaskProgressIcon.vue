@@ -1,11 +1,10 @@
 <template>
-  <div class="relative flex items-center justify-center w-6 h-6">
+  <div class="relative flex items-center justify-center" :class="sizeClass">
     <!-- Completed Check Icon -->
-    <div v-if="isCompleted" class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+    <div v-if="isCompleted" class="w-full h-full rounded-full bg-green-500 flex items-center justify-center shadow-sm">
       <svg 
         xmlns="http://www.w3.org/2000/svg" 
-        width="14" 
-        height="14" 
+        class="w-[60%] h-[60%]"
         viewBox="0 0 24 24" 
         fill="none" 
         stroke="white" 
@@ -20,12 +19,12 @@
     <!-- Pie Chart Icon with Colored Ring & Gap -->
     <div 
       v-else 
-      class="relative w-6 h-6 rounded-full flex items-center justify-center border-2"
+      class="relative w-full h-full rounded-full flex items-center justify-center border-2"
       :style="{ borderColor: progressColor }"
     >
        <!-- Inner Pie Cell -->
        <div 
-         class="w-3.5 h-3.5 rounded-full"
+         class="w-[60%] h-[60%] rounded-full"
          :style="pieStyle"
        ></div>
     </div>
@@ -43,11 +42,24 @@ const props = defineProps({
   progress: {
     type: Number,
     default: 0
+  },
+  size: {
+    type: String,
+    default: 'md' // sm, md, lg
   }
 })
 
 const isCompleted = computed(() => {
   return props.status === 'done' || props.status === 'completed'
+})
+
+const sizeClass = computed(() => {
+  const sizes = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6'
+  }
+  return sizes[props.size] || sizes.md
 })
 
 const progressColor = computed(() => {

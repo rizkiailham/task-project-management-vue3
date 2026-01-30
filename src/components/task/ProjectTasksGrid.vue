@@ -21,6 +21,7 @@ import TagEditorDropdown from '@/components/task/TagEditorDropdown.vue'
 import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
 import ProjectCell from '@/components/task/ProjectCell.vue'
+import StatusCell from '@/components/task/StatusCell.vue'
 
 
 const projectStore = useProjectStore()
@@ -309,21 +310,35 @@ async function handleRowDragEnd(event) {
 
 const columnDefs = [
   {
-    field: 'dartboard',
+    field: 'projectName',
     headerName: 'Project',
-
     flex: 1,
     minWidth: 140,
     cellRenderer: 'ProjectCell'
   },
-
-
+  {
+    field: 'status',
+    headerName: 'Status',
+    width: 60,
+    minWidth: 100,
+    maxWidth: 100,
+    cellRenderer: 'StatusCell',
+    cellClass: 'flex items-center justify-center p-0',
+    headerClass: 'ag-header-cell-center',
+    sortable: false,
+    filter: false
+  },
   {
     field: 'assignee',
     headerName: 'Assignee',
-    flex: 1,
-    minWidth: 160,
-    cellRenderer: 'AssigneeCell'
+    width: 60,
+    minWidth: 100,
+    maxWidth: 100,
+    cellRenderer: 'AssigneeCell',
+    cellClass: 'flex items-center justify-center p-0',
+    headerClass: 'ag-header-cell-center',
+    sortable: false,
+    filter: false
   },
   {
     field: 'dueDate',
@@ -331,16 +346,6 @@ const columnDefs = [
     flex: 0.8,
     minWidth: 120,
     cellRenderer: 'DueDateCell'
-  },
-  {
-    field: 'trackingTime',
-    headerName: 'Tracking time',
-    flex: 0.9,
-    minWidth: 120,
-    sortable: false,
-    filter: false,
-    editable: false,
-    cellRenderer: 'TrackingTimeCell'
   },
   {
     field: 'tags',
@@ -432,7 +437,8 @@ const gridOptions = ref({
     TagEditorDropdown,
     TrackingTimeCell,
     DartboardCell,
-    ProjectCell
+    ProjectCell,
+    StatusCell
   },
 
 
@@ -628,6 +634,25 @@ function onGridReady(params) {
 :deep(.ag-group-contracted),
 :deep(.ag-group-expanded) {
   display: none !important;
+}
+
+:deep(.ag-header-cell-center .ag-header-cell-comp-wrapper),
+:deep(.ag-header-cell-center .sort-header) {
+  justify-content: center !important;
+}
+
+:deep(.ag-header-cell-center .sort-header__label) {
+  flex: 0 0 auto !important;
+}
+
+/* Ensure inner renderer fills full cell width for hover detection */
+:deep(.ag-cell-wrapper) {
+  width: 100%;
+}
+
+:deep(.ag-group-value) {
+  width: 100%;
+  flex: 1;
 }
 </style>
 

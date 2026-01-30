@@ -647,7 +647,29 @@ a.text-primary:hover,
   color: var(--color-primary-700) !important;
 }
 
+
 .p-button-label {
   font-size: 14px !important;
   font-weight: 400 !important;
+}
+
+/* ================================
+   Custom Tooltips
+   ================================ */
+
+/* Assignee Tooltip - White BG, Gray Border */
+.p-tooltip.assignee-tooltip .p-tooltip-text {
+  background: #ffffff !important;
+  color: #374151 !important;
+  /* gray-700 */
+  border: 1px solid #e5e7eb !important;
+  /* gray-200 */
+  font-size: 13px !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+}
+
+.p-tooltip.assignee-tooltip .p-tooltip-arrow {
+  border-top-color: #ffffff !important;
 }

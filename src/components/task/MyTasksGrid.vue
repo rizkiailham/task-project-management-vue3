@@ -770,4 +770,14 @@ function onGridReady(params) {
 :deep(.ag-group-expanded) {
   display: none !important;
 }
+
+/* Ensure inner renderer fills full cell width for hover detection */
+:deep(.ag-cell-wrapper) {
+  width: 100%;
+}
+
+:deep(.ag-group-value) {
+  width: 100%;
+  flex: 1;
+}
 </style>

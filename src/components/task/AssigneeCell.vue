@@ -86,37 +86,29 @@ defineExpose({ refresh })
 </script>
 
 <template>
-  <div class="assignee-cell-wrapper h-full flex items-center">
+  <div class="assignee-cell-wrapper h-full flex items-center justify-center">
     <UserSearchDropdown
       :model-value="localAssignee"
       @select="handleSelectUser"
     >
       <template #trigger>
-        <button
-          type="button"
-          class="assignee-cell flex items-center gap-1.5 rounded-full border border-gray-200 bg-white pl-1 pr-2 py-0.5 text-xs text-gray-700 hover:border-gray-300 transition-colors"
+        <div 
+          class="assignee-cell flex items-center justify-center cursor-pointer"
         >
           <span 
-            class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold text-white flex-shrink-0"
+            class="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white flex-shrink-0 border-2 border-white shadow-sm"
             :style="{ backgroundColor: avatarColor }"
+            v-tooltip.top="{ value: displayName, class: 'assignee-tooltip' }"
           >
             {{ avatarInitial }}
           </span>
-          <span class="max-w-[80px] truncate">{{ displayName }}</span>
-          <svg class="h-3 w-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+        </div>
       </template>
     </UserSearchDropdown>
   </div>
 </template>
 
 <style scoped>
-.assignee-cell-wrapper {
-  width: 100%;
-}
-
 .assignee-cell {
   cursor: pointer;
 }
