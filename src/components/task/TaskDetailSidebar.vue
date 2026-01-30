@@ -19,9 +19,26 @@ import Skeleton from 'primevue/skeleton'
 import NotionEditor from '@/components/editor/NotionEditor.vue'
 import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
-import { Sparkles, ChevronRight, User as UserIcon } from 'lucide-vue-next'
+import { 
+  Sparkles, 
+  ChevronRight, 
+  ChevronDown,
+  User as UserIcon, 
+  Link2, 
+  Paperclip, 
+  MoreHorizontal, 
+  X, 
+  Maximize2,
+  Clock,
+  Pin,
+  Copy,
+  Pencil,
+  Trash2,
+  Calendar
+} from 'lucide-vue-next'
 
 const { t } = useI18n()
 const taskStore = useTaskStore()
@@ -41,8 +58,12 @@ const isEditingDescription = ref(false)
 const localDescription = ref('')
 const isPropertiesOpen = ref(true)
 const isDescriptionOpen = ref(true)
+const isAttachmentsOpen = ref(false)
+const isRelationshipsOpen = ref(false)
+const isSubscribersOpen = ref(false)
 const isSubtasksOpen = ref(true)
-const isActivityOpen = ref(true)
+const isActivityOpen = ref(false)
+const isCommentsOpen = ref(true)
 const isAiDescriptionPending = ref(false)
 const pendingAiDescription = ref('')
 const descriptionBeforeAi = ref('')
@@ -167,6 +188,17 @@ function getStatusIcon(status) {
     [TaskStatus.BLOCKED]: '⊘'
   }
   return icons[status] || '○'
+}
+
+function getStatusProgress(status) {
+  const progress = {
+    [TaskStatus.TODO]: 0,
+    [TaskStatus.IN_PROGRESS]: 50,
+    [TaskStatus.IN_REVIEW]: 75,
+    [TaskStatus.DONE]: 100,
+    [TaskStatus.BLOCKED]: 25
+  }
+  return progress[status] ?? 0
 }
 
 function formatDate(date) {
@@ -397,8 +429,12 @@ function notify(message, title = '') {
 function toggleSection(section) {
   if (section === 'properties') isPropertiesOpen.value = !isPropertiesOpen.value
   if (section === 'description') isDescriptionOpen.value = !isDescriptionOpen.value
+  if (section === 'attachments') isAttachmentsOpen.value = !isAttachmentsOpen.value
+  if (section === 'relationships') isRelationshipsOpen.value = !isRelationshipsOpen.value
+  if (section === 'subscribers') isSubscribersOpen.value = !isSubscribersOpen.value
   if (section === 'subtasks') isSubtasksOpen.value = !isSubtasksOpen.value
   if (section === 'activity') isActivityOpen.value = !isActivityOpen.value
+  if (section === 'comments') isCommentsOpen.value = !isCommentsOpen.value
 }
 
 async function handleUpdateAssignee(user) {
@@ -476,70 +512,92 @@ async function handleAddComment() {
       ></div>
       
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+      <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200">
         <div class="flex items-center gap-2">
-          <button
-            class="flex items-center gap-1.5 px-2 py-1 text-sm text-primary-600 bg-primary-50 rounded hover:bg-primary-100 transition-colors"
-            type="button"
-            @click="notify(t('taskDetail.taskAI'))"
-          >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-            <span>{{ t('taskDetail.taskAI') }}</span>
-          </button>
+          <DropdownMenu width="10rem">
+            <template #trigger>
+              <button
+                class="flex items-center gap-1 px-1.5 py-0.5 text-xs text-primary-600 bg-primary-50 rounded hover:bg-primary-100 transition-colors"
+                type="button"
+              >
+                <Sparkles class="w-4 h-4" />
+                <span>{{ t('taskDetail.taskAI') }}</span>
+                <ChevronDown class="w-3 h-3" />
+              </button>
+            </template>
+            <template #content>
+              <div class="py-1">
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+                  @click="notify('Generate description')"
+                >
+                  <Sparkles class="w-3.5 h-3.5 text-primary-500" />
+                  <span>Generate description</span>
+                </button>
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+                  @click="notify('Summarize task')"
+                >
+                  <Sparkles class="w-3.5 h-3.5 text-primary-500" />
+                  <span>Summarize task</span>
+                </button>
+              </div>
+            </template>
+          </DropdownMenu>
         </div>
         
         <div class="flex items-center gap-1">
           <button
-            class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
             type="button"
-            @click="notify('Link action')"
+            title="Copy link"
+            @click="notify('Link copied')"
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
+            <Link2 class="w-3.5 h-3.5" />
           </button>
           <button
-            class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
             type="button"
+            title="Attachments"
             @click="notify('Attachment action')"
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-            </svg>
+            <Paperclip class="w-3.5 h-3.5" />
           </button>
           <button
-            class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
             type="button"
+            title="Expand"
+            @click="notify('Expand view')"
+          >
+            <Maximize2 class="w-3.5 h-3.5" />
+          </button>
+          <button
+            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            type="button"
+            title="More options"
             @click="notify('More actions')"
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="19" cy="12" r="1"></circle>
-              <circle cx="5" cy="12" r="1"></circle>
-            </svg>
+            <MoreHorizontal class="w-3.5 h-3.5" />
           </button>
           <button
             @click="close"
-            class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
             type="button"
+            title="Close"
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <X class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
       
       <!-- Title (Fixed) -->
-      <div class="shrink-0 px-4 py-3 border-b border-gray-200 bg-white">
-        <Skeleton v-if="isLoading" height="28px" />
+      <div class="shrink-0 px-3 py-2 border-b border-gray-200 bg-white">
+        <Skeleton v-if="isLoading" height="24px" />
         <h2
           v-else-if="task"
-          class="text-xl font-semibold text-gray-900 truncate"
+          class="text-base font-semibold text-gray-900 truncate"
           :title="task.title"
         >
           {{ task.title }}
@@ -549,17 +607,17 @@ async function handleAddComment() {
 	      <!-- Content (Scrollable Middle) -->
 	      <div class="flex-1 overflow-y-auto task-detail-scroll">
         <!-- Loading State -->
-        <div v-if="isLoading" class="p-4 space-y-4">
-          <Skeleton height="100px" />
-          <Skeleton height="40px" />
+        <div v-if="isLoading" class="p-3 space-y-3">
+          <Skeleton height="80px" />
+          <Skeleton height="32px" />
         </div>
         
         <!-- Task Content -->
-        <div v-else-if="task" class="p-4 space-y-6">
+        <div v-else-if="task" class="p-3 space-y-4">
           <!-- Properties Section -->
           <div>
             <button
-              class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-3"
+              class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-2"
               type="button"
               @click="toggleSection('properties')"
             >
@@ -573,17 +631,20 @@ async function handleAddComment() {
               {{ t('taskDetail.properties') }}
             </button>
             
-            <div v-show="isPropertiesOpen" class="grid grid-cols-2 gap-4 text-sm">
+            <div v-show="isPropertiesOpen" class="grid grid-cols-2 gap-2 text-xs">
               <!-- Status -->
               <div>
-                <span class="text-gray-500">{{ t('taskDetail.status') }}</span>
-                <div class="mt-1">
+                <span class="text-gray-500 text-[11px]">{{ t('taskDetail.status') }}</span>
+                <div class="mt-0.5">
                   <DropdownMenu width="12rem">
                     <template #trigger>
-                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group">
-                        <span class="text-gray-700">{{ getStatusIcon(task.status) }}</span>
-                        <span class="font-medium">{{ getStatusLabel(task.status) }}</span>
-                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      <div class="flex items-center gap-1.5 px-1 py-0.5 -ml-1 rounded hover:bg-gray-100 cursor-pointer transition-colors group">
+                        <TaskProgressIcon 
+                          :status="task.status" 
+                          :progress="getStatusProgress(task.status)" 
+                          size="sm"
+                        />
+                        <span class="font-medium text-gray-700">{{ getStatusLabel(task.status) }}</span>
                       </div>
                     </template>
                     <template #content>
@@ -592,11 +653,15 @@ async function handleAddComment() {
                           v-for="(label, key) in TaskStatus"
                           :key="key"
                           type="button"
-                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 transition-colors"
+                          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
                           :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.status === label }"
                           @click="handleUpdateStatus(label)"
                         >
-                          <span>{{ getStatusIcon(label) }}</span>
+                          <TaskProgressIcon 
+                            :status="label" 
+                            :progress="getStatusProgress(label)" 
+                            size="sm"
+                          />
                           <span class="flex-1 text-left">{{ getStatusLabel(label) }}</span>
                           <i v-if="task.status === label" class="pi pi-check text-[10px]"></i>
                         </button>
@@ -606,89 +671,47 @@ async function handleAddComment() {
                 </div>
               </div>
               
-              <!-- Assignee -->
+              <!-- Assignees -->
               <div>
-                <span class="text-gray-500">{{ t('taskDetail.assignee') }}</span>
-                <div class="mt-1">
+                <span class="text-gray-500 text-[11px]">Assignees</span>
+                <div class="mt-0.5">
                   <UserSearchDropdown
                     :model-value="task.assignee"
                     @select="handleUpdateAssignee"
                   >
                     <template #trigger>
-                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors transition-all group">
-                        <Avatar 
-                          v-if="task.assignee"
-                          :label="task.assignee.name?.charAt(0)"
-                          shape="circle"
-                          size="small"
-                          class="bg-blue-100 text-blue-700 font-semibold"
-                          style="width: 20px; height: 20px; font-size: 10px;"
-                        />
-                        <div 
-                          v-else 
-                          class="w-5 h-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 group-hover:border-gray-500 group-hover:text-gray-600 transition-colors"
-                        >
-                          <UserIcon class="w-2.5 h-2.5" />
+                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 cursor-pointer transition-colors group">
+                        <div class="flex -space-x-1">
+                          <Avatar 
+                            v-if="task.assignee"
+                            :label="task.assignee.name?.charAt(0)"
+                            shape="circle"
+                            size="small"
+                            class="bg-blue-100 text-blue-700 font-semibold ring-2 ring-white"
+                            style="width: 20px; height: 20px; font-size: 10px;"
+                          />
+                          <div 
+                            v-else 
+                            class="w-5 h-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 group-hover:border-gray-500 group-hover:text-gray-600 transition-colors"
+                          >
+                            <UserIcon class="w-2.5 h-2.5" />
+                          </div>
                         </div>
-                        <span :class="task.assignee ? 'text-gray-700' : 'text-gray-400'">
-                          {{ task.assignee?.name || t('taskDetail.unassigned') || 'Unassigned' }}
-                        </span>
-                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
                       </div>
                     </template>
                   </UserSearchDropdown>
                 </div>
               </div>
               
-              <!-- Priority -->
+              <!-- Board -->
               <div>
-                <span class="text-gray-500">{{ t('taskDetail.priority') }}</span>
-                <div class="mt-1">
-                  <DropdownMenu width="10rem">
-                    <template #trigger>
-                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group">
-                        <span
-                          class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                          :class="getPriorityColor(task.priority)"
-                        >
-                          {{ getPriorityLabel(task.priority) }}
-                        </span>
-                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
-                      </div>
-                    </template>
-                    <template #content>
-                      <div class="py-1">
-                        <button
-                          v-for="(label, key) in TaskPriority"
-                          :key="key"
-                          type="button"
-                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 transition-colors"
-                          :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.priority === label }"
-                          @click="handleUpdatePriority(label)"
-                        >
-                          <span
-                            class="w-2 h-2 rounded-full"
-                            :class="getPriorityColor(label).split(' ')[0].replace('text-', 'bg-')"
-                          ></span>
-                          <span class="flex-1 text-left">{{ getPriorityLabel(label) }}</span>
-                          <i v-if="task.priority === label" class="pi pi-check text-[10px]"></i>
-                        </button>
-                      </div>
-                    </template>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              <!-- Dartboard -->
-              <div>
-                <span class="text-gray-500">{{ t('taskDetail.dartboard') }}</span>
-                <div class="mt-1">
+                <span class="text-gray-500 text-[11px]">Board</span>
+                <div class="mt-0.5">
                   <DropdownMenu width="14rem">
                     <template #trigger>
-                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group">
-                        <span>🎯</span>
-                        <span class="font-medium text-gray-700">{{ task.projectName || 'Tasks' }}</span>
-                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 cursor-pointer transition-colors group">
+                        <span class="font-medium text-gray-700">Project / {{ task.projectName || 'Tasks' }}</span>
+                        <ChevronDown class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
                       </div>
                     </template>
                     <template #content>
@@ -697,7 +720,7 @@ async function handleAddComment() {
                           v-for="project in projectStore.projects"
                           :key="project.id"
                           type="button"
-                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 transition-colors"
+                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
                           :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.projectId === project.id }"
                           @click="handleUpdateProject(project.id)"
                         >
@@ -713,26 +736,32 @@ async function handleAddComment() {
 
               <!-- Tags -->
               <div>
-                <span class="text-gray-500">{{ t('taskDetail.tags') }}</span>
-                <div class="mt-1 flex flex-wrap gap-1">
+                <span class="text-gray-500 text-[11px]">{{ t('taskDetail.tags') }}</span>
+                <div class="mt-0.5 flex flex-wrap items-center gap-1">
                   <template v-if="task.tags?.length > 0">
                     <span
-                      v-for="tag in task.tags"
+                      v-for="(tag, index) in task.tags.slice(0, 2)"
                       :key="tag.id"
-                      class="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                      class="px-2 py-0.5 rounded-full text-[10px] font-medium"
                       :style="{ backgroundColor: tag.color + '20', color: tag.color }"
                     >
                       {{ tag.name }}
                     </span>
+                    <span 
+                      v-if="task.tags.length > 2" 
+                      class="text-xs text-gray-500"
+                    >
+                      +{{ task.tags.length - 2 }}
+                    </span>
                   </template>
-                  <span v-else class="text-gray-400 italic px-1.5 py-1 -ml-1.5">{{ t('taskDetail.none') }}</span>
+                  <span v-else class="text-gray-400 italic">{{ t('taskDetail.none') }}</span>
                 </div>
               </div>
 
               <!-- Due Date -->
               <div>
-                <span class="text-gray-500">{{ t('taskDetail.dueDate') }}</span>
-                <div class="mt-1">
+                <span class="text-gray-500 text-[11px]">{{ t('taskDetail.dueDate') }}</span>
+                <div class="mt-0.5">
                   <VDatePicker
                     :model-value="task.dueDate"
                     :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
@@ -741,16 +770,26 @@ async function handleAddComment() {
                     <template #default="{ togglePopover }">
                       <div
                         @click="togglePopover"
-                        class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 dark-edit:hover:bg-gray-800 cursor-pointer transition-colors group"
+                        class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 cursor-pointer transition-colors group"
                       >
-                        <i class="pi pi-calendar text-gray-400"></i>
+                        <Calendar class="w-3.5 h-3.5 text-gray-400" />
                         <span :class="task.dueDate ? 'text-gray-700 font-medium' : 'text-gray-400'">
-                          {{ formatDate(task.dueDate) }}
+                          {{ task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : t('taskDetail.none') }}
                         </span>
-                        <ChevronRight class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
                       </div>
                     </template>
                   </VDatePicker>
+                </div>
+              </div>
+
+              <!-- Time Tracking -->
+              <div>
+                <span class="text-gray-500 text-[11px]">Time Tracking</span>
+                <div class="mt-0.5">
+                  <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 text-gray-700">
+                    <Clock class="w-3.5 h-3.5 text-gray-400" />
+                    <span>0 hrs</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -759,7 +798,7 @@ async function handleAddComment() {
           <!-- Description Section -->
           <div>
             <button
-              class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-3"
+              class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-2"
               type="button"
               @click="toggleSection('description')"
             >
@@ -828,16 +867,96 @@ async function handleAddComment() {
               </div>
             </div>
           </div>
+
+          <!-- Attachments Section -->
+          <div>
+            <button
+              class="flex items-center gap-1 text-xs font-medium text-gray-700"
+              type="button"
+              @click="toggleSection('attachments')"
+            >
+              <ChevronRight 
+                class="w-3.5 h-3.5 transition-transform" 
+                :class="{ 'rotate-90': isAttachmentsOpen }" 
+              />
+              Attachments
+              <span class="ml-0.5 text-[10px] text-gray-400">(0)</span>
+            </button>
+            
+            <div v-show="isAttachmentsOpen" class="mt-2 pl-4">
+              <div class="text-xs text-gray-400 italic">
+                No attachments yet
+              </div>
+            </div>
+          </div>
+
+          <!-- Relationships Section -->
+          <div>
+            <button
+              class="flex items-center gap-1 text-xs font-medium text-gray-700"
+              type="button"
+              @click="toggleSection('relationships')"
+            >
+              <ChevronRight 
+                class="w-3.5 h-3.5 transition-transform" 
+                :class="{ 'rotate-90': isRelationshipsOpen }" 
+              />
+              Relationships
+              <span class="ml-0.5 text-[10px] text-gray-400">(0)</span>
+            </button>
+            
+            <div v-show="isRelationshipsOpen" class="mt-2 pl-4">
+              <div class="text-xs text-gray-400 italic">
+                No relationships yet
+              </div>
+            </div>
+          </div>
+
+          <!-- Subscribers Section -->
+          <div>
+            <button
+              class="flex items-center gap-1 text-xs font-medium text-gray-700"
+              type="button"
+              @click="toggleSection('subscribers')"
+            >
+              <ChevronRight 
+                class="w-3.5 h-3.5 transition-transform" 
+                :class="{ 'rotate-90': isSubscribersOpen }" 
+              />
+              Subscribers
+            </button>
+            
+            <div v-show="isSubscribersOpen" class="mt-2 pl-4">
+              <div class="flex items-center gap-2">
+                <div class="flex -space-x-1">
+                  <Avatar
+                    label="H"
+                    shape="circle"
+                    size="small"
+                    class="bg-orange-100 text-orange-700 ring-2 ring-white"
+                    style="width: 20px; height: 20px; font-size: 10px;"
+                  />
+                </div>
+                <button 
+                  type="button"
+                  class="text-[10px] text-gray-500 hover:text-gray-700"
+                  @click="notify('Add subscriber')"
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+          </div>
           
           <!-- Subtasks Section -->
           <div>
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between mb-2">
               <button
-                class="flex items-center gap-1 text-sm font-medium text-gray-700"
+                class="flex items-center gap-1 text-xs font-medium text-gray-700"
                 type="button"
                 @click="toggleSection('subtasks')"
               >
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline
                     points="6 9 12 15 18 9"
                     :class="isSubtasksOpen ? '' : '-rotate-90'"
@@ -945,39 +1064,26 @@ async function handleAddComment() {
 
           <!-- Activity Section -->
           <div>
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between mb-2">
               <button
-                class="flex items-center gap-1 text-sm font-medium text-gray-700"
+                class="flex items-center gap-1 text-xs font-medium text-gray-700"
                 type="button"
                 @click="toggleSection('activity')"
               >
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline
-                    points="6 9 12 15 18 9"
-                    :class="isActivityOpen ? '' : '-rotate-90'"
-                    class="origin-center transition-transform"
-                  ></polyline>
-                </svg>
+                <ChevronRight 
+                  class="w-3.5 h-3.5 transition-transform" 
+                  :class="{ 'rotate-90': isActivityOpen }" 
+                />
                 {{ t('taskDetail.activity') }}
               </button>
-              <div class="flex items-center gap-1 text-xs text-gray-500">
-                {{ t('aiChat.subscribers') }}
-                <Avatar
-                  label="H"
-                  shape="circle"
-                  size="small"
-                  class="bg-orange-100 text-orange-700"
-                  style="width: 20px; height: 20px; font-size: 10px;"
-                />
-              </div>
             </div>
 
             <!-- Activity Items -->
-            <div v-show="isActivityOpen" class="space-y-3 pb-4">
+            <div v-show="isActivityOpen" class="space-y-2 pb-3 pl-4">
               <div
                 v-for="activity in activityLog"
                 :key="activity.id"
-                class="flex items-start gap-3 text-sm"
+                class="flex items-start gap-2 text-xs"
               >
                 <span class="text-gray-400 mt-0.5">{{ getActivityIcon(activity.action) }}</span>
                 <div>
@@ -988,44 +1094,134 @@ async function handleAddComment() {
                   </div>
                 </div>
               </div>
-              <div v-if="activityLog.length === 0" class="text-center py-4 text-xs text-gray-400 italic">
+              <div v-if="activityLog.length === 0" class="text-center py-2 text-[10px] text-gray-400 italic">
                 No activity yet
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments Section -->
+          <div>
+            <button
+              class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-2"
+              type="button"
+              @click="toggleSection('comments')"
+            >
+              <ChevronRight 
+                class="w-3.5 h-3.5 transition-transform" 
+                :class="{ 'rotate-90': isCommentsOpen }" 
+              />
+              Comments
+              <span class="ml-0.5 text-[10px] text-gray-400">({{ taskStore.comments?.length || 0 }})</span>
+            </button>
+
+            <div v-show="isCommentsOpen" class="space-y-3 pl-4">
+              <!-- Comment Items -->
+              <div
+                v-for="comment in taskStore.comments"
+                :key="comment.id"
+                class="group"
+              >
+                <div class="flex items-start gap-2">
+                  <Avatar
+                    :label="comment.user?.name?.charAt(0) || 'U'"
+                    shape="circle"
+                    size="small"
+                    class="bg-blue-100 text-blue-700 font-semibold shrink-0"
+                    style="width: 22px; height: 22px; font-size: 10px;"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-medium text-gray-700">{{ comment.user?.name || 'User' }}</span>
+                      <span class="text-[10px] text-gray-400">{{ formatDate(comment.createdAt) }}</span>
+                      
+                      <!-- Comment Actions -->
+                      <DropdownMenu width="10rem" class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                        <template #trigger>
+                          <button
+                            type="button"
+                            class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <MoreHorizontal class="w-3.5 h-3.5" />
+                          </button>
+                        </template>
+                        <template #content>
+                          <div class="py-1">
+                            <button
+                              type="button"
+                              class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+                              @click="notify('Pin to top')"
+                            >
+                              <Pin class="w-3.5 h-3.5 text-gray-500" />
+                              <span>Pin to top</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+                              @click="notify('Copy link')"
+                            >
+                              <Copy class="w-3.5 h-3.5 text-gray-500" />
+                              <span>Copy comment link</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+                              @click="notify('Edit comment')"
+                            >
+                              <Pencil class="w-3.5 h-3.5 text-gray-500" />
+                              <span>Edit comment</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                              @click="notify('Delete comment')"
+                            >
+                              <Trash2 class="w-3.5 h-3.5" />
+                              <span>Delete comment</span>
+                            </button>
+                          </div>
+                        </template>
+                      </DropdownMenu>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-0.5">{{ comment.content }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div v-if="!taskStore.comments?.length" class="text-center py-2 text-[10px] text-gray-400 italic">
+                No comments yet
+              </div>
+
+              <!-- Add Comment Input -->
+              <div class="flex items-center gap-2 pt-2">
+                <Avatar
+                  label="H"
+                  shape="circle"
+                  size="small"
+                  class="bg-orange-100 text-orange-700 shrink-0"
+                  style="width: 22px; height: 22px; font-size: 10px;"
+                />
+                <input
+                  v-model="newComment"
+                  type="text"
+                  :placeholder="t('aiChat.addComment')"
+                  class="flex-1 text-xs text-gray-700 placeholder-gray-400 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  @keyup.enter="handleAddComment"
+                />
+                <button
+                  class="p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                  type="button"
+                  :disabled="!newComment.trim()"
+                  @click="handleAddComment"
+                >
+                  <Paperclip class="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-      </div>
-
-      <!-- Comment Input (Fixed Bottom) -->
-      <div v-if="task" class="shrink-0 p-4 border-t border-gray-200 bg-white">
-        <div class="flex items-center gap-3">
-          <Avatar
-            label="H"
-            shape="circle"
-            size="small"
-            class="bg-orange-100 text-orange-700 min-w-[28px] min-h-[28px]"
-            style="width: 28px; height: 28px; font-size: 12px;"
-          />
-          <input
-            v-model="newComment"
-            type="text"
-            :placeholder="t('aiChat.addComment')"
-            class="flex-1 text-sm text-gray-700 placeholder-gray-400 bg-transparent border-none focus:outline-none"
-            @keyup.enter="handleAddComment"
-          />
-          <button
-            class="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-            type="button"
-            :disabled="!newComment.trim()"
-            @click="handleAddComment"
-          >
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 2L11 13"></path>
-              <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
-            </svg>
-          </button>
-        </div>
       </div>
     </div>
   </Transition>
