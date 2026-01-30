@@ -183,9 +183,14 @@ textarea,
 }
 
 /* AG Grid table typography */
+.ag-header {
+  background-color: white !important;
+}
+
 .ag-theme-quartz {
   --ag-font-size: 13px;
   --ag-foreground-color: #374151;
+  --ag-header-background-color: #FFFFFF;
   --ag-font-family: var(--font-sans);
 }
 

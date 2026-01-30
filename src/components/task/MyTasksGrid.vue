@@ -491,7 +491,7 @@ const myTheme = themeQuartz.withParams({
   headerBackgroundColor: '#FFFFFF',
   headerFontSize: 13,
   headerFontWeight: 400,
-  headerTextColor: '#84868B',
+  headerTextColor: '#374151',
   rowBorder: true,
   rowVerticalPaddingScale: 0.8,
   sidePanelBorder: true,
