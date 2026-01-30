@@ -9,6 +9,7 @@ import { ref, computed, watch } from 'vue'
 import * as taskApi from '@/api/task.api'
 import { createTask, createSubtask, createComment, TaskStatus } from '@/models'
 import { useProjectStore } from './project.store'
+import { useAuthStore } from './auth.store'
 
 export const useTaskStore = defineStore('task', () => {
   // ================================
@@ -628,26 +629,33 @@ export const useTaskStore = defineStore('task', () => {
    * @param {Object} params
    */
   async function fetchMyTasks(params = {}) {
-    // TODO: Re-enable when backend implements GET /tasks/my-tasks endpoint
-    // Currently disabled to prevent 404 errors in the frontend
-    console.warn('[task.store] fetchMyTasks disabled - backend not implemented yet')
-    myTasks.value = []
-    return myTasks.value
+    isLoading.value = true
+    error.value = null
 
-    // Original implementation:
-    // isLoading.value = true
-    // error.value = null
+    try {
+      const authStore = useAuthStore()
+      // Try to fetch specific "my tasks" if endpoint exists, otherwise use getTasks with assigneeId
+      const response = await taskApi.getTasks({
+        assigneeId: authStore.userId,
+        ...params
+      })
 
-    // try {
-    //   const response = await taskApi.getMyTasks(params)
-    //   myTasks.value = (response.tasks || response).map(t => createTask(t))
-    //   return myTasks.value
-    // } catch (err) {
-    //   error.value = err.message || 'Failed to fetch my tasks'
-    //   throw err
-    // } finally {
-    //   isLoading.value = false
-    // }
+      const payload = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.tasks)
+          ? response.tasks
+          : Array.isArray(response)
+            ? response
+            : []
+
+      myTasks.value = payload.map(t => createTask(t))
+      return myTasks.value
+    } catch (err) {
+      console.warn('Failed to fetch my tasks (might need project context)', err)
+      return []
+    } finally {
+      isLoading.value = false
+    }
   }
 
   // ================================
