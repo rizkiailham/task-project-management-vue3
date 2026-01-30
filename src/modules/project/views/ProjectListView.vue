@@ -15,6 +15,7 @@ import Tag from 'primevue/tag'
 import Avatar from 'primevue/avatar'
 import Checkbox from 'primevue/checkbox'
 import Skeleton from 'primevue/skeleton'
+import { ChevronsLeft } from 'lucide-vue-next'
 
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
@@ -132,16 +133,25 @@ async function toggleTaskStatus(task) {
 
       <Column field="title" :header="t('tasks.columns.task')" style="min-width: 300px">
         <template #body="{ data }">
-          <div class="flex items-center gap-2">
+          <div class="group/row flex items-center gap-2">
             <i :class="getPriorityIcon(data.priority)"></i>
             <span 
               :class="[
-                'font-medium',
+                'font-medium flex-1',
                 data.status === TaskStatus.DONE ? 'text-gray-400 line-through' : 'text-gray-900 dark-edit:text-white'
               ]"
             >
               {{ data.title }}
             </span>
+            <button
+              class="open-btn opacity-0 group-hover/row:opacity-100 inline-flex items-center gap-1 px-1.5 py-0.5 text-gray-500 hover:text-gray-700 border border-gray-300 rounded text-xs transition-opacity"
+              type="button"
+              aria-label="Open details"
+              @click.stop="openTaskPanel(data)"
+            >
+              <ChevronsLeft class="h-3.5 w-3.5" />
+              <span class="hidden sm:inline">Open</span>
+            </button>
           </div>
         </template>
       </Column>

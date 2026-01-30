@@ -834,7 +834,7 @@ function getTextColor(hex) {
   min-height: 28px;
   padding: 2px 6px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   cursor: pointer;
   text-align: left;
@@ -875,7 +875,7 @@ function getTextColor(hex) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border-radius: 9999px;
+  border-radius: 4px;
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 600;
@@ -891,13 +891,11 @@ function getTextColor(hex) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  padding: 3px 10px;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
   height: 22px;
-  background-color: #f3f4f6;
   color: #6b7280;
   flex-shrink: 0;
 }
@@ -956,7 +954,7 @@ function getTextColor(hex) {
 
 .panel-input {
   flex: 1;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid #e5e7eb;
   padding: 6px 8px;
   font-size: 12px;
@@ -971,7 +969,7 @@ function getTextColor(hex) {
 .add-btn {
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid #e5e7eb;
   color: #6b7280;
   font-size: 14px;
@@ -1028,7 +1026,7 @@ function getTextColor(hex) {
 .option-pill {
   display: inline-flex;
   align-items: center;
-  border-radius: 9999px;
+  border-radius: 4px;
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 600;
@@ -1056,7 +1054,7 @@ function getTextColor(hex) {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
 }
 

@@ -183,7 +183,7 @@ function getIndicatorColor(hex) {
           v-for="tag in selected"
           :key="tag.id"
           type="button"
-          class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold"
+          class="inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[10px] font-semibold"
           :style="{ backgroundColor: tag.color, color: getIndicatorColor(tag.color) }"
           @click.stop="remove(tag)"
           title="Remove tag"
