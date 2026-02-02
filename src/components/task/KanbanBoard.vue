@@ -665,7 +665,7 @@ onUnmounted(() => {
                     { 'kanban-card--dragging': draggedTask?.id === task.id }
                   ]"
                 >
-                  <h4 class="font-medium text-sm text-gray-900 dark-edit:text-white">
+                  <h4 class="font-medium text-sm text-gray-900 dark-edit:text-white truncate" :title="task.title">
                     {{ task.title }}
                   </h4>
 
