@@ -58,6 +58,10 @@ const props = defineProps({
   showToolbar: {
     type: Boolean,
     default: false
+  },
+  borderless: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -459,7 +463,7 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 </script>
 
 <template>
-  <div class="notion-editor-wrapper">
+  <div class="notion-editor-wrapper" :class="{ 'is-borderless': borderless }">
     <!-- Bubble Menu (floating toolbar on selection) - hidden, controlled by tippy -->
     <div
       ref="bubbleMenuRef"
@@ -492,6 +496,26 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 .notion-editor-wrapper:focus-within {
   border-color: var(--color-primary-400);
   box-shadow: 0 0 0 2px var(--color-primary-100);
+}
+
+.notion-editor-wrapper.is-borderless {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.notion-editor-wrapper.is-borderless:hover {
+  border: none;
+}
+
+.notion-editor-wrapper.is-borderless:focus-within {
+  border: none;
+  box-shadow: none;
+}
+
+.notion-editor-wrapper.is-borderless .notion-editor {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .notion-editor-content {
