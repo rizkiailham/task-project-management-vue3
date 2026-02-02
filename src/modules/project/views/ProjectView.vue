@@ -42,10 +42,20 @@ watch(
   },
   { immediate: true }
 )
+
+// Sync itemId when it changes (for same-project navigation)
+watch(
+  () => route.params.itemId,
+  (itemId) => {
+    if (itemId) {
+      projectStore.selectProjectItem(itemId)
+    }
+  }
+)
 </script>
 
 <template>
   <div class="project-view h-full">
-    <RouterView />
+    <RouterView :key="$route.fullPath" />
   </div>
 </template>

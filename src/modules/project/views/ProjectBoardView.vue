@@ -24,14 +24,20 @@ const uiStore = useUIStore()
 const userStore = useUserStore()
 const { t } = useI18n()
 
+// Immediate sync of route param to store to ensure data loading uses correct ID
+if (route.params.itemId) {
+  projectStore.selectProjectItem(route.params.itemId)
+}
+
 // Delete confirmation modal state
 const deleteConfirmVisible = ref(false)
 const deleteConfirmLoading = ref(false)
 const deleteTargetColumn = ref(null)
+const viewLoading = ref(false)
 
 // Computed properties
 const boardTaskCount = computed(() => taskStore.taskCount)
-const isLoading = computed(() => taskStore.isLoading || kanbanColumnStore.isLoading)
+const isLoading = computed(() => viewLoading.value || taskStore.isLoading || kanbanColumnStore.isLoading)
 const hasLoadedColumns = computed(() => kanbanColumnStore.hasLoaded)
 
 const columns = computed(() => {
@@ -147,28 +153,24 @@ async function handleUpdateTaskTitle({ taskId, title }) {
 async function loadBoardData() {
   if (!projectStore.activeProjectItemId) return
   
-  // Clear previous state to prevent stale data
-  taskStore.clearState()
-  kanbanColumnStore.clearState()
-  
-  await Promise.all([
-    kanbanColumnStore.fetchColumns(),
-    taskStore.fetchTasks()
-  ])
+  viewLoading.value = true
+  try {
+    // Clear previous state to prevent stale data
+    taskStore.clearState()
+    kanbanColumnStore.clearState()
+    
+    await Promise.all([
+      kanbanColumnStore.fetchColumns(),
+      taskStore.fetchTasks()
+    ])
+  } finally {
+    viewLoading.value = false
+  }
 }
 
 
 
-// Sync route itemId with store (only if different)
-watch(
-  () => route.params.itemId,
-  (itemId) => {
-    if (itemId && String(itemId) !== String(projectStore.activeProjectItemId)) {
-      projectStore.selectProjectItem(itemId)
-    }
-  },
-  { immediate: true }
-)
+// (Watcher for itemId removed - handled by ProjectView)
 
 // Watch for item changes and load data
 watch(
