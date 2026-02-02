@@ -146,7 +146,7 @@ export const useProjectStore = defineStore('project', () => {
     const promise = (async () => {
       try {
         const response = await projectApi.getProjectItems(projectId)
-        const items = response.items || response.data || []
+        const items = Array.isArray(response) ? response : (response.items || response.data || [])
         projectItems.value[projectId] = items
         projectItemsLoaded.add(key)
         return items
@@ -313,12 +313,14 @@ export const useProjectStore = defineStore('project', () => {
    * @param {string} projectId
    */
   function getProjectItems(projectId) {
-    return projectItems.value[projectId] || []
-  }
-
-  function hasProjectItemsLoaded(projectId) {
-    if (!projectId) return false
-    return projectItemsLoaded.has(String(projectId))
+    const items = projectItems.value[projectId] || []
+    // Return sorted copy to avoid mutating state in components
+    return [...items].sort((a, b) => {
+      // API uses 'index', fallback to 'order' if needed
+      const orderA = a.index !== undefined ? a.index : (a.order !== undefined ? a.order : 0)
+      const orderB = b.index !== undefined ? b.index : (b.order !== undefined ? b.order : 0)
+      return orderA - orderB
+    })
   }
 
   /**
@@ -436,6 +438,38 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+
+
+  function hasProjectItemsLoaded(projectId) {
+    if (!projectId) return false
+    return projectItemsLoaded.has(String(projectId))
+  }
+
+  function updateLocalItemsOrder(projectId, orderedIds) {
+    const items = projectItems.value[projectId]
+    if (!items) return
+
+    const itemMap = new Map(items.map(i => [i.id, i]))
+    const reorderedItems = []
+    const processedIds = new Set()
+
+    orderedIds.forEach((id, index) => {
+      const item = itemMap.get(id)
+      if (item) {
+        reorderedItems.push({ ...item, index: index + 1, order: index + 1 })
+        processedIds.add(id)
+      }
+    })
+
+    items.forEach(item => {
+      if (!processedIds.has(item.id)) {
+        reorderedItems.push(item)
+      }
+    })
+
+    projectItems.value[projectId] = reorderedItems
+  }
+
   return {
     // State
     projects,
@@ -472,6 +506,7 @@ export const useProjectStore = defineStore('project', () => {
     updateProjectItem,
     deleteProjectItem,
     reorderProjectItems,
-    getProjectItems
+    getProjectItems,
+    updateLocalItemsOrder
   }
 })

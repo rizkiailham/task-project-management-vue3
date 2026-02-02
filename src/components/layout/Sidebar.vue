@@ -252,8 +252,7 @@ function navigateToProject(project) {
 }
 
 function getProjectChildren(projectId) {
-  const items = projectStore.getProjectItems(projectId)
-  if (!items || !items.length) return []
+  const items = projectStore.getProjectItems(projectId) || []
 
   const iconMap = {
     task: Columns2,
@@ -262,13 +261,18 @@ function getProjectChildren(projectId) {
     knowledge: BotMessageSquare
   }
 
-  return items.map(item => ({
-    key: item.id,
-    label: item.name,
-    type: item.type,
-    icon: iconMap[item.type] || BotMessageSquare,
-    routeName: item.type === 'task' ? 'ProjectBoard' : undefined
-  }))
+  // Filter out 'note' items as they are accessed via the "Notes" list
+  const mappedItems = items
+    .map(item => ({
+      key: item.id,
+      id: item.id,
+      label: item.name,
+      type: item.type,
+      icon: iconMap[item.type] || BotMessageSquare,
+      routeName: item.type === 'task' ? 'ProjectBoard' : (item.type === 'note' ? 'ProjectNoteList' : (item.type === 'report' ? 'ProjectReport' : undefined))
+    }))
+
+  return mappedItems
 }
 
 function getChildLabel(item) {
@@ -444,16 +448,82 @@ async function confirmDelete() {
 }
 
 async function handleItemReorder(event, projectId) {
-  const items = projectStore.getProjectItems(projectId)
-  if (!items) return
+  // 'event' contains the change details from Draggable
+  // But we need the NEW list order to extract IDs.
+  // Since 'getProjectChildren' provides a fresh array, we can't trust simple mutation of a prop.
+  // HOWEVER, we can use the 'moved' event to simulate the reorder on the current store state
+  // OR we can trust the UI state if 'Draggable' exposes the updated list.
   
-  // Map current items to IDs in order
-  const itemIds = items.map(i => i.id)
+  // Actually, standard practice with Draggable without v-model is to inspect the event:
+  // event = { moved: { element, newIndex, oldIndex } }
+  
+  if (!event?.moved) return
+
+  const { element, newIndex, oldIndex } = event.moved
+  
+  // Get current real items from store (these are the ones we can persist)
+  const currentItems = [...projectStore.getProjectItems(projectId)]
+  
+  // We need to account for 'notes-list' which is in the UI list but not in the store list.
+  // The 'newIndex' and 'oldIndex' refer to the UI list (which includes 'notes-list').
+  
+  // Let's reconstruct the UI list first to apply the move.
+  // We need 'getProjectChildren' equivalent logic to rebuild the full list.
+  
+  // 1. Get full list as seen by UI
+  // We can't easily call getProjectChildren inside here if it assumes some state, but we can replicate it.
+  // Or better, we can accept the *new list* from the template if we change how we call this.
+  
+  // ALTERNATIVE: Just update the store logic to handle reorder by finding the item and moving it.
+  // But 'element' is the UI item wrapper.
+  // If element.type === 'note-list', we can't persist its move properly if backend doesn't support it.
+  // If we move a task A around 'note-list', we need to know the new order of A relative to B, C.
+  
+  // Simplest approach: passing the NEW list from the template is best.
+  // Change template: @change="handleItemReorder($event, project.id, list)" ? 
+  // No, Draggable event is the change delta.
+  
+  // Let's use the delta.
+  // 1. Reconstruct current UI list
+  // const uiItems = getProjectChildren(projectId) -> returns [Notes, Task1, Task2...]
+  // 2. move item in uiItems
+  // 3. Filter out 'notes-list'
+  // 4. Extract IDs
+  // 5. Save
+  
+  const uiItems = getProjectChildren(projectId) // This returns current state (before move applied in store)
+  // Wait, Draggable mutated the DOM, but data?
+  // If Draggable didn't mutate a reactive array we care about, our 'reorder' logic needs to be precise.
+  
+  // NOTE: getProjectChildren returns a NEW array. Draggable mutating it doesn't affect next render unless we save it.
+  // BUT the 'element' in event is the item object.
+  
+  const movedItem = uiItems[oldIndex]
+  // Remove from old index
+  uiItems.splice(oldIndex, 1)
+  // Insert at new index
+  uiItems.splice(newIndex, 0, movedItem)
+  
+  // Now uiItems matches the user's intent.
+  // Filter out non-persistable items (like notes-list if needed, or keep if backend supports generic items?)
+  // User said "for each sub item, i think we should add the id..." and "update store after reorder".
+  // Assuming 'notes-list' cannot be persisted as 'id' in backend.
+  // Current backend reorder likely expects UUIDs of existing items.
+  // So we filter 'notes-list' out.
+  
+  const newOrderIds = uiItems
+    .filter(i => i.type !== 'note-list')
+    .map(i => i.key || i.id) // Use key or id
+    
+  // Optimistic update: Update store immediately so UI reflects change
+  projectStore.updateLocalItemsOrder(projectId, newOrderIds)
   
   try {
-    await projectStore.reorderProjectItems(projectId, itemIds)
+    await projectStore.reorderProjectItems(projectId, newOrderIds)
   } catch (error) {
-    // Error handled in store (console error)
+    uiStore.showApiError(error)
+    // On error, refresh items to revert UI
+    await projectStore.fetchProjectItems(projectId)
   }
 }
 
@@ -473,8 +543,13 @@ function copyLink(link) {
 
 function resolveChildLink(projectId, item) {
   // Determine routeName based on item type
-  const routeName = item.type === 'task' ? 'ProjectBoard' : undefined
-  const query = item.type ? { type: item.type } : {}
+  let routeName
+  if (item.type === 'task') routeName = 'ProjectBoard'
+  else if (item.type === 'note') routeName = 'ProjectNoteList'
+  else if (item.type === 'note-list') routeName = 'ProjectNoteList'
+  else if (item.type === 'report') routeName = 'ProjectReport'
+  
+  const query = item.type && item.type !== 'note-list' ? { type: item.type } : {}
   
   if (routeName) {
     const routeData = router.resolve({
@@ -494,19 +569,25 @@ async function openChildItem(projectId, item) {
   if (item.type === 'report' && isReportDisabled(projectId)) return
   
   // Determine routeName based on item type
-  const routeName = item.type === 'task' ? 'ProjectBoard' : undefined
+  let routeName
+  if (item.type === 'task') routeName = 'ProjectBoard'
+  else if (item.type === 'note') routeName = 'ProjectNoteList'
+  else if (item.type === 'note-list') routeName = 'ProjectNoteList'
+  else if (item.type === 'report') routeName = 'ProjectReport'
   
   // Only navigate if route exists
   if (routeName) {
+    const params = { projectId }
+    if ((item.key || item.id) && item.key !== 'notes-list') {
+      params.itemId = item.id || item.key
+    }
+
     // Navigate - ProjectView's route watcher will handle selectProject
     // and ProjectBoardView's route watcher will handle selectProjectItem
     router.push({ 
       name: routeName, 
-      params: { 
-        projectId,
-        itemId: item.id || item.key
-      },
-      query: item.type ? { type: item.type } : {}
+      params,
+      query: item.type && item.type !== 'note-list' ? { type: item.type } : {}
     })
     if (uiStore.isMobile) {
       uiStore.closeMobileSidebar()
@@ -883,25 +964,25 @@ async function handleLogout() {
 
                 <div v-show="isProjectExpanded(project.id)" class="mt-1 space-y-1">
                   <Draggable
-                    :list="projectStore.getProjectItems(project.id) || []"
+                    :list="getProjectChildren(project.id)"
                     class="space-y-1"
                     handle=".drag-handle"
                     :group="`project-${project.id}`"
-                    :item-key="'id'"
+                    :item-key="'key'"
                     :animation="200"
                     @change="(e) => handleItemReorder(e, project.id)"
                   >
                     <div
-                      v-for="item in projectStore.getProjectItems(project.id) || []"
-                      :key="item.id"
+                      v-for="item in getProjectChildren(project.id)"
+                      :key="item.key"
                       :class="[
                         'sidebar-child-row submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-[13px] cursor-pointer transition-all group relative',
                         (item.type === 'report' && isReportDisabled(project.id))
                           ? 'text-gray-400 cursor-not-allowed'
                           : 'text-gray-900 hover:bg-[#e5e6ec] hover:text-gray-900',
-                          { 'bg-[#e5e6ec] font-medium': isProjectActive(project.id) && item.id === projectStore.activeProjectItemId }
+                          { 'bg-[#e5e6ec] font-medium': isProjectActive(project.id) && item.key === (projectStore.activeProjectItemId || (route.name === 'ProjectNoteList' ? 'notes-list' : null)) }
                       ]"
-                      @click="openChildItem(project.id, { key: item.id, ...item })"
+                      @click="openChildItem(project.id, item)"
                     >
                       <!-- Drag Handle (visible on hover) -->
                       <span class="drag-handle absolute left-4 w-4 h-full flex items-center justify-center opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing hover:opacity-100 transition-opacity">
@@ -909,11 +990,7 @@ async function handleLogout() {
                       </span>
 
                       <span class="w-[18px] h-[18px] flex items-center justify-center text-gray-900">
-                         <!-- Simple Icon Logic based on type -->
-                         <Columns2 v-if="item.type === 'task'" class="w-[16px] h-[16px]" />
-                         <FileChartColumn v-else-if="item.type === 'report'" class="w-[16px] h-[16px]" />
-                         <NotebookText v-else-if="item.type === 'note'" class="w-[16px] h-[16px]" />
-                         <BotMessageSquare v-else class="w-[16px] h-[16px]" />
+                         <component :is="item.icon" class="w-[16px] h-[16px]" />
                       </span>
                       <span class="flex-1 min-w-0 text-left truncate">
                         <span
@@ -931,7 +1008,7 @@ async function handleLogout() {
                             autoFocus
                           />
                         </span>
-                        <span v-else class="truncate">{{ item.name }}</span>
+                        <span v-else class="truncate">{{ item.label || item.name }}</span>
                       </span>
                       <DropdownMenu
                         v-if="!(item.type === 'report' && isReportDisabled(project.id))"
