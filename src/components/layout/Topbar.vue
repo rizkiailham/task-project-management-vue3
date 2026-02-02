@@ -2,7 +2,7 @@
 /**
  * Topbar - Top navigation bar with hamburger menu, breadcrumbs, search, and AI chat
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUIStore, useAuthStore, useWorkspaceStore, useProjectStore, useNotificationStore } from '@/stores'
 import { ViewType } from '@/models'
@@ -13,7 +13,8 @@ import OverlayPanel from 'primevue/overlaypanel'
 // Components
 import AIChatButton from '@/components/ai/AIChatButton.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
-import { LayoutGrid, List, Calendar, ChevronDown } from 'lucide-vue-next'
+import { LayoutGrid, List, Calendar, ChevronDown, Check, CheckCircle, CheckCheck, Settings } from 'lucide-vue-next'
+import Button from 'primevue/button'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,8 +24,18 @@ const workspaceStore = useWorkspaceStore()
 const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
 
+
+
 // Refs
-const searchQuery = ref('')
+const searchQuery = ref(uiStore.searchQuery)
+watch(() => uiStore.searchQuery, (newVal) => {
+  if (searchQuery.value !== newVal) {
+    searchQuery.value = newVal
+  }
+})
+watch(searchQuery, (newVal) => {
+  uiStore.setSearchQuery(newVal)
+})
 
 // View Menu Options for DropdownMenu
 const viewMenuItems = computed(() => [
@@ -45,6 +56,21 @@ const viewMenuItems = computed(() => [
     label: 'Calendar',
     icon: Calendar,
     action: () => uiStore.setMyTasksViewMode(ViewType.CALENDAR)
+  }
+])
+
+const inboxFilterItems = computed(() => [
+  {
+    id: 'unread',
+    label: 'Unread',
+    icon: CheckCircle,
+    action: () => notificationStore.setFilterMode('unread')
+  },
+  {
+    id: 'all',
+    label: 'All',
+    icon: List,
+    action: () => notificationStore.setFilterMode('all')
   }
 ])
 
@@ -176,8 +202,23 @@ function setView(view) {
         </svg>
       </button>
 
-      <!-- Page Title -->
-      <h1 class="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{{ pageTitle }}</h1>
+      <!-- Page Title (Default) -->
+      <h1 v-if="route.name !== 'Inbox' && !String(route.path).includes('inbox')" class="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{{ pageTitle }}</h1>
+
+      <!-- Inbox specific title with Breadcrumb Dropdown -->
+      <div v-else class="flex items-center">
+         <h1 class="text-sm font-semibold text-gray-900 mr-1">Inbox / </h1>
+         <DropdownMenu :items="inboxFilterItems" position="left" width="10rem">
+            <template #trigger>
+              <button
+                class="flex items-center gap-1.5 text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors"
+              >
+                <span>{{ notificationStore.filterMode === 'unread' ? 'Unread' : 'All' }}</span>
+                <ChevronDown class="w-4 h-4 text-gray-500" />
+              </button>
+            </template>
+         </DropdownMenu>
+      </div>
     </div>
 
     <!-- Spacer to push content to right -->
@@ -201,6 +242,9 @@ function setView(view) {
         />
       </div>
 
+      <!-- AI Chat Button with Dropdown -->
+      <AIChatButton v-if="route.name === 'Inbox' || String(route.path).includes('inbox')" />
+
       <!-- View Switcher (My Tasks only) -->
       <DropdownMenu v-if="route.name === 'MyTasks'" :items="viewMenuItems" position="right" width="8rem">
         <template #trigger>
@@ -216,8 +260,30 @@ function setView(view) {
         </template>
       </DropdownMenu>
 
-      <!-- AI Chat Button with Dropdown -->
-      <AIChatButton />
+      <!-- Inbox Controls -->
+      <div v-if="route.name === 'Inbox' || String(route.path).includes('inbox')" class="flex items-center gap-2">
+         
+         <!-- Mark all as read -->
+         <button
+            @click="notificationStore.markAllAsRead"
+            class="flex items-center gap-2 h-8 px-3 rounded-md bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            title="Mark all as read"
+         >
+            <CheckCheck class="w-3.5 h-3.5" />
+            <span>Mark all as read</span>
+         </button>
+
+         <!-- Settings Button -->
+         <button
+            class="flex items-center justify-center w-8 h-8 rounded-md bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            title="Settings"
+         >
+            <Settings class="w-4 h-4" />
+         </button>
+      </div>
+
+      <!-- AI Chat Button (Default position for non-Inbox pages) -->
+      <AIChatButton v-if="!(route.name === 'Inbox' || String(route.path).includes('inbox'))" />
     </div>
     
   </header>
