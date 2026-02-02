@@ -481,7 +481,7 @@
           "hideEmpty": "Skjul alle tome kolonner",
           "delete": "Slett seksjon"
         },
-        "delete": {
+        "deleteConfirm": {
           "title": "Slett seksjon",
           "message": "Dette vil slette {name} permanent."
         }
