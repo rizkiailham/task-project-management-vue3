@@ -211,10 +211,29 @@ const routes = [
             }
           },
           {
-            path: ':itemId?',
+            path: 'notes',
+            name: 'ProjectNoteList',
+            component: () => import('@/modules/project/views/ProjectNoteListView.vue')
+          },
+          {
+            path: 'notes/:itemId',
+            name: 'ProjectNote',
+            component: () => import('@/modules/project/views/ProjectNoteView.vue')
+          },
+          {
+            path: '',
+            redirect: 'list'
+          },
+          {
+            path: 'board/:itemId',
             name: 'ProjectBoard',
             component: () => import('@/modules/project/views/ProjectBoardView.vue')
-          }
+          },
+          {
+            path: 'report/:itemId',
+            name: 'ProjectReport',
+            component: () => import('@/modules/project/views/ProjectBoardView.vue')
+          },
         ]
       },
       // Task detail (as modal overlay or full page)
