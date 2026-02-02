@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n'
 import { useTaskStore, useKanbanColumnStore, useUIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
-import { Plus, MoreHorizontal, Pencil, ArrowLeft, ArrowRight, EyeOff, Trash2 } from 'lucide-vue-next'
+import { Plus, MoreHorizontal, Pencil, ArrowLeft, ArrowRight, EyeOff, Trash2, ChevronDown } from 'lucide-vue-next'
 
 // PrimeVue
 import Avatar from 'primevue/avatar'
@@ -77,6 +77,82 @@ const taskCommitLock = ref(false)
 const editingColumnId = ref(null)
 const editingColumnName = ref('')
 const columnTitleInputRefs = ref({})
+
+// Empty State Logic
+const templateOptions = [
+  { label: 'Studio booking', action: () => applyTemplate('Studio booking') },
+  { label: 'Podcast', action: () => applyTemplate('Podcast') },
+  { label: 'Board for tennant', action: () => applyTemplate('Board for tennant') },
+  { label: 'Board for technician', action: () => applyTemplate('Board for technician') }
+]
+
+async function handleEmptyStateCreateTask() {
+  // Create a default column "To Do" if none exist
+  isCreatingColumn.value = true
+  try {
+    // 1. Create Default Columns
+    const defaultColumns = ['To Do', 'In Progress', 'Done']
+    const createdColumns = []
+    
+    for (const name of defaultColumns) {
+      const response = await kanbanColumnStore.createColumn({ name })
+      const created = response?.column || response?.data || response
+      if (created) {
+        createdColumns.push(created)
+      }
+    }
+
+    // 2. Find "To Do" column and start inline task creation
+    const todoColumn = createdColumns.find(c => c.label === 'To Do') || createdColumns[0]
+    
+    if (todoColumn) {
+      // Need to wait for DOM update to ensure column is rendered
+      await nextTick()
+      // Locate the column in the props.columns or refresh logic might be needed
+      // Since props.columns might not be updated immediately if it depends on parent, 
+      // we might need to rely on the fact that we just created it.
+      // However, startAddTaskInline needs the column ID.
+      startAddTaskInline(todoColumn.id)
+    }
+
+  } catch (error) {
+    uiStore.showApiError(error)
+  } finally {
+    isCreatingColumn.value = false
+  }
+}
+
+async function applyTemplate(templateName) {
+  isCreatingColumn.value = true
+  try {
+    let columnsToCreate = []
+    
+    switch (templateName) {
+      case 'Studio booking':
+        columnsToCreate = ['Inquiry', 'Confirmed', 'In Session', 'Completed', 'Cancelled']
+        break
+      case 'Podcast':
+        columnsToCreate = ['Idea', 'Scripting', 'Recording', 'Editing', 'Published']
+        break
+      case 'Board for tennant':
+        columnsToCreate = ['New Request', 'Review', 'Approved', 'In Progress', 'Resolved']
+        break
+      case 'Board for technician':
+        columnsToCreate = ['Assigned', 'On Site', 'Pending Parts', 'Fixed', 'Reported']
+        break
+      default:
+        columnsToCreate = ['To Do', 'In Progress', 'Done']
+    }
+
+    for (const name of columnsToCreate) {
+      await kanbanColumnStore.createColumn({ name })
+    }
+  } catch (error) {
+    uiStore.showApiError(error)
+  } finally {
+    isCreatingColumn.value = false
+  }
+}
 
 // Kanban columns configuration
 const colorPalette = [
@@ -520,24 +596,37 @@ onUnmounted(() => {
       <!-- Empty State -->
       <div
         v-else-if="columns.length === 0 && hasLoadedColumns"
-        class="flex h-[60vh] w-full items-center justify-center"
+        class="flex h-full w-full flex-col items-center justify-center"
       >
-        <div class="w-full max-w-md rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center shadow-sm dark-edit:border-gray-700 dark-edit:bg-gray-900">
-          <h3 class="text-base font-semibold text-gray-900 dark-edit:text-white">
-            {{ t('projects.kanban.columns.empty.title') }}
+        <div class="text-center max-w-md">
+          <h3 class="text-lg font-semibold text-gray-900 dark-edit:text-white mb-2">
+            Empty Board
           </h3>
-          <p class="mt-1 text-sm text-gray-500 dark-edit:text-gray-400">
-            {{ t('projects.kanban.columns.empty.description') }}
+          <p class="text-sm text-gray-500 dark-edit:text-gray-400 mb-8">
+            Tasks doesn't have any tasks yet. Get started by creating a new one!
           </p>
-          <div class="mt-4 flex flex-col gap-2 sm:flex-row">
-            <InputText
-              v-model="newColumnName"
-              class="w-full"
-              :placeholder="t('projects.kanban.columns.empty.placeholder')"
-              :disabled="isCreatingColumn"
-              @keydown.enter.prevent="handleColumnInputCommit"
-              @blur="handleColumnInputCommit"
-            />
+
+          <div class="flex items-center justify-center gap-3">
+            <DropdownMenu :items="templateOptions" position="bottom" width="14rem">
+              <template #trigger>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <span>Start with template</span>
+                  <ChevronDown class="w-4 h-4" />
+                </button>
+              </template>
+            </DropdownMenu>
+
+            <button
+              type="button"
+              class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              @click="handleEmptyStateCreateTask"
+            >
+              <Plus class="w-4 h-4" />
+              <span>Create task</span>
+            </button>
           </div>
         </div>
       </div>
