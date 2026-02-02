@@ -15,7 +15,9 @@ These rules apply to all future work in this repository.
 - Match existing spacing, typography, and interaction patterns in the same area of the app.
 - If you must add styling, keep it scoped and aligned with the current design system.
 - For icons, prefer Lucide icons (lucide-vue-next) instead of custom SVGs.
+- For dropdown menus, use `src/components/ui/DropdownMenu.vue`.
 - For tables (AG Grid), modals, inputs, and buttons, use existing Vue components already present in the codebase.
+- For tables, use AG Grid and follow pagination patterns from `src/modules/user/components/UsersGrid.vue`.
 - For AG Grid pagination footers, only render them when total items exceed the current page size (or totalPages > 1).
 - For delete confirmations, use the existing `DeleteConfirmModal` pattern used in the Users UI.
 - For toasts tied to API calls, show backend response messages for success/error instead of hardcoding frontend strings.
