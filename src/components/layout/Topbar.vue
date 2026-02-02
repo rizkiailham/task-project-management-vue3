@@ -188,12 +188,34 @@ function setView(view) {
   }
 
   if (routeMap[view] && projectStore.currentProjectId) {
+    const params = {
+      workspaceId: workspaceStore.currentWorkspaceId,
+      projectId: projectStore.currentProjectId
+    }
+
+    // For Board view, we need a valid itemId
+    if (view === ViewType.KANBAN) {
+      let targetItemId = projectStore.activeProjectItemId
+      
+      // If no active item (e.g. coming from List view first load), try to find first task list
+      if (!targetItemId) {
+        const items = projectStore.getProjectItems(projectStore.currentProjectId) || []
+        const firstTask = items.find(i => i.type === 'task')
+        if (firstTask) targetItemId = firstTask.id
+      }
+      
+      if (targetItemId) {
+        params.itemId = targetItemId
+      } else {
+        // Fallback or error handling if no boards exist
+        console.warn('No board item found for Kanban view')
+        return
+      }
+    }
+
     router.push({
       name: routeMap[view],
-      params: {
-        workspaceId: workspaceStore.currentWorkspaceId,
-        projectId: projectStore.currentProjectId
-      }
+      params
     })
   }
 }
