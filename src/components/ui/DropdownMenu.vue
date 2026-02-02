@@ -319,6 +319,62 @@ defineExpose({ open, close, toggle, isOpen })
             </div>
             
             <!-- Menu Item -->
+            <!-- Submenu Item (has items) -->
+            <div
+              v-else-if="item.items && item.items.length"
+              class="relative group w-full"
+            >
+              <button
+                :class="[itemBaseClass, itemActiveClass]"
+                class="justify-between"
+              >
+                <div class="flex items-center gap-3">
+                  <component 
+                    v-if="item.icon" 
+                    :is="item.icon" 
+                    class="w-4 h-4 text-gray-500"
+                  />
+                  <span>{{ item.label }}</span>
+                </div>
+                <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+              </button>
+              
+              <!-- Submenu Dropdown -->
+              <div 
+                :class="[
+                  'absolute top-0 hidden group-hover:block bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[12rem]',
+                  props.position === 'right' ? 'right-full mr-1' : 'left-full ml-1'
+                ]"
+              >
+                 <template v-for="(subItem, subIndex) in item.items" :key="subIndex">
+                    <!-- Divider -->
+                    <div v-if="subItem.type === 'divider'" :class="dividerClass"></div>
+                    
+                    <!-- Section Header -->
+                    <div v-else-if="subItem.type === 'header'" :class="headerClass">
+                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{{ subItem.label }}</span>
+                    </div>
+
+                    <!-- Submenu Item -->
+                    <button
+                      v-else
+                      @click="handleItemClick(subItem, $event)"
+                      :class="[itemBaseClass, itemActiveClass]"
+                    >
+                       <div class="flex items-center gap-3">
+                          <component 
+                            v-if="subItem.icon" 
+                            :is="subItem.icon" 
+                            class="w-4 h-4 text-gray-500"
+                          />
+                          <span>{{ subItem.label }}</span>
+                       </div>
+                    </button>
+                 </template>
+              </div>
+            </div>
+
+            <!-- Standard Menu Item -->
             <button
               v-else
               @click="handleItemClick(item, $event)"
