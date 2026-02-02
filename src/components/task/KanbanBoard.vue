@@ -507,7 +507,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="kanban-board-content flex-1 overflow-x-auto overflow-y-hidden px-6 pb-0">
+  <div class="kanban-board-content flex-1 overflow-x-auto overflow-y-hidden px-6 pt-6 pb-0">
     <div class="h-full min-w-full inline-flex gap-4">
       <!-- Loading State -->
       <div v-if="isInitialLoading" class="flex gap-4">

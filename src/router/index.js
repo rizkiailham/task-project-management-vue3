@@ -192,11 +192,6 @@ const routes = [
         },
         children: [
           {
-            path: ':itemId?',
-            name: 'ProjectBoard',
-            component: () => import('@/modules/project/views/ProjectBoardView.vue')
-          },
-          {
             path: 'list',
             name: 'ProjectList',
             component: () => import('@/modules/project/views/ProjectListView.vue')
@@ -214,6 +209,11 @@ const routes = [
               title: 'Project Settings',
               permission: 'project.edit'
             }
+          },
+          {
+            path: ':itemId?',
+            name: 'ProjectBoard',
+            component: () => import('@/modules/project/views/ProjectBoardView.vue')
           }
         ]
       },

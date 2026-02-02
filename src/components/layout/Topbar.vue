@@ -37,27 +37,38 @@ watch(searchQuery, (newVal) => {
   uiStore.setSearchQuery(newVal)
 })
 
-// View Menu Options for DropdownMenu
-const viewMenuItems = computed(() => [
-  {
-    id: 'list',
-    label: 'Table',
-    icon: List,
-    action: () => uiStore.setMyTasksViewMode(ViewType.LIST)
-  },
-  {
-    id: 'board',
-    label: 'Board',
-    icon: LayoutGrid,
-    action: () => uiStore.setMyTasksViewMode(ViewType.KANBAN)
-  },
-  {
-    id: 'calendar',
-    label: 'Calendar',
-    icon: Calendar,
-    action: () => uiStore.setMyTasksViewMode(ViewType.CALENDAR)
+// View Menu Options Logic
+const currentViewMode = computed(() => {
+  if (route.name === 'MyTasks') {
+    return uiStore.myTasksViewMode
   }
-])
+  return uiStore.currentView
+})
+
+const currentViewMenuItems = computed(() => {
+  const isMyTasks = route.name === 'MyTasks'
+  
+  return [
+    {
+      id: 'list',
+      label: 'List',
+      icon: List,
+      action: () => isMyTasks ? uiStore.setMyTasksViewMode(ViewType.LIST) : setView(ViewType.LIST)
+    },
+    {
+      id: 'board',
+      label: 'Board',
+      icon: LayoutGrid,
+      action: () => isMyTasks ? uiStore.setMyTasksViewMode(ViewType.KANBAN) : setView(ViewType.KANBAN)
+    },
+    {
+      id: 'calendar',
+      label: 'Calendar',
+      icon: Calendar,
+      action: () => isMyTasks ? uiStore.setMyTasksViewMode(ViewType.CALENDAR) : setView(ViewType.CALENDAR)
+    }
+  ]
+})
 
 const inboxFilterItems = computed(() => [
   {
@@ -91,6 +102,11 @@ const breadcrumbs = computed(() => {
     items.push({
       label: workspaceStore.currentWorkspace.name,
       route: { name: 'Workspace', params: { workspaceId: workspaceStore.currentWorkspaceId } }
+    })
+  } else if (authStore.user) {
+    items.push({
+      label: authStore.user.name || 'User',
+      route: { name: 'Home' }
     })
   }
 
@@ -202,8 +218,14 @@ function setView(view) {
         </svg>
       </button>
 
-      <!-- Page Title (Default) -->
-      <h1 v-if="route.name !== 'Inbox' && !String(route.path).includes('inbox')" class="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{{ pageTitle }}</h1>
+      <!-- Page Title / Breadcrumbs -->
+      <div v-if="breadcrumbs.length > 0 && route.name !== 'Inbox' && !String(route.path).includes('inbox')" class="flex items-center text-sm font-semibold text-gray-900 truncate max-w-[300px]">
+        <span v-for="(item, index) in breadcrumbs" :key="index" class="flex items-center">
+          <span v-if="index > 0" class="mx-1 text-gray-400">/</span>
+          <span :class="{ 'text-gray-500': index < breadcrumbs.length - 1 }">{{ item.label }}</span>
+        </span>
+      </div>
+      <h1 v-else-if="route.name !== 'Inbox' && !String(route.path).includes('inbox')" class="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{{ pageTitle }}</h1>
 
       <!-- Inbox specific title with Breadcrumb Dropdown -->
       <div v-else class="flex items-center">
@@ -242,18 +264,26 @@ function setView(view) {
         />
       </div>
 
-      <!-- AI Chat Button with Dropdown -->
-      <AIChatButton v-if="route.name === 'Inbox' || String(route.path).includes('inbox')" />
+      <!-- Create Task Button (Project View) -->
+      <Button 
+        v-if="showViewSwitcher"
+        label="Create Task" 
+        icon="pi pi-plus" 
+        class="!h-8 !px-3 !text-xs !bg-blue-600 !border-blue-600 hover:!bg-blue-700 !text-white flex items-center gap-2"
+        @click="uiStore.openTaskPanel()"
+      />
 
-      <!-- View Switcher (My Tasks only) -->
-      <DropdownMenu v-if="route.name === 'MyTasks'" :items="viewMenuItems" position="right" width="8rem">
+
+
+      <!-- View Switcher (My Tasks & Projects) -->
+      <DropdownMenu v-if="route.name === 'MyTasks' || showViewSwitcher" :items="currentViewMenuItems" position="right" width="8rem">
         <template #trigger>
           <button
             class="flex items-center gap-2 h-8 px-3 rounded-md bg-white border border-gray-200 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
           >
-            <LayoutGrid v-if="uiStore.myTasksViewMode === ViewType.KANBAN" class="w-4 h-4" />
-            <List v-else-if="uiStore.myTasksViewMode === ViewType.LIST" class="w-4 h-4" />
-            <Calendar v-else-if="uiStore.myTasksViewMode === ViewType.CALENDAR" class="w-4 h-4" />
+            <LayoutGrid v-if="currentViewMode === ViewType.KANBAN" class="w-4 h-4" />
+            <List v-else-if="currentViewMode === ViewType.LIST" class="w-4 h-4" />
+            <Calendar v-else-if="currentViewMode === ViewType.CALENDAR" class="w-4 h-4" />
             <span>View</span>
             <ChevronDown class="w-4 h-4 text-gray-400" />
           </button>

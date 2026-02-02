@@ -19,6 +19,16 @@ const { t, locale } = useI18n()
 const currentDate = ref(new Date())
 const viewMode = ref('month') // 'month' | 'week'
 
+async function loadData() {
+  if (projectStore.currentProjectId) {
+    await taskStore.fetchTasks()
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
+
 // Computed
 const currentMonth = computed(() => {
   return currentDate.value.toLocaleDateString(locale.value || 'en', { month: 'long', year: 'numeric' })
@@ -127,20 +137,7 @@ function getPriorityColor(priority) {
 
 <template>
   <div class="p-6">
-    <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-bold text-gray-900 dark-edit:text-white">
-          {{ projectStore.currentProjectName }}
-        </h1>
-        <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('projects.calendarView') }}</p>
-      </div>
-      <Button 
-        icon="pi pi-plus" 
-        :label="t('projects.addTask')" 
-        @click="uiStore.openModal('createTask')"
-      />
-    </div>
+
 
     <!-- Calendar Navigation -->
     <div class="mb-4 flex items-center justify-between">

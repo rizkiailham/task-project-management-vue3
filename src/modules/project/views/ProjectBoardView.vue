@@ -14,9 +14,7 @@ import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useKanbanColumnStore, useUIStore, useUserStore } from '@/stores'
 import { reorderTasks } from '@/api/task.api'
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
-import ProjectTasksGrid from '@/components/task/ProjectTasksGrid.vue'
 import KanbanBoard from '@/components/task/KanbanBoard.vue'
-import { LayoutGrid, List, Calendar, Map } from 'lucide-vue-next'
 
 const route = useRoute()
 const taskStore = useTaskStore()
@@ -25,9 +23,6 @@ const kanbanColumnStore = useKanbanColumnStore()
 const uiStore = useUIStore()
 const userStore = useUserStore()
 const { t } = useI18n()
-
-// View switcher state
-const currentView = ref('board') // 'board', 'list', 'calendar', 'roadmap'
 
 // Delete confirmation modal state
 const deleteConfirmVisible = ref(false)
@@ -192,106 +187,11 @@ userStore.fetchUsers({ limit: 100 })
 
 <template>
   <div class="kanban-board flex flex-col text-xs h-full">
-    <!-- Header -->
-    <div class="flex-none px-6 pt-6 pb-2 mb-2 flex items-center justify-between">
-      <div>
-        <h1 class="text-base font-bold text-gray-900 dark-edit:text-white">
-          {{ projectStore.currentProjectName }}
-        </h1>
-        <p class="text-[10px] text-gray-500 dark-edit:text-gray-400">
-          {{ t('projects.tasksCount', { count: boardTaskCount }) }}
-        </p>
-      </div>
 
-      <!-- View Switcher -->
-      <div class="flex items-center gap-px rounded-lg border border-gray-200 bg-white p-0.5 dark-edit:border-gray-700 dark-edit:bg-gray-800">
-        <button
-          type="button"
-          :class="[
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-            currentView === 'list'
-              ? 'bg-gray-100 text-gray-900 dark-edit:bg-gray-700 dark-edit:text-white'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark-edit:text-gray-400 dark-edit:hover:bg-gray-700'
-          ]"
-          @click="currentView = 'list'"
-        >
-          <List class="h-4 w-4" />
-          <span>List</span>
-        </button>
-        <button
-          type="button"
-          :class="[
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-            currentView === 'board'
-              ? 'bg-gray-100 text-gray-900 dark-edit:bg-gray-700 dark-edit:text-white'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark-edit:text-gray-400 dark-edit:hover:bg-gray-700'
-          ]"
-          @click="currentView = 'board'"
-        >
-          <LayoutGrid class="h-4 w-4" />
-          <span>Board</span>
-        </button>
-        <button
-          type="button"
-          :class="[
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-            currentView === 'calendar'
-              ? 'bg-gray-100 text-gray-900 dark-edit:bg-gray-700 dark-edit:text-white'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark-edit:text-gray-400 dark-edit:hover:bg-gray-700'
-          ]"
-          @click="currentView = 'calendar'"
-        >
-          <Calendar class="h-4 w-4" />
-          <span>Calendar</span>
-        </button>
-        <!-- <button
-          type="button"
-          :class="[
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-            currentView === 'roadmap'
-              ? 'bg-gray-100 text-gray-900 dark-edit:bg-gray-700 dark-edit:text-white'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark-edit:text-gray-400 dark-edit:hover:bg-gray-700'
-          ]"
-          @click="currentView = 'roadmap'"
-        >
-          <Map class="h-4 w-4" />
-          <span>Roadmap</span>
-        </button> -->
-      </div>
-    </div>
-
-    <!-- List View -->
-    <div v-if="currentView === 'list'" class="flex-1 overflow-auto px-6 pb-6">
-      <ProjectTasksGrid 
-        :tasks="taskStore.tasks" 
-        @task-click="openTaskPanel" 
-        @reorder-tasks="handleReorderTasks" 
-        @create-subtask="handleCreateSubtask"
-        @update-task-title="handleUpdateTaskTitle"
-      />
-    </div>
-
-    <!-- Calendar View Placeholder -->
-    <div v-else-if="currentView === 'calendar'" class="flex-1 flex items-center justify-center">
-      <div class="text-center">
-        <Calendar class="h-12 w-12 mx-auto text-gray-300 dark-edit:text-gray-600" />
-        <h3 class="mt-4 text-lg font-medium text-gray-900 dark-edit:text-white">Calendar View</h3>
-        <p class="mt-1 text-sm text-gray-500 dark-edit:text-gray-400">Coming soon</p>
-      </div>
-    </div>
-
-    <!-- Roadmap View Placeholder -->
-    <!-- <div v-else-if="currentView === 'roadmap'" class="flex-1 flex items-center justify-center">
-      <div class="text-center">
-        <Map class="h-12 w-12 mx-auto text-gray-300 dark-edit:text-gray-600" />
-        <h3 class="mt-4 text-lg font-medium text-gray-900 dark-edit:text-white">Roadmap View</h3>
-        <p class="mt-1 text-sm text-gray-500 dark-edit:text-gray-400">Coming soon</p>
-      </div>
-    </div> -->
 
     <!-- Board View (Kanban) -->
     <KanbanBoard
-      v-else
+      class="flex-1"
       :columns="columns"
       :tasks-by-column="tasksByColumn"
       :is-loading="isLoading"
