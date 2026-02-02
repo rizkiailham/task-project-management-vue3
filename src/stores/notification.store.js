@@ -22,13 +22,14 @@ export const useNotificationStore = defineStore('notification', () => {
     limit: 20,
     total: 0
   })
+  const filterMode = ref('unread') // 'unread' | 'all'
 
   // ================================
   // Getters
   // ================================
   const hasUnread = computed(() => unreadCount.value > 0)
 
-  const unreadNotifications = computed(() => 
+  const unreadNotifications = computed(() =>
     notifications.value.filter(n => !n.isRead)
   )
 
@@ -38,7 +39,7 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const notificationsByDate = computed(() => {
     const grouped = {}
-    
+
     notifications.value.forEach(notification => {
       const date = new Date(notification.createdAt).toDateString()
       if (!grouped[date]) {
@@ -103,7 +104,7 @@ export const useNotificationStore = defineStore('notification', () => {
   async function markAsRead(notificationId) {
     try {
       await notificationApi.markAsRead(notificationId)
-      
+
       const notification = notifications.value.find(n => n.id === notificationId)
       if (notification && !notification.isRead) {
         notification.isRead = true
@@ -121,7 +122,7 @@ export const useNotificationStore = defineStore('notification', () => {
   async function markAllAsRead() {
     try {
       const response = await notificationApi.markAllAsRead()
-      
+
       notifications.value.forEach(n => {
         n.isRead = true
       })
@@ -140,12 +141,12 @@ export const useNotificationStore = defineStore('notification', () => {
   async function deleteNotification(notificationId) {
     try {
       await notificationApi.deleteNotification(notificationId)
-      
+
       const notification = notifications.value.find(n => n.id === notificationId)
       if (notification && !notification.isRead) {
         unreadCount.value = Math.max(0, unreadCount.value - 1)
       }
-      
+
       notifications.value = notifications.value.filter(n => n.id !== notificationId)
     } catch (err) {
       error.value = err.message || 'Failed to delete notification'
@@ -168,9 +169,9 @@ export const useNotificationStore = defineStore('notification', () => {
    */
   async function loadMore() {
     if (isLoading.value) return
-    
+
     pagination.value.page++
-    
+
     try {
       const response = await notificationApi.getNotifications({
         page: pagination.value.page,
@@ -208,6 +209,12 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
+  function setFilterMode(mode) {
+    if (['unread', 'all'].includes(mode)) {
+      filterMode.value = mode
+    }
+  }
+
   return {
     // State
     notifications,
@@ -231,6 +238,8 @@ export const useNotificationStore = defineStore('notification', () => {
     addNotification,
     loadMore,
     hasMore,
-    clearState
+    clearState,
+    filterMode,
+    setFilterMode
   }
 })
