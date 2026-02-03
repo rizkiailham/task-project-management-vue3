@@ -151,7 +151,7 @@ const mainNavItems = computed(() => [
     icon: Bell,
     route: { name: 'Inbox' },
     active: route.name === 'Inbox',
-    badge: notificationStore.unreadCount || 57
+    badge: notificationStore.unreadCount
   },
 ])
 
@@ -336,7 +336,6 @@ watch(
 )
 
 function startProjectRename(project) {
-  navigateToProject(project)
   projectRenameId.value = project.id
   projectRenameValue.value = project.name
   nextTick(() => {
