@@ -236,7 +236,7 @@ watch(
                 </template>
                 <template v-else>
                   <div class="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 text-xs font-bold">
-                    {{ resolveInitial(item.user?.name) }}
+                    {{ resolveInitial(item.user?.name) }} 
                   </div>
                 </template>
               </div>
