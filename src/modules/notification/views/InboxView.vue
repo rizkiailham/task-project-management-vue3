@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotificationStore, useUIStore, useProjectStore, useTaskStore } from '@/stores'
 import { 
   Check, 
@@ -14,59 +14,34 @@ import {
 } from 'lucide-vue-next'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Button from 'primevue/button'
-import { TaskStatus, TaskPriority } from '@/models'
+import { createTask } from '@/models'
+import { debounce } from '@/utils/debounce'
+import { resolveSearchKeywords } from '@/utils/search'
 
-const router = useRouter()
 const notificationStore = useNotificationStore()
 const uiStore = useUIStore()
 const projectStore = useProjectStore()
 const taskStore = useTaskStore()
+const { t } = useI18n()
 
-// Local state for filters if needed, but main filter (unread/all) is in store
-const projectFilter = ref(null)
+// Local state for filters (server-side via query params)
+const selectedProjectId = ref(null)
+const entityTypeFilter = ref(null)
+const searchKeywords = ref('')
+const selectedNotificationId = ref(null)
 
-// Computed
-const filteredNotifications = computed(() => {
-  let items = notificationStore.notifications
+const paginatedNotifications = computed(() => notificationStore.notifications)
 
-  // Filter by Unread/All
-  if (notificationStore.filterMode === 'unread') {
-    items = items.filter(n => !n.isRead)
-  }
-
-  // Filter by Search
-  if (uiStore.searchQuery) {
-    const query = uiStore.searchQuery.toLowerCase()
-    items = items.filter(n => 
-      (n.title && n.title.toLowerCase().includes(query)) ||
-      (n.subtitle && n.subtitle.toLowerCase().includes(query)) ||
-      (n.user?.name && n.user.name.toLowerCase().includes(query)) ||
-      (n.target && n.target.toLowerCase().includes(query))
-    )
-  }
-
-  // Filter by Project
-  if (projectFilter.value) {
-    // Assuming notifications have a project context or ID. 
-    // The dummy data uses 'context' string.
-    items = items.filter(n => n.context === projectFilter.value)
-  }
-
-  return items
-})
-
-const paginatedNotifications = computed(() => {
-    // Client-side pagination for now as dummy data is used. 
-    // If real API, would use notificationStore.loadMore/fetch
-    const start = (currentPage.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    return filteredNotifications.value.slice(start, end)
-})
+function resolveInitial(name) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return '?'
+  return trimmed.slice(0, 1).toUpperCase()
+}
 
 // Pagination
-const pageSize = ref(20)
-const currentPage = ref(1)
-const totalPages = computed(() => Math.ceil(filteredNotifications.value.length / pageSize.value))
+const pageSize = ref(notificationStore.pagination.limit || 10)
+const currentPage = ref(notificationStore.pagination.page || 1)
+const totalPages = computed(() => notificationStore.pagination.totalPages || 1)
 
 const visiblePages = computed(() => {
   const maxVisible = 5
@@ -90,6 +65,7 @@ const showPagination = computed(() => totalPages.value > 1)
 function goToPage(page) {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
+  fetchInbox()
 }
 
 // Project Menu Items
@@ -100,135 +76,136 @@ const projectMenuItems = computed(() => {
     id: p.id,
     label: p.name,
     action: () => {
-      projectFilter.value = p.name // Using name as context match for now
+      selectedProjectId.value = p.id
     }
   }))
 })
 
 // Add 'All Projects' option
 const projectFilterItems = computed(() => [
-    { id: 'all', label: 'All Projects', action: () => projectFilter.value = null },
+    { id: 'all', label: t('common.all'), action: () => selectedProjectId.value = null },
     ...projectMenuItems.value
 ])
 
-onMounted(async () => {
-  // Ideally fetch notifications here
-  // await notificationStore.fetchNotifications()
-  // Using dummy data from original file but moving to store logic would be better if real. 
-  // For now, I'll use the dummy data initialized in the store or just use the local dummy data if store is empty?
-  // The store currently initializes empty. 
-  // To preserve the User's view of "dummyNotifications", I should populate the store with them or keep them local if the store doesn't support dummy injection easily.
-  // But standard is to use store. 
-  // I will inject dummy data into store for this refactor to work with store logic.
-  
-  if (notificationStore.notifications.length === 0) {
-     notificationStore.notifications = [
-        {
-            id: 1,
-            user: { name: 'Zee avi', avatar: 'https://i.pravatar.cc/150?u=1' },
-            action: 'reassigned',
-            target: 'Audit task references to ensure correct linkage between related dependencies',
-            context: 'Ad Astra',
-            time: '10:15',
-            isRead: false,
-            isComment: false,
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 2,
-            user: { name: 'Zee avi', avatar: 'https://i.pravatar.cc/150?u=1' },
-            action: 'commented',
-            target: 'Analyze recurring maintenance complaints to identify root causes and long term solutions',
-            context: 'Ad Astra',
-            preview: 'Aliquam enim tortor, tincidunt ac dignissim volutpat, malesuada eget tellus. In ut nisl massa. Pellentesque auctor lacus in dolor gravida, nec tincidunt leo lobortis. Proin in odio nulla. Etiam euismod dolor sit amet pharetra auctor.',
-            time: '09:15',
-            isRead: false,
-            isComment: true,
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 3,
-            system: true,
-            title: '[Projectname] / New form data - Formname',
-            subtitle: 'Draft reply ready for review',
-            context: 'Projectname',
-            time: '07:30',
-            isRead: false,
-            isComment: false,
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 4,
-            user: { name: 'Lee an Rimes', avatar: 'https://i.pravatar.cc/150?u=2' },
-            action: 'added an attachment',
-            target: 'Conduct internal review meeting to prioritize unresolved safety and compliance issues',
-            context: 'Skylar',
-            time: '07:00',
-            isRead: false,
-            isComment: false,
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 5,
-            user: { name: 'Zee avi', avatar: 'https://i.pravatar.cc/150?u=1' },
-            action: 'renamed',
-            target: 'Cross check task references to ensure correct linkage between related dependencies',
-            actionDetails: "'Cross check task references' to 'Cross check task references to ensu...'",
-            context: '',
-            time: 'Yesterday',
-            isRead: false,
-            isComment: false,
-            isSelected: true,
-            createdAt: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-            id: 6,
-            user: { name: '', avatar: '' }, 
-            title: 'Conduct internal review meeting to prioritize unresolved safety and compliance issues',
-            subtitle: 'is due tomorrow',
-            context: 'Skylar',
-            time: 'Yesterday',
-            isRead: false,
-            isComment: false,
-            createdAt: new Date(Date.now() - 86400000).toISOString()
-        }
-    ]
-    notificationStore.unreadCount = 6
-  }
+const selectedProjectLabel = computed(() => {
+  if (!selectedProjectId.value) return ''
+  const project = projectStore.projects?.find(p => String(p.id) === String(selectedProjectId.value))
+  return project?.name || ''
 })
 
-function handleMarkAsRead(id) {
-    notificationStore.markAsRead(id)
+const pageSizeItems = computed(() => [10, 20, 50].map((limit) => ({
+  id: `limit-${limit}`,
+  label: String(limit),
+  action: () => {
+    pageSize.value = limit
+  }
+})))
+
+function buildInboxQueryParams() {
+  const params = {
+    page: currentPage.value,
+    limit: pageSize.value
+  }
+
+  if (notificationStore.filterMode === 'unread') {
+    params.isRead = 0
+  }
+  if (selectedProjectId.value) {
+    params.projectId = selectedProjectId.value
+  }
+  if (entityTypeFilter.value) {
+    params.entityType = entityTypeFilter.value
+  }
+  if (searchKeywords.value) {
+    params.keywords = searchKeywords.value
+  }
+
+  return params
 }
 
-function handleOpenTask(item) {
-    // Create dummy task
-    const dummyTask = {
-        id: item.id || `dummy-${Date.now()}`,
-        title: item.target || item.title || 'Untitled Task',
-        description: item.preview ? `<p>${item.preview}</p>` : '<p>No description</p>',
-        status: TaskStatus.TODO,
-        priority: TaskPriority.MEDIUM,
-        assignee: item.user ? { id: 'dummy-user', name: item.user.name, avatar: item.user.avatar } : null,
-        projectId: 'dummy-project', 
-        projectName: item.context || 'Project',
-        dueDate: new Date(),
-        tags: [],
-        createdAt: item.createdAt,
-        updatedAt: item.createdAt
-    }
-    
-    // Set current task in store
-    taskStore.currentTask = dummyTask
-    
-    // Open sidebar
-    uiStore.openTaskPanel()
-    
-    // Mark notification as read
-    if (!item.isRead) {
-        handleMarkAsRead(item.id)
-    }
+async function fetchInbox() {
+  try {
+    await notificationStore.fetchNotifications(buildInboxQueryParams())
+    currentPage.value = notificationStore.pagination.page || currentPage.value
+    pageSize.value = notificationStore.pagination.limit || pageSize.value
+  } catch (error) {
+    console.error('Error fetching inbox:', error)
+    uiStore.showApiError(error, t('notifications.title'))
+  }
 }
+
+onMounted(async () => {
+  await fetchInbox()
+})
+
+async function handleMarkAsRead(id) {
+  try {
+    const response = await notificationStore.markAsRead(id)
+    uiStore.showApiSuccess(response, t('notifications.markAsRead'))
+  } catch (error) {
+    console.error('Error marking as read:', error)
+    uiStore.showApiError(error, t('notifications.markAsRead'))
+  }
+}
+
+async function handleOpenTask(item) {
+  selectedNotificationId.value = item.id
+
+  if (item.entityType === 'task' && item.payload) {
+    taskStore.setCurrentTask(createTask(item.payload))
+    uiStore.openTaskPanel()
+  } else if (item.entityType === 'task' && item.entityId) {
+    try {
+      await taskStore.fetchTask(item.entityId)
+      uiStore.openTaskPanel()
+    } catch (error) {
+      console.error('Error opening task from inbox:', error)
+      uiStore.showApiError(error, t('taskDetail.title'))
+    }
+  }
+
+  if (!item.isRead) {
+    await handleMarkAsRead(item.id)
+  }
+}
+
+watch(
+  () => notificationStore.filterMode,
+  async () => {
+    currentPage.value = 1
+    await fetchInbox()
+  }
+)
+
+watch(selectedProjectId, async () => {
+  currentPage.value = 1
+  await fetchInbox()
+})
+
+watch(entityTypeFilter, async () => {
+  currentPage.value = 1
+  await fetchInbox()
+})
+
+watch(pageSize, async () => {
+  currentPage.value = 1
+  await fetchInbox()
+})
+
+const debouncedSearch = debounce(async (query) => {
+  const keywords = resolveSearchKeywords(query)
+  if (keywords === null) return
+  searchKeywords.value = keywords
+  currentPage.value = 1
+  await fetchInbox()
+}, 300)
+
+watch(
+  () => uiStore.searchQuery,
+  (query) => {
+    debouncedSearch(query)
+  }
+)
 </script>
 
 <template>
@@ -245,7 +222,7 @@ function handleOpenTask(item) {
               v-for="item in paginatedNotifications" 
               :key="item.id"
               class="group relative flex items-start gap-4 p-4 hover:bg-blue-50/50 transition-colors cursor-pointer"
-              :class="{ 'bg-blue-50/30': item.isSelected }"
+              :class="{ 'bg-blue-50/30': selectedNotificationId === item.id }"
               @click="handleOpenTask(item)"
             >
               <div class="shrink-0 pt-1">
@@ -258,11 +235,13 @@ function handleOpenTask(item) {
                    </div>
                 </template>
                 <template v-else>
-                  <div class="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 text-xs font-bold">L</div>
+                  <div class="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 text-xs font-bold">
+                    {{ resolveInitial(item.user?.name) }}
+                  </div>
                 </template>
               </div>
 
-              <div class="flex-1 min-w-0 pr-12">
+              <div class="flex-1 min-w-0">
                 <div class="flex items-baseline gap-1.5 flex-wrap">
                   <span v-if="item.user && item.user.name" class="font-semibold text-sm text-gray-900">
                     {{ item.user.name }}
@@ -293,28 +272,29 @@ function handleOpenTask(item) {
                 </div>
               </div>
 
-              <div class="absolute right-4 top-4 flex flex-col items-end gap-1">
-                <div class="flex items-center gap-2 group-hover:hidden">
-                  <span class="text-xs text-gray-500 font-medium">{{ item.time }}</span>
-                  <div v-if="!item.isRead" class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+              <div class="shrink-0 flex flex-col items-end gap-2 pl-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 font-medium group-hover:hidden">{{ item.time }}</span>
+                  <div v-if="!item.isRead" class="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
                 </div>
 
                 <div class="hidden group-hover:flex items-center gap-2">
-                  <Button 
+                  <Button
                     @click.stop="handleOpenTask(item)"
-                    size="small" 
-                    variant="outlined" 
+                    size="small"
+                    variant="outlined"
                     class="!px-3 !py-1 !text-xs !h-7 bg-white border-gray-200 text-gray-600 hover:text-gray-900"
                   >
-                    <span class="mr-1">«</span> Open
+                    {{ t('common.open') }}
                   </Button>
-                  <Button 
+                  <Button
+                    v-if="!item.isRead"
                     @click.stop="handleMarkAsRead(item.id)"
-                    size="small" 
+                    size="small"
                     class="!px-3 !py-1 !text-xs !h-7 bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
                   >
                     <Check class="w-3 h-3 mr-1" />
-                    Mark as read
+                    {{ t('notifications.markAsRead') }}
                   </Button>
                 </div>
               </div>
@@ -322,7 +302,7 @@ function handleOpenTask(item) {
             
             <!-- Empty State -->
             <div v-if="paginatedNotifications.length === 0" class="flex flex-col items-center justify-center p-12 text-center text-gray-500">
-               <p>No notifications found.</p>
+               <p>{{ t('notifications.noNotifications') }}</p>
             </div>
           </div>
         </div>
@@ -337,17 +317,17 @@ function handleOpenTask(item) {
       <!-- Left: Filters -->
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-3">
-          <span class="text-[13px] text-gray-500">Filter by</span>
+          <span class="text-[13px] text-gray-500">{{ t('notifications.filters.filterBy') }}</span>
           
            <!-- Project Filter using DropdownMenu -->
            <DropdownMenu :items="projectFilterItems" position="left" width="12rem" :openUp="true">
               <template #trigger>
                  <button 
                    class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                   :class="{ 'border-blue-300 bg-blue-50 text-blue-700': projectFilter }"
+                   :class="{ 'border-blue-300 bg-blue-50 text-blue-700': selectedProjectId }"
                  >
-                   <LayoutGrid class="w-4 h-4" :class="projectFilter ? 'text-blue-600' : 'text-gray-500'" />
-                   <span>{{ projectFilter || 'Project' }}</span>
+                   <LayoutGrid class="w-4 h-4" :class="selectedProjectId ? 'text-blue-600' : 'text-gray-500'" />
+                   <span>{{ selectedProjectLabel || t('notifications.filters.project') }}</span>
                  </button>
               </template>
            </DropdownMenu>
@@ -355,7 +335,7 @@ function handleOpenTask(item) {
            <!-- Placeholder for Status Filter -->
            <button class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors">
              <Check class="w-3 h-3 text-gray-500" />
-             Status
+             {{ t('notifications.filters.status') }}
            </button>
 
            <button class="flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors">
@@ -412,10 +392,14 @@ function handleOpenTask(item) {
             </button>
 
              <div class="page-size-selector ml-2">
-                <button class="flex items-center gap-2 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50">
-                   {{ pageSize }}
-                   <ChevronDown class="w-3 h-3 text-gray-400" />
-                </button>
+                <DropdownMenu :items="pageSizeItems" position="right" width="6rem" :openUp="true">
+                  <template #trigger>
+                    <button class="flex items-center gap-2 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50">
+                      {{ pageSize }}
+                      <ChevronDown class="w-3 h-3 text-gray-400" />
+                    </button>
+                  </template>
+                </DropdownMenu>
              </div>
          </div>
       </div>

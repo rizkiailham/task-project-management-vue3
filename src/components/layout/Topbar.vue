@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUIStore, useAuthStore, useWorkspaceStore, useProjectStore, useNotificationStore } from '@/stores'
 import { ViewType } from '@/models'
+import { useI18n } from 'vue-i18n'
 
 // PrimeVue
 import OverlayPanel from 'primevue/overlaypanel'
@@ -23,7 +24,9 @@ const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
 const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
+const { t } = useI18n()
 
+const isMarkingAllRead = ref(false)
 
 
 // Refs
@@ -73,17 +76,31 @@ const currentViewMenuItems = computed(() => {
 const inboxFilterItems = computed(() => [
   {
     id: 'unread',
-    label: 'Unread',
+    label: t('notifications.filters.unread'),
     icon: CheckCircle,
     action: () => notificationStore.setFilterMode('unread')
   },
   {
     id: 'all',
-    label: 'All',
+    label: t('common.all'),
     icon: List,
     action: () => notificationStore.setFilterMode('all')
   }
 ])
+
+async function handleMarkAllAsRead() {
+  if (isMarkingAllRead.value) return
+  isMarkingAllRead.value = true
+  try {
+    const response = await notificationStore.markAllAsRead()
+    uiStore.showApiSuccess(response, t('notifications.markAllRead'))
+  } catch (error) {
+    console.error('Error marking all as read:', error)
+    uiStore.showApiError(error, t('notifications.markAllRead'))
+  } finally {
+    isMarkingAllRead.value = false
+  }
+}
 
 // Computed
 const pageTitle = computed(() => {
@@ -257,7 +274,7 @@ function setView(view) {
               <button
                 class="flex items-center gap-1.5 text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors"
               >
-                <span>{{ notificationStore.filterMode === 'unread' ? 'Unread' : 'All' }}</span>
+                <span>{{ notificationStore.filterMode === 'unread' ? t('notifications.filters.unread') : t('common.all') }}</span>
                 <ChevronDown class="w-4 h-4 text-gray-500" />
               </button>
             </template>
@@ -317,12 +334,13 @@ function setView(view) {
          
          <!-- Mark all as read -->
          <button
-            @click="notificationStore.markAllAsRead"
+            @click="handleMarkAllAsRead"
             class="flex items-center gap-2 h-8 px-3 rounded-md bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            title="Mark all as read"
+            :disabled="isMarkingAllRead"
+            :title="t('notifications.markAllRead')"
          >
             <CheckCheck class="w-3.5 h-3.5" />
-            <span>Mark all as read</span>
+            <span>{{ t('notifications.markAllRead') }}</span>
          </button>
 
          <!-- Settings Button -->

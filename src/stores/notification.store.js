@@ -7,7 +7,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as notificationApi from '@/api/notification.api'
-import { createNotification } from '@/models'
 
 export const useNotificationStore = defineStore('notification', () => {
   // ================================
@@ -19,10 +18,67 @@ export const useNotificationStore = defineStore('notification', () => {
   const error = ref(null)
   const pagination = ref({
     page: 1,
-    limit: 20,
-    total: 0
+    limit: 10,
+    total: 0,
+    totalPages: 0
   })
   const filterMode = ref('unread') // 'unread' | 'all'
+
+  function resolveUserFromPayload(payload) {
+    const candidate = payload?.createdBy || payload?.updatedBy || payload?.user || null
+    if (!candidate) return null
+    const firstName = candidate.firstName || ''
+    const lastName = candidate.lastName || ''
+    const name = `${firstName} ${lastName}`.trim() || candidate.name || candidate.email || ''
+    return {
+      id: candidate.id || null,
+      name,
+      avatar: candidate.avatar || null,
+      email: candidate.email || ''
+    }
+  }
+
+  function formatInboxTime(value) {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    try {
+      return date.toLocaleString(undefined, { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+    } catch (e) {
+      return date.toISOString()
+    }
+  }
+
+  function normalizeInboxItem(item = {}) {
+    const payload = item.payload || null
+    const projectName =
+      payload?.project?.name ||
+      payload?.projectItem?.project?.name ||
+      payload?.projectItem?.name ||
+      ''
+
+    return {
+      id: item.id || null,
+      userId: item.userId || null,
+      projectId: item.projectId || payload?.projectId || payload?.project?.id || null,
+      entityType: item.entityType || null,
+      entityId: item.entityId || payload?.id || null,
+      action: item.action || '',
+      title: item.title || '',
+      body: item.body || '',
+      payload,
+      isRead: !!item.isRead,
+      createdAt: item.createdAt || new Date().toISOString(),
+
+      // View helpers (InboxView.vue expects these)
+      user: resolveUserFromPayload(payload),
+      context: projectName,
+      subtitle: item.body || '',
+      time: formatInboxTime(item.createdAt),
+      isComment: false,
+      preview: item.body || ''
+    }
+  }
 
   // ================================
   // Getters
@@ -64,15 +120,34 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null
 
     try {
-      const response = await notificationApi.getNotifications({
-        page: pagination.value.page,
-        limit: pagination.value.limit,
+      const queryParams = {
+        page: params.page || pagination.value.page,
+        limit: params.limit || pagination.value.limit,
         ...params
-      })
+      }
 
-      notifications.value = response.notifications.map(n => createNotification(n))
-      unreadCount.value = response.unreadCount
-      pagination.value.total = response.total
+      const response = await notificationApi.getNotifications(queryParams)
+
+      // Handle nestjs-paginate response format
+      if (response?.data) {
+        notifications.value = response.data.map(normalizeInboxItem)
+        pagination.value = {
+          page: response.meta?.currentPage || 1,
+          limit: response.meta?.itemsPerPage || queryParams.limit || 10,
+          total: response.meta?.totalItems || 0,
+          totalPages: response.meta?.totalPages || 1
+        }
+      } else {
+        // Fallback for unexpected formats
+        const list = Array.isArray(response) ? response : []
+        notifications.value = list.map(normalizeInboxItem)
+        pagination.value = {
+          page: queryParams.page || 1,
+          limit: queryParams.limit || 10,
+          total: list.length,
+          totalPages: 1
+        }
+      }
 
       return notifications.value
     } catch (err) {
@@ -89,7 +164,10 @@ export const useNotificationStore = defineStore('notification', () => {
   async function fetchUnreadCount() {
     try {
       const response = await notificationApi.getUnreadCount()
-      unreadCount.value = response.count
+      unreadCount.value =
+        Number(response?.count) ||
+        Number(response?.data) ||
+        (Number.isFinite(response) ? response : 0)
       return unreadCount.value
     } catch (err) {
       error.value = err.message || 'Failed to fetch unread count'
@@ -103,13 +181,17 @@ export const useNotificationStore = defineStore('notification', () => {
    */
   async function markAsRead(notificationId) {
     try {
-      await notificationApi.markAsRead(notificationId)
+      const response = await notificationApi.markAsRead(notificationId)
 
       const notification = notifications.value.find(n => n.id === notificationId)
       if (notification && !notification.isRead) {
         notification.isRead = true
         unreadCount.value = Math.max(0, unreadCount.value - 1)
       }
+      if (filterMode.value === 'unread') {
+        notifications.value = notifications.value.filter(n => n.id !== notificationId)
+      }
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to mark as read'
       throw err
@@ -123,9 +205,13 @@ export const useNotificationStore = defineStore('notification', () => {
     try {
       const response = await notificationApi.markAllAsRead()
 
-      notifications.value.forEach(n => {
-        n.isRead = true
-      })
+      if (filterMode.value === 'unread') {
+        notifications.value = []
+      } else {
+        notifications.value.forEach(n => {
+          n.isRead = true
+        })
+      }
       unreadCount.value = 0
       return response
     } catch (err) {
@@ -140,7 +226,7 @@ export const useNotificationStore = defineStore('notification', () => {
    */
   async function deleteNotification(notificationId) {
     try {
-      await notificationApi.deleteNotification(notificationId)
+      const response = await notificationApi.deleteNotification(notificationId)
 
       const notification = notifications.value.find(n => n.id === notificationId)
       if (notification && !notification.isRead) {
@@ -148,6 +234,7 @@ export const useNotificationStore = defineStore('notification', () => {
       }
 
       notifications.value = notifications.value.filter(n => n.id !== notificationId)
+      return response
     } catch (err) {
       error.value = err.message || 'Failed to delete notification'
       throw err
@@ -159,9 +246,11 @@ export const useNotificationStore = defineStore('notification', () => {
    * @param {Object} notification
    */
   function addNotification(notification) {
-    const newNotification = createNotification(notification)
+    const newNotification = normalizeInboxItem(notification)
     notifications.value.unshift(newNotification)
-    unreadCount.value++
+    if (!newNotification.isRead) {
+      unreadCount.value++
+    }
   }
 
   /**
@@ -178,9 +267,10 @@ export const useNotificationStore = defineStore('notification', () => {
         limit: pagination.value.limit
       })
 
-      const newNotifications = response.notifications.map(n => createNotification(n))
+      const newNotifications = (response?.data || []).map(normalizeInboxItem)
       notifications.value.push(...newNotifications)
-      pagination.value.total = response.total
+      pagination.value.total = response?.meta?.totalItems ?? pagination.value.total
+      pagination.value.totalPages = response?.meta?.totalPages ?? pagination.value.totalPages
     } catch (err) {
       error.value = err.message || 'Failed to load more'
       pagination.value.page--
@@ -204,8 +294,9 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null
     pagination.value = {
       page: 1,
-      limit: 20,
-      total: 0
+      limit: 10,
+      total: 0,
+      totalPages: 0
     }
   }
 
@@ -240,6 +331,9 @@ export const useNotificationStore = defineStore('notification', () => {
     hasMore,
     clearState,
     filterMode,
-    setFilterMode
+    setFilterMode,
+
+    // Helpers
+    normalizeInboxItem
   }
 })

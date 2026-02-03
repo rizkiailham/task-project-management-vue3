@@ -37,6 +37,7 @@
     "continue": "Continue",
     "undo": "Undo",
     "redo": "Redo",
+    "open": "Open",
     "preview": "Preview"
   },
   "auth": {
@@ -551,6 +552,12 @@
     "markAllRead": "Mark all as read",
     "markAsRead": "Mark as read",
     "noNotifications": "No notifications",
+    "filters": {
+      "filterBy": "Filter by",
+      "project": "Project",
+      "status": "Status",
+      "unread": "Unread"
+    },
     "types": {
       "taskAssigned": "Task assigned",
       "taskCompleted": "Task completed",

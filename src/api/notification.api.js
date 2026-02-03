@@ -5,49 +5,53 @@
 import { get, post, patch, del } from './httpClient'
 
 /**
- * Get all notifications for current user
+ * Get inbox notifications for current user
  * @param {Object} params
  * @param {number} params.page
  * @param {number} params.limit
- * @param {boolean} params.unreadOnly
- * @returns {Promise<{notifications: Notification[], total: number, unreadCount: number}>}
+ * @param {0|1} [params.isRead] - 0 = unread only, 1 = read only
+ * @param {string} [params.projectId]
+ * @param {string} [params.entityType]
+ * @param {string} [params.keywords]
+ * @param {string} [params.sortBy] - e.g. "createdAt:DESC"
+ * @returns {Promise<{data: any[], meta: any, links?: any}>}
  */
 export async function getNotifications(params = {}) {
-  return get('/notifications', params)
+  return get('/inbox', params)
 }
 
 /**
  * Get unread notification count
- * @returns {Promise<{count: number}>}
+ * @returns {Promise<{count: number} | {data: number} | number>}
  */
 export async function getUnreadCount() {
-  return get('/notifications/unread-count')
+  return get('/inbox/unread-count')
 }
 
 /**
  * Mark notification as read
  * @param {string} notificationId
- * @returns {Promise<void>}
+ * @returns {Promise<any>}
  */
 export async function markAsRead(notificationId) {
-  return patch(`/notifications/${notificationId}/read`)
+  return patch('/inbox/read', { ids: [notificationId] })
 }
 
 /**
  * Mark all notifications as read
- * @returns {Promise<void>}
+ * @returns {Promise<any>}
  */
 export async function markAllAsRead() {
-  return post('/notifications/mark-all-read')
+  return patch('/inbox/read/all')
 }
 
 /**
  * Delete a notification
  * @param {string} notificationId
- * @returns {Promise<void>}
+ * @returns {Promise<any>}
  */
 export async function deleteNotification(notificationId) {
-  return del(`/notifications/${notificationId}`)
+  return del(`/inbox/${notificationId}`)
 }
 
 /**
@@ -66,4 +70,3 @@ export async function updatePreferences(preferences) {
 export async function getPreferences() {
   return get('/notifications/preferences')
 }
-
