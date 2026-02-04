@@ -43,7 +43,8 @@ const initialUsers = computed(() => {
         id: user.id,
         name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.name,
         email: user.email || '',
-        avatar: (user.firstName || user.name || '?').charAt(0)
+        initials: (user.firstName || user.name || '?').charAt(0),
+        avatarUrl: user.avatar
     }))
 })
 
@@ -67,7 +68,8 @@ async function fetchResults(query) {
       id: user.id,
       name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
       email: user.email || '',
-      avatar: (user.firstName || '?').charAt(0)
+      initials: (user.firstName || '?').charAt(0),
+      avatarUrl: user.avatar
     }))
   } catch (error) {
     console.error('Search failed:', error)
@@ -174,10 +176,12 @@ onMounted(() => {
               @click="handleSelect(user)"
             >
               <Avatar
-                :label="user.avatar"
+                :image="user.avatarUrl"
+                :label="!user.avatarUrl ? user.initials : undefined"
                 shape="circle"
                 size="small"
                 class="w-6 h-6 text-[10px] bg-primary-100 text-primary-700 font-semibold"
+                :style="!user.avatarUrl ? {} : { backgroundColor: 'transparent' }"
               />
               <div class="flex flex-col items-start overflow-hidden flex-1">
                 <span class="font-medium truncate w-full text-left">{{ user.name }}</span>
@@ -200,10 +204,12 @@ onMounted(() => {
               @click="handleSelect(user)"
             >
               <Avatar
-                :label="user.avatar"
+                :image="user.avatarUrl"
+                :label="!user.avatarUrl ? user.initials : undefined"
                 shape="circle"
                 size="small"
                 class="w-6 h-6 text-[10px] bg-blue-100 text-blue-700 font-semibold"
+                :style="!user.avatarUrl ? {} : { backgroundColor: 'transparent' }"
               />
               <div class="flex flex-col items-start overflow-hidden flex-1">
                 <span class="font-medium truncate w-full text-left">{{ user.name }}</span>
