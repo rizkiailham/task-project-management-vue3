@@ -240,6 +240,22 @@ async function handleUpdateDueDate({ taskId, date }) {
     uiStore.showApiError(error, 'Failed to update due date')
   }
 }
+
+async function handlePageChange(page) {
+  try {
+    await taskStore.fetchMyTasks({ page })
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to change page')
+  }
+}
+
+async function handlePageSizeChange(limit) {
+  try {
+    await taskStore.fetchMyTasks({ page: 1, limit })
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to change page size')
+  }
+}
 </script>
 
 <template>
@@ -251,8 +267,11 @@ async function handleUpdateDueDate({ taskId, date }) {
         <div v-if="uiStore.myTasksViewMode === ViewType.LIST" class="h-full overflow-hidden">
            <ProjectTasksGrid
             :tasks="treeTasks"
+            :meta="taskStore.pagination"
             @task-click="navigateToTask"
             @update-task-title="handleUpdateTaskTitle"
+            @change-page="handlePageChange"
+            @update:pageSize="handlePageSizeChange"
           >
             <template #footer-filters>
               <div class="flex items-center gap-4">

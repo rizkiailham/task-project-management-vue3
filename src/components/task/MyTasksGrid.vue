@@ -12,6 +12,7 @@ import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import { useTaskStore, useUIStore } from '@/stores'
 import SortHeader from '@/components/ag/SortHeader.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import Pagination from '@/components/ui/Pagination.vue'
 import {
   ChevronLeft,
   ChevronRight,
@@ -60,39 +61,29 @@ const visiblePages = computed(() => {
 const isFirstPage = computed(() => currentPage.value <= 1)
 const isLastPage = computed(() => currentPage.value >= totalPages.value)
 
+const isFirstPage = computed(() => currentPage.value <= 1)
+const isLastPage = computed(() => currentPage.value >= totalPages.value)
+
 function updatePagination() {
   if (!gridApi.value) return
+  // AG Grid is 0-indexed, UI is 1-indexed
   currentPage.value = gridApi.value.paginationGetCurrentPage() + 1
   totalPages.value = gridApi.value.paginationGetTotalPages()
 }
 
-function goToPage(page) {
-  if (!gridApi.value || page < 1 || page > totalPages.value) return
+function handlePageChange(page) {
+  if (!gridApi.value) return
   gridApi.value.paginationGoToPage(page - 1)
 }
 
-function goToFirst() {
-  goToPage(1)
-}
-
-function goToLast() {
-  goToPage(totalPages.value)
-}
-
-function goToPrev() {
-  goToPage(currentPage.value - 1)
-}
-
-function goToNext() {
-  goToPage(currentPage.value + 1)
-}
-
-function changePageSize(newSize) {
+function handlePageSizeChange(newSize) {
   pageSize.value = newSize
   if (gridApi.value) {
     gridApi.value.paginationSetPageSize(newSize)
   }
 }
+// Removed manual goTo* functions as component handles events
+
 
 LicenseManager.setLicenseKey(
   '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
@@ -731,72 +722,18 @@ function onGridReady(params) {
     />
 
     <!-- Fixed Footer -->
-    <div v-if="showPagination" class="footer-bar">
-       <div class="footer-pagination w-full justify-end">
-         <div class="flex items-center gap-1">
-           <button
-             @click="goToFirst"
-             :disabled="isFirstPage"
-             class="pagination-btn"
-             :class="{ 'pagination-btn-disabled': isFirstPage }"
-             title="First page"
-           >
-             <ChevronsLeft class="w-4 h-4" />
-           </button>
-           
-           <button
-             @click="goToPrev"
-             :disabled="isFirstPage"
-             class="pagination-btn"
-             :class="{ 'pagination-btn-disabled': isFirstPage }"
-             title="Previous page"
-           >
-             <ChevronLeft class="w-4 h-4" />
-           </button>
-           
-           <button
-             v-for="page in visiblePages"
-             :key="page"
-             @click="goToPage(page)"
-             class="pagination-btn pagination-page"
-             :class="{ 'pagination-page-active': page === currentPage }"
-           >
-             {{ page }}
-           </button>
-           
-           <button
-             @click="goToNext"
-             :disabled="isLastPage"
-             class="pagination-btn"
-             :class="{ 'pagination-btn-disabled': isLastPage }"
-             title="Next page"
-           >
-             <ChevronRight class="w-4 h-4" />
-           </button>
-           
-           <button
-             @click="goToLast"
-             :disabled="isLastPage"
-             class="pagination-btn"
-             :class="{ 'pagination-btn-disabled': isLastPage }"
-             title="Last page"
-           >
-             <ChevronsRight class="w-4 h-4" />
-           </button>
-           
-           <div class="page-size-selector ml-2">
-              <DropdownMenu :items="pageSizeItems" position="right" width="6rem" :openUp="true">
-                <template #trigger>
-                  <button class="flex items-center gap-2 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50">
-                    {{ pageSize }}
-                    <ChevronDown class="w-3 h-3 text-gray-400" />
-                  </button>
-                </template>
-              </DropdownMenu>
-           </div>
-         </div>
-       </div>
-    </div>
+    <Pagination
+      v-model:currentPage="currentPage"
+      :totalPages="totalPages"
+      :pageSize="pageSize"
+      @update:pageSize="handlePageSizeChange"
+      @change-page="handlePageChange"
+      :totalItems="totalRows"
+    >
+      <template #filters>
+         <slot name="footer-filters"></slot>
+      </template>
+    </Pagination>
   </div>
 </template>
 
@@ -930,61 +867,5 @@ function onGridReady(params) {
   width: 100%;
   flex: 1;
 }
-
-/* Footer Bar */
-.footer-bar {
-  position: sticky;
-  bottom: 0px;
-  right: 0;
-  z-index: 10;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 52px;
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
-}
-
-.footer-pagination {
-  display: flex;
-  align-items: center;
-}
-
-.pagination-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background-color: #ffffff;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.pagination-btn-disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background-color: #f9fafb;
-}
-
-.pagination-page {
-  min-width: 32px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.pagination-page-active {
-  background-color: #f3f4f6;
-  color: #6b7280;
-  border-color: #d1d5db;
-}
 </style>
+```
