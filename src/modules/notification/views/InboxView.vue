@@ -1,24 +1,21 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useNotificationStore, useUIStore, useProjectStore, useTaskStore } from '@/stores'
+import { useInboxStore, useUIStore, useProjectStore, useTaskStore } from '@/stores'
 import { 
   Check, 
   ChevronDown, 
   Filter, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight,
   LayoutGrid
 } from 'lucide-vue-next'
+import Pagination from '@/components/ui/Pagination.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Button from 'primevue/button'
 import { createTask } from '@/models'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
 
-const notificationStore = useNotificationStore()
+const inboxStore = useInboxStore()
 const uiStore = useUIStore()
 const projectStore = useProjectStore()
 const taskStore = useTaskStore()
@@ -30,7 +27,7 @@ const entityTypeFilter = ref(null)
 const searchKeywords = ref('')
 const selectedNotificationId = ref(null)
 
-const paginatedNotifications = computed(() => notificationStore.notifications)
+const paginatedNotifications = computed(() => inboxStore.items)
 
 function resolveInitial(name) {
   const trimmed = String(name || '').trim()
@@ -39,9 +36,9 @@ function resolveInitial(name) {
 }
 
 // Pagination
-const pageSize = ref(notificationStore.pagination.limit || 10)
-const currentPage = ref(notificationStore.pagination.page || 1)
-const totalPages = computed(() => notificationStore.pagination.totalPages || 1)
+const pageSize = ref(inboxStore.pagination.limit || 10)
+const currentPage = ref(inboxStore.pagination.page || 1)
+const totalPages = computed(() => inboxStore.pagination.totalPages || 1)
 
 const visiblePages = computed(() => {
   const maxVisible = 5
@@ -98,13 +95,13 @@ const projectFilterItems = computed(() => [
 const statusFilterItems = computed(() => [
   {
     label: t('common.all'),
-    action: () => notificationStore.setFilterMode('all'),
-    checked: notificationStore.filterMode !== 'unread'
+    action: () => inboxStore.setFilterMode('all'),
+    checked: inboxStore.filterMode !== 'unread'
   },
   {
     label: t('notifications.filters.unread'),
-    action: () => notificationStore.setFilterMode('unread'),
-    checked: notificationStore.filterMode === 'unread'
+    action: () => inboxStore.setFilterMode('unread'),
+    checked: inboxStore.filterMode === 'unread'
   }
 ])
 
@@ -128,7 +125,7 @@ function buildInboxQueryParams() {
     limit: pageSize.value
   }
 
-  if (notificationStore.filterMode === 'unread') {
+  if (inboxStore.filterMode === 'unread') {
     params.isRead = false
   }
   if (selectedProjectId.value) {
@@ -146,9 +143,9 @@ function buildInboxQueryParams() {
 
 async function fetchInbox() {
   try {
-    await notificationStore.fetchNotifications(buildInboxQueryParams())
-    currentPage.value = notificationStore.pagination.page || currentPage.value
-    pageSize.value = notificationStore.pagination.limit || pageSize.value
+    await inboxStore.fetchInbox(buildInboxQueryParams())
+    currentPage.value = inboxStore.pagination.page || currentPage.value
+    pageSize.value = inboxStore.pagination.limit || pageSize.value
   } catch (error) {
     console.error('Error fetching inbox:', error)
     uiStore.showApiError(error, t('notifications.title'))
@@ -161,7 +158,7 @@ onMounted(async () => {
 
 async function handleMarkAsRead(id) {
   try {
-    const response = await notificationStore.markAsRead(id)
+    const response = await inboxStore.markAsRead(id)
     uiStore.showApiSuccess(response, t('notifications.markAsRead'))
   } catch (error) {
     console.error('Error marking as read:', error)
@@ -191,7 +188,7 @@ async function handleOpenTask(item) {
 }
 
 watch(
-  () => notificationStore.filterMode,
+  () => inboxStore.filterMode,
   async () => {
     currentPage.value = 1
     await fetchInbox()
@@ -337,155 +334,65 @@ watch(
     </div>
 
     <!-- Fixed Footer -->
-    <div 
-      class="fixed bottom-0 right-0 h-[52px] bg-white border-t border-gray-200 px-4 flex items-center justify-between z-[101] transition-[left] duration-300"
-      :style="{ left: uiStore.sidebarWidth }"
+    <Pagination
+      v-model:currentPage="currentPage"
+      :totalPages="totalPages"
+      :pageSize="pageSize"
+      @update:pageSize="val => pageSize = val"
+      @change-page="goToPage"
+      :totalItems="inboxStore.pagination.total"
     >
-      <!-- Left: Filters -->
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-3">
-          <span class="text-[13px] text-gray-500">{{ t('notifications.filters.filterBy') }}</span>
-          
-           <!-- Status Filter -->
-           <DropdownMenu :items="statusFilterItems" position="left" width="10rem" :openUp="true">
-              <template #trigger>
-                 <button 
-                   class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                   :class="{ 'border-blue-300 bg-blue-50 text-blue-700': notificationStore.filterMode === 'unread' }"
-                 >
-                   <Filter class="w-4 h-4" :class="notificationStore.filterMode === 'unread' ? 'text-blue-600' : 'text-gray-500'" />
-                   <span>{{ notificationStore.filterMode === 'unread' ? t('notifications.filters.unread') : t('common.all') }}</span>
-                 </button>
-              </template>
-              <template #can-use-item-slot-name="slotProps">
-                 <!-- Fix: DropdownMenu passes 'item' in slotProps -->
-              </template>
-              <template #item="{ item }">
-                 <div class="flex items-center justify-between w-full">
-                    <span>{{ item.label }}</span>
-                    <Check v-if="item.checked" class="w-4 h-4 text-blue-600" />
-                 </div>
-              </template>
-           </DropdownMenu>
+      <template #filters>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3">
+            <span class="text-[13px] text-gray-500">{{ t('notifications.filters.filterBy') }}</span>
+              
+             <!-- Status Filter -->
+             <DropdownMenu :items="statusFilterItems" position="left" width="10rem" :openUp="true">
+                <template #trigger>
+                   <button 
+                     class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                     :class="{ 'border-blue-300 bg-blue-50 text-blue-700': inboxStore.filterMode === 'unread' }"
+                   >
+                     <Filter class="w-4 h-4" :class="inboxStore.filterMode === 'unread' ? 'text-blue-600' : 'text-gray-500'" />
+                     <span>{{ inboxStore.filterMode === 'unread' ? t('notifications.filters.unread') : t('common.all') }}</span>
+                   </button>
+                </template>
+                <template #can-use-item-slot-name="slotProps">
+                   <!-- Fix: DropdownMenu passes 'item' in slotProps -->
+                </template>
+                <template #item="{ item }">
+                   <div class="flex items-center justify-between w-full">
+                      <span>{{ item.label }}</span>
+                      <Check v-if="item.checked" class="w-4 h-4 text-blue-600" />
+                   </div>
+                </template>
+             </DropdownMenu>
 
-           <!-- Project Filter using DropdownMenu -->
-           <DropdownMenu :items="projectFilterItems" position="left" width="12rem" :openUp="true">
-              <template #trigger>
-                 <button 
-                   class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                   :class="{ 'border-blue-300 bg-blue-50 text-blue-700': selectedProjectId }"
-                 >
-                   <LayoutGrid class="w-4 h-4" :class="selectedProjectId ? 'text-blue-600' : 'text-gray-500'" />
-                   <span class="max-w-[140px] truncate">{{ selectedProjectLabel || t('notifications.filters.project') }}</span>
-                 </button>
-              </template>
-              <template #item="{ item }">
-                 <div class="flex items-center justify-between w-full">
-                    <span>{{ item.label }}</span>
-                    <Check v-if="item.checked" class="w-4 h-4 text-blue-600" />
-                 </div>
-              </template>
-           </DropdownMenu>
+             <!-- Project Filter using DropdownMenu -->
+             <DropdownMenu :items="projectFilterItems" position="left" width="12rem" :openUp="true">
+                <template #trigger>
+                   <button 
+                     class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                     :class="{ 'border-blue-300 bg-blue-50 text-blue-700': selectedProjectId }"
+                   >
+                     <LayoutGrid class="w-4 h-4" :class="selectedProjectId ? 'text-blue-600' : 'text-gray-500'" />
+                     <span class="max-w-[140px] truncate">{{ selectedProjectLabel || t('notifications.filters.project') }}</span>
+                   </button>
+                </template>
+                <template #item="{ item }">
+                   <div class="flex items-center justify-between w-full">
+                      <span>{{ item.label }}</span>
+                      <Check v-if="item.checked" class="w-4 h-4 text-blue-600" />
+                   </div>
+                </template>
+             </DropdownMenu>
+          </div>
         </div>
-      </div>
-
-      <!-- Right: Pagination -->
-      <div v-if="showPagination" class="footer-pagination">
-         <div class="flex items-center gap-1">
-            <button 
-                @click="goToPage(1)" 
-                :disabled="isFirstPage"
-                class="pagination-btn"
-                :class="{ 'pagination-btn-disabled': isFirstPage }"
-            >
-               <ChevronsLeft class="w-4 h-4" />
-            </button>
-            <button 
-                @click="goToPage(currentPage - 1)" 
-                :disabled="isFirstPage"
-                class="pagination-btn"
-                :class="{ 'pagination-btn-disabled': isFirstPage }"
-            >
-               <ChevronLeft class="w-4 h-4" />
-            </button>
-            
-            <button 
-                v-for="page in visiblePages" 
-                :key="page"
-                @click="goToPage(page)"
-                class="pagination-btn pagination-page"
-                :class="{ 'pagination-page-active': page === currentPage }"
-            >
-                {{ page }}
-            </button>
-
-             <button 
-                @click="goToPage(currentPage + 1)" 
-                :disabled="isLastPage"
-                class="pagination-btn"
-                :class="{ 'pagination-btn-disabled': isLastPage }"
-             >
-               <ChevronRight class="w-4 h-4" />
-            </button>
-            <button 
-                @click="goToPage(totalPages)" 
-                :disabled="isLastPage"
-                class="pagination-btn"
-                :class="{ 'pagination-btn-disabled': isLastPage }"
-            >
-               <ChevronsRight class="w-4 h-4" />
-            </button>
-
-             <div class="page-size-selector ml-2">
-                <DropdownMenu :items="pageSizeItems" position="right" width="6rem" :openUp="true">
-                  <template #trigger>
-                    <button class="flex items-center gap-2 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50">
-                      {{ pageSize }}
-                      <ChevronDown class="w-3 h-3 text-gray-400" />
-                    </button>
-                  </template>
-                </DropdownMenu>
-             </div>
-         </div>
-      </div>
-    </div>
+      </template>
+    </Pagination>
   </div>
 </template>
 
 <style scoped>
-.pagination-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  color: #6b7280;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: #f9fafb;
-}
-
-.pagination-btn-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: #ffffff;
-}
-
-.pagination-page {
-  background-color: #ffffff;
-  font-size: 0.75rem; /* text-xs */
-  font-weight: 500;
-  color: #4b5563; /* text-gray-600 */
-}
-
-.pagination-page-active {
-  background-color: #f3f4f6; /* bg-gray-100 */
-  color: #111827; /* text-gray-900 */
-  border-color: #e5e7eb; /* border-gray-200 */
-}
 </style>
