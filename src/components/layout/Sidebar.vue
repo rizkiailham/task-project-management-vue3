@@ -300,6 +300,15 @@ async function openProjectSettings(project) {
   }
 }
 
+async function replicateProject(project) {
+  try {
+    const response = await projectStore.duplicateProject(project.id)
+    uiStore.showApiSuccess(response, t('sidebar.messages.projectReplicated'))
+  } catch (error) {
+    uiStore.showApiError(error, t('sidebar.messages.projectReplicateFailed'))
+  }
+}
+
 async function handleProjectClick(project) {
   // Only fetch/update if changing projects
   if (String(project.id) !== String(currentProjectId.value)) {
@@ -615,7 +624,7 @@ function getProjectMenuItems(project) {
       id: 'replicate',
       type: 'item',
       label: t('sidebar.context.replicateProject'),
-      action: () => uiStore.showInfo(t('sidebar.messages.replicateProject'))
+      action: () => replicateProject(project)
     },
     { type: 'divider' },
     {

@@ -244,6 +244,8 @@
       "projectRenameFailed": "Kunne ikke oppdatere prosjekt",
       "projectDeleted": "Prosjekt slettet",
       "projectDeleteFailed": "Kunne ikke slette prosjekt",
+      "projectReplicated": "Prosjekt kopiert",
+      "projectReplicateFailed": "Kunne ikke kopiere prosjekt",
       "replicateProject": "Kopier prosjekt",
       "replicateBoard": "Kopier tavle",
       "replicateNote": "Kopier notat",

@@ -216,6 +216,29 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   /**
+   * Duplicate a project
+   * @param {string} projectId
+   */
+  async function duplicateProject(projectId) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await projectApi.duplicateProject(projectId)
+      const project = response.project || response.data || response
+      if (project) {
+        projects.value.unshift(project)
+      }
+      return response
+    } catch (err) {
+      error.value = err.message || 'Failed to replicate project'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
    * Update a project
    * @param {string} projectId
    * @param {Object} data
@@ -493,6 +516,7 @@ export const useProjectStore = defineStore('project', () => {
     selectProjectItem,
     createProject: createNewProject, // Renamed for external use
     createNewProject, // Also export with original name for backward compatibility
+    duplicateProject,
     updateProject,
     deleteProject,
     addUsers,

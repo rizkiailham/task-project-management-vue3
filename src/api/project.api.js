@@ -32,6 +32,15 @@ export async function createProject(data) {
 }
 
 /**
+ * Duplicate a project
+ * @param {string} projectId
+ * @returns {Promise<Project>}
+ */
+export async function duplicateProject(projectId) {
+  return post(`/projects/${projectId}/duplicate`)
+}
+
+/**
  * Update a project
  * @param {string} projectId
  * @param {Object} data
