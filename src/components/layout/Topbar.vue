@@ -77,14 +77,14 @@ const inboxFilterItems = computed(() => [
   {
     id: 'unread',
     label: t('notifications.filters.unread'),
-    icon: CheckCircle,
-    action: () => notificationStore.setFilterMode('unread')
+    action: () => notificationStore.setFilterMode('unread'),
+    checked: notificationStore.filterMode === 'unread'
   },
   {
     id: 'all',
     label: t('common.all'),
-    icon: List,
-    action: () => notificationStore.setFilterMode('all')
+    action: () => notificationStore.setFilterMode('all'),
+    checked: notificationStore.filterMode !== 'unread'
   }
 ])
 
@@ -223,16 +223,16 @@ function setView(view) {
       
       if (targetItemId) {
         params.itemId = targetItemId
-      } else {
-        // Fallback or error handling if no boards exist
+      } else if (view === ViewType.KANBAN) {
+        // Fallback or error handling if no boards exist for Kanban
         console.warn('No board item found for Kanban view')
         return
       }
-    }
 
     router.push({
       name: routeMap[view],
-      params
+      params,
+      query: { type: 'task' }
     })
   }
 }
@@ -277,6 +277,12 @@ function setView(view) {
                 <span>{{ notificationStore.filterMode === 'unread' ? t('notifications.filters.unread') : t('common.all') }}</span>
                 <ChevronDown class="w-4 h-4 text-gray-500" />
               </button>
+            </template>
+            <template #item="{ item }">
+               <div class="flex items-center justify-between w-full">
+                  <span>{{ item.label }}</span>
+                  <Check v-if="item.checked" class="w-4 h-4 text-blue-600" />
+               </div>
             </template>
          </DropdownMenu>
       </div>

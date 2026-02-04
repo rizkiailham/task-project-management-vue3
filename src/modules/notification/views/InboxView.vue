@@ -83,8 +83,29 @@ const projectMenuItems = computed(() => {
 
 // Add 'All Projects' option
 const projectFilterItems = computed(() => [
-    { id: 'all', label: t('common.all'), action: () => selectedProjectId.value = null },
-    ...projectMenuItems.value
+    { 
+      id: 'all', 
+      label: t('common.all'), 
+      action: () => selectedProjectId.value = null,
+      checked: !selectedProjectId.value
+    },
+    ...projectMenuItems.value.map(item => ({
+      ...item,
+      checked: selectedProjectId.value === item.id
+    }))
+])
+
+const statusFilterItems = computed(() => [
+  {
+    label: t('common.all'),
+    action: () => notificationStore.setFilterMode('all'),
+    checked: notificationStore.filterMode !== 'unread'
+  },
+  {
+    label: t('notifications.filters.unread'),
+    action: () => notificationStore.setFilterMode('unread'),
+    checked: notificationStore.filterMode === 'unread'
+  }
 ])
 
 const selectedProjectLabel = computed(() => {
@@ -108,7 +129,7 @@ function buildInboxQueryParams() {
   }
 
   if (notificationStore.filterMode === 'unread') {
-    params.isRead = 0
+    params.isRead = false
   }
   if (selectedProjectId.value) {
     params.projectId = selectedProjectId.value
@@ -217,65 +238,71 @@ watch(
 
         <!-- List -->
         <div class="flex-1 overflow-y-auto">
-          <div class="divide-y divide-gray-100">
+          <div class="divide-y divide-gray-200">
             <div 
               v-for="item in paginatedNotifications" 
               :key="item.id"
-              class="group relative flex items-start gap-4 p-4 hover:bg-blue-50/50 transition-colors cursor-pointer"
+              class="group relative flex items-start gap-3 px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
               :class="{ 'bg-blue-50/30': selectedNotificationId === item.id }"
               @click="handleOpenTask(item)"
             >
               <div class="shrink-0 pt-1">
                 <template v-if="item.user && item.user.avatar">
-                  <img :src="item.user.avatar" class="w-8 h-8 rounded-full" alt="User" />
+                  <img :src="item.user.avatar" class="w-7 h-7 rounded-full" alt="User" />
                 </template>
                 <template v-else-if="item.system">
-                   <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                      <LayoutGrid class="w-4 h-4" />
+                   <div class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                      <LayoutGrid class="w-3.5 h-3.5" />
                    </div>
                 </template>
                 <template v-else>
-                  <div class="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 text-xs font-bold">
+                  <div class="w-7 h-7 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 text-[11px] font-semibold">
                     {{ resolveInitial(item.user?.name) }}
                   </div>
                 </template>
               </div>
 
               <div class="flex-1 min-w-0">
-                <div class="flex items-baseline gap-1.5 flex-wrap">
-                  <span v-if="item.user && item.user.name" class="font-semibold text-sm text-gray-900">
+                <div v-if="item.title || item.target" class="flex items-center gap-2 flex-wrap">
+                  <span class="text-[14px] font-semibold text-gray-900 leading-5">
+                    {{ item.title || item.target }}
+                  </span>
+                </div>
+
+                <div
+                  v-if="item.user?.name || item.action || (item.title && item.target) || item.context"
+                  class="mt-1 flex items-baseline gap-x-1.5 gap-y-0.5 flex-wrap text-[13px] text-gray-600"
+                >
+                  <span v-if="item.user && item.user.name" class="font-medium text-gray-700">
                     {{ item.user.name }}
                   </span>
-                  <span v-if="item.action" class="text-sm text-gray-600">
+                  <span v-if="item.action">
                     {{ item.action }}
                   </span>
-                  <span v-if="item.title" class="font-semibold text-sm text-gray-900">
-                    {{ item.title }}
-                  </span>
-                  <span v-if="item.target" class="font-medium text-sm text-gray-900">
+                  <span v-if="item.title && item.target" class="font-medium text-gray-700">
                     {{ item.target }}
                   </span>
-                  <span v-if="item.context" class="ml-1 text-sm text-gray-500 border-l border-gray-300 pl-2">
+                  <span v-if="item.context" class="text-gray-500 border-l border-gray-200 pl-2 ml-1">
                     {{ item.context }}
                   </span>
                 </div>
 
-                <div v-if="item.actionDetails" class="mt-0.5 text-sm text-gray-600">
+                <div v-if="item.actionDetails" class="mt-1 text-[13px] text-gray-600">
                   {{ item.actionDetails }}
                 </div>
-                <div v-if="item.subtitle" class="mt-0.5 text-sm text-gray-500">
+                <div v-if="item.subtitle" class="mt-1 text-[13px] text-gray-500">
                   {{ item.subtitle }}
                 </div>
 
-                <div v-if="item.isComment" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-100">
+                <div v-if="item.isComment" class="mt-2 text-[13px] text-gray-600 leading-relaxed">
                   {{ item.preview }}
                 </div>
               </div>
 
-              <div class="shrink-0 flex flex-col items-end gap-2 pl-2">
+              <div class="shrink-0 flex flex-col items-end gap-2 pl-2 pt-0.5">
                 <div class="flex items-center gap-2">
-                  <span class="text-xs text-gray-500 font-medium group-hover:hidden">{{ item.time }}</span>
-                  <div v-if="!item.isRead" class="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                  <span class="text-[12px] text-gray-500 font-medium group-hover:hidden">{{ item.time }}</span>
+                  <div v-if="!item.isRead" class="w-2 h-2 bg-blue-600 rounded-full"></div>
                 </div>
 
                 <div class="hidden group-hover:flex items-center gap-2">
@@ -301,7 +328,7 @@ watch(
             </div>
             
             <!-- Empty State -->
-            <div v-if="paginatedNotifications.length === 0" class="flex flex-col items-center justify-center p-12 text-center text-gray-500">
+            <div v-if="paginatedNotifications.length === 0" class="text-xs flex flex-col items-center justify-center p-12 text-center text-gray-500">
                <p>{{ t('notifications.noNotifications') }}</p>
             </div>
           </div>
@@ -319,6 +346,28 @@ watch(
         <div class="flex items-center gap-3">
           <span class="text-[13px] text-gray-500">{{ t('notifications.filters.filterBy') }}</span>
           
+           <!-- Status Filter -->
+           <DropdownMenu :items="statusFilterItems" position="left" width="10rem" :openUp="true">
+              <template #trigger>
+                 <button 
+                   class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                   :class="{ 'border-blue-300 bg-blue-50 text-blue-700': notificationStore.filterMode === 'unread' }"
+                 >
+                   <Filter class="w-4 h-4" :class="notificationStore.filterMode === 'unread' ? 'text-blue-600' : 'text-gray-500'" />
+                   <span>{{ notificationStore.filterMode === 'unread' ? t('notifications.filters.unread') : t('common.all') }}</span>
+                 </button>
+              </template>
+              <template #can-use-item-slot-name="slotProps">
+                 <!-- Fix: DropdownMenu passes 'item' in slotProps -->
+              </template>
+              <template #item="{ item }">
+                 <div class="flex items-center justify-between w-full">
+                    <span>{{ item.label }}</span>
+                    <Check v-if="item.checked" class="w-4 h-4 text-blue-600" />
+                 </div>
+              </template>
+           </DropdownMenu>
+
            <!-- Project Filter using DropdownMenu -->
            <DropdownMenu :items="projectFilterItems" position="left" width="12rem" :openUp="true">
               <template #trigger>
@@ -327,20 +376,16 @@ watch(
                    :class="{ 'border-blue-300 bg-blue-50 text-blue-700': selectedProjectId }"
                  >
                    <LayoutGrid class="w-4 h-4" :class="selectedProjectId ? 'text-blue-600' : 'text-gray-500'" />
-                   <span>{{ selectedProjectLabel || t('notifications.filters.project') }}</span>
+                   <span class="max-w-[140px] truncate">{{ selectedProjectLabel || t('notifications.filters.project') }}</span>
                  </button>
               </template>
+              <template #item="{ item }">
+                 <div class="flex items-center justify-between w-full">
+                    <span>{{ item.label }}</span>
+                    <Check v-if="item.checked" class="w-4 h-4 text-blue-600" />
+                 </div>
+              </template>
            </DropdownMenu>
-
-           <!-- Placeholder for Status Filter -->
-           <button class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors">
-             <Check class="w-3 h-3 text-gray-500" />
-             {{ t('notifications.filters.status') }}
-           </button>
-
-           <button class="flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors">
-             <Filter class="w-3.5 h-3.5" />
-           </button>
         </div>
       </div>
 
