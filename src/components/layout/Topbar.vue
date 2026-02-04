@@ -210,11 +210,10 @@ function setView(view) {
       projectId: projectStore.currentProjectId
     }
 
-    // For Board view, we need a valid itemId
-    if (view === ViewType.KANBAN) {
-      let targetItemId = projectStore.activeProjectItemId
-      
-      // If no active item (e.g. coming from List view first load), try to find first task list
+    // For all views (List, Board, Calendar), maintain consistency with itemId and type
+    let targetItemId = projectStore.activeProjectItemId || route.params.itemId
+
+      // If no active item (e.g. coming from List/Calendar view first load), try to find first task list
       if (!targetItemId) {
         const items = projectStore.getProjectItems(projectStore.currentProjectId) || []
         const firstTask = items.find(i => i.type === 'task')
@@ -338,6 +337,8 @@ function setView(view) {
       <!-- Inbox Controls -->
       <div v-if="route.name === 'Inbox' || String(route.path).includes('inbox')" class="flex items-center gap-2">
          
+         <AIChatButton />
+
          <!-- Mark all as read -->
          <button
             @click="handleMarkAllAsRead"

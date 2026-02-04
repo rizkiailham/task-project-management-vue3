@@ -113,7 +113,7 @@ function getTaskProgress(task) {
                 v-for="task in priorityTasks" 
                 :key="task.id"
                 @click="navigateToTask(task)"
-                class="group flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer"
+                class="group flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                 :class="{ 'bg-blue-50/50': task.id === 'p2' }" 
               >
                 <!-- Added blue bg for the active/selected looking item in example 'Prepare monthly...' -->
@@ -151,7 +151,7 @@ function getTaskProgress(task) {
                 v-for="task in myTasksList" 
                 :key="task.id"
                 @click="navigateToTask(task)"
-                class="group flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer"
+                class="group flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <span class="text-sm font-medium text-gray-700 truncate mr-4 flex-1">
                   {{ task.title }}

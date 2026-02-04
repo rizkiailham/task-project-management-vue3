@@ -393,7 +393,7 @@ defineExpose({ open, close, toggle, isOpen })
                     <component 
                       v-if="item.icon" 
                       :is="item.icon" 
-                      class="w-4 h-4 text-gray-500"
+                      :class="item.iconClass || 'w-4 h-4 text-gray-500'"
                     />
                   </slot>
                   <span>{{ item.label }}</span>
