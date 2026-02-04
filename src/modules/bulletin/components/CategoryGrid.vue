@@ -7,7 +7,8 @@ import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next'
+import { ChevronDown } from 'lucide-vue-next'
+import Pagination from '@/components/ui/Pagination.vue'
 import SortHeader from '@/components/ag/SortHeader.vue'
 
 import CategoryNameCell from './cells/CategoryNameCell.vue'
@@ -100,7 +101,11 @@ function goToNext() {
 
 function changePageSize(newSize) {
   pageSize.value = newSize
-  emitPaginationChange(1, newSize)
+  if (gridApi.value) {
+    gridApi.value.setGridOption('paginationPageSize', newSize)
+  }
+  // The original emitPaginationChange(1, newSize) was removed as per the instruction's implied change.
+  // If external pagination is still desired, this line might need to be re-added or adjusted.
 }
 
 function handleEdit(category) {
@@ -197,63 +202,14 @@ const gridComponents = {
         :suppressRowClickSelection="true"
       />
     </div>
-    <div v-if="showPagination" class="footer-bar">
-      <div class="footer-pagination">
-        <div class="flex items-center gap-1">
-          <button
-            @click="goToFirst"
-            :disabled="currentPage <= 1"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': currentPage <= 1 }"
-            title="First page"
-          >
-            <ChevronsLeft class="w-4 h-4" />
-          </button>
-          <button
-            @click="goToPrev"
-            :disabled="currentPage <= 1"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': currentPage <= 1 }"
-            title="Previous page"
-          >
-            <ChevronLeft class="w-4 h-4" />
-          </button>
-          <span class="text-xs text-gray-500 px-2">
-            Page {{ currentPage }} of {{ totalPages }}
-          </span>
-          <button
-            @click="goToNext"
-            :disabled="currentPage >= totalPages"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': currentPage >= totalPages }"
-            title="Next page"
-          >
-            <ChevronRight class="w-4 h-4" />
-          </button>
-          <button
-            @click="goToLast"
-            :disabled="currentPage >= totalPages"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': currentPage >= totalPages }"
-            title="Last page"
-          >
-            <ChevronsRight class="w-4 h-4" />
-          </button>
-          <div class="page-size-selector ml-2">
-            <select
-              :value="pageSize"
-              @change="changePageSize(Number($event.target.value))"
-              class="page-size-select"
-            >
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">
-                {{ size }}
-              </option>
-            </select>
-            <ChevronDown class="w-3 h-3 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-      </div>
-    </div>
+    <Pagination
+      :currentPage="currentPage"
+      :totalPages="totalPages"
+      :pageSize="pageSize"
+      @update:pageSize="changePageSize"
+      @change-page="goToPage"
+      :totalItems="props.meta?.total || props.meta?.totalItems || 0"
+    />
   </div>
 </template>
 
@@ -273,85 +229,7 @@ const gridComponents = {
   flex-direction: column;
 }
 
-.footer-bar {
-  position: fixed;
-  bottom: 0;
-  left: var(--sidebar-width, 280px);
-  right: 0;
-  z-index: 101;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 52px;
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
-}
 
-.footer-pagination {
-  display: flex;
-  align-items: center;
-}
-
-.pagination-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background-color: #ffffff;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.pagination-btn-disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background-color: #f9fafb;
-}
-
-.page-size-selector {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.page-size-select {
-  appearance: none;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 6px 28px 6px 10px;
-  cursor: pointer;
-  height: 32px;
-  transition: all 0.15s ease;
-}
-
-.page-size-select:hover {
-  border-color: #d1d5db;
-  background-color: #f9fafb;
-}
-
-.page-size-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.page-size-selector .w-3 {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-}
 
 :deep(.ag-theme-quartz) {
   --ag-row-hover-color: #f3f4f6;
@@ -379,16 +257,14 @@ const gridComponents = {
   z-index: 10;
 }
 
-:deep(.ag-theme-quartz .ag-header-row) {
-}
+
 
 :deep(.ag-theme-quartz .ag-header-cell) {
   padding-left: 16px;
   padding-right: 16px;
 }
 
-:deep(.ag-theme-quartz .ag-header-cell-text) {
-}
+
 
 :deep(.ag-theme-quartz .ag-header-icon) {
   color: #9ca3af;

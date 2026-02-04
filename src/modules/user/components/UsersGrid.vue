@@ -7,7 +7,14 @@ import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
-import { Settings, Users, SlidersHorizontal, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-vue-next'
+import Pagination from '@/components/ui/Pagination.vue'
+import {
+  Settings,
+  Users,
+  SlidersHorizontal,
+  Check,
+  ChevronDown
+} from 'lucide-vue-next'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import SortHeader from '@/components/ag/SortHeader.vue'
 
@@ -17,7 +24,7 @@ import StatusCell from './cells/StatusCell.vue'
 import ProjectsCell from './cells/ProjectsCell.vue'
 
 LicenseManager.setLicenseKey(
-  '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
+  '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
 )
 
 ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
@@ -139,79 +146,47 @@ const selectedRoleLabel = computed(() => {
 })
 
 // Pagination state from props (server-side)
-const pageSizeOptions = [10, 20, 50, 100]
 const pageSize = ref(10)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalItems = ref(0)
 
-// Computed from meta props
-const currentPage = computed(() => props.meta?.currentPage || 1)
-const totalPages = computed(() => props.meta?.totalPages || 1)
-// Visible page numbers (max 5)
-const visiblePages = computed(() => {
-  const maxVisible = 5
-  const total = totalPages.value
-  if (total <= maxVisible) {
-    return Array.from({ length: total }, (_, i) => i + 1)
+function updatePagination() {
+  if (!gridApi.value) return
+  // AG Grid is 0-indexed, UI is 1-indexed
+  currentPage.value = gridApi.value.paginationGetCurrentPage() + 1
+  totalItems.value = gridApi.value.paginationGetRowCount()
+}
+
+watch(() => props.meta?.totalPages, (newTotalPages) => {
+  if (newTotalPages) {
+    totalPages.value = newTotalPages
   }
-  
-  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
-  let end = start + maxVisible - 1
-  
-  if (end > total) {
-    end = total
-    start = end - maxVisible + 1
-  }
-  
-  return Array.from({ length: maxVisible }, (_, i) => start + i)
-})
+}, { immediate: true })
 
-const isFirstPage = computed(() => currentPage.value <= 1)
-const isLastPage = computed(() => currentPage.value >= totalPages.value)
-const showPagination = computed(() => {
-  const totalItems = props.meta?.totalItems || 0
-  const itemsPerPage = props.meta?.itemsPerPage || pageSize.value
-  return (props.meta?.totalPages || 1) > 1 || totalItems > itemsPerPage
-})
-
-// Emit pagination change for server-side pagination
-function emitPaginationChange(page, limit) {
+function handlePageChange(page) {
+  if (!gridApi.value) return
+  gridApi.value.paginationGoToPage(page - 1)
   emit('paginationChange', {
     page,
-    limit,
+    limit: pageSize.value,
     sortBy: sortBy.value,
     orderBy: orderBy.value
   })
 }
 
-// Pagination control functions (server-side)
-function goToPage(page) {
-  if (page < 1 || page > totalPages.value || page === currentPage.value) return
-  emitPaginationChange(page, pageSize.value)
-}
-
-function goToFirst() {
-  if (currentPage.value === 1) return
-  emitPaginationChange(1, pageSize.value)
-}
-
-function goToLast() {
-  if (currentPage.value === totalPages.value) return
-  emitPaginationChange(totalPages.value, pageSize.value)
-}
-
-function goToPrev() {
-  if (currentPage.value <= 1) return
-  emitPaginationChange(currentPage.value - 1, pageSize.value)
-}
-
-function goToNext() {
-  if (currentPage.value >= totalPages.value) return
-  emitPaginationChange(currentPage.value + 1, pageSize.value)
-}
-
-function changePageSize(newSize) {
+function handlePageSizeChange(newSize) {
   pageSize.value = newSize
-  // Reset to page 1 when changing page size
-  emitPaginationChange(1, newSize)
+  if (gridApi.value) {
+    gridApi.value.setGridOption('paginationPageSize', newSize)
+    // Reset to page 1 when changing page size
+    emit('paginationChange', {
+      page: 1,
+      limit: newSize,
+      sortBy: sortBy.value,
+      orderBy: orderBy.value
+    })
+  }
 }
 
 // Handle AG Grid sort change
@@ -244,13 +219,31 @@ function onSortChanged() {
   })
   
   // Also emit pagination change to refetch with new sort
-  emitPaginationChange(1, pageSize.value)
+  emit('paginationChange', {
+    page: currentPage.value,
+    limit: pageSize.value,
+    sortBy: sortBy.value,
+    orderBy: orderBy.value
+  })
 }
 
 // Sync page size from props
 watch(() => props.meta?.itemsPerPage, (newSize) => {
   if (newSize && newSize !== pageSize.value) {
     pageSize.value = newSize
+    if (gridApi.value) {
+      gridApi.value.setGridOption('paginationPageSize', newSize)
+    }
+  }
+}, { immediate: true })
+
+// Sync current page from props
+watch(() => props.meta?.currentPage, (newPage) => {
+  if (newPage && newPage !== currentPage.value) {
+    currentPage.value = newPage
+    if (gridApi.value) {
+      gridApi.value.paginationGoToPage(newPage - 1)
+    }
   }
 }, { immediate: true })
 
@@ -263,9 +256,6 @@ watch(
       return
     }
     
-    // Calculate the starting index based on current page and items per page
-    const startIndex = ((meta?.currentPage || 1) - 1) * (meta?.itemsPerPage || 10)
-    
     rowData.value = users.map((user, index) => {
       let projectNames = []
       if (user.projects && Array.isArray(user.projects)) {
@@ -274,7 +264,7 @@ watch(
       
       return {
         ...user,
-        rowIndex: startIndex + index + 1,
+        rowIndex: ((meta?.currentPage || 1) - 1) * (meta?.itemsPerPage || 10) + index + 1, // Calculate rowIndex based on meta
         fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown',
         status: user.isActive ? 'Active' : (user.status || 'Invited'),
         avatarColor: getAvatarColor(`${user.firstName || ''} ${user.lastName || ''}`),
@@ -282,6 +272,12 @@ watch(
         projects: projectNames,
       }
     })
+    // Update pagination state after rowData changes
+    if (gridApi.value) {
+      gridApi.value.setGridOption('paginationPageSize', pageSize.value);
+      gridApi.value.setGridOption('paginationTotalRowCount', props.meta?.totalItems || 0);
+      updatePagination();
+    }
   },
   { immediate: true, deep: true }
 )
@@ -393,6 +389,10 @@ const myTheme = themeQuartz.withParams({
 
 function onGridReady(params) {
   gridApi.value = params.api
+  gridApi.value.setGridOption('pagination', true)
+  gridApi.value.setGridOption('paginationPageSize', pageSize.value)
+  gridApi.value.setGridOption('paginationTotalRowCount', props.meta?.totalItems || 0)
+  updatePagination()
 }
 
 const getRowId = (params) => params.data?.id
@@ -417,14 +417,22 @@ const gridComponents = {
         :headerHeight="40"
         :suppressCellFocus="true"
         :suppressRowClickSelection="true"
+        :suppressPaginationPanel="true"
         @grid-ready="onGridReady"
         @sort-changed="onSortChanged"
+        @pagination-changed="updatePagination"
       />
     </div>
     <!-- Fixed Footer - Filter buttons on left, Pagination on right -->
-    <div v-if="showPagination" class="footer-bar">
-      <!-- Left: Filters -->
-      <div class="footer-filters">
+    <Pagination
+      v-model:currentPage="currentPage"
+      :totalPages="totalPages"
+      :pageSize="pageSize"
+      @update:pageSize="handlePageSizeChange"
+      @change-page="handlePageChange"
+      :totalItems="props.meta?.total || props.meta?.totalItems || 0"
+    >
+      <template #filters>
         <div class="flex items-center gap-3">
           <span class="text-[13px] text-gray-500">Filter by</span>
           
@@ -476,82 +484,8 @@ const gridComponents = {
             <SlidersHorizontal class="w-4 h-4" :class="hasActiveFilters ? 'text-blue-500' : 'text-gray-400'" />
           </button>
         </div>
-      </div>
-      
-      <!-- Right: Custom Pagination -->
-      <div class="footer-pagination">
-        <div class="flex items-center gap-1">
-          <!-- First Page -->
-          <button
-            @click="goToFirst"
-            :disabled="isFirstPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isFirstPage }"
-            title="First page"
-          >
-            <ChevronsLeft class="w-4 h-4" />
-          </button>
-          
-          <!-- Previous Page -->
-          <button
-            @click="goToPrev"
-            :disabled="isFirstPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isFirstPage }"
-            title="Previous page"
-          >
-            <ChevronLeft class="w-4 h-4" />
-          </button>
-          
-          <!-- Page Numbers -->
-          <button
-            v-for="page in visiblePages"
-            :key="page"
-            @click="goToPage(page)"
-            class="pagination-btn pagination-page"
-            :class="{ 'pagination-page-active': page === currentPage }"
-          >
-            {{ page }}
-          </button>
-          
-          <!-- Next Page -->
-          <button
-            @click="goToNext"
-            :disabled="isLastPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isLastPage }"
-            title="Next page"
-          >
-            <ChevronRight class="w-4 h-4" />
-          </button>
-          
-          <!-- Last Page -->
-          <button
-            @click="goToLast"
-            :disabled="isLastPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isLastPage }"
-            title="Last page"
-          >
-            <ChevronsRight class="w-4 h-4" />
-          </button>
-          
-          <!-- Page Size Selector -->
-          <div class="page-size-selector ml-2">
-            <select
-              :value="pageSize"
-              @change="changePageSize(Number($event.target.value))"
-              class="page-size-select"
-            >
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">
-                {{ size }}
-              </option>
-            </select>
-            <ChevronDown class="w-3 h-3 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-      </div>
-    </div>
+      </template>
+    </Pagination>
   </div>
 </template>
 
@@ -571,33 +505,7 @@ const gridComponents = {
   flex-direction: column;
 }
 
-/* Fixed Footer Bar */
-.footer-bar {
-  position: fixed;
-  bottom: 0;
-  left: var(--sidebar-width, 280px);
-  right: 0;
-  z-index: 101;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 52px;
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
-}
 
-.footer-filters {
-  display: flex;
-  align-items: center;
-}
-
-.footer-pagination {
-  display: flex;
-  align-items: center;
-}
-
-/* Pagination Button Styles */
 .pagination-btn {
   width: 32px;
   height: 32px;
