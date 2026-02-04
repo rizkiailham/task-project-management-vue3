@@ -559,6 +559,19 @@
       "dueDateReminder": "Påminnelse om forfallsdato"
     }
   },
+  "calendar": {
+    "today": "I dag",
+    "moreCount": "+{count} flere",
+    "days": {
+      "sun": "Søn",
+      "mon": "Man",
+      "tue": "Tir",
+      "wed": "Ons",
+      "thu": "Tor",
+      "fri": "Fre",
+      "sat": "Lør"
+    }
+  },
   "settings": {
     "title": "Innstillinger",
     "profile": "Profil",

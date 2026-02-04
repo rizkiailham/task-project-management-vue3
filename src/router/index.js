@@ -192,12 +192,12 @@ const routes = [
         },
         children: [
           {
-            path: 'list',
+            path: 'list/:itemId?',
             name: 'ProjectList',
             component: () => import('@/modules/project/views/ProjectListView.vue')
           },
           {
-            path: 'calendar',
+            path: 'calendar/:itemId?',
             name: 'ProjectCalendar',
             component: () => import('@/modules/project/views/ProjectCalendarView.vue')
           },

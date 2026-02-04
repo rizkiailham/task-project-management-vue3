@@ -241,7 +241,7 @@ function toggleDashboards() {
 
 function navigateToProject(project) {
   router.push({
-    name: 'ProjectBoard',
+    name: 'ProjectList',
     params: {
       projectId: project.id
     }

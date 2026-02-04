@@ -2,7 +2,7 @@
 /**
  * ProjectListView - List view for project tasks
  */
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useUIStore } from '@/stores'
 import ProjectTasksGrid from '@/components/task/ProjectTasksGrid.vue'
@@ -19,18 +19,23 @@ const isLoading = computed(() => taskStore.isLoading)
 
 async function loadData() {
   if (projectStore.currentProjectId) {
+    // Clear state before fetching to avoid stale data
+    taskStore.clearState()
     await taskStore.fetchTasks()
   }
 }
 
-function handleTaskClick(task) {
-  taskStore.fetchTask(task.id)
-  uiStore.openTaskPanel()
-}
+// Watch for item changes
+watch(
+  () => projectStore.activeProjectItemId,
+  (newId, oldId) => {
+    if (newId && String(newId) !== String(oldId)) {
+      loadData()
+    }
+  },
+  { immediate: true }
+)
 
-onMounted(() => {
-  loadData()
-})
 </script>
 
 <template>

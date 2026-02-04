@@ -2,7 +2,7 @@
 /**
  * ProjectCalendarView - Calendar view for project tasks
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useUIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
@@ -25,9 +25,16 @@ async function loadData() {
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+// Watch for item changes
+watch(
+  () => projectStore.activeProjectItemId,
+  (newId, oldId) => {
+    if (newId && String(newId) !== String(oldId)) {
+      loadData()
+    }
+  },
+  { immediate: true }
+)
 
 // Computed
 const currentMonth = computed(() => {
