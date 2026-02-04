@@ -18,7 +18,7 @@ import ProjectTasksGrid from '@/components/task/ProjectTasksGrid.vue'
 import Dropdown from 'primevue/dropdown'
 import ProgressSpinner from 'primevue/progressspinner'
 import KanbanBoard from '@/components/task/KanbanBoard.vue'
-import { LayoutGrid, Calendar, CheckCircle, ListFilter, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ChevronDown } from 'lucide-vue-next'
+import { LayoutGrid, Calendar, CheckCircle, ListFilter, ChevronDown } from 'lucide-vue-next'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import 'v-calendar/dist/style.css'
 import { DatePicker } from 'v-calendar'
@@ -111,12 +111,6 @@ const filteredTasks = computed(() => {
 })
 
 const treeTasks = computed(() => {
-  // Only paginate in List view
-  if (uiStore.myTasksViewMode === ViewType.LIST) {
-     const start = (currentPage.value - 1) * pageSize.value
-     const end = start + pageSize.value
-     return filteredTasks.value.slice(start, end)
-  }
   return filteredTasks.value
 })
 
@@ -143,67 +137,7 @@ const projectMenuItems = computed(() => {
 })
 
 // Pagination State
-const pageSizeOptions = [10, 20, 50, 100]
-const pageSize = ref(10)
-const currentPage = ref(1)
 
-const totalPages = computed(() => Math.ceil(filteredTasks.value.length / pageSize.value))
-
-const visiblePages = computed(() => {
-  const maxVisible = 5
-  const total = totalPages.value
-  if (total <= maxVisible) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  
-  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
-  let end = start + maxVisible - 1
-  
-  if (end > total) {
-    end = total
-    start = end - maxVisible + 1
-  }
-  
-  return Array.from({ length: maxVisible }, (_, i) => start + i)
-})
-
-const isFirstPage = computed(() => currentPage.value <= 1)
-const isLastPage = computed(() => currentPage.value >= totalPages.value)
-
-const showPagination = computed(() => {
-  return totalPages.value > 1
-})
-
-function goToPage(page) {
-  if (page < 1 || page > totalPages.value || page === currentPage.value) return
-  currentPage.value = page
-}
-
-function goToFirst() {
-  goToPage(1)
-}
-
-function goToLast() {
-  goToPage(totalPages.value)
-}
-
-function goToPrev() {
-  goToPage(currentPage.value - 1)
-}
-
-function goToNext() {
-  goToPage(currentPage.value + 1)
-}
-
-function changePageSize(newSize) {
-  pageSize.value = newSize
-  currentPage.value = 1
-}
-
-// Reset pagination when filters change
-watch([() => uiStore.searchQuery, statusFilter, priorityFilter], () => {
-  currentPage.value = 1
-})
 
 // Date Filter
 const dateRange = ref(null)
@@ -319,7 +253,64 @@ async function handleUpdateDueDate({ taskId, date }) {
             :tasks="treeTasks"
             @task-click="navigateToTask"
             @update-task-title="handleUpdateTaskTitle"
-          />
+          >
+            <template #footer-filters>
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                  <span class="text-[13px] text-gray-500 text-nowrap">Filter by</span>
+
+                  <!-- Project Filter -->
+                  <DropdownMenu :items="projectMenuItems" position="left" width="12rem" :openUp="true">
+                     <template #trigger>
+                        <button 
+                          class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                          :class="{ 'border-blue-300 bg-blue-50 text-blue-700': projectFilter }"
+                        >
+                          <LayoutGrid class="w-4 h-4" :class="projectFilter ? 'text-blue-600' : 'text-gray-500'" />
+                          <span>{{ projectFilter ? (projectStore.projects?.find(p => p.id === projectFilter)?.name || 'Project') : 'Project' }}</span>
+                        </button>
+                     </template>
+                  </DropdownMenu>
+
+                  <!-- Due Date Filter -->
+                  <DatePicker v-model="dateRange" mode="date" :popover="{ visibility: 'click' }">
+                    <template #default="{ togglePopover }">
+                      <button 
+                        @click="togglePopover"
+                        class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors w-[120px]"
+                        :class="{ 'border-blue-300 bg-blue-50 text-blue-700': dateRange }"
+                      >
+                        <Calendar class="w-4 h-4" :class="dateRange ? 'text-blue-600' : 'text-gray-500'" />
+                        <span>{{ dateRange ? new Date(dateRange).toLocaleDateString() : 'Due Date' }}</span>
+                      </button>
+                    </template>
+                  </DatePicker>
+
+                  <!-- Status Filter -->
+                   <DropdownMenu :items="statusMenuItems" position="left" width="10rem" :openUp="true">
+                     <template #trigger>
+                        <button 
+                          class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                          :class="{ 'border-blue-300 bg-blue-50 text-blue-700': statusFilter }"
+                        >
+                          <CheckCircle class="w-4 h-4" :class="statusFilter ? 'text-blue-600' : 'text-gray-500'" />
+                          <span>{{ statusFilter ? statusOptions.find(o => o.value === statusFilter)?.label : 'Status' }}</span>
+                        </button>
+                     </template>
+                   </DropdownMenu>
+
+                   <!-- More Filters -->
+                   <DropdownMenu :items="[]" position="left" width="10rem" :openUp="true">
+                     <template #trigger>
+                        <button class="flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors">
+                          <ListFilter class="w-4 h-4" />
+                        </button>
+                     </template>
+                   </DropdownMenu>
+                </div>
+              </div>
+            </template>
+          </ProjectTasksGrid>
         </div>
 
         <!-- Board View -->
@@ -367,137 +358,7 @@ async function handleUpdateDueDate({ taskId, date }) {
     </div>
 
     <!-- Fixed Footer Bar -->
-    <div class="fixed bottom-0 left-[288px] right-0 h-[52px] bg-white border-t border-gray-200 px-4 flex items-center justify-between z-[101] transition-[left] duration-300" :style="{ left: uiStore.sidebarWidth }">
-      <!-- Left: Filters & Actions -->
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-3">
-          <span class="text-[13px] text-gray-500">Filter by</span>
 
-          <!-- Project Filter -->
-          <DropdownMenu :items="projectMenuItems" position="left" width="12rem" :openUp="true">
-             <template #trigger>
-                <button 
-                  class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                  :class="{ 'border-blue-300 bg-blue-50 text-blue-700': projectFilter }"
-                >
-                  <LayoutGrid class="w-4 h-4" :class="projectFilter ? 'text-blue-600' : 'text-gray-500'" />
-                  <span>{{ projectFilter ? (projectStore.projects?.find(p => p.id === projectFilter)?.name || 'Project') : 'Project' }}</span>
-                </button>
-             </template>
-          </DropdownMenu>
-
-          <!-- Due Date Filter -->
-          <DatePicker v-model="dateRange" mode="date" :popover="{ visibility: 'click' }">
-            <template #default="{ togglePopover }">
-              <button 
-                @click="togglePopover"
-                class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                :class="{ 'border-blue-300 bg-blue-50 text-blue-700': dateRange }"
-              >
-                <Calendar class="w-4 h-4" :class="dateRange ? 'text-blue-600' : 'text-gray-500'" />
-                <span>{{ dateRange ? new Date(dateRange).toLocaleDateString() : 'Due Date' }}</span>
-              </button>
-            </template>
-          </DatePicker>
-
-          <!-- Status Filter -->
-           <DropdownMenu :items="statusMenuItems" position="left" width="10rem" :openUp="true">
-             <template #trigger>
-                <button 
-                  class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                  :class="{ 'border-blue-300 bg-blue-50 text-blue-700': statusFilter }"
-                >
-                  <CheckCircle class="w-4 h-4" :class="statusFilter ? 'text-blue-600' : 'text-gray-500'" />
-                  <span>{{ statusFilter ? statusOptions.find(o => o.value === statusFilter)?.label : 'Status' }}</span>
-                </button>
-             </template>
-           </DropdownMenu>
-
-           <!-- More Filters -->
-           <DropdownMenu :items="[]" position="left" width="10rem" :openUp="true">
-             <template #trigger>
-                <button class="flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors">
-                  <ListFilter class="w-4 h-4" />
-                </button>
-             </template>
-           </DropdownMenu>
-        </div>
-      </div>
-      
-      <!-- Right: Pagination -->
-      <div v-if="showPagination" class="footer-pagination">
-        <div class="flex items-center gap-1">
-          <!-- First Page -->
-          <button
-            @click="goToFirst"
-            :disabled="isFirstPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isFirstPage }"
-            title="First page"
-          >
-            <ChevronsLeft class="w-4 h-4" />
-          </button>
-          
-          <!-- Previous Page -->
-          <button
-            @click="goToPrev"
-            :disabled="isFirstPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isFirstPage }"
-            title="Previous page"
-          >
-            <ChevronLeft class="w-4 h-4" />
-          </button>
-          
-          <!-- Page Numbers -->
-          <button
-            v-for="page in visiblePages"
-            :key="page"
-            @click="goToPage(page)"
-            class="pagination-btn pagination-page"
-            :class="{ 'pagination-page-active': page === currentPage }"
-          >
-            {{ page }}
-          </button>
-          
-          <!-- Next Page -->
-          <button
-            @click="goToNext"
-            :disabled="isLastPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isLastPage }"
-            title="Next page"
-          >
-            <ChevronRight class="w-4 h-4" />
-          </button>
-          
-          <!-- Last Page -->
-          <button
-            @click="goToLast"
-            :disabled="isLastPage"
-            class="pagination-btn"
-            :class="{ 'pagination-btn-disabled': isLastPage }"
-            title="Last page"
-          >
-            <ChevronsRight class="w-4 h-4" />
-          </button>
-          
-          <!-- Page Size Selector -->
-          <div class="page-size-selector ml-2">
-            <select
-              :value="pageSize"
-              @change="changePageSize(Number($event.target.value))"
-              class="page-size-select"
-            >
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">
-                {{ size }}
-              </option>
-            </select>
-            <ChevronDown class="w-3 h-3 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 

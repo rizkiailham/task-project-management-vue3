@@ -11,9 +11,88 @@ import DartboardCell from '@/components/task/DartboardCell.vue'
 import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import { useTaskStore, useUIStore } from '@/stores'
 import SortHeader from '@/components/ag/SortHeader.vue'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronDown
+} from 'lucide-vue-next'
 
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
+
+// Pagination state
+const currentPage = ref(1)
+const pageSize = ref(50)
+const totalPages = ref(1)
+const paginationPageSize = computed(() => pageSize.value)
+const totalRows = computed(() => rowData.value.filter((row) => !row.isPlaceholder).length)
+const showPagination = computed(() => totalRows.value > pageSize.value)
+
+const pageSizeOptions = [50, 100, 500, 1000]
+
+const pageSizeItems = computed(() => pageSizeOptions.map((limit) => ({
+  id: `limit-${limit}`,
+  label: String(limit),
+  action: () => changePageSize(limit)
+})))
+
+const visiblePages = computed(() => {
+  const maxVisible = 5
+  const total = totalPages.value
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+  
+  if (end > total) {
+    end = total
+    start = end - maxVisible + 1
+  }
+  
+  return Array.from({ length: maxVisible }, (_, i) => start + i)
+})
+
+const isFirstPage = computed(() => currentPage.value <= 1)
+const isLastPage = computed(() => currentPage.value >= totalPages.value)
+
+function updatePagination() {
+  if (!gridApi.value) return
+  currentPage.value = gridApi.value.paginationGetCurrentPage() + 1
+  totalPages.value = gridApi.value.paginationGetTotalPages()
+}
+
+function goToPage(page) {
+  if (!gridApi.value || page < 1 || page > totalPages.value) return
+  gridApi.value.paginationGoToPage(page - 1)
+}
+
+function goToFirst() {
+  goToPage(1)
+}
+
+function goToLast() {
+  goToPage(totalPages.value)
+}
+
+function goToPrev() {
+  goToPage(currentPage.value - 1)
+}
+
+function goToNext() {
+  goToPage(currentPage.value + 1)
+}
+
+function changePageSize(newSize) {
+  pageSize.value = newSize
+  if (gridApi.value) {
+    gridApi.value.paginationSetPageSize(newSize)
+  }
+}
 
 LicenseManager.setLicenseKey(
   '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
@@ -619,6 +698,10 @@ function onGridReady(params) {
   params.api.addEventListener('openDartboardSidebar', (event) => {
     handleOpenTaskDetail(event.data)
   })
+
+  // Pagination events
+  params.api.addEventListener('paginationChanged', updatePagination)
+  updatePagination()
 }
 </script>
 
@@ -640,13 +723,80 @@ function onGridReady(params) {
       :animateRows="true"
       :rowHeight="36"
       :pagination="true"
-      :paginationPageSize="50"
-      :paginationPageSizeSelector="[50, 100, 500, 1000]"
-      :suppressPaginationPanel="!showPagination"
+      :paginationPageSize="pageSize"
+      :suppressPaginationPanel="true"
       domLayout="autoHeight"
       @row-clicked="gridOptions.onRowClicked"
       @grid-ready="onGridReady"
     />
+
+    <!-- Fixed Footer -->
+    <div v-if="showPagination" class="footer-bar">
+       <div class="footer-pagination w-full justify-end">
+         <div class="flex items-center gap-1">
+           <button
+             @click="goToFirst"
+             :disabled="isFirstPage"
+             class="pagination-btn"
+             :class="{ 'pagination-btn-disabled': isFirstPage }"
+             title="First page"
+           >
+             <ChevronsLeft class="w-4 h-4" />
+           </button>
+           
+           <button
+             @click="goToPrev"
+             :disabled="isFirstPage"
+             class="pagination-btn"
+             :class="{ 'pagination-btn-disabled': isFirstPage }"
+             title="Previous page"
+           >
+             <ChevronLeft class="w-4 h-4" />
+           </button>
+           
+           <button
+             v-for="page in visiblePages"
+             :key="page"
+             @click="goToPage(page)"
+             class="pagination-btn pagination-page"
+             :class="{ 'pagination-page-active': page === currentPage }"
+           >
+             {{ page }}
+           </button>
+           
+           <button
+             @click="goToNext"
+             :disabled="isLastPage"
+             class="pagination-btn"
+             :class="{ 'pagination-btn-disabled': isLastPage }"
+             title="Next page"
+           >
+             <ChevronRight class="w-4 h-4" />
+           </button>
+           
+           <button
+             @click="goToLast"
+             :disabled="isLastPage"
+             class="pagination-btn"
+             :class="{ 'pagination-btn-disabled': isLastPage }"
+             title="Last page"
+           >
+             <ChevronsRight class="w-4 h-4" />
+           </button>
+           
+           <div class="page-size-selector ml-2">
+              <DropdownMenu :items="pageSizeItems" position="right" width="6rem" :openUp="true">
+                <template #trigger>
+                  <button class="flex items-center gap-2 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50">
+                    {{ pageSize }}
+                    <ChevronDown class="w-3 h-3 text-gray-400" />
+                  </button>
+                </template>
+              </DropdownMenu>
+           </div>
+         </div>
+       </div>
+    </div>
   </div>
 </template>
 
@@ -779,5 +929,62 @@ function onGridReady(params) {
 :deep(.ag-group-value) {
   width: 100%;
   flex: 1;
+}
+
+/* Footer Bar */
+.footer-bar {
+  position: sticky;
+  bottom: 0px;
+  right: 0;
+  z-index: 10;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-pagination {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.pagination-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
+
+.pagination-page {
+  min-width: 32px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.pagination-page-active {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-color: #d1d5db;
 }
 </style>
