@@ -649,6 +649,16 @@ export const useTaskStore = defineStore('task', () => {
             : []
 
       myTasks.value = payload.map(t => createTask(t))
+
+      if (response?.meta?.totalItems !== undefined) {
+        pagination.value.total = response.meta.totalItems
+        pagination.value.page = response.meta.currentPage || 1
+        pagination.value.limit = response.meta.itemsPerPage || pagination.value.limit
+        pagination.value.totalPages = response.meta.totalPages || 1
+      } else {
+        pagination.value.total = myTasks.value.length
+      }
+
       return myTasks.value
     } catch (err) {
       console.warn('Failed to fetch my tasks (might need project context)', err)

@@ -237,7 +237,7 @@ onMounted(async () => {
   try {
     activeTab.value = resolveInitialTab()
     await userStore.initializeOptions()
-    await userStore.fetchUsers({ page: 1, limit: 10 })
+    await userStore.fetchUsers({ page: 1 })
   } catch (error) {
     console.error('Error fetching users:', error)
     uiStore.showApiError(error, 'Failed to load users')

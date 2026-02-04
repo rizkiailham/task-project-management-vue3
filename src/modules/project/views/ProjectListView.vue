@@ -36,6 +36,26 @@ watch(
   { immediate: true }
 )
 
+const handleTaskClick = (task) => {
+  // Navigation handled by router or store actions if needed
+  // For now just console log or leave empty if the Grid handles it via emit
+}
+
+async function handlePageChange(page) {
+  try {
+    await taskStore.fetchTasks({ page })
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to change page')
+  }
+}
+
+async function handlePageSizeChange(limit) {
+  try {
+    await taskStore.fetchTasks({ page: 1, limit })
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to change page size')
+  }
+}
 </script>
 
 <template>
@@ -49,7 +69,10 @@ watch(
       <div v-else class="h-full">
         <ProjectTasksGrid 
           :tasks="tasks" 
+          :meta="taskStore.pagination"
           @task-click="handleTaskClick"
+          @change-page="handlePageChange"
+          @update:pageSize="handlePageSizeChange"
         />
       </div>
     </div>
