@@ -6,6 +6,7 @@
  */
 import { ref, computed, watch } from 'vue'
 import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
+import Avatar from 'primevue/avatar'
 import { useTaskStore } from '@/stores'
 
 const taskStore = useTaskStore()
@@ -95,7 +96,17 @@ defineExpose({ refresh })
         <div 
           class="assignee-cell flex items-center justify-center cursor-pointer"
         >
+          <Avatar
+            v-if="localAssignee"
+            :image="localAssignee.avatar"
+            :label="!localAssignee.avatar ? avatarInitial : undefined"
+            shape="circle"
+            class="h-6 w-6 flex-shrink-0 text-[10px] font-semibold text-white border-2 border-white shadow-sm"
+            :style="!localAssignee.avatar ? { backgroundColor: avatarColor } : { backgroundColor: 'transparent' }"
+            v-tooltip.top="{ value: displayName, class: 'assignee-tooltip' }"
+          />
           <span 
+            v-else
             class="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white flex-shrink-0 border-2 border-white shadow-sm"
             :style="{ backgroundColor: avatarColor }"
             v-tooltip.top="{ value: displayName, class: 'assignee-tooltip' }"

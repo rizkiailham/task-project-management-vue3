@@ -278,6 +278,7 @@ watch(
         fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown',
         status: user.isActive ? 'Active' : (user.status || 'Invited'),
         avatarColor: getAvatarColor(`${user.firstName || ''} ${user.lastName || ''}`),
+        avatar: user.avatar,
         projects: projectNames,
       }
     })
@@ -425,14 +426,14 @@ const gridComponents = {
       <!-- Left: Filters -->
       <div class="footer-filters">
         <div class="flex items-center gap-3">
-          <span class="text-sm text-gray-500">Filter by</span>
+          <span class="text-[13px] text-gray-500">Filter by</span>
           
           <!-- Status Filter Dropdown -->
           <DropdownMenu :items="statusMenuItems" position="left" width="10rem" :openUp="true">
             <template #trigger>
               <button
                 :class="[
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border rounded-md transition-colors',
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] bg-white border rounded-md transition-colors',
                   selectedStatus 
                     ? 'text-blue-600 border-blue-300 bg-blue-50' 
                     : 'text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -449,7 +450,7 @@ const gridComponents = {
             <template #trigger>
               <button
                 :class="[
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border rounded-md transition-colors',
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] bg-white border rounded-md transition-colors',
                   selectedRole 
                     ? 'text-blue-600 border-blue-300 bg-blue-50' 
                     : 'text-gray-700 border-gray-300 hover:bg-gray-50'

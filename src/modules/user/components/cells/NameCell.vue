@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Mail } from 'lucide-vue-next'
+import Avatar from 'primevue/avatar'
 
 const props = defineProps({
   params: Object
@@ -27,12 +28,13 @@ const showResendInvite = computed(() => props.params.data?.loginAt == null)
 
 <template>
   <div class="flex items-center gap-3 py-1 group w-full h-full">
-    <div 
-      class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
-      :style="{ backgroundColor: params.data?.avatarColor || '#3B82F6' }"
-    >
-      {{ getInitial() }}
-    </div>
+    <Avatar 
+      :image="params.data?.avatar"
+      :label="!params.data?.avatar ? getInitial() : undefined"
+      shape="circle"
+      class="w-8 h-8 flex-shrink-0"
+      :style="{ backgroundColor: !params.data?.avatar ? (params.data?.avatarColor || '#3B82F6') : undefined, color: '#ffffff' }"
+    />
     <div class="flex-1 min-w-0">
       <div class="font-medium text-gray-900 text-sm">{{ params.data?.fullName }}</div>
       <div class="text-xs text-gray-500">{{ params.data?.email }}</div>

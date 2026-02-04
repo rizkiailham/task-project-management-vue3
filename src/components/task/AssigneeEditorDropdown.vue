@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import Avatar from 'primevue/avatar'
 
 const props = defineProps({
   params: {
@@ -74,12 +75,13 @@ defineExpose({ refresh })
   <DropdownMenu :items="menuItems" position="left" width="12rem">
     <template #trigger>
       <button class="assignee-pill flex items-center gap-1.5 rounded-full border border-gray-200 bg-white pl-1 pr-2 py-0.5 text-xs text-gray-700 hover:border-gray-300 transition-colors">
-        <span 
-          class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold text-white"
-          :style="{ backgroundColor: getAvatarColor(currentAssignee) }"
-        >
-          {{ currentAssignee.charAt(0).toUpperCase() }}
-        </span>
+        <Avatar
+          :label="currentAssignee?.avatar?.length <= 2 ? currentAssignee?.avatar : currentAssignee.charAt(0).toUpperCase()"
+          :image="currentAssignee?.avatar?.length > 2 ? currentAssignee.avatar : undefined"
+          shape="circle"
+          class="h-5 w-5 flex-shrink-0 text-[10px] font-semibold text-white"
+          :style="currentAssignee?.avatar?.length > 2 ? {} : { backgroundColor: getAvatarColor(currentAssignee) }"
+        />
         <span class="max-w-[100px] truncate">{{ currentAssignee }}</span>
         <svg class="h-3 w-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
