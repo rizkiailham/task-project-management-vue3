@@ -717,7 +717,7 @@ onUnmounted(() => {
             <div class="kanban-column-body flex-1 flex flex-col overflow-y-auto px-2 py-2">
               <div
                 v-if="creatingTaskColumnId === column.id"
-                class="kanban-card--composer mb-3 rounded-lg border border-transparent bg-white p-2 shadow-sm ring-1 ring-black/5 dark-edit:bg-gray-800"
+                class="kanban-card--composer mb-3 rounded-lg border border-transparent bg-white p-0 py-2 shadow-sm ring-1 ring-black/5 dark-edit:bg-gray-800"
               >
                 <InputText
                   :ref="(el) => setNewTaskInputRef(column.id, el)"
@@ -750,7 +750,7 @@ onUnmounted(() => {
                   data-kanban-card="true"
                   @click="openTaskPanel(task)"
                   :class="[
-                    'kanban-card cursor-pointer rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-black/5 transition-all hover:shadow-md dark-edit:bg-gray-800 dark-edit:ring-white/10',
+                    'kanban-card cursor-pointer rounded-lg bg-white ring-1 ring-black/5 transition-all dark-edit:bg-gray-800 dark-edit:ring-white/10',
                     { 'kanban-card--dragging': draggedTask?.id === task.id }
                   ]"
                 >
@@ -758,10 +758,10 @@ onUnmounted(() => {
                     {{ task.title }}
                   </h4>
 
-                  <div class="mt-2 flex items-center justify-between">
+                  <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                       <span
-                        class="date-trigger flex items-center gap-1 text-[10px] cursor-pointer hover:bg-black/5 dark-edit:hover:bg-white/5 px-1 rounded transition-colors"
+                        class="date-trigger flex items-center gap-1 text-[10px] cursor-pointer hover:bg-black/5 dark-edit:hover:bg-white/5 rounded transition-colors"
                         :class="[
                           task.dueDate ? (isOverdue(task) ? 'text-red-600' : 'text-gray-500 dark-edit:text-gray-400') : 'text-gray-400',
                           { 'bg-black/10 dark-edit:bg-white/10': activeDatePicker.taskId === task.id }
@@ -798,18 +798,19 @@ onUnmounted(() => {
                         <template #trigger>
                           <Avatar
                             v-if="task.assignee"
-                            :label="task.assignee.name?.charAt(0)"
+                            :image="task.assignee.avatar"
+                            :label="!task.assignee.avatar ? task.assignee.name?.charAt(0) : undefined"
                             shape="circle"
-                            size="small"
-                            class="bg-primary-100 text-primary-700 text-xs cursor-pointer hover:ring-2 hover:ring-primary-300 transition-all"
-                            v-tooltip="task.assignee.name"
+                            class="text-[10px] bg-primary-100 text-primary-700 cursor-pointer hover:ring-2 hover:ring-primary-300 transition-all flex items-center justify-center p-0"
+                            v-tooltip="{ value: task.assignee.name, class: 'text-xs' }"
+                            :style="[{ width: '26px', height: '26px', fontSize: '13px' }, !task.assignee.avatar ? {} : { backgroundColor: 'transparent' }]"
                           />
                           <div 
                             v-else 
                             class="w-6 h-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-500 hover:text-gray-600 cursor-pointer transition-colors"
-                            v-tooltip="'Assign user'"
+                            v-tooltip="{ value: 'Assign user', class: 'text-xs' }"
                           >
-                            <i class="pi pi-user text-[10px]"></i>
+                            <i class="pi pi-user" style="font-size: 10px;"></i>
                           </div>
                         </template>
                       </UserSearchDropdown>
@@ -877,20 +878,18 @@ onUnmounted(() => {
 }
 
 .kanban-card {
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.2s ease-out;
   will-change: transform;
+  padding: 8px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .kanban-card:hover {
-    transform: translateY(-1px);
+    background-color: #F9FAFB;
   }
 }
 
 .kanban-card:hover {
-  transform: translateY(-2px);
+  background-color: #F9FAFB;
 }
 
 .kanban-card[draggable="true"]:active {
@@ -907,7 +906,7 @@ onUnmounted(() => {
 .kanban-card--ghost {
   opacity: 0.4;
   background: transparent;
-  border: 2px dashed rgba(156, 163, 175, 0.5);
+  border: 1px dashed rgba(156, 163, 175, 0.5);
   box-shadow: none;
 }
 

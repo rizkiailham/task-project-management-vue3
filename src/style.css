@@ -280,10 +280,6 @@ textarea,
 /* Kanban column styles */
 .kanban-column {}
 
-.kanban-card {
-  @apply bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-pointer;
-  @apply hover:shadow-md transition-shadow duration-200;
-}
 
 /* Responsive utilities */
 @media (max-width: 768px) {

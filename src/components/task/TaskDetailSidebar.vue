@@ -593,11 +593,11 @@ async function handleAddComment() {
       </div>
       
       <!-- Title (Fixed) -->
-      <div class="shrink-0 px-3 py-2 bg-white">
+      <div class="shrink-0 px-6 py-2 bg-white">
         <Skeleton v-if="isLoading" height="24px" />
         <h2
           v-else-if="task"
-          class="text-base font-semibold text-gray-900 truncate"
+          class="text-xl font-semibold text-gray-900 truncate"
           :title="task.title"
         >
           {{ task.title }}
