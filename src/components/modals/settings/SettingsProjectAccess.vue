@@ -132,20 +132,39 @@ const rowMenuItems = computed(() => ([
 function normalizeAccessResponse(response) {
   const data = response?.data || response?.accesses || response || []
   const list = Array.isArray(data) ? data : data?.accesses || data?.data || []
-  return list.map((entry) => ({
-    id: entry?.userId || entry?.groupId || entry?.id,
-    accessId: entry?.id || entry?.accessId,
-    name: entry?.user?.fullName || entry?.user?.name || entry?.group?.name || entry?.name || '-',
-    email: entry?.user?.email || entry?.email || t('settings.project.labels.group'),
-    lastLoginKey: entry?.user?.loginAt ? 'custom' : (entry?.lastLoginKey || 'none'),
-    lastLoginValue: entry?.user?.loginAt,
-    role: entry?.role?.name || entry?.access || entry?.role || 'Guest',
-    roleId: entry?.role?.id || entry?.roleId,
-    originalRoleId: entry?.role?.id || entry?.roleId,
-    type: entry?.groupId || entry?.group ? 'group' : 'user',
-    raw: entry,
-    isPendingAdd: false
-  }))
+  return list.map((entry) => {
+    // Determine name from User object if possible
+    let displayName = entry?.name || '-'
+    if (entry?.user) {
+      if (entry.user.firstName && entry.user.lastName) {
+        displayName = `${entry.user.firstName} ${entry.user.lastName}`
+      } else if (entry.user.fullName) {
+        displayName = entry.user.fullName
+      } else if (entry.user.name) {
+        displayName = entry.user.name
+      }
+    }
+
+    return {
+      id: entry?.userId || entry?.groupId || entry?.id,
+      accessId: entry?.id || entry?.accessId,
+      name: displayName,
+      email: entry?.user?.email || entry?.email || t('settings.project.labels.group'),
+      avatar: entry?.user?.avatar || null,
+      lastLoginKey: entry?.user?.loginAt ? 'custom' : (entry?.lastLoginKey || 'none'),
+      lastLoginValue: entry?.user?.loginAt,
+      role: entry?.role?.name || entry?.access || entry?.role || 'Guest',
+      roleId: entry?.role?.id || entry?.roleId,
+      originalRoleId: entry?.role?.id || entry?.roleId,
+      type: entry?.groupId || entry?.group ? 'group' : 'user',
+      raw: entry,
+      isPendingAdd: false
+    }
+  }).sort((a, b) => {
+    const dateA = new Date(a.raw?.createdAt || 0)
+    const dateB = new Date(b.raw?.createdAt || 0)
+    return dateA - dateB
+  })
 }
 
 async function fetchAccesses() {
@@ -575,8 +594,17 @@ defineExpose({ saveChanges, pendingChanges })
           :class="{ 'is-pending': isPendingRemoval(entry) }"
         >
           <div class="settings-project-user">
-            <div class="settings-project-avatar" :style="{ backgroundColor: getAvatarColor(entry.name) }">
-              {{ getAvatarInitials(entry.name) }}
+            <div 
+              class="settings-project-avatar" 
+              :style="{ backgroundColor: !entry.avatar ? getAvatarColor(entry.name) : 'transparent' }"
+            >
+              <img 
+                v-if="entry.avatar" 
+                :src="entry.avatar" 
+                :alt="entry.name" 
+                class="w-full h-full object-cover rounded-full" 
+              />
+              <span v-else>{{ getAvatarInitials(entry.name) }}</span>
             </div>
             <div>
               <div class="settings-project-name">{{ entry.name }}</div>
