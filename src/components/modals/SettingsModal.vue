@@ -5,18 +5,19 @@
  * Provides scalable navigation for settings categories with
  * a dedicated custom fields editor view.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useUIStore } from '@/stores'
+import { useUIStore, useProjectStore } from '@/stores'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import SettingsSidebar from '@/components/modals/settings/SettingsSidebar.vue'
 import SettingsCustomFields from '@/components/modals/settings/SettingsCustomFields.vue'
 import SettingsProjectHub from '@/components/modals/settings/SettingsProjectHub.vue'
 import Button from 'primevue/button'
 import { useConfirm } from 'primevue/useconfirm'
-import { X } from 'lucide-vue-next'
+import { X, Plus } from 'lucide-vue-next'
 
 const uiStore = useUIStore()
+const projectStore = useProjectStore()
 const { t } = useI18n()
 const confirm = useConfirm()
 
@@ -27,42 +28,55 @@ const isVisible = computed({
   }
 })
 
-const navGroups = computed(() => ([
-  {
-    title: t('settings.modal.groups.account'),
-    items: [
-      { id: 'profile', label: t('settings.modal.items.profile') },
-      { id: 'project', label: t('settings.modal.items.project') },
-      { id: 'notifications', label: t('settings.modal.items.notifications') }
-    ]
-  },
-  {
-    title: t('settings.modal.groups.preferences'),
-    items: [
-      { id: 'data-types', label: t('settings.modal.items.dataTypes') },
-      { id: 'custom-fields', label: t('settings.modal.items.customFields') },
-      { id: 'forms-builder', label: t('settings.modal.items.formsBuilder') },
-      { id: 'data-import', label: t('settings.modal.items.dataImport') },
-      { id: 'data-export', label: t('settings.modal.items.dataExport') }
-    ]
-  },
-  {
-    title: t('settings.modal.groups.ai'),
-    items: [
-      { id: 'assistants', label: t('settings.modal.items.assistants') },
-      { id: 'ai-models', label: t('settings.modal.items.aiModels') },
-      { id: 'prompt-library', label: t('settings.modal.items.promptLibrary') },
-      { id: 'skills-tools', label: t('settings.modal.items.skillsTools') },
-      { id: 'integrations', label: t('settings.modal.items.integrations') }
-    ]
-  },
-  {
-    title: t('settings.modal.groups.apiAccess'),
-    items: [
-      { id: 'webhooks', label: t('settings.modal.items.webhooks') }
-    ]
-  }
-]))
+const navGroups = computed(() => {
+  const groups = [
+    {
+      title: t('settings.modal.groups.account', 'ACCOUNT'),
+      items: [
+        { id: 'profile', label: t('settings.modal.items.profile', 'Profile') },
+        { id: 'notifications', label: t('settings.modal.items.notifications', 'Notifications') }
+      ]
+    },
+    {
+      title: t('settings.modal.groups.preferences', 'PREFERENCES'),
+      items: [
+        { id: 'custom-fields', label: t('settings.modal.items.properties', 'Properties') },
+        { id: 'user-fields', label: t('settings.modal.items.userFields', 'User Fields') }
+      ]
+    },
+    {
+      title: t('settings.modal.groups.ai', 'AI'),
+      items: [
+        { id: 'assistants', label: t('settings.modal.items.assistants', 'Assistants') },
+        { id: 'ai-models', label: t('settings.modal.items.aiModels', 'AI Models') },
+        { id: 'prompt-library', label: t('settings.modal.items.promptLibrary', 'Prompt Library') },
+        { id: 'skills-tools', label: t('settings.modal.items.skills', 'Skills') },
+        { id: 'integrations', label: t('settings.modal.items.integrations', 'Integrations') },
+        { id: 'api-access', label: t('settings.modal.items.apiAccess', 'API Access') },
+        { id: 'webhooks', label: t('settings.modal.items.webhooks', 'Webhooks') }
+      ]
+    }
+  ]
+
+  // Projects Group
+  const projectItems = projectStore.projects.map(p => ({
+    id: `project-${p.id}`,
+    label: p.name,
+    type: 'project',
+    projectId: p.id
+  }))
+
+  groups.push({
+    title: t('settings.modal.groups.projects', 'PROJECTS'),
+    action: {
+      icon: Plus,
+      handler: () => handleCreateProject()
+    },
+    items: projectItems
+  })
+
+  return groups
+})
 
 const activeSection = ref('custom-fields')
 const customFieldsRef = ref(null)
@@ -72,14 +86,48 @@ const isSaving = ref(false)
 const hasPendingChanges = ref(false)
 const availableSections = computed(() => navGroups.value.flatMap(group => group.items.map(item => item.id)))
 
+function handleCreateProject() {
+  uiStore.closeModal()
+  // Tiny delay to allow modal close animation
+  setTimeout(() => {
+    projectStore.currentProject = null
+    uiStore.openModal('settings', { section: 'project', projectTab: 'general' }) // Re-open but this logic might need adjustment if we want a dedicated create modal or stay in settings.
+    // Actually, usually "Create Project" might be its own modal or a specific state. 
+    // For now, mirroring existing behavior if any, or just notifying.
+    // The previous implementation used `uiStore.openModal('settings', { section: 'project', projectTab: 'general' })` to create.
+    // If we are ALREADY in settings, we might just want to switch to a 'new-project' state.
+    // But simplest is reuse existing flow:
+    // If we want to create a NEW project, the SettingsProjectHub handles it if currentProject is null? 
+    // Let's assume for now we select a specific 'new' section or handle it.
+    // Based on `Sidebar.vue`: `projectStore.currentProject = null; uiStore.openModal('settings', { section: 'project', projectTab: 'general' })`
+    selectSection('project-new') 
+  }, 100)
+}
+
+
 function setActiveSectionFromModalData(data) {
   if (!data?.section) return
-  if (!availableSections.value.includes(data.section)) return
-  activeSection.value = data.section
+  
+  // Handle 'project' section request (from Sidebar "Project Settings")
   if (data.section === 'project') {
+    // If we have a current project, select it
+    if (projectStore.currentProjectId) {
+      activeSection.value = `project-${projectStore.currentProjectId}`
+    } else {
+       // If no project selected but requested project settings, maybe show first project or special state
+       // Or if creating new project
+       activeSection.value = 'project-new' // We'll need to handle this in template
+       projectStore.currentProject = null
+    }
     canSave.value = hasPendingChanges.value
     isSaving.value = false
-  } else if (data.section !== 'custom-fields') {
+    return
+  }
+
+  if (!availableSections.value.includes(data.section)) return
+  activeSection.value = data.section
+  
+  if (data.section !== 'custom-fields') {
     canSave.value = false
     isSaving.value = false
   }
@@ -117,12 +165,21 @@ async function selectSection(sectionId) {
     if (!confirmLeave) return
     hasPendingChanges.value = false
   }
+  
   activeSection.value = sectionId
-  if (sectionId === 'project') {
+
+  if (sectionId.startsWith('project-')) {
+    const projectId = sectionId.replace('project-', '')
+    if (projectId === 'new') {
+        projectStore.currentProject = null
+    } else {
+        await projectStore.selectProject(projectId)
+    }
     canSave.value = hasPendingChanges.value
     isSaving.value = false
     return
   }
+
   if (sectionId !== 'custom-fields') {
     canSave.value = false
     isSaving.value = false
@@ -142,7 +199,7 @@ function handleSave() {
   if (activeSection.value === 'custom-fields') {
     customFieldsRef.value?.saveSelectedField?.()
   }
-  if (activeSection.value === 'project') {
+  if (activeSection.value.startsWith('project-')) {
     projectAccessRef.value?.saveChanges?.()
   }
 }
@@ -150,6 +207,13 @@ function handleSave() {
 watch([isVisible, () => uiStore.modalData], ([visible, data]) => {
   if (!visible) return
   setActiveSectionFromModalData(data)
+})
+
+onMounted(() => {
+    // Ensure projects are loaded
+    if (projectStore.projects.length === 0) {
+        projectStore.fetchProjects()
+    }
 })
 </script>
 
@@ -178,7 +242,7 @@ watch([isVisible, () => uiStore.modalData], ([visible, data]) => {
 
       <section class="settings-content">
         <SettingsProjectHub
-          v-if="activeSection === 'project'"
+          v-if="activeSection.startsWith('project-')"
           ref="projectAccessRef"
           @update:canSave="canSave = $event"
           @update:isSaving="isSaving = $event"

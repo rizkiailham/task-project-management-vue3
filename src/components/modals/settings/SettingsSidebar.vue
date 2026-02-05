@@ -27,7 +27,17 @@ function selectSection(sectionId) {
       :key="group.title"
       class="settings-nav-group"
     >
-      <div class="settings-nav-title">{{ group.title }}</div>
+      <div class="settings-nav-title-row">
+        <div class="settings-nav-title">{{ group.title }}</div>
+        <button 
+          v-if="group.action"
+          type="button" 
+          class="settings-nav-action"
+          @click="group.action.handler"
+        >
+          <component :is="group.action.icon" class="w-3.5 h-3.5" />
+        </button>
+      </div>
       <button
         v-for="item in group.items"
         :key="item.id"
@@ -73,14 +83,36 @@ function selectSection(sectionId) {
   flex-direction: column;
 }
 
+.settings-nav-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 10px;
+  margin-bottom: 6px;
+}
+
 .settings-nav-title {
   font-size: 12px;
   font-weight: 600;
   padding: 0 10px;
-  margin-bottom: 6px;
   color: #9CA3af;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.settings-nav-action {
+  color: #9ca3af;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.settings-nav-action:hover {
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .settings-nav-item {
