@@ -188,7 +188,7 @@ function getIndicatorColor(hex) {
           @click.stop="remove(tag)"
           title="Remove tag"
         >
-          <span class="max-w-[120px] truncate">{{ tag.name }}</span>
+          <span class="max-w-[120px] truncate" :title="tag.name">{{ tag.name }}</span>
           <span class="opacity-80">x</span>
         </button>
       </div>

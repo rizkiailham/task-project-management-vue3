@@ -619,6 +619,14 @@ function createOption() {
   newOptionName.value = ''
 }
 
+function handleInputScroll(event) {
+  const target = event?.target
+  if (!target) return
+  if (target.selectionStart === target.value.length) {
+    target.scrollLeft = target.scrollWidth
+  }
+}
+
 function updateOptionColor(optionId, color) {
   const nextOptions = availableOptions.value.map((opt) =>
     opt.id === optionId ? { ...opt, color } : opt
@@ -686,7 +694,7 @@ function getTextColor(hex) {
             class="tag-pill"
             :style="{ backgroundColor: tag.color, color: getTextColor(tag.color) }"
           >
-            <span class="tag-name">{{ tag.name }}</span>
+            <span class="tag-name" :title="tag.name">{{ tag.name }}</span>
             <span
               class="tag-remove"
               :style="{ color: getTextColor(tag.color) }"
@@ -746,6 +754,7 @@ function getTextColor(hex) {
               class="panel-input"
               :placeholder="placeholder"
               @keydown.enter.prevent="createOption"
+              @input="handleInputScroll"
               :disabled="disabled"
             />
             <button
