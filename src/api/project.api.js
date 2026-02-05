@@ -198,3 +198,48 @@ export async function deleteProjectItem(projectId, itemId) {
 export async function reorderProjectItems(projectId, itemIds) {
   return post(`/projects/${projectId}/items/reorder`, { itemIds })
 }
+/**
+ * Get project tags
+ * @param {Object} params - { projectId }
+ * @returns {Promise<Object[]>}
+ */
+export async function getProjectTags(params = {}) {
+  return get('/project-tags', params)
+}
+
+/**
+ * Create a project tag
+ * @param {Object} data - { projectId, name, color }
+ * @returns {Promise<Object>}
+ */
+export async function createProjectTag(data) {
+  return post('/project-tags', data)
+}
+
+/**
+ * Update a project tag
+ * @param {string} tagId
+ * @param {Object} data - { name, color }
+ * @returns {Promise<Object>}
+ */
+export async function updateProjectTag(tagId, data) {
+  return patch(`/project-tags/${tagId}`, data)
+}
+
+/**
+ * Delete a project tag
+ * @param {string} tagId
+ * @returns {Promise<void>}
+ */
+export async function deleteProjectTag(tagId) {
+  return del(`/project-tags/${tagId}`)
+}
+
+/**
+ * Reorder project tags
+ * @param {Object} data - { projectId, tagIds[] }
+ * @returns {Promise<void>}
+ */
+export async function reorderProjectTags(data) {
+  return post('/project-tags/reorder', data)
+}
