@@ -259,7 +259,7 @@ async function pickColorFromScreen() {
 </script>
 
 <template>
-  <div class="color-picker">
+  <div class="color-picker" data-dropdown-min-height="525">
     <!-- Preset Colors Grid -->
     <div class="grid grid-cols-6 gap-2 mb-3 px-3 py-3">
       <button

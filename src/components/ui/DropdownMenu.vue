@@ -82,6 +82,16 @@ const triggerRef = ref(null)
 const menuRef = ref(null)
 const instanceId = `dropdown-${Math.random().toString(36).slice(2, 9)}`
 const viewportWidth = ref(0)
+const menuHeightTick = ref(0)
+
+function resolveMinDropdownHeight() {
+  if (!menuRef.value) return 300
+  const minHeightEl = menuRef.value.querySelector('[data-dropdown-min-height]')
+  if (!minHeightEl) return 300
+  const raw = minHeightEl.getAttribute('data-dropdown-min-height')
+  const parsed = Number.parseFloat(raw || '')
+  return Number.isNaN(parsed) ? 300 : parsed
+}
 
 function resolveMenuWidth() {
   if (menuRef.value) {
@@ -110,7 +120,8 @@ function resolveMenuWidth() {
 const menuStyle = computed(() => {
   if (typeof window === 'undefined') return { width: props.width, top: '0', left: '0' }
   const vw = viewportWidth.value // Dependency to trigger re-calc on resize
-  
+  const heightTick = menuHeightTick.value // Force recompute after open
+
   if (!triggerRef.value) {
     return { width: props.width, top: '0', left: '0' }
   }
@@ -132,7 +143,7 @@ const menuStyle = computed(() => {
   
   // Auto-flip if not enough space below but enough space above
   // Increase threshold to account for expanded content (e.g. Color Picker)
-  const minDropdownHeight = 300 
+  const minDropdownHeight = resolveMinDropdownHeight()
   if (!effectiveOpenUp && availableBottom < minDropdownHeight && availableTop > availableBottom) {
     effectiveOpenUp = true
   }
@@ -270,6 +281,9 @@ watch(isOpen, (newVal) => {
     window.dispatchEvent(new CustomEvent('dropdown-open', { detail: instanceId }))
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
+    setTimeout(() => {
+      menuHeightTick.value += 1
+    }, 0)
   } else {
     emit('close')
     document.removeEventListener('click', handleClickOutside)
