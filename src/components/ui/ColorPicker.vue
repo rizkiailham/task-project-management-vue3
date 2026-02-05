@@ -10,7 +10,7 @@
  * - Editable value inputs
  */
 import { ref, computed, watch } from 'vue'
-import { ChevronDown, ChevronUp, ChevronRight, Pipette } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, ChevronRight, Pipette, Shuffle } from 'lucide-vue-next'
 
 const props = defineProps({
   modelValue: {
@@ -120,6 +120,17 @@ function syncFromColor(hexColor) {
   // Update canvas position based on saturation and lightness
   canvasX.value = s * 100
   canvasY.value = (1 - l) * 100
+  canvasX.value = s * 100
+  canvasY.value = (1 - l) * 100
+}
+
+function generateRandomColor() {
+  const letters = '0123456789ABCDEF'
+  let color = '#'
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)]
+  }
+  selectedColor.value = color
 }
 
 function selectPresetColor(color) {
@@ -250,7 +261,7 @@ async function pickColorFromScreen() {
 <template>
   <div class="color-picker">
     <!-- Preset Colors Grid -->
-    <div class="grid grid-cols-6 gap-2 mb-3">
+    <div class="grid grid-cols-6 gap-2 mb-3 px-3 py-3">
       <button
         v-for="color in presetColors"
         :key="color"
@@ -273,24 +284,31 @@ async function pickColorFromScreen() {
     <div class="border-t border-gray-200 pt-3">
       <button
         type="button"
-        class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 rounded transition-colors"
-        @click="toggleCustom"
+        class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-[#e5e6ec] rounded transition-colors"
+        @click.stop="toggleCustom"
       >
-        <span class="font-medium">Custom</span>
-        <ChevronRight v-if="!customExpanded" class="w-4 h-4 text-gray-400" />
-        <ChevronUp v-else class="w-4 h-4 text-gray-400" />
+        <span>Custom</span>
+        <ChevronRight v-if="!customExpanded" class="w-3.5 h-3.5 text-gray-400" />
+        <ChevronUp v-else class="w-3.5 h-3.5 text-gray-400" />
+        <div 
+          class="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0 ml-1"
+          :style="{ backgroundColor: selectedColor }"
+        ></div>
         <div class="ml-auto flex items-center">
-          <!-- Color preview - always show for consistent layout -->
-          <div 
-            class="w-6 h-6 rounded-full border border-gray-300 transition-opacity"
-            :class="customExpanded ? 'opacity-0' : 'opacity-100'"
-            :style="{ backgroundColor: selectedColor }"
-          ></div>
+          <!-- Random color button -->
+          <button 
+            type="button"
+            class="w-5 h-5 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            @click.stop="generateRandomColor"
+            title="Random color"
+          >
+            <Shuffle class="w-3 h-3" />
+          </button>
         </div>
       </button>
 
       <!-- Custom Picker UI -->
-      <div v-if="customExpanded" class="mt-3 space-y-3">
+      <div v-if="customExpanded" class="mt-3 space-y-3 px-3">
         <!-- Gradient Canvas -->
         <div 
           class="relative w-full h-40 rounded-lg cursor-crosshair overflow-hidden"
@@ -446,7 +464,7 @@ async function pickColorFromScreen() {
               </div>
             </div>
             <button 
-              @click="cycleMode" 
+              @click.stop="cycleMode" 
               class="flex flex-col items-center justify-center px-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
             >
               <ChevronUp class="w-3 h-3 text-gray-400" />
@@ -472,10 +490,12 @@ async function pickColorFromScreen() {
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
 input[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 </style>
