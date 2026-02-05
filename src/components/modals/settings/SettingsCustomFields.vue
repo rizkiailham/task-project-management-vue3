@@ -518,13 +518,7 @@ function removeOption(optionId, parentId = null) {
 
 function getOptionMenuItems(option, parentId = null, allowSubItem = true) {
   const items = []
-  if (allowSubItem) {
-    items.push({
-      id: 'add-subitem',
-      label: t('settings.customFields.options.addSubItem'),
-      action: () => addOption(option.id)
-    })
-  }
+  // removed sub-item logic
   items.push({
     id: 'delete',
     label: t('common.delete'),
@@ -1164,8 +1158,8 @@ onUnmounted(() => {
 .settings-option-pill {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 4px 4px;
+  border-radius: 2px;
   width: fit-content;
   max-width: 200px;
 }
@@ -1200,7 +1194,7 @@ onUnmounted(() => {
 }
 
 .settings-option-color {
-  padding: 8px;
+  padding: 0;
 }
 
 .settings-option-divider {
