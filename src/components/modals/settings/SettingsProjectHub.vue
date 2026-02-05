@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { useUIStore } from '@/stores'
 import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
 import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
+import SettingsProjectInstruction from '@/components/modals/settings/SettingsProjectInstruction.vue'
 import { HelpCircle, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -52,12 +53,16 @@ const menuGroups = computed(() => [
 const activeSideItem = ref('general')
 const generalSectionRef = ref(null)
 const accessSectionRef = ref(null)
+const instructionSectionRef = ref(null)
 const generalCanSave = ref(false)
 const generalIsSaving = ref(false)
 const generalHasPendingChanges = ref(false)
 const accessCanSave = ref(false)
 const accessIsSaving = ref(false)
 const accessHasPendingChanges = ref(false)
+const instructionCanSave = ref(false)
+const instructionIsSaving = ref(false)
+const instructionHasPendingChanges = ref(false)
 const listWidth = ref(280)
 const isResizing = ref(false)
 let resizeStartX = 0
@@ -114,6 +119,12 @@ function syncState() {
     emit('update:hasPendingChanges', accessHasPendingChanges.value)
     return
   }
+  if (activeSideItem.value === 'instruction') {
+    emit('update:canSave', instructionCanSave.value)
+    emit('update:isSaving', instructionIsSaving.value)
+    emit('update:hasPendingChanges', instructionHasPendingChanges.value)
+    return
+  }
   emit('update:canSave', false)
   emit('update:isSaving', false)
   emit('update:hasPendingChanges', false)
@@ -128,6 +139,10 @@ watch([accessCanSave, accessIsSaving, accessHasPendingChanges], () => {
   if (activeSideItem.value !== 'access-control') return
   syncState()
 })
+watch([instructionCanSave, instructionIsSaving, instructionHasPendingChanges], () => {
+  if (activeSideItem.value !== 'instruction') return
+  syncState()
+})
 
 function saveChanges() {
   if (activeSideItem.value === 'general') {
@@ -137,11 +152,15 @@ function saveChanges() {
   if (activeSideItem.value === 'access-control') {
     accessSectionRef.value?.saveChanges?.()
   }
+  if (activeSideItem.value === 'instruction') {
+    instructionSectionRef.value?.saveChanges?.()
+  }
 }
 
 const pendingChanges = computed(() => {
   if (activeSideItem.value === 'general') return generalHasPendingChanges.value
   if (activeSideItem.value === 'access-control') return accessHasPendingChanges.value
+  if (activeSideItem.value === 'instruction') return instructionHasPendingChanges.value
   return false
 })
 
@@ -198,6 +217,14 @@ defineExpose({ saveChanges, pendingChanges })
           @update:canSave="accessCanSave = $event"
           @update:isSaving="accessIsSaving = $event"
           @update:hasPendingChanges="accessHasPendingChanges = $event"
+        />
+      </div>
+      <div v-else-if="activeSideItem === 'instruction'">
+        <SettingsProjectInstruction
+          ref="instructionSectionRef"
+          @update:canSave="instructionCanSave = $event"
+          @update:isSaving="instructionIsSaving = $event"
+          @update:hasPendingChanges="instructionHasPendingChanges = $event"
         />
       </div>
       <div v-else class="settings-project-placeholder">
@@ -329,6 +356,7 @@ defineExpose({ saveChanges, pendingChanges })
   flex-direction: column;
   gap: 18px;
   padding: 24px 28px;
+  padding-top: 50px;
   padding-bottom: calc(30px + var(--settings-footer-height, 72px));
   height: 100%;
   overflow: auto;

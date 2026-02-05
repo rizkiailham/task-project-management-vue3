@@ -33,7 +33,7 @@ const { handleSubmit, meta, resetForm } = useForm({
   }
 })
 
-const { value: name, errorMessage: nameError } = useField('name')
+const { value: name, errorMessage: nameError, meta: nameMeta } = useField('name')
 const { value: initial, meta: initialMeta } = useField('initial')
 const { value: description } = useField('description')
 
@@ -50,7 +50,7 @@ function deriveInitial(projectName) {
 }
 
 watch(name, (newValue) => {
-  if (!initialMeta.value?.dirty) {
+  if (nameMeta.dirty && !initialMeta.value?.dirty) {
     initial.value = deriveInitial(newValue)
   }
 })
