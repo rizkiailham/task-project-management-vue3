@@ -58,13 +58,15 @@ const navGroups = computed(() => {
     }
   ]
 
-  // Projects Group
-  const projectItems = projectStore.projects.map(p => ({
-    id: `project-${p.id}`,
-    label: p.name,
-    type: 'project',
-    projectId: p.id
-  }))
+  const projectItems = projectStore.projects
+    .filter(p => p.name && p.name.trim() !== '')
+    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
+    .map(p => ({
+      id: `project-${p.id}`,
+      label: p.name,
+      type: 'project',
+      projectId: p.id
+    }))
 
   groups.push({
     title: t('settings.modal.groups.projects', 'PROJECTS'),
