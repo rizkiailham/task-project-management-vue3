@@ -63,24 +63,14 @@ function selectSection(sectionId) {
   height: 100%;
   overflow: auto;
   box-sizing: border-box;
-  padding-bottom: calc(20px + var(--settings-footer-height, 56px));
   position: relative;
-}
-
-.settings-nav::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--settings-footer-height, 56px);
-  background: #f3f4f6;
-  pointer-events: none;
 }
 
 .settings-nav-group {
   display: flex;
   flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
 }
 
 .settings-nav-title-row {
@@ -123,6 +113,13 @@ function selectSection(sectionId) {
   border-radius: 6px;
   color: #374151;
   transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  width: 100%;
+  margin: 0;
+  line-height: 28px;
 }
 
 .settings-nav-item:hover {
