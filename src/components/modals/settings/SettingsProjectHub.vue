@@ -7,19 +7,47 @@ import { useI18n } from 'vue-i18n'
 import { useUIStore } from '@/stores'
 import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
 import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
+import { HelpCircle, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const uiStore = useUIStore()
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
 
-const sideItems = computed(() => ([
-  { id: 'general', label: t('settings.project.menu.items.general') },
-  { id: 'access-control', label: t('settings.project.menu.items.accessControl') },
-  { id: 'reports', label: t('settings.project.menu.items.reports') },
-  { id: 'instruction', label: t('settings.project.menu.items.instruction') },
-  { id: 'email', label: t('settings.project.menu.items.email') }
-]))
+const menuGroups = computed(() => [
+  {
+    k: 'settings',
+    label: t('settings.project.menu.groups.settings', 'PROJECT SETTINGS'),
+    icon: HelpCircle,
+    items: [
+      { id: 'general', label: t('settings.project.menu.items.general') },
+      { id: 'access-control', label: t('settings.project.menu.items.accessControl') },
+      { id: 'instruction', label: t('settings.project.menu.items.instruction', 'Instruction') },
+      { id: 'status', label: t('settings.project.menu.items.status', 'Status') },
+      { id: 'tags', label: t('settings.project.menu.items.tags', 'Tags') },
+      { id: 'export', label: t('settings.project.menu.items.export', 'Export') },
+      { id: 'import', label: t('settings.project.menu.items.import', 'Import') }
+    ]
+  },
+  {
+    k: 'forms',
+    label: t('settings.project.menu.groups.forms', 'FORMS'),
+    icon: HelpCircle,
+    actionIcon: Plus,
+    items: [
+      { id: 'form-default', label: t('settings.project.menu.items.defaultForm', 'Default - Create task') }
+    ]
+  },
+  {
+    k: 'email',
+    label: t('settings.project.menu.groups.email', 'EMAIL'),
+    icon: HelpCircle,
+    actionIcon: Plus,
+    items: [
+      { id: 'email-default', label: t('settings.project.menu.items.defaultEmail', 'Default - Create task') }
+    ]
+  }
+])
 
 const activeSideItem = ref('general')
 const generalSectionRef = ref(null)
@@ -39,8 +67,9 @@ watch(() => uiStore.modalData, (data) => {
   if (data?.section !== 'project') return
   if (!data?.projectTab) return
   const tab = data.projectTab
-  if (!sideItems.value.some(item => item.id === tab)) return
-  activeSideItem.value = tab
+  // Search in all groups
+  const exists = menuGroups.value.some(group => group.items.some(item => item.id === tab))
+  if (exists) activeSideItem.value = tab
 }, { immediate: true })
 
 function startResize(event) {
@@ -122,20 +151,33 @@ defineExpose({ saveChanges, pendingChanges })
 <template>
   <div class="settings-custom" :style="{ '--settings-list-width': `${listWidth}px` }">
     <aside class="settings-list" :style="{ width: `${listWidth}px` }">
-      <div class="settings-list-header">
-        <div class="settings-list-title">{{ t('settings.project.menu.title') }}</div>
-      </div>
       <div class="settings-list-body pl-1">
-        <button
-          v-for="item in sideItems"
-          :key="item.id"
-          type="button"
-          class="settings-list-row pl-3 py-1"
-          :class="{ 'is-selected': activeSideItem === item.id }"
-          @click="activeSideItem = item.id"
+        <div 
+          v-for="group in menuGroups" 
+          :key="group.k" 
+          class="settings-list-group"
+          :class="{ 'mt-10': group.k !== 'settings' && group.k !== 'email' }"
         >
-          {{ item.label }}
-        </button>
+          <div class="settings-list-header mt-2">
+             <div class="settings-list-title flex items-center gap-1">
+               {{ group.label }}
+               <component :is="group.icon" v-if="group.icon" class="w-3.5 h-3.5" />
+             </div>
+             <button v-if="group.actionIcon" type="button" class="text-gray-400 hover:text-gray-600">
+               <component :is="group.actionIcon" class="w-4 h-4" />
+             </button>
+          </div>
+          <button
+            v-for="item in group.items"
+            :key="item.id"
+            type="button"
+            class="settings-list-row pl-3 py-1"
+            :class="{ 'is-selected': activeSideItem === item.id }"
+            @click="activeSideItem = item.id"
+          >
+            {{ item.label }}
+          </button>
+        </div>
       </div>
     </aside>
 
@@ -222,8 +264,7 @@ defineExpose({ saveChanges, pendingChanges })
 }
 
 .settings-list-header {
-  padding: 19px;
-  padding-bottom: 8px;
+  padding: 12px 12px 8px 12px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -255,6 +296,7 @@ defineExpose({ saveChanges, pendingChanges })
   color: #374151;
   text-align: left;
   min-height: 30px;
+  width: 100%;
 }
 
 .settings-list-row:hover {
