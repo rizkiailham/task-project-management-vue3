@@ -734,8 +734,13 @@ function openCreateProjectModal() {
 }
 
 function goToSettings() {
-  projectStore.currentProject = null
-  uiStore.openModal('settings')
+  if (projectStore.currentProjectId) {
+    uiStore.openModal('settings', { section: 'project' })
+  } else {
+    projectStore.currentProject = null
+    uiStore.openModal('settings')
+  }
+  
   if (uiStore.isMobile) {
     uiStore.closeMobileSidebar()
   }

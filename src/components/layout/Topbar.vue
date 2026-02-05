@@ -257,10 +257,10 @@ function setView(view) {
       </button>
 
       <!-- Page Title / Breadcrumbs -->
-      <div v-if="breadcrumbs.length > 0 && route.name !== 'Inbox' && !String(route.path).includes('inbox')" class="flex items-center text-sm font-semibold text-gray-900 truncate max-w-[300px]">
-        <span v-for="(item, index) in breadcrumbs" :key="index" class="flex items-center">
-          <span v-if="index > 0" class="mx-1 text-gray-400">/</span>
-          <span :class="{ 'text-gray-500': index < breadcrumbs.length - 1 }">{{ item.label }}</span>
+      <div v-if="breadcrumbs.length > 0 && route.name !== 'Inbox' && !String(route.path).includes('inbox')" class="flex items-center text-sm font-semibold text-gray-900 max-w-[300px]">
+        <span v-for="(item, index) in breadcrumbs" :key="index" class="flex items-center min-w-0">
+          <span v-if="index > 0" class="mx-1 text-gray-400 flex-shrink-0">/</span>
+          <span class="truncate block" :class="{ 'text-gray-500': index < breadcrumbs.length - 1 }">{{ item.label }}</span>
         </span>
       </div>
       <h1 v-else-if="route.name !== 'Inbox' && !String(route.path).includes('inbox')" class="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{{ pageTitle }}</h1>
