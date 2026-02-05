@@ -493,6 +493,71 @@ export const useProjectStore = defineStore('project', () => {
     projectItems.value[projectId] = reorderedItems
   }
 
+  // ================================
+  // Project Tags
+  // ================================
+
+  const projectTags = ref({}) // Map projectId -> tags[]
+
+  async function fetchProjectTags(projectId) {
+    if (!projectId) return []
+    try {
+      const response = await projectApi.getProjectTags({ projectId })
+      const tags = Array.isArray(response) ? response : (response.data || [])
+      projectTags.value[projectId] = tags
+      return tags
+    } catch (err) {
+      console.error('Failed to fetch project tags:', err)
+      return []
+    }
+  }
+
+  async function createProjectTag(data) {
+    try {
+      const response = await projectApi.createProjectTag(data)
+      const newTag = response.tag || response.data || response
+
+      const pid = data.projectId
+      if (pid) {
+        if (!projectTags.value[pid]) projectTags.value[pid] = []
+        projectTags.value[pid].push(newTag)
+      }
+      return newTag
+    } catch (err) {
+      throw err
+    }
+  }
+
+  async function updateProjectTag(tagId, data, projectId) {
+    try {
+      const response = await projectApi.updateProjectTag(tagId, data)
+      const updatedTag = response.tag || response.data || response // Assuming response returns entire tag or updated fields
+
+      // Update local state
+      if (projectId && projectTags.value[projectId]) {
+        const index = projectTags.value[projectId].findIndex(t => t.id === tagId)
+        if (index !== -1) {
+          // Merge data
+          projectTags.value[projectId][index] = { ...projectTags.value[projectId][index], ...data, ...updatedTag }
+        }
+      }
+      return updatedTag
+    } catch (err) {
+      throw err
+    }
+  }
+
+  async function deleteProjectTag(tagId, projectId) {
+    try {
+      await projectApi.deleteProjectTag(tagId)
+      if (projectId && projectTags.value[projectId]) {
+        projectTags.value[projectId] = projectTags.value[projectId].filter(t => t.id !== tagId)
+      }
+    } catch (err) {
+      throw err
+    }
+  }
+
   return {
     // State
     projects,
@@ -501,6 +566,7 @@ export const useProjectStore = defineStore('project', () => {
     error,
     projectItems,
     currentProjectItemId,
+    projectTags, // Export
 
     // Getters
     currentProjectId,
@@ -531,6 +597,12 @@ export const useProjectStore = defineStore('project', () => {
     deleteProjectItem,
     reorderProjectItems,
     getProjectItems,
-    updateLocalItemsOrder
+    updateLocalItemsOrder,
+
+    // Tags Actions
+    fetchProjectTags,
+    createProjectTag,
+    updateProjectTag,
+    deleteProjectTag
   }
 })
