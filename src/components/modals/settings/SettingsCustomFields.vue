@@ -281,6 +281,16 @@ function ensureFieldSettings(field) {
   }
 }
 
+function getContrastColor(hex) {
+  const value = String(hex || '').replace('#', '')
+  if (value.length !== 6) return '#ffffff'
+  const r = parseInt(value.slice(0, 2), 16)
+  const g = parseInt(value.slice(2, 4), 16)
+  const b = parseInt(value.slice(4, 6), 16)
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000
+  return brightness > 128 ? '#1f2937' : '#ffffff'
+}
+
 function normalizeOptions(options) {
   const normalized = []
   const parentMap = new Map()
@@ -702,14 +712,16 @@ onUnmounted(() => {
               class="settings-option-group"
             >
               <div class="settings-option-row">
-                <div class="settings-option-pill" :style="{ backgroundColor: option.color }">
-                  <input
-                    class="settings-option-input text-center"
-                    :value="option.label"
-                    :style="{ width: `${(option.label?.length || 1) * 0.53 + 0.5}em` }"
-                    @input="updateOptionLabel(option, $event.target.value)"
-                    @blur="blurOptionLabel(option)"
-                  />
+                <div class="settings-option-pill" :style="{ backgroundColor: option.color, color: getContrastColor(option.color) }">
+                  <div class="settings-option-grid">
+                    <span class="settings-option-sizer">{{ option.label || ' ' }}</span>
+                    <input
+                      class="settings-option-input"
+                      :value="option.label"
+                      @input="updateOptionLabel(option, $event.target.value)"
+                      @blur="blurOptionLabel(option)"
+                    />
+                  </div>
                 </div>
                 <DropdownMenu
                   :items="getOptionMenuItems(option)"
@@ -719,7 +731,12 @@ onUnmounted(() => {
                   contentPosition="before"
                 >
                   <template #trigger>
-                    <button type="button" class="settings-option-menu">...</button>
+                    <div class="settings-option-menu-trigger">
+                      <span class="sr-only">Options</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-gray-400 group-hover:text-gray-600">
+                        <path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm7 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                      </svg>
+                    </div>
                   </template>
                   <template #content>
                     <div class="settings-option-color">
@@ -734,14 +751,16 @@ onUnmounted(() => {
                 :key="child.id"
                 class="settings-option-row settings-option-row--child"
               >
-                <div class="settings-option-pill" :style="{ backgroundColor: child.color }">
-                  <input
-                    class="settings-option-input"
-                    :value="child.label"
-                    :style="{ width: `${(child.label?.length || 1) * 0.65 + 0.5}em` }"
-                    @input="updateOptionLabel(child, $event.target.value)"
-                    @blur="blurOptionLabel(child)"
-                  />
+                <div class="settings-option-pill" :style="{ backgroundColor: child.color, color: getContrastColor(child.color) }">
+                  <div class="settings-option-grid">
+                    <span class="settings-option-sizer">{{ child.label || ' ' }}</span>
+                    <input
+                      class="settings-option-input"
+                      :value="child.label"
+                      @input="updateOptionLabel(child, $event.target.value)"
+                      @blur="blurOptionLabel(child)"
+                    />
+                  </div>
                 </div>
                 <DropdownMenu
                   :items="getOptionMenuItems(child, option.id, false)"
@@ -751,7 +770,12 @@ onUnmounted(() => {
                   contentPosition="before"
                 >
                   <template #trigger>
-                    <button type="button" class="settings-option-menu">...</button>
+                    <div class="settings-option-menu-trigger">
+                      <span class="sr-only">Options</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-gray-400 group-hover:text-gray-600">
+                        <path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm7 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                      </svg>
+                    </div>
                   </template>
                   <template #content>
                     <div class="settings-option-color">
@@ -1155,42 +1179,136 @@ onUnmounted(() => {
   margin-left: 20px;
 }
 
+/* Pill: container */
 .settings-option-pill {
   display: inline-flex;
   align-items: center;
-  padding: 4px 4px;
-  border-radius: 2px;
-  width: fit-content;
-  max-width: 200px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0; /* REMOVED: Input handles padding */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
+/* Grid wrapper */
+.settings-option-grid {
+  display: inline-grid;
+  grid-template-columns: minmax(0, max-content);
+  align-items: center;
+  max-width: 100%;
+  position: relative;
+  height: 100%;
+}
+
+/* Both sizer and input share the same grid cell */
+.settings-option-sizer,
 .settings-option-input {
+  grid-area: 1 / 1;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px; /* Exact match to container height */
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding: 0 8px 0 9px; /* Unified padding */
+  margin: 0;
   border: none;
   background: transparent;
-  font-size: 12px;
-  color: #ffffff;
-  line-height: 1;
-  padding: 0;
-  min-width: 1ch;
+  width: 100%;
+  min-width: 0;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+/* Sizer: Visible text layer */
+.settings-option-sizer {
+  visibility: visible;
+  pointer-events: none;
+  box-sizing: content-box;
+  height: 100%;
+  /* Removed display: flex to rely on line-height for vertical center */
+  display: block; 
+  width: max-content;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  color: inherit;
+  user-select: none;
+}
+
+/* Input: Hidden by default, Visible on focus */
+.settings-option-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  opacity: 0;
+  cursor: text;
+  font-size: 12px !important;
+  padding: 0 8px 0 9px !important;
+  border: none !important;
+  box-sizing: border-box !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  color: inherit;
+  caret-color: inherit;
+}
+
+.settings-option-input:focus {
+  opacity: 1;
+  outline: none;
+}
+
+/* When input is focused, hide the sizer text */
+.settings-option-grid:focus-within .settings-option-sizer {
+  visibility: hidden;
+}
+
+.settings-option-input::-webkit-scrollbar {
+  display: none;
+}
+
+.settings-option-input {
+  scrollbar-width: none;
+}
+
+.settings-option-grid:focus-within .settings-option-input {
+  opacity: 1;
+}
+
+.settings-option-grid:focus-within .settings-option-sizer {
+  color: transparent;
 }
 
 .settings-option-input:focus {
   outline: none;
 }
 
-.settings-option-menu {
-  font-size: 12px;
-  color: #9ca3af;
-  line-height: 1;
+.settings-option-menu-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  min-width: 24px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 4px;
+  min-width: 28px;
+  min-height: 28px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.settings-option-menu-trigger:hover {
+  background-color: #f3f4f6;
+  color: #374151;
 }
 
 .settings-option-color {
