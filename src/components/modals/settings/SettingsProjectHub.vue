@@ -8,6 +8,7 @@ import { useUIStore } from '@/stores'
 import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
 import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
 import SettingsProjectInstruction from '@/components/modals/settings/SettingsProjectInstruction.vue'
+import SettingsProjectTags from '@/components/modals/settings/SettingsProjectTags.vue'
 import { HelpCircle, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -63,6 +64,10 @@ const accessHasPendingChanges = ref(false)
 const instructionCanSave = ref(false)
 const instructionIsSaving = ref(false)
 const instructionHasPendingChanges = ref(false)
+const tagsSectionRef = ref(null)
+const tagsCanSave = ref(false)
+const tagsIsSaving = ref(false)
+const tagsHasPendingChanges = ref(false)
 const listWidth = ref(280)
 const isResizing = ref(false)
 let resizeStartX = 0
@@ -125,6 +130,12 @@ function syncState() {
     emit('update:hasPendingChanges', instructionHasPendingChanges.value)
     return
   }
+  if (activeSideItem.value === 'tags') {
+    emit('update:canSave', tagsCanSave.value)
+    emit('update:isSaving', tagsIsSaving.value)
+    emit('update:hasPendingChanges', tagsHasPendingChanges.value)
+    return
+  }
   emit('update:canSave', false)
   emit('update:isSaving', false)
   emit('update:hasPendingChanges', false)
@@ -139,8 +150,12 @@ watch([accessCanSave, accessIsSaving, accessHasPendingChanges], () => {
   if (activeSideItem.value !== 'access-control') return
   syncState()
 })
-watch([instructionCanSave, instructionIsSaving, instructionHasPendingChanges], () => {
+  watch([instructionCanSave, instructionIsSaving, instructionHasPendingChanges], () => {
   if (activeSideItem.value !== 'instruction') return
+  syncState()
+})
+watch([tagsCanSave, tagsIsSaving, tagsHasPendingChanges], () => {
+  if (activeSideItem.value !== 'tags') return
   syncState()
 })
 
@@ -155,12 +170,16 @@ function saveChanges() {
   if (activeSideItem.value === 'instruction') {
     instructionSectionRef.value?.saveChanges?.()
   }
+  if (activeSideItem.value === 'tags') {
+    tagsSectionRef.value?.saveChanges?.()
+  }
 }
 
 const pendingChanges = computed(() => {
   if (activeSideItem.value === 'general') return generalHasPendingChanges.value
   if (activeSideItem.value === 'access-control') return accessHasPendingChanges.value
   if (activeSideItem.value === 'instruction') return instructionHasPendingChanges.value
+  if (activeSideItem.value === 'tags') return tagsHasPendingChanges.value
   return false
 })
 
@@ -225,6 +244,14 @@ defineExpose({ saveChanges, pendingChanges })
           @update:canSave="instructionCanSave = $event"
           @update:isSaving="instructionIsSaving = $event"
           @update:hasPendingChanges="instructionHasPendingChanges = $event"
+        />
+      </div>
+      <div v-else-if="activeSideItem === 'tags'" class="settings-section-wrapper">
+        <SettingsProjectTags
+          ref="tagsSectionRef"
+          @update:canSave="tagsCanSave = $event"
+          @update:isSaving="tagsIsSaving = $event"
+          @update:hasPendingChanges="tagsHasPendingChanges = $event"
         />
       </div>
       <div v-else class="settings-project-placeholder">
@@ -360,6 +387,15 @@ defineExpose({ saveChanges, pendingChanges })
   padding-bottom: calc(30px + var(--settings-footer-height, 72px));
   height: 100%;
   overflow: auto;
+  min-width: 0; /* Allow flexbox shrinking */
+  flex: 1 1 0; /* Take remaining space but can shrink */
+}
+
+/* Wrapper for section content - forces overflow containment */
+.settings-section-wrapper {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .settings-project-placeholder {
