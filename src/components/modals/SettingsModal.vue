@@ -40,8 +40,8 @@ const navGroups = computed(() => {
     {
       title: t('settings.modal.groups.preferences', 'PREFERENCES'),
       items: [
-        { id: 'custom-fields', label: t('settings.modal.items.properties', 'Properties') },
-        { id: 'user-fields', label: t('settings.modal.items.userFields', 'User Fields') }
+        { id: 'properties', label: t('settings.modal.items.properties', 'Properties') },
+        { id: 'custom-fields', label: t('settings.modal.items.userFields', 'User Fields') }
       ]
     },
     {
