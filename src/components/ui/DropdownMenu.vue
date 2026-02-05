@@ -108,6 +108,9 @@ function resolveMenuWidth() {
 }
 
 const menuStyle = computed(() => {
+  if (typeof window === 'undefined') return { width: props.width, top: '0', left: '0' }
+  const vw = viewportWidth.value // Dependency to trigger re-calc on resize
+  
   if (!triggerRef.value) {
     return { width: props.width, top: '0', left: '0' }
   }
@@ -120,9 +123,21 @@ const menuStyle = computed(() => {
   const availableBottom = viewportHeight - rect.bottom - viewportPadding
   const shouldOpenUp = props.openUp && availableTop >= 120
 
-  // Calculate vertical position
+  // Calculate vertical position (with auto-flip)
   let verticalStyle = {}
-  if (shouldOpenUp) {
+  
+  // Decide whether to open up or down based on space
+  // Default decision based on props
+  let effectiveOpenUp = props.openUp && availableTop >= 120;
+  
+  // Auto-flip if not enough space below but enough space above
+  // Increase threshold to account for expanded content (e.g. Color Picker)
+  const minDropdownHeight = 300 
+  if (!effectiveOpenUp && availableBottom < minDropdownHeight && availableTop > availableBottom) {
+    effectiveOpenUp = true
+  }
+  
+  if (effectiveOpenUp) {
     // Open upwards: position bottom of menu at top of trigger
     verticalStyle = {
       bottom: `${viewportHeight - rect.top + 8}px`,
@@ -161,9 +176,9 @@ const menuStyle = computed(() => {
 
 const menuClass = computed(() => {
   if (props.variant === 'sidebar') {
-    return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]'
+    return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
   }
-  return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]'
+  return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
 })
 
 const dividerClass = computed(() => {

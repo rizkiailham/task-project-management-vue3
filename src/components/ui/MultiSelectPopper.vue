@@ -68,6 +68,7 @@ const emit = defineEmits(['update:modelValue', 'update:options', 'change', 'crea
 
 const localOptions = ref(normalizeOptions(defaultOptions))
 const optionsRef = ref([])
+const currentPlacement = ref(props.placement)
 const offsetDistanceValue = computed(() => String(props.offsetDistance))
 
 const isExternalOptions = computed(() => Array.isArray(props.options))
@@ -516,7 +517,27 @@ function restorePopper() {
 
 function toggleDropdown() {
   if (props.disabled) return
+  if (!isOpen.value) {
+    updatePlacement()
+  }
   isOpen.value = !isOpen.value
+}
+
+function updatePlacement() {
+  if (!triggerRef.value) return
+  const rect = triggerRef.value.getBoundingClientRect()
+  const spaceBelow = window.innerHeight - rect.bottom
+  const spaceAbove = rect.top
+  const minHeight = 300 // Estimated max height of dropdown
+
+  // If strict placement is not needed, flip if tight
+  if (props.placement.includes('bottom') && spaceBelow < minHeight && spaceAbove > spaceBelow) {
+    currentPlacement.value = props.placement.replace('bottom', 'top')
+  } else if (props.placement.includes('top') && spaceAbove < minHeight && spaceBelow > spaceAbove) {
+    currentPlacement.value = props.placement.replace('top', 'bottom')
+  } else {
+    currentPlacement.value = props.placement
+  }
 }
 
 function closeDropdown() {
@@ -632,7 +653,7 @@ function getTextColor(hex) {
   <div ref="rootRef" class="tag-select" @mousedown.stop @click.stop>
     <Popper
       class="tag-select-popper"
-      :placement="placement"
+      :placement="currentPlacement"
       :offset-distance="offsetDistanceValue"
       :interactive="true"
       :disabled="disabled"
