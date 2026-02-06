@@ -8,6 +8,7 @@ import { useUIStore } from '@/stores'
 import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
 import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
 import SettingsProjectInstruction from '@/components/modals/settings/SettingsProjectInstruction.vue'
+import SettingsProjectStatus from '@/components/modals/settings/SettingsProjectStatus.vue'
 import SettingsProjectTags from '@/components/modals/settings/SettingsProjectTags.vue'
 import { HelpCircle, Plus } from 'lucide-vue-next'
 
@@ -64,6 +65,10 @@ const accessHasPendingChanges = ref(false)
 const instructionCanSave = ref(false)
 const instructionIsSaving = ref(false)
 const instructionHasPendingChanges = ref(false)
+const statusSectionRef = ref(null)
+const statusCanSave = ref(false)
+const statusIsSaving = ref(false)
+const statusHasPendingChanges = ref(false)
 const tagsSectionRef = ref(null)
 const tagsCanSave = ref(false)
 const tagsIsSaving = ref(false)
@@ -130,6 +135,12 @@ function syncState() {
     emit('update:hasPendingChanges', instructionHasPendingChanges.value)
     return
   }
+  if (activeSideItem.value === 'status') {
+    emit('update:canSave', statusCanSave.value)
+    emit('update:isSaving', statusIsSaving.value)
+    emit('update:hasPendingChanges', statusHasPendingChanges.value)
+    return
+  }
   if (activeSideItem.value === 'tags') {
     emit('update:canSave', tagsCanSave.value)
     emit('update:isSaving', tagsIsSaving.value)
@@ -154,6 +165,10 @@ watch([accessCanSave, accessIsSaving, accessHasPendingChanges], () => {
   if (activeSideItem.value !== 'instruction') return
   syncState()
 })
+watch([statusCanSave, statusIsSaving, statusHasPendingChanges], () => {
+  if (activeSideItem.value !== 'status') return
+  syncState()
+})
 watch([tagsCanSave, tagsIsSaving, tagsHasPendingChanges], () => {
   if (activeSideItem.value !== 'tags') return
   syncState()
@@ -170,6 +185,9 @@ function saveChanges() {
   if (activeSideItem.value === 'instruction') {
     instructionSectionRef.value?.saveChanges?.()
   }
+  if (activeSideItem.value === 'status') {
+    statusSectionRef.value?.saveChanges?.()
+  }
   if (activeSideItem.value === 'tags') {
     tagsSectionRef.value?.saveChanges?.()
   }
@@ -179,6 +197,7 @@ const pendingChanges = computed(() => {
   if (activeSideItem.value === 'general') return generalHasPendingChanges.value
   if (activeSideItem.value === 'access-control') return accessHasPendingChanges.value
   if (activeSideItem.value === 'instruction') return instructionHasPendingChanges.value
+  if (activeSideItem.value === 'status') return statusHasPendingChanges.value
   if (activeSideItem.value === 'tags') return tagsHasPendingChanges.value
   return false
 })
@@ -244,6 +263,14 @@ defineExpose({ saveChanges, pendingChanges })
           @update:canSave="instructionCanSave = $event"
           @update:isSaving="instructionIsSaving = $event"
           @update:hasPendingChanges="instructionHasPendingChanges = $event"
+        />
+      </div>
+      <div v-else-if="activeSideItem === 'status'" class="settings-section-wrapper">
+        <SettingsProjectStatus
+          ref="statusSectionRef"
+          @update:canSave="statusCanSave = $event"
+          @update:isSaving="statusIsSaving = $event"
+          @update:hasPendingChanges="statusHasPendingChanges = $event"
         />
       </div>
       <div v-else-if="activeSideItem === 'tags'" class="settings-section-wrapper">

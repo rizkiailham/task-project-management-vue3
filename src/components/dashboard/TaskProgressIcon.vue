@@ -1,7 +1,11 @@
 <template>
   <div class="relative flex items-center justify-center" :class="sizeClass">
     <!-- Completed Check Icon -->
-    <div v-if="isCompleted" class="w-full h-full rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+    <div 
+      v-if="isCompleted" 
+      class="w-full h-full rounded-full flex items-center justify-center shadow-sm"
+      :style="{ backgroundColor: progressColor }"
+    >
       <svg 
         xmlns="http://www.w3.org/2000/svg" 
         class="w-[60%] h-[60%]"
@@ -46,6 +50,10 @@ const props = defineProps({
   size: {
     type: String,
     default: 'md' // sm, md, lg
+  },
+  color: {
+    type: String,
+    default: ''
   }
 })
 
@@ -63,8 +71,11 @@ const sizeClass = computed(() => {
 })
 
 const progressColor = computed(() => {
+  if (props.color) return props.color
+  
   if (isCompleted.value) return '#22c55e' // Green-500
   
+  if (props.progress >= 100) return '#ef4444' // Red-500
   if (props.progress >= 75) return '#f97316' // Orange-500
   if (props.progress >= 50) return '#a855f7' // Purple-500
   if (props.progress > 0) return '#14b8a6' // Teal-500
