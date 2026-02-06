@@ -10,6 +10,8 @@ import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectA
 import SettingsProjectInstruction from '@/components/modals/settings/SettingsProjectInstruction.vue'
 import SettingsProjectStatus from '@/components/modals/settings/SettingsProjectStatus.vue'
 import SettingsProjectTags from '@/components/modals/settings/SettingsProjectTags.vue'
+import SettingsProjectExport from '@/components/modals/settings/SettingsProjectExport.vue'
+import SettingsProjectImport from '@/components/modals/settings/SettingsProjectImport.vue'
 import { HelpCircle, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -280,6 +282,12 @@ defineExpose({ saveChanges, pendingChanges })
           @update:isSaving="tagsIsSaving = $event"
           @update:hasPendingChanges="tagsHasPendingChanges = $event"
         />
+      </div>
+      <div v-else-if="activeSideItem === 'export'" class="settings-section-wrapper">
+        <SettingsProjectExport />
+      </div>
+      <div v-else-if="activeSideItem === 'import'" class="settings-section-wrapper">
+        <SettingsProjectImport />
       </div>
       <div v-else class="settings-project-placeholder">
         <div class="settings-project-empty-title">{{ t('settings.modal.comingSoon') }}</div>

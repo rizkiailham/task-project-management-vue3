@@ -1,0 +1,68 @@
+<script setup>
+/**
+ * SettingsProjectExport - Project export functionality
+ */
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import Button from 'primevue/button'
+
+const { t } = useI18n()
+
+const isExporting = ref(false)
+
+async function handleExport() {
+  isExporting.value = true
+  try {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    // In a real app, this would trigger a download or show a notification
+    console.log('Export triggered')
+  } finally {
+    isExporting.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="settings-editor-section">
+    <div class="mb-6">
+      <div class="settings-editor-section-title">
+        {{ t('settings.project.menu.items.export', 'Export') }}
+      </div>
+      <div class="settings-toggle-subtitle mt-2 max-w-2xl">
+        {{ t('settings.project.export.description', "Export all project data for backup or analysis. The file will download automatically once ready, and you'll be notified by email.") }}
+      </div>
+    </div>
+
+    <div class="settings-editor-field">
+      <Button 
+        type="button" 
+        :label="isExporting ? t('common.processing', 'Processing...') : t('settings.project.export.button', 'Export project data')"
+        :loading="isExporting"
+        @click="handleExport"
+      />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.settings-editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.settings-editor-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.settings-toggle-subtitle {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+</style>
