@@ -7,7 +7,11 @@ import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
 import FormInput from '@/components/ui/FormInput.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
-import { Link2, MoreHorizontal, Plus, Lock } from 'lucide-vue-next'
+import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
+import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
+import ToggleSwitch from 'primevue/toggleswitch'
+import Avatar from 'primevue/avatar'
+import { Link2, MoreHorizontal, Plus, Lock, ChevronDown, Check, Trash2 } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const projectStore = useProjectStore()
@@ -99,9 +103,9 @@ const propertyCatalog = [
     placeholder: 'Select status',
     locked: true,
     options: [
-      { label: 'Backlog', value: 'backlog' },
-      { label: 'In Progress', value: 'in-progress' },
-      { label: 'Done', value: 'done' }
+      { label: 'Backlog', value: 'backlog', status: 'todo', progress: 0, color: '#9ca3af' },
+      { label: 'In Progress', value: 'in-progress', status: 'in_progress', progress: 25, color: '#3b82f6' },
+      { label: 'Done', value: 'done', status: 'done', progress: 100, color: '#22c55e' }
     ],
     defaultValue: 'backlog'
   },
@@ -173,8 +177,15 @@ function createField(key) {
     placeholder: property.placeholder,
     options: property.options || [],
     locked: Boolean(property.locked),
+    required: false,
+    visible: true,
     value: property.defaultValue ?? (property.type === 'multiselect' ? [] : '')
   }
+}
+
+function getStatusOption(value) {
+  const statusField = propertyCatalog.find(p => p.key === 'status')
+  return statusField?.options?.find(o => o.value === value)
 }
 
 function createDefaultFields() {
@@ -190,10 +201,16 @@ function createDefaultFields() {
         options: [],
         locked: true,
         required: true,
+        visible: true,
         value: ''
       }
     }
-    return createField(key)
+    const field = createField(key)
+    if (field && key === 'status') {
+      field.required = true
+      field.visible = true
+    }
+    return field
   }).filter(Boolean)
 }
 
@@ -261,6 +278,13 @@ function addPropertyField(propertyKey) {
   propertySearch.value = ''
   addPropertyMenuRef.value?.close?.()
   addPropertyInlineMenuRef.value?.close?.()
+}
+
+function removeField(fieldId) {
+  const index = formFields.value.findIndex(f => f.id === fieldId)
+  if (index !== -1) {
+    formFields.value.splice(index, 1)
+  }
 }
 
 async function handleCopyPrivateLink() {
@@ -416,7 +440,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
                   class="settings-form-property-search"
                   :placeholder="t('settings.project.forms.placeholders.searchProperty', 'Search a property')"
                 />
-                <div class="settings-form-property-list">
+                <div class="settings-form-property-list custom-scrollbar">
                   <button
                     v-for="property in availableProperties"
                     :key="property.key"
@@ -435,60 +459,178 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
           </DropdownMenu>
         </div>
 
-        <div class="settings-form-fields-list">
           <div v-for="field in formFields" :key="field.id" class="settings-form-field-card">
+            <!-- Header: Title + Lock -->
             <div class="settings-form-field-card-head">
-              <div class="settings-form-field-card-label">
-                {{ field.label }}
-                <span v-if="field.required" class="text-red-500">*</span>
+              <div class="settings-form-field-card-title">
+                {{ field.key === 'title' ? 'Title *' : (field.label || field.key) }}
               </div>
-              <div class="settings-form-field-card-meta">
+              <div class="settings-form-field-card-title flex items-center gap-2">
                 <span>{{ field.rightLabel }}</span>
                 <Lock v-if="field.locked" class="w-3.5 h-3.5" />
               </div>
             </div>
+
             <div class="settings-form-field-card-body">
-              <FormInput
-                v-if="field.type === 'text'"
-                v-model="field.value"
-                :id="`form-field-${field.id}`"
-                class="w-full"
-                :placeholder="field.placeholder"
-              />
-              <FormInput
-                v-else-if="field.type === 'textarea'"
-                v-model="field.value"
-                :id="`form-field-${field.id}`"
-                as="textarea"
-                rows="2"
-                class="w-full"
-                :placeholder="field.placeholder"
-              />
-              <FormInput
-                v-else-if="field.type === 'multiselect'"
-                v-model="field.value"
-                :id="`form-field-${field.id}`"
-                as="multiselect"
-                :options="field.options"
-                optionLabel="label"
-                optionValue="value"
-                class="w-full"
-                :placeholder="field.placeholder"
-              />
-              <FormInput
-                v-else
-                v-model="field.value"
-                :id="`form-field-${field.id}`"
-                as="select"
-                :options="field.options"
-                optionLabel="label"
-                optionValue="value"
-                class="w-full"
-                :placeholder="field.placeholder"
-              />
+              <!-- Label Input -->
+              <div class="settings-form-field-row">
+                <label class="settings-form-field-label">{{ t('settings.project.forms.fields.label', 'Label') }}</label>
+                <FormInput
+                  v-model="field.label"
+                  :id="`field-label-${field.id}`"
+                  class="w-full"
+                  :placeholder="t('settings.project.forms.placeholders.label', 'Enter label')"
+                />
+              </div>
+
+              <!-- Default Value Input -->
+              <div class="settings-form-field-row">
+                <label class="settings-form-field-label">{{ t('settings.project.forms.fields.defaultValue', 'Default') }}</label>
+                
+                <!-- User Selector for Supervisor/User types -->
+                <UserSearchDropdown
+                  v-if="field.key === 'supervisor' || field.key === 'assignee'"
+                  v-model="field.value"
+                  :projectId="projectId"
+                  class="w-full"
+                >
+                  <template #trigger>
+                    <button type="button" class="w-full h-[32px] flex items-center justify-between px-2 bg-white border border-gray-300 rounded-md text-sm text-left hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 transition-colors">
+                      <div v-if="field.value" class="flex items-center gap-2 overflow-hidden">
+                        <Avatar 
+                          :image="field.value.avatarUrl || field.value.avatar" 
+                          :label="!field.value.avatarUrl && !field.value.avatar ? (field.value.initials || field.value.name?.charAt(0) || '?') : undefined" 
+                          shape="circle" 
+                          size="small"
+                          class="w-5 h-5 text-[10px] bg-primary-100 text-primary-700 font-semibold flex-shrink-0"
+                        />
+                        <span class="truncate text-xs">{{ field.value.name }}</span>
+                      </div>
+                      <span v-else class="text-gray-400 text-xs">{{ t('common.selectUser', 'Select user') }}</span>
+                      <ChevronDown class="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </template>
+                </UserSearchDropdown>
+
+                <!-- Status Selector with Icons -->
+                <DropdownMenu
+                  v-else-if="field.key === 'status'"
+                  class="w-full"
+                  position="right"
+                  width="18rem"
+                >
+                   <template #trigger>
+                    <button type="button" class="w-full h-[32px] flex items-center justify-between px-2 bg-white border border-gray-300 rounded-md text-sm text-left hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 transition-colors">
+                      <div v-if="field.value" class="flex items-center gap-2 overflow-hidden">
+                         <TaskProgressIcon 
+                            :status="getStatusOption(field.value)?.status || 'todo'" 
+                            :progress="getStatusOption(field.value)?.progress || 0"
+                            :color="getStatusOption(field.value)?.color || '#9ca3af'"
+                            size="sm"
+                         />
+                        <span class="truncate text-xs">{{ getStatusOption(field.value)?.label || field.value }}</span>
+                      </div>
+                      <span v-else class="text-gray-400 text-xs">{{ t('settings.project.forms.placeholders.status', 'Select status') }}</span>
+                      <ChevronDown class="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </template>
+                  <template #content>
+                     <div class="py-1 custom-scrollbar max-h-[200px] overflow-y-auto">
+                        <button
+                          v-for="opt in field.options"
+                          :key="opt.value"
+                          type="button"
+                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors text-gray-700"
+                          @click="field.value = opt.value"
+                        >
+                           <TaskProgressIcon 
+                              :status="opt.status || 'todo'" 
+                              :progress="opt.progress || 0"
+                              :color="opt.color || '#9ca3af'"
+                              size="sm"
+                           />
+                           <span class="flex-1 text-left">{{ opt.label }}</span>
+                           <Check v-if="field.value === opt.value" class="w-3.5 h-3.5 text-primary-500" />
+                        </button>
+                     </div>
+                  </template>
+                </DropdownMenu>
+
+                <!-- Standard Inputs for others -->
+                <FormInput
+                  v-else-if="field.type === 'textarea'"
+                  v-model="field.value"
+                  :id="`field-default-${field.id}`"
+                  as="textarea"
+                  rows="1"
+                  autoResize
+                  class="w-full"
+                  :placeholder="field.placeholder"
+                />
+                <FormInput
+                  v-else-if="field.type === 'multiselect'"
+                  v-model="field.value"
+                  :id="`field-default-${field.id}`"
+                  as="multiselect"
+                  :options="field.options"
+                  optionLabel="label"
+                  optionValue="value"
+                  class="w-full"
+                  :placeholder="field.placeholder"
+                />
+                <FormInput
+                  v-else-if="field.type === 'select'"
+                  v-model="field.value"
+                  :id="`field-default-${field.id}`"
+                  as="select"
+                  :options="field.options"
+                  optionLabel="label"
+                  optionValue="value"
+                  class="w-full"
+                  :placeholder="field.placeholder"
+                />
+                 <FormInput
+                  v-else
+                  v-model="field.value"
+                  :id="`field-default-${field.id}`"
+                  class="w-full"
+                  :placeholder="field.placeholder"
+                />
+              </div>
+
+              <!-- Toggles: Visible & Required -->
+              <div class="settings-form-field-toggles">
+                <div class="settings-form-toggle-item">
+                  <ToggleSwitch 
+                    v-model="field.visible" 
+                    :inputId="`visible-${field.id}`" 
+                    :disabled="field.key === 'title'"
+                  />
+                  <label :for="`visible-${field.id}`" :class="{ 'opacity-50': field.key === 'title' }">{{ t('settings.project.forms.fields.visible', 'Visible in form') }}</label>
+                </div>
+                <div class="settings-form-toggle-item flex justify-between items-center w-full">
+                  <div class="flex items-center gap-2">
+                    <ToggleSwitch 
+                      v-model="field.required" 
+                      :inputId="`required-${field.id}`" 
+                      :disabled="field.key === 'title'" 
+                    />
+                    <label :for="`required-${field.id}`" :class="{ 'opacity-50': field.key === 'title' }">{{ t('settings.project.forms.fields.required', 'Required') }}</label>
+                  </div>
+                  
+                  <button 
+                    v-if="!field.locked"
+                    type="button" 
+                    class="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+                    @click="removeField(field.id)"
+                    :title="t('common.delete', 'Delete')"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
         <DropdownMenu ref="addPropertyInlineMenuRef" :items="[]" position="left" width="14rem" variant="sidebar">
           <template #trigger>
@@ -505,20 +647,20 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
                 class="settings-form-property-search"
                 :placeholder="t('settings.project.forms.placeholders.searchProperty', 'Search a property')"
               />
-              <div class="settings-form-property-list">
-                <button
-                  v-for="property in availableProperties"
-                  :key="property.key"
-                  type="button"
-                  class="settings-form-property-item"
-                  @click="addPropertyField(property.key)"
-                >
-                  {{ property.label }}
-                </button>
-                <div v-if="availableProperties.length === 0" class="settings-form-property-empty">
-                  {{ t('common.noResults', 'No results found') }}
+                <div class="settings-form-property-list custom-scrollbar">
+                  <button
+                    v-for="property in availableProperties"
+                    :key="property.key"
+                    type="button"
+                    class="settings-form-property-item"
+                    @click="addPropertyField(property.key)"
+                  >
+                    {{ property.label }}
+                  </button>
+                  <div v-if="availableProperties.length === 0" class="settings-form-property-empty">
+                    {{ t('common.noResults', 'No results found') }}
+                  </div>
                 </div>
-              </div>
             </div>
           </template>
         </DropdownMenu>
@@ -713,25 +855,49 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   margin-bottom: 8px;
 }
 
-.settings-form-field-card-label {
-  font-size: 12px; /* Reduced from 13px */
+.settings-form-field-card-title {
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
 }
 
-.settings-form-field-card-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px; /* Reduced from 14px */
-  color: #9ca3af;
+.settings-form-field-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.settings-form-field-card-body :deep(.p-select),
-.settings-form-field-card-body :deep(.p-multiselect),
-.settings-form-field-card-body :deep(.p-inputtext),
-.settings-form-field-card-body :deep(.p-textarea) {
-  width: 100%;
+.settings-form-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-form-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-left: 2px;
+}
+
+.settings-form-field-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.settings-form-toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.settings-form-toggle-item label {
+  cursor: pointer;
+  user-select: none;
 }
 
 /* Ensure inputs inside the card are smaller */
@@ -739,7 +905,16 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 .settings-form-field-card-body :deep(.p-textarea),
 .settings-form-field-card-body :deep(.p-select-label),
 .settings-form-field-card-body :deep(.p-multiselect-label) {
-  font-size: 13px !important;
+  font-size: 12px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  background: #ffffff;
+}
+
+/* ToggleSwitch scaling to match design (small) without breaking consistency */
+.settings-form-field-card-body :deep(.p-toggleswitch) {
+    transform: scale(0.8);
+    transform-origin: left center;
 }
 
 .settings-form-add-btn {
@@ -767,20 +942,21 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 .settings-form-property-search {
   width: 100%;
   border: 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #f3f4f6;
   background: transparent;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 13px;
   color: #6b7280;
 }
 
 .settings-form-property-search:focus {
   outline: none;
+  background: #f9fafb;
 }
 
 .settings-form-property-list {
   max-height: 220px;
-  overflow: auto;
+  overflow-y: auto;
   padding: 6px 0;
 }
 
@@ -788,18 +964,36 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   width: 100%;
   text-align: left;
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: 13px;
   color: #374151;
+  transition: all 0.2s;
 }
 
 .settings-form-property-item:hover {
-  background: #e5e6ec;
+  background: #f3f4f6;
+  color: #111827;
 }
 
 .settings-form-property-empty {
   padding: 10px 12px;
   font-size: 12px;
   color: #9ca3af;
+  text-align: center;
+}
+
+/* Custom Scrollbar to match UserSearchDropdown */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #d1d5db;
 }
 
 @media (max-width: 900px) {

@@ -598,6 +598,19 @@ textarea,
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--color-primary-300) !important;
 }
 
+/* Disabled State - Grey */
+.p-toggleswitch.p-disabled .p-toggleswitch-slider,
+.p-inputswitch.p-disabled .p-inputswitch-slider {
+  background: #e5e7eb !important;
+  /* gray-200 */
+}
+
+.p-toggleswitch.p-disabled.p-toggleswitch-checked .p-toggleswitch-slider,
+.p-inputswitch.p-disabled.p-inputswitch-checked .p-inputswitch-slider {
+  background: #9ca3af !important;
+  /* gray-400 */
+}
+
 /* ================================
    Radio Button - Blue Theme
    ================================ */
