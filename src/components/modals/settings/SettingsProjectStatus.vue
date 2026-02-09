@@ -197,11 +197,11 @@ defineExpose({ saveChanges })
 
 <template>
   <div class="settings-editor-section">
-    <div class="mb-6">
-      <div class="settings-editor-section-title">
+    <div class="settings-project-header mb-6">
+      <div class="settings-project-title">
         {{ t('settings.project.menu.items.status', 'Status') }}
       </div>
-      <div class="settings-toggle-subtitle mt-1">
+      <div class="settings-project-description">
         {{ t('settings.project.status.description', 'Customize board columns to match your project workflow and status stages.') }}
       </div>
     </div>
@@ -390,16 +390,22 @@ defineExpose({ saveChanges })
   overflow: hidden;
 }
 
-.settings-editor-section-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  letter-spacing: 0.08em;
+.settings-project-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.settings-toggle-subtitle {
+.settings-project-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.settings-project-description {
   font-size: 12px;
-  color: #9ca3af;
+  color: #4b5563;
+  line-height: 1.5;
 }
 
 .settings-option-header {

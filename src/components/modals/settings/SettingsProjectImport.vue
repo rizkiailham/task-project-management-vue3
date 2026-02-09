@@ -70,11 +70,11 @@ function confirmImport() {
   <div class="settings-editor-section relative">
     
     <!-- HEADER -->
-    <div class="mb-6">
-      <div class="settings-editor-section-title">
+    <div class="settings-project-header mb-6">
+      <div class="settings-project-title">
         {{ t('settings.project.menu.items.import', 'Import') }}
       </div>
-      <div class="settings-toggle-subtitle mt-2 max-w-2xl">
+      <div class="settings-project-description max-w-2xl">
         {{ t('settings.project.import.description', "Import data by uploading a supported file. Imported records will be created, updated or replaced if already exist accordingly within this project") }}
       </div>
     </div>
@@ -233,16 +233,21 @@ function confirmImport() {
   min-height: 400px;
 }
 
-.settings-editor-section-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  letter-spacing: 0.08em;
+.settings-project-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.settings-toggle-subtitle {
+.settings-project-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.settings-project-description {
   font-size: 12px;
-  color: #9ca3af;
+  color: #4b5563;
   line-height: 1.5;
 }
 </style>

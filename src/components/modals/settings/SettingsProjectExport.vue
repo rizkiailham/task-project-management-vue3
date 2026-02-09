@@ -25,11 +25,11 @@ async function handleExport() {
 
 <template>
   <div class="settings-editor-section">
-    <div class="mb-6">
-      <div class="settings-editor-section-title">
+    <div class="settings-project-header mb-6">
+      <div class="settings-project-title">
         {{ t('settings.project.menu.items.export', 'Export') }}
       </div>
-      <div class="settings-toggle-subtitle mt-2 max-w-2xl">
+      <div class="settings-project-description max-w-2xl">
         {{ t('settings.project.export.description', "Export all project data for backup or analysis. The file will download automatically once ready, and you'll be notified by email.") }}
       </div>
     </div>
@@ -53,15 +53,20 @@ async function handleExport() {
   width: 100%;
 }
 
-.settings-editor-section-title {
+.settings-project-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-project-title {
   font-size: 16px;
   font-weight: 600;
   color: #111827;
-  letter-spacing: -0.01em;
 }
 
-.settings-toggle-subtitle {
-  font-size: 14px;
+.settings-project-description {
+  font-size: 12px;
   color: #4b5563;
   line-height: 1.5;
 }
