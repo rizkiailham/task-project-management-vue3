@@ -206,3 +206,23 @@ defineExpose({ focus })
   width: 100%;
 }
 </style>
+
+<style>
+/* Select + Multiselect focus (control and filter input) should stay neutral, not blue */
+.p-select:focus,
+.p-select.p-focus,
+.p-multiselect:focus,
+.p-multiselect.p-focus,
+.p-select-filter.p-inputtext:focus,
+.p-multiselect-filter.p-inputtext:focus {
+  border-color: #d1d5db !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Make "no item" message smaller in select/multiselect panels */
+.p-select-empty-message,
+.p-multiselect-empty-message {
+  font-size: 12px !important;
+}
+</style>
