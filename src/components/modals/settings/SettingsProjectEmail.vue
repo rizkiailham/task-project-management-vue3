@@ -6,8 +6,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
 import FormInput from '@/components/ui/FormInput.vue'
-import Button from 'primevue/button'
-import Menu from 'primevue/menu'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import { Link2, MoreHorizontal } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -17,7 +16,6 @@ const uiStore = useUIStore()
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
 
 const projectId = computed(() => projectStore.currentProjectId)
-const actionsMenuRef = ref(null)
 const isSaving = ref(false)
 
 const boardOptions = [
@@ -28,10 +26,10 @@ const boardOptions = [
 ]
 
 const actionOptions = [
-  { label: 'Create task', value: 'create-task', requiresTask: false },
-  { label: 'Add comment', value: 'add-comment', requiresTask: true },
-  { label: 'Send to agent', value: 'send-agent', requiresTask: false },
-  { label: 'Send to skill', value: 'send-skill', requiresTask: false }
+  { label: t('settings.project.email.actions.createTask', 'Create task'), value: 'create-task', requiresTask: false },
+  { label: t('settings.project.email.actions.addComment', 'Add comment'), value: 'add-comment', requiresTask: true },
+  { label: t('settings.project.email.actions.sendAgent', 'Send to agent'), value: 'send-agent', requiresTask: false },
+  { label: t('settings.project.email.actions.sendSkill', 'Send to skill'), value: 'send-skill', requiresTask: false }
 ]
 
 const tasksByBoard = {
@@ -61,12 +59,26 @@ const tasksByBoard = {
   ]
 }
 
+const agentOptions = [
+  { label: 'Agent 1', value: 'agent-1' },
+  { label: 'Agent 2', value: 'agent-2' },
+  { label: 'Agent 3', value: 'agent-3' }
+]
+
+const skillOptions = [
+  { label: 'Skill A', value: 'skill-a' },
+  { label: 'Skill B', value: 'skill-b' },
+  { label: 'Skill C', value: 'skill-c' }
+]
+
 const formState = ref({
   name: 'Create task',
   access: 'private',
   boardId: 'task-board',
   actionId: 'add-comment',
-  taskName: ''
+  taskName: '',
+  agentId: '',
+  skillId: ''
 })
 
 const savedSnapshot = ref('')
@@ -76,6 +88,8 @@ const selectedAction = computed(() =>
 )
 
 const visibleTaskField = computed(() => Boolean(selectedAction.value?.requiresTask))
+const visibleAgentField = computed(() => formState.value.actionId === 'send-agent')
+const visibleSkillField = computed(() => formState.value.actionId === 'send-skill')
 const availableTasks = computed(() => tasksByBoard[formState.value.boardId] || [])
 const taskOptions = computed(() => availableTasks.value.map((task) => ({ label: task, value: task })))
 
@@ -94,21 +108,25 @@ const canSave = computed(() => hasPendingChanges.value && !isSaving.value)
 
 const actionMenuItems = computed(() => [
   {
+    id: 'open-preview',
     label: t('settings.project.email.context.openPreview', 'Open preview'),
-    command: () => uiStore.showInfo(t('settings.project.email.messages.preview', 'Preview is not available yet.'))
+    action: () => uiStore.showInfo(t('settings.project.email.messages.preview', 'Preview is not available yet.'))
   },
   {
+    id: 'send-test-email',
     label: t('settings.project.email.context.sendTestEmail', 'Send test email'),
-    command: () => uiStore.showInfo(t('settings.project.email.messages.testEmail', 'Test email flow is not available yet.'))
+    action: () => uiStore.showInfo(t('settings.project.email.messages.testEmail', 'Test email flow is not available yet.'))
   },
   {
+    id: 'pin-sidebar',
     label: t('settings.project.email.context.pinOnSidebar', 'Pin on sidebar'),
-    command: () => uiStore.showInfo(t('settings.project.email.messages.pin', 'Pinned to sidebar (dummy state).'))
+    action: () => uiStore.showInfo(t('settings.project.email.messages.pin', 'Pinned to sidebar (dummy state).'))
   },
-  { separator: true },
+  { type: 'divider' },
   {
+    id: 'delete',
     label: t('settings.project.email.context.delete', 'Delete'),
-    command: () => uiStore.showWarning(t('settings.project.email.messages.delete', 'Delete action is not available yet.'))
+    action: () => uiStore.showWarning(t('settings.project.email.messages.delete', 'Delete action is not available yet.'))
   }
 ])
 
@@ -118,7 +136,9 @@ function createSnapshot() {
     access: formState.value.access,
     boardId: formState.value.boardId,
     actionId: formState.value.actionId,
-    taskName: formState.value.taskName
+    taskName: formState.value.taskName,
+    agentId: formState.value.agentId,
+    skillId: formState.value.skillId
   })
 }
 
@@ -128,13 +148,11 @@ function resetToDefault() {
     access: 'private',
     boardId: boardOptions[0].value,
     actionId: actionOptions.find((option) => option.value === 'add-comment')?.value || actionOptions[0].value,
-    taskName: ''
+    taskName: '',
+    agentId: '',
+    skillId: ''
   }
   savedSnapshot.value = createSnapshot()
-}
-
-function toggleActionsMenu(event) {
-  actionsMenuRef.value?.toggle(event)
 }
 
 async function handleCopyIncomingAddress() {
@@ -159,9 +177,9 @@ async function saveChanges() {
 }
 
 watch(() => formState.value.actionId, (nextAction) => {
-  const action = actionOptions.find((option) => option.value === nextAction)
-  if (action?.requiresTask) return
-  formState.value.taskName = ''
+  formState.value.taskName = nextAction === 'add-comment' ? formState.value.taskName : ''
+  formState.value.agentId = nextAction === 'send-agent' ? formState.value.agentId : ''
+  formState.value.skillId = nextAction === 'send-skill' ? formState.value.skillId : ''
 })
 
 watch(() => formState.value.boardId, () => {
@@ -186,38 +204,34 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 <template>
   <div>
     <div v-if="!projectId" class="settings-project-empty">
-      <div class="settings-project-empty-title">{{ t('settings.project.empty.title') }}</div>
-      <p class="settings-project-empty-text">{{ t('settings.project.empty.description') }}</p>
+      <div class="settings-project-empty-title">{{ t('settings.project.empty.title', 'Select a project') }}</div>
+      <p class="settings-project-empty-text">{{ t('settings.project.empty.description', 'Please select a project to configure email settings.') }}</p>
     </div>
 
     <div v-else class="settings-email">
       <div class="settings-email-header">
         <div class="settings-project-title">{{ t('settings.project.email.title', 'Edit email') }}</div>
         <div class="settings-email-header-actions">
-          <Button
+          <button
             type="button"
-            text
-            rounded
-            severity="secondary"
             class="settings-email-icon-btn"
             :title="t('settings.project.email.actions.copyAddress', 'Copy incoming email address')"
             @click="handleCopyIncomingAddress"
           >
             <Link2 class="w-4 h-4" />
-          </Button>
+          </button>
 
-          <Button
-            type="button"
-            text
-            rounded
-            severity="secondary"
-            class="settings-email-icon-btn"
-            :title="t('settings.project.email.actions.more', 'More actions')"
-            @click="toggleActionsMenu"
-          >
-            <MoreHorizontal class="w-4 h-4" />
-          </Button>
-          <Menu ref="actionsMenuRef" :model="actionMenuItems" popup />
+          <DropdownMenu :items="actionMenuItems" position="right" width="12.5rem" variant="sidebar">
+            <template #trigger>
+              <button
+                type="button"
+                class="settings-email-icon-btn"
+                :title="t('settings.project.email.actions.more', 'More actions')"
+              >
+                <MoreHorizontal class="w-4 h-4" />
+              </button>
+            </template>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -306,10 +320,41 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
             :placeholder="t('settings.project.email.placeholders.searchTask', 'Select task...')"
           />
         </div>
+
+        <div v-else-if="visibleAgentField" class="settings-email-field settings-email-task">
+          <label class="settings-email-label">{{ t('settings.project.email.fields.agent', 'Agent') }}</label>
+          <FormInput
+            id="settings-email-agent"
+            v-model="formState.agentId"
+            as="select"
+            :options="agentOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            filter
+            :placeholder="t('settings.project.email.placeholders.searchAgent', 'Select agent...')"
+          />
+        </div>
+
+        <div v-else-if="visibleSkillField" class="settings-email-field settings-email-task">
+          <label class="settings-email-label">{{ t('settings.project.email.fields.skill', 'Skill') }}</label>
+          <FormInput
+            id="settings-email-skill"
+            v-model="formState.skillId"
+            as="select"
+            :options="skillOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            filter
+            :placeholder="t('settings.project.email.placeholders.searchSkill', 'Select skill...')"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .settings-project-empty {
@@ -347,13 +392,25 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 .settings-email-header-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .settings-email-icon-btn {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: transparent;
+  border: 0;
   color: #6b7280;
+  cursor: pointer;
+}
+
+.settings-email-icon-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
 }
 
 .settings-email-label {

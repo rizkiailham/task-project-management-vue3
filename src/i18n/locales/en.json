@@ -38,7 +38,9 @@
     "undo": "Undo",
     "redo": "Redo",
     "open": "Open",
-    "preview": "Preview"
+    "preview": "Preview",
+    "processing": "Processing...",
+    "selectFile": "Select file"
   },
   "auth": {
     "login": {
@@ -683,12 +685,99 @@
       },
       "menu": {
         "title": "Project Settings",
+        "groups": {
+          "settings": "PROJECT SETTINGS",
+          "forms": "FORMS",
+          "email": "EMAIL"
+        },
         "items": {
           "general": "General",
           "accessControl": "Access Control",
           "reports": "Reports",
           "instruction": "Instruction",
-          "email": "Email"
+          "email": "Email",
+          "status": "Status",
+          "tags": "Tags",
+          "export": "Export",
+          "import": "Import",
+          "defaultForm": "Default - Create task",
+          "defaultEmail": "Default - Create task"
+        }
+      },
+      "status": {
+        "new": "New Status",
+        "description": "Customize board columns to match your project workflow and status stages.",
+        "icon": "Icon",
+        "color": "Color",
+        "addColumn": "+ New Status",
+        "namePlaceholder": "Status Name",
+        "columns": "Columns"
+      },
+      "tags": {
+        "description": "Use tags to label and organize projects for easier filtering and discovery. Tag will be available on the item by default",
+        "new": "New Tag"
+      },
+      "import": {
+        "description": "Import data by uploading a supported file. Imported records will be created, updated or replaced if already exist accordingly within this project",
+        "replaceTitle": "Existing items with matching names will be replaced.",
+        "replaceSubtitle": "Leave unchecked to add a suffix and avoid overwriting.",
+        "loading": "Loading items on file",
+        "chooseItems": "Choose items to import",
+        "start": "Start import",
+        "warningTitle": "Data Replacement Warning",
+        "warningText": "If a board item with the same name already exists, it will be replaced during import."
+      },
+      "export": {
+        "description": "Export all project data for backup or analysis. The file will download automatically once ready, and you'll be notified by email.",
+        "button": "Export project data"
+      },
+      "email": {
+        "title": "Edit email",
+        "fields": {
+          "name": "Name",
+          "sharing": "Sharing / Access",
+          "board": "Board within this project",
+          "action": "Action",
+          "task": "Task",
+          "agent": "Agent",
+          "skill": "Skill"
+        },
+        "placeholders": {
+          "name": "Create task",
+          "searchBoard": "Search for board",
+          "searchAction": "Search for action",
+          "searchTask": "Select task...",
+          "searchAgent": "Select agent...",
+          "searchSkill": "Select skill..."
+        },
+        "access": {
+          "private": {
+            "title": "Private",
+            "description": "Only registered project email addresses are allowed"
+          },
+          "public": {
+            "title": "Public",
+            "description": "Anyone who has the link can send email to this address"
+          }
+        },
+        "actions": {
+          "copyAddress": "Copy incoming email address",
+          "more": "More actions"
+        },
+        "context": {
+          "openPreview": "Open preview",
+          "sendTestEmail": "Send test email",
+          "pinOnSidebar": "Pin on sidebar",
+          "delete": "Delete"
+        },
+        "messages": {
+          "preview": "Preview is not available yet.",
+          "testEmail": "Test email flow is not available yet.",
+          "pin": "Pinned to sidebar (dummy state).",
+          "delete": "Delete action is not available yet.",
+          "linkCopied": "Email address copied",
+          "linkCopyFailed": "Failed to copy email address",
+          "saved": "Email settings saved"
         }
       }
     },

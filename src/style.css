@@ -408,10 +408,10 @@ textarea,
 /* Select/MultiSelect panel styling */
 .p-select-overlay,
 .p-multiselect-overlay {
-  background: #f8fafc !important;
+  background: #f3f5f7 !important;
   border: 1px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  box-shadow: var(--shadow-md) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
   overflow: hidden;
 }
 
@@ -423,35 +423,43 @@ textarea,
 .p-select-option,
 .p-multiselect-option {
   padding: 10px 14px !important;
-  color: #4b5563 !important;
+  color: #374151 !important;
+  font-weight: 400 !important;
   border-radius: 0 !important;
   transition: background-color 150ms ease;
 }
 
 .p-select-option:not(.p-disabled):hover,
 .p-multiselect-option:not(.p-disabled):hover {
-  background: #eef2f7 !important;
+  background: #e5e6ec !important;
 }
 
 .p-select-option.p-select-option-selected,
-.p-multiselect-option.p-multiselect-option-selected {
-  background: #e5e7eb !important;
+.p-select-option[aria-selected="true"],
+.p-select-option.p-focus,
+.p-select-option.p-select-option-selected.p-focus,
+.p-multiselect-option.p-multiselect-option-selected,
+.p-multiselect-option[aria-selected="true"],
+.p-multiselect-option.p-focus,
+.p-multiselect-option.p-multiselect-option-selected.p-focus {
+  background: #e5e6ec !important;
   color: #374151 !important;
+  font-weight: 400 !important;
 }
 
 .p-select-header,
 .p-multiselect-header {
   padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
-  background: #f8fafc;
+  background: #f3f5f7;
 }
 
 .p-select-filter,
 .p-multiselect-filter {
   width: 100%;
-  background: #f8fafc !important;
+  background: transparent !important;
   border: none !important;
-  border-radius: 8px !important;
+  border-radius: 0 !important;
   padding: 8px 10px !important;
   color: #6b7280 !important;
   box-shadow: none !important;
@@ -459,9 +467,17 @@ textarea,
 
 .p-select-filter:focus,
 .p-multiselect-filter:focus {
-  border-color: transparent !important;
+  border: none !important;
   box-shadow: none !important;
   outline: none;
+}
+
+.p-select-header {
+  padding: 0px 8px !important;
+}
+
+.p-multiselect-header {
+  padding: 0px 8px !important;
 }
 
 .p-multiselect-empty-message {

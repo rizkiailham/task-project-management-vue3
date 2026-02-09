@@ -82,7 +82,7 @@ const visibleSearchSections = computed(() =>
 )
 
 function getLastLoginLabel(entry) {
-  if (!entry.lastLoginValue) return 'Never'
+  if (!entry.lastLoginValue) return t('settings.project.lastLogin.never', 'Never')
   
   const loginDate = new Date(entry.lastLoginValue)
   const now = new Date()
@@ -91,10 +91,10 @@ function getLastLoginLabel(entry) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
   
-  if (diffMinutes < 5) return 'Just now'
-  if (diffMinutes < 60) return `${diffMinutes} mins ago`
-  if (diffHours < 24) return `${diffHours} hrs ago`
-  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffMinutes < 5) return t('settings.project.lastLogin.justNow', 'Just now')
+  if (diffMinutes < 60) return t('settings.project.lastLogin.minutesAgo', '{minutes} mins ago', { minutes: diffMinutes })
+  if (diffHours < 24) return t('settings.project.lastLogin.hoursAgo', '{hours} hrs ago', { hours: diffHours })
+  if (diffDays < 7) return t('settings.project.lastLogin.daysAgo', '{days} days ago', { days: diffDays })
   
   return loginDate.toLocaleDateString()
 }

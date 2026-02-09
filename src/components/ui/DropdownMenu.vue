@@ -460,4 +460,21 @@ defineExpose({ open, close, toggle, isOpen })
 .dropdown-menu {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
+
+.dropdown-menu :deep(button:hover) {
+  background: #e5e6ec;
+}
+
+.dropdown-menu :deep(button[aria-selected='true']),
+.dropdown-menu :deep(button.is-selected) {
+  background: #e5e6ec;
+  color: #374151;
+}
+
+.dropdown-menu :deep(input),
+.dropdown-menu :deep(.p-inputtext) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
 </style>

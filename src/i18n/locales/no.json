@@ -38,7 +38,9 @@
     "continue": "Fortsett",
     "undo": "Angre",
     "redo": "Gjør om",
-    "preview": "Forhåndsvisning"
+    "preview": "Forhåndsvisning",
+    "processing": "Behandler...",
+    "selectFile": "Velg fil"
   },
   "auth": {
     "login": {
@@ -674,12 +676,99 @@
       },
       "menu": {
         "title": "Prosjektinnstillinger",
+        "groups": {
+          "settings": "PROSJEKTINNSTILLINGER",
+          "forms": "SKJEMAER",
+          "email": "E-POST"
+        },
         "items": {
           "general": "Generelt",
           "accessControl": "Tilgangskontroll",
           "reports": "Rapporter",
           "instruction": "Instruksjon",
-          "email": "E-post"
+          "email": "E-post",
+          "status": "Status",
+          "tags": "Merker",
+          "export": "Eksport",
+          "import": "Import",
+          "defaultForm": "Standard - Opprett oppgave",
+          "defaultEmail": "Standard - Opprett oppgave"
+        }
+      },
+      "status": {
+        "new": "Ny Status",
+        "description": "Tilpass tavlekolonner for å matche din prosjektarbeidsflyt og statusfaser.",
+        "icon": "Ikon",
+        "color": "Farge",
+        "addColumn": "+ Ny Status",
+        "namePlaceholder": "Statusnavn",
+        "columns": "Kolonner"
+      },
+      "tags": {
+        "description": "Bruk merker for å organisere prosjekter for enklere filtrering og oppdagelse. Merket vil være tilgjengelig på elementet som standard",
+        "new": "Nytt Merke"
+      },
+      "import": {
+        "description": "Importer data ved å laste opp en støttet fil. Importerte poster vil bli opprettet, oppdatert eller erstattet hvis de allerede finnes i dette prosjektet",
+        "replaceTitle": "Eksisterende elementer med matchende navn vil bli erstattet.",
+        "replaceSubtitle": "La stå umerket for å legge til et suffiks og unngå overskriving.",
+        "loading": "Laster elementer fra fil",
+        "chooseItems": "Velg elementer å importere",
+        "start": "Start import",
+        "warningTitle": "Advarsel om dataerstatning",
+        "warningText": "Hvis et tavleelement med samme navn allerede finnes, vil det bli erstattet under import."
+      },
+      "export": {
+        "description": "Eksporter all prosjektdata for sikkerhetskopiering eller analyse. Filen lastes ned automatisk når den er klar, og du vil bli varslet via e-post.",
+        "button": "Eksporter prosjektdata"
+      },
+      "email": {
+        "title": "Rediger e-post",
+        "fields": {
+          "name": "Navn",
+          "sharing": "Deling / Tilgang",
+          "board": "Tavle i dette prosjektet",
+          "action": "Handling",
+          "task": "Oppgave",
+          "agent": "Agent",
+          "skill": "Ferdighet"
+        },
+        "placeholders": {
+          "name": "Opprett oppgave",
+          "searchBoard": "Søk etter tavle",
+          "searchAction": "Søk etter handling",
+          "searchTask": "Velg oppgave...",
+          "searchAgent": "Velg agent...",
+          "searchSkill": "Velg ferdighet..."
+        },
+        "access": {
+          "private": {
+            "title": "Privat",
+            "description": "Kun registrerte prosjekt-e-postadresser er tillatt"
+          },
+          "public": {
+            "title": "Offentlig",
+            "description": "Alle som har lenken kan sende e-post til denne adressen"
+          }
+        },
+        "actions": {
+          "copyAddress": "Kopier innkommende e-postadresse",
+          "more": "Flere handlinger"
+        },
+        "context": {
+          "openPreview": "Åpne forhåndsvisning",
+          "sendTestEmail": "Send test-e-post",
+          "pinOnSidebar": "Fest til sidefelt",
+          "delete": "Slett"
+        },
+        "messages": {
+          "preview": "Forhåndsvisning er ikke tilgjengelig ennå.",
+          "testEmail": "Test-e-postflyt er ikke tilgjengelig ennå.",
+          "pin": "Festet til sidefelt (dummy-tilstand).",
+          "delete": "Slettehandling er ikke tilgjengelig ennå.",
+          "linkCopied": "E-postadresse kopiert",
+          "linkCopyFailed": "Kunne ikke kopiere e-postadresse",
+          "saved": "E-postinnstillinger lagret"
         }
       }
     },

@@ -37,12 +37,12 @@ const tempEditingColumn = ref(null)
 // Configurable "Progress" options for the icons
 // Each option maps to props for TaskProgressIcon
 const progressOptions = [
-  { id: 'todo', label: 'Todo', status: 'todo', progress: 0, defaultColor: '#9ca3af' }, // Gray
+  { id: 'todo', label: t('settings.project.status.todo', 'Todo'), status: 'todo', progress: 0, defaultColor: '#9ca3af' }, // Gray
   { id: 'in_progress_25', label: '25%', status: 'in_progress', progress: 25, defaultColor: '#14b8a6' }, // Teal
   { id: 'in_progress_50', label: '50%', status: 'in_progress', progress: 50, defaultColor: '#a855f7' }, // Purple
   { id: 'in_progress_75', label: '75%', status: 'in_progress', progress: 75, defaultColor: '#f97316' }, // Orange
-  { id: 'done', label: 'Done', status: 'done', progress: 100, defaultColor: '#22c55e' }, // Green
-  { id: 'critical', label: 'Critical', status: 'in_progress', progress: 100, defaultColor: '#ef4444' }, // Red
+  { id: 'done', label: t('settings.project.status.done', 'Done'), status: 'done', progress: 100, defaultColor: '#22c55e' }, // Green
+  { id: 'critical', label: t('settings.project.status.critical', 'Critical'), status: 'in_progress', progress: 100, defaultColor: '#ef4444' }, // Red
 ]
 
 const optionColors = [
@@ -259,7 +259,7 @@ defineExpose({ saveChanges })
                 
                 <template #content>
                   <div class="p-3">
-                    <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Icon</div>
+                    <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{{ t('settings.project.status.icon', 'Icon') }}</div>
                     <!-- Icon Options Grid -->
                     <div class="flex items-center gap-3 mb-4">
                       <!-- Progress Options -->
@@ -281,7 +281,7 @@ defineExpose({ saveChanges })
                       </button>
                     </div>
                     
-                    <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Color</div>
+                    <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{{ t('settings.project.status.color', 'Color') }}</div>
                     <div class="mb-2">
                        <ColorPicker v-model="column.color" @update:modelValue="hasPendingChanges = true" :preset-colors="optionColors" />
                     </div>

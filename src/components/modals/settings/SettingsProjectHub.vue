@@ -12,6 +12,7 @@ import SettingsProjectStatus from '@/components/modals/settings/SettingsProjectS
 import SettingsProjectTags from '@/components/modals/settings/SettingsProjectTags.vue'
 import SettingsProjectExport from '@/components/modals/settings/SettingsProjectExport.vue'
 import SettingsProjectImport from '@/components/modals/settings/SettingsProjectImport.vue'
+import SettingsProjectEmail from '@/components/modals/settings/SettingsProjectEmail.vue'
 import { HelpCircle, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -75,6 +76,10 @@ const tagsSectionRef = ref(null)
 const tagsCanSave = ref(false)
 const tagsIsSaving = ref(false)
 const tagsHasPendingChanges = ref(false)
+const emailSectionRef = ref(null)
+const emailCanSave = ref(false)
+const emailIsSaving = ref(false)
+const emailHasPendingChanges = ref(false)
 const listWidth = ref(280)
 const isResizing = ref(false)
 let resizeStartX = 0
@@ -149,6 +154,12 @@ function syncState() {
     emit('update:hasPendingChanges', tagsHasPendingChanges.value)
     return
   }
+  if (activeSideItem.value === 'email-default') {
+    emit('update:canSave', emailCanSave.value)
+    emit('update:isSaving', emailIsSaving.value)
+    emit('update:hasPendingChanges', emailHasPendingChanges.value)
+    return
+  }
   emit('update:canSave', false)
   emit('update:isSaving', false)
   emit('update:hasPendingChanges', false)
@@ -175,6 +186,10 @@ watch([tagsCanSave, tagsIsSaving, tagsHasPendingChanges], () => {
   if (activeSideItem.value !== 'tags') return
   syncState()
 })
+watch([emailCanSave, emailIsSaving, emailHasPendingChanges], () => {
+  if (activeSideItem.value !== 'email-default') return
+  syncState()
+})
 
 function saveChanges() {
   if (activeSideItem.value === 'general') {
@@ -193,6 +208,9 @@ function saveChanges() {
   if (activeSideItem.value === 'tags') {
     tagsSectionRef.value?.saveChanges?.()
   }
+  if (activeSideItem.value === 'email-default') {
+    emailSectionRef.value?.saveChanges?.()
+  }
 }
 
 const pendingChanges = computed(() => {
@@ -201,6 +219,7 @@ const pendingChanges = computed(() => {
   if (activeSideItem.value === 'instruction') return instructionHasPendingChanges.value
   if (activeSideItem.value === 'status') return statusHasPendingChanges.value
   if (activeSideItem.value === 'tags') return tagsHasPendingChanges.value
+  if (activeSideItem.value === 'email-default') return emailHasPendingChanges.value
   return false
 })
 
@@ -288,6 +307,14 @@ defineExpose({ saveChanges, pendingChanges })
       </div>
       <div v-else-if="activeSideItem === 'import'" class="settings-section-wrapper">
         <SettingsProjectImport />
+      </div>
+      <div v-else-if="activeSideItem === 'email-default'" class="settings-section-wrapper">
+        <SettingsProjectEmail
+          ref="emailSectionRef"
+          @update:canSave="emailCanSave = $event"
+          @update:isSaving="emailIsSaving = $event"
+          @update:hasPendingChanges="emailHasPendingChanges = $event"
+        />
       </div>
       <div v-else class="settings-project-placeholder">
         <div class="settings-project-empty-title">{{ t('settings.modal.comingSoon') }}</div>
