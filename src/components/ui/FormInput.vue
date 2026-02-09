@@ -108,6 +108,9 @@ const inputAttrs = computed(() => {
   if (shouldEnableFilter) {
     next.filter = true
   }
+  if (isSelectLike.value && next.filter && !('filterPlaceholder' in attrs)) {
+    next.filterPlaceholder = 'Search'
+  }
 
   if (hasLabel.value && isSelectLike.value && placeholder) {
     next['aria-label'] = ariaLabel || placeholder
