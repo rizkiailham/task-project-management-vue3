@@ -711,7 +711,14 @@
         "color": "Color",
         "addColumn": "+ New Status",
         "namePlaceholder": "Status Name",
-        "columns": "Columns"
+        "columns": "Columns",
+        "messages": {
+          "saved": "Project statuses saved successfully"
+        },
+        "errors": {
+          "load": "Failed to load project columns",
+          "save": "Failed to save project statuses"
+        }
       },
       "tags": {
         "description": "Use tags to label and organize projects for easier filtering and discovery. Tag will be available on the item by default",

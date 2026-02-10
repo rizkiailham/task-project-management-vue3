@@ -702,7 +702,14 @@
         "color": "Farge",
         "addColumn": "+ Ny Status",
         "namePlaceholder": "Statusnavn",
-        "columns": "Kolonner"
+        "columns": "Kolonner",
+        "messages": {
+          "saved": "Prosjektstatuser er lagret"
+        },
+        "errors": {
+          "load": "Kunne ikke laste prosjektkolonner",
+          "save": "Kunne ikke lagre prosjektstatuser"
+        }
       },
       "tags": {
         "description": "Bruk merker for å organisere prosjekter for enklere filtrering og oppdagelse. Merket vil være tilgjengelig på elementet som standard",

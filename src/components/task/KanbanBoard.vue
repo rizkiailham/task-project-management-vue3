@@ -823,7 +823,7 @@ onUnmounted(() => {
                   v-if="columnTasks[column.id]?.length === 0"
                   class="flex-1 flex items-center justify-center min-h-[80px] text-center"
                 >
-                  <p class="text-[10px] text-gray-400 dark-edit:text-gray-500">
+                  <p class="text-[12px] text-gray-400 dark-edit:text-gray-500">
                     {{ t('projects.kanban.columns.noTasks') }}
                   </p>
                 </div>

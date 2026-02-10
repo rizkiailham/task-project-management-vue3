@@ -245,6 +245,52 @@ export async function reorderProjectTags(data) {
 }
 
 /**
+ * Get project columns
+ * @param {Object} params - { projectId }
+ * @returns {Promise<Object>}
+ */
+export async function getProjectColumns(params = {}) {
+  return get('/project-columns', params)
+}
+
+/**
+ * Create a project column
+ * @param {Object} data - { projectId, name, icon }
+ * @returns {Promise<Object>}
+ */
+export async function createProjectColumn(data) {
+  return post('/project-columns', data)
+}
+
+/**
+ * Update a project column
+ * @param {string} columnId
+ * @param {Object} data - { name?, icon? }
+ * @returns {Promise<Object>}
+ */
+export async function updateProjectColumn(columnId, data) {
+  return patch(`/project-columns/${columnId}`, data)
+}
+
+/**
+ * Delete a project column
+ * @param {string} columnId
+ * @returns {Promise<Object>}
+ */
+export async function deleteProjectColumn(columnId) {
+  return del(`/project-columns/${columnId}`)
+}
+
+/**
+ * Reorder project columns
+ * @param {Object} data - { projectId, columnIds }
+ * @returns {Promise<Object>}
+ */
+export async function reorderProjectColumns(data) {
+  return post('/project-columns/reorder', data)
+}
+
+/**
  * Get project AI instruction by project ID
  * @param {string} projectId
  * @returns {Promise<Object>}

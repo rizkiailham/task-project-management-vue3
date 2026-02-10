@@ -2,7 +2,7 @@
 /**
  * SettingsProjectStatus - Project status (kanban columns) editor
  */
-import { ref, watch, nextTick } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
 import { 
@@ -11,13 +11,10 @@ import {
   Eye, 
   EyeOff, 
   Trash2, 
-  Pencil,
-  X,
-  Check
+  Pencil
 } from 'lucide-vue-next'
 import { VueDraggableNext } from 'vue-draggable-next'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
-import ColorPicker from '@/components/ui/ColorPicker.vue'
 import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
@@ -25,40 +22,23 @@ const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendin
 const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const projectId = computed(() => projectStore.currentProjectId)
 
 const columns = ref([])
-// const originalColumns = ref([]) // not needed for dummy
-const hasPendingChanges = ref(false)
+const originalSnapshot = ref('[]')
 const isSaving = ref(false)
 const isLoading = ref(false)
 const editingColumnId = ref(null)
 const tempEditingColumn = ref(null)
 
-// Configurable "Progress" options for the icons
-// Each option maps to props for TaskProgressIcon
 const progressOptions = [
-  { id: 'todo', label: t('settings.project.status.todo', 'Todo'), status: 'todo', progress: 0, defaultColor: '#9ca3af' }, // Gray
-  { id: 'in_progress_25', label: '25%', status: 'in_progress', progress: 25, defaultColor: '#14b8a6' }, // Teal
-  { id: 'in_progress_50', label: '50%', status: 'in_progress', progress: 50, defaultColor: '#a855f7' }, // Purple
-  { id: 'in_progress_75', label: '75%', status: 'in_progress', progress: 75, defaultColor: '#f97316' }, // Orange
-  { id: 'done', label: t('settings.project.status.done', 'Done'), status: 'done', progress: 100, defaultColor: '#22c55e' }, // Green
-  { id: 'critical', label: t('settings.project.status.critical', 'Critical'), status: 'in_progress', progress: 100, defaultColor: '#ef4444' }, // Red
+  { id: '0', label: t('settings.project.status.todo', 'Todo'), status: 'todo', progress: 0, defaultColor: '#9ca3af' },
+  { id: '25', label: '25%', status: 'in_progress', progress: 25, defaultColor: '#14b8a6' },
+  { id: '50', label: '50%', status: 'in_progress', progress: 50, defaultColor: '#a855f7' },
+  { id: '75', label: '75%', status: 'in_progress', progress: 75, defaultColor: '#f97316' },
+  { id: '100', label: t('settings.project.status.done', 'Done'), status: 'done', progress: 100, defaultColor: '#22c55e' },
 ]
 
-const optionColors = [
-  '#94a3b8', // Gray
-  '#3b82f6', // Blue
-  '#ec4899', // Pink
-  '#ef4444', // Red
-  '#eab308', // Yellow
-  '#22c55e', // Green
-  '#06b6d4', // Cyan
-  '#8b5cf6', // Violet
-  '#f97316', // Orange
-  '#111827', // Black
-]
-
-// Drag options
 const dragOptions = {
   animation: 200,
   group: 'description',
@@ -67,50 +47,102 @@ const dragOptions = {
   handle: '.drag-handle'
 }
 
-// Dummy Data - Updated to include progress/status for icons
-const dummyData = [
-  { id: '1', name: 'Backlog', color: '#94a3b8', status: 'todo', progress: 0, isHidden: false },
-  { id: '2', name: 'In Progress', color: '#3b82f6', status: 'in_progress', progress: 25, isHidden: false },
-  { id: '3', name: 'Review', color: '#eab308', status: 'in_progress', progress: 75, isHidden: false },
-  { id: '4', name: 'Done', color: '#22c55e', status: 'done', progress: 100, isHidden: false },
-]
+function normalizeIconValue(icon) {
+  const raw = String(icon ?? '0')
+  const legacyMap = {
+    '1': '25',
+    '2': '50',
+    '3': '75',
+    '4': '100',
+    '5': '100'
+  }
+  const mapped = legacyMap[raw] || raw
+  return progressOptions.some((item) => item.id === mapped) ? mapped : '0'
+}
+
+function resolveIconProps(icon) {
+  const iconValue = normalizeIconValue(icon)
+  const option = progressOptions.find((item) => item.id === iconValue) || progressOptions[0]
+  return {
+    icon: iconValue,
+    status: option.status,
+    progress: option.progress,
+    color: option.defaultColor
+  }
+}
+
+function normalizeColumn(column) {
+  const iconProps = resolveIconProps(column?.icon)
+  return {
+    id: column?.id,
+    name: column?.name || '',
+    icon: iconProps.icon,
+    index: Number(column?.index) || 0,
+    isHidden: false,
+    ...iconProps
+  }
+}
+
+function createSnapshot(list = columns.value) {
+  return JSON.stringify(
+    list.map((column, index) => ({
+      id: column.id,
+      name: (column.name || '').trim(),
+      icon: normalizeIconValue(column.icon),
+      index: index + 1
+    }))
+  )
+}
+
+const hasPendingChanges = computed(() => {
+  if (!projectId.value) return false
+  return createSnapshot() !== originalSnapshot.value
+})
+const isRowEditing = computed(() => Boolean(editingColumnId.value))
 
 async function loadColumns() {
-  // if (!projectStore.currentProjectId) return
+  if (!projectId.value) {
+    columns.value = []
+    originalSnapshot.value = '[]'
+    return
+  }
+
   isLoading.value = true
   try {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // Deep copy dummy data
-    columns.value = JSON.parse(JSON.stringify(dummyData))
-    hasPendingChanges.value = false
+    const response = await projectStore.fetchProjectColumns(projectId.value)
+    const items = Array.isArray(response) ? response : []
+    const sorted = [...items].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))
+    columns.value = sorted.map(normalizeColumn)
+    originalSnapshot.value = createSnapshot(columns.value)
   } catch (error) {
-    uiStore.showApiError(error)
+    columns.value = []
+    originalSnapshot.value = '[]'
+    uiStore.showApiError(error, t('settings.project.status.errors.load', 'Failed to load project columns'))
   } finally {
     isLoading.value = false
   }
 }
 
-// Watch project ID change (even if using dummy data, good to keep structure)
-watch(() => projectStore.currentProjectId, loadColumns, { immediate: true })
+watch(projectId, loadColumns, { immediate: true })
 
 function addColumn() {
   const newCol = {
     id: `new-${Date.now()}`,
     name: '',
-    color: '#3b82f6',
+    icon: '25',
     status: 'in_progress',
-    progress: 50,
+    progress: 25,
+    color: '#14b8a6',
+    index: columns.value.length + 1,
     isHidden: false,
     isNew: true
   }
   columns.value.push(newCol)
   startEditing(newCol)
-  hasPendingChanges.value = true
 }
 
 function startEditing(column) {
+  if (editingColumnId.value && editingColumnId.value !== column.id) return
   editingColumnId.value = column.id
   tempEditingColumn.value = JSON.parse(JSON.stringify(column))
 }
@@ -137,66 +169,119 @@ function saveEdit() {
   
   const column = columns.value.find(c => c.id === editingColumnId.value)
   if (column) {
-    // Commit changes (already bound to column object, just exit edit mode)
-    // If name is empty, maybe prevent save? For now allow, or default to "Untitled"
     if (!column.name.trim()) {
       column.name = t('settings.project.status.new', 'New Status')
     }
   }
   editingColumnId.value = null
   tempEditingColumn.value = null
-  hasPendingChanges.value = true
 }
 
 function toggleVisibility(column) {
   column.isHidden = !column.isHidden
-  hasPendingChanges.value = true
 }
 
 function removeColumn(columnId) {
   columns.value = columns.value.filter(c => c.id !== columnId)
-  hasPendingChanges.value = true
 }
 
 function onDragChange() {
-  hasPendingChanges.value = true
+  columns.value = columns.value.map((column, index) => ({
+    ...column,
+    index: index + 1
+  }))
 }
 
-// Update icon props based on selection
 function updateIconSelection(column, option) {
+  const icon = String(option.id)
   column.status = option.status
   column.progress = option.progress
-  // Also update color to match the preset
-  if (option.defaultColor) {
-    column.color = option.defaultColor
-  }
-  hasPendingChanges.value = true
+  column.icon = icon
+  column.color = option.defaultColor || column.color
 }
 
 async function saveChanges() {
+  if (!projectId.value || !hasPendingChanges.value) return
   isSaving.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800))
-    hasPendingChanges.value = false
+    const original = JSON.parse(originalSnapshot.value || '[]')
+    const originalMap = new Map(original.map((item) => [item.id, item]))
+    const currentIds = new Set(columns.value.filter((item) => !String(item.id).startsWith('new-')).map((item) => item.id))
+
+    let lastResponse = null
+
+    for (const originalItem of original) {
+      if (!currentIds.has(originalItem.id)) {
+        lastResponse = await projectStore.deleteProjectColumn(originalItem.id)
+      }
+    }
+
+    for (const column of columns.value) {
+      if (String(column.id).startsWith('new-')) {
+        const created = await projectStore.createProjectColumn({
+          projectId: projectId.value,
+          name: column.name?.trim() || t('settings.project.status.new', 'New Status'),
+          icon: normalizeIconValue(column.icon)
+        })
+        const payload = created?.data || created?.column || created
+        if (payload?.id) {
+          column.id = payload.id
+          column.index = Number(payload.index) || column.index
+        }
+        lastResponse = created
+        continue
+      }
+
+      const originalItem = originalMap.get(column.id)
+      if (!originalItem) continue
+
+      const nextName = column.name?.trim() || t('settings.project.status.new', 'New Status')
+      const nextIcon = normalizeIconValue(column.icon)
+      const isChanged = originalItem.name !== nextName || String(originalItem.icon ?? '0') !== nextIcon
+      if (!isChanged) continue
+
+      lastResponse = await projectStore.updateProjectColumn(column.id, {
+        name: nextName,
+        icon: nextIcon
+      })
+    }
+
+    const orderedIds = columns.value.map((column) => column.id).filter(Boolean)
+    if (orderedIds.length > 0) {
+      lastResponse = await projectStore.reorderProjectColumns({
+        projectId: projectId.value,
+        columnIds: orderedIds
+      })
+    }
+
+    if (lastResponse) {
+      uiStore.showApiSuccess(lastResponse, t('settings.project.status.messages.saved', 'Project statuses saved successfully'))
+    }
+
+    await loadColumns()
   } catch (error) {
-    uiStore.showApiError(error)
+    uiStore.showApiError(error, t('settings.project.status.errors.save', 'Failed to save project statuses'))
   } finally {
     isSaving.value = false
   }
 }
 
-watch([hasPendingChanges, isSaving], () => {
+watch([hasPendingChanges, isSaving, isRowEditing], () => {
   emit('update:hasPendingChanges', hasPendingChanges.value)
   emit('update:isSaving', isSaving.value)
-  emit('update:canSave', hasPendingChanges.value && !isSaving.value)
-})
+  emit('update:canSave', hasPendingChanges.value && !isSaving.value && !isRowEditing.value)
+}, { immediate: true })
 
 defineExpose({ saveChanges })
 </script>
 
 <template>
-  <div class="settings-editor-section">
+  <div v-if="!projectId" class="settings-project-empty">
+    <div class="settings-project-empty-title">{{ t('settings.project.empty.title') }}</div>
+    <p class="settings-project-empty-text">{{ t('settings.project.empty.description') }}</p>
+  </div>
+
+  <div v-else class="settings-editor-section">
     <div class="settings-project-header mb-6">
       <div class="settings-project-title">
         {{ t('settings.project.menu.items.status', 'Status') }}
@@ -209,7 +294,7 @@ defineExpose({ saveChanges })
     <div class="settings-editor-field">
       <div class="settings-option-header mb-3">
         <div class="settings-field-title">{{ t('settings.project.status.columns', 'Columns') }}</div>
-        <button type="button" class="settings-option-add-btn" @click="addColumn()">
+        <button type="button" class="settings-option-add-btn" :disabled="isRowEditing" @click="addColumn()">
           <Plus class="w-3.5 h-3.5" />
         </button>
       </div>
@@ -217,6 +302,7 @@ defineExpose({ saveChanges })
       <VueDraggableNext
         v-model="columns"
         v-bind="dragOptions"
+        :disabled="isRowEditing"
         class="flex flex-col gap-2"
         @change="onDragChange"
       >
@@ -260,15 +346,13 @@ defineExpose({ saveChanges })
                 <template #content>
                   <div class="p-3">
                     <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{{ t('settings.project.status.icon', 'Icon') }}</div>
-                    <!-- Icon Options Grid -->
                     <div class="flex items-center gap-3 mb-4">
-                      <!-- Progress Options -->
                        <button
                         v-for="opt in progressOptions"
                         :key="opt.id"
                         type="button"
                         class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
-                        :class="{ 'ring-2 ring-blue-500 ring-offset-1': column.status === opt.status && column.progress === opt.progress }"
+                        :class="{ 'ring-2 ring-blue-500 ring-offset-1': String(column.icon) === opt.id }"
                         @click="updateIconSelection(column, opt)"
                         :title="opt.label"
                       >
@@ -279,11 +363,6 @@ defineExpose({ saveChanges })
                             :color="opt.defaultColor" 
                          />
                       </button>
-                    </div>
-                    
-                    <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{{ t('settings.project.status.color', 'Color') }}</div>
-                    <div class="mb-2">
-                       <ColorPicker v-model="column.color" @update:modelValue="hasPendingChanges = true" :preset-colors="optionColors" />
                     </div>
                   </div>
                 </template>
@@ -343,10 +422,11 @@ defineExpose({ saveChanges })
               </template>
               <template v-else>
                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <button
+                  <button
                      type="button"
                      class="p-1.5 text-gray-400 hover:text-gray-600 rounded"
                      title="Edit"
+                     :disabled="isRowEditing && editingColumnId !== column.id"
                      @click="startEditing(column)"
                    >
                      <Pencil class="w-4 h-4" />
@@ -374,7 +454,7 @@ defineExpose({ saveChanges })
         </div>
       </VueDraggableNext>
 
-      <button type="button" class="settings-option-add" @click="addColumn()">
+      <button type="button" class="settings-option-add" :disabled="isRowEditing" @click="addColumn()">
         {{ t('settings.project.status.addColumn', '+ New Status') }}
       </button>
     </div>
@@ -388,6 +468,25 @@ defineExpose({ saveChanges })
   width: 100%;
   max-width: 100%;
   overflow: hidden;
+}
+
+.settings-project-empty {
+  padding: 28px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.settings-project-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.settings-project-empty-text {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 6px;
 }
 
 .settings-project-header {
@@ -435,6 +534,11 @@ defineExpose({ saveChanges })
   color: #374151;
 }
 
+.settings-option-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .status-row {
   display: flex;
   align-items: center;
@@ -480,6 +584,11 @@ defineExpose({ saveChanges })
 
 .settings-option-add:hover {
   color: #374151;
+}
+
+.settings-option-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-action-save {

@@ -559,6 +559,58 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   // ================================
+  // Project Columns
+  // ================================
+
+  async function fetchProjectColumns(projectId) {
+    if (!projectId) return []
+    try {
+      const response = await projectApi.getProjectColumns({ projectId })
+      const data = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : [])
+      return data
+    } catch (err) {
+      error.value = err.message || 'Failed to fetch project columns'
+      throw err
+    }
+  }
+
+  async function createProjectColumn(data) {
+    try {
+      return await projectApi.createProjectColumn(data)
+    } catch (err) {
+      error.value = err.message || 'Failed to create project column'
+      throw err
+    }
+  }
+
+  async function updateProjectColumn(columnId, data) {
+    try {
+      return await projectApi.updateProjectColumn(columnId, data)
+    } catch (err) {
+      error.value = err.message || 'Failed to update project column'
+      throw err
+    }
+  }
+
+  async function deleteProjectColumn(columnId) {
+    try {
+      return await projectApi.deleteProjectColumn(columnId)
+    } catch (err) {
+      error.value = err.message || 'Failed to delete project column'
+      throw err
+    }
+  }
+
+  async function reorderProjectColumns(data) {
+    try {
+      return await projectApi.reorderProjectColumns(data)
+    } catch (err) {
+      error.value = err.message || 'Failed to reorder project columns'
+      throw err
+    }
+  }
+
+  // ================================
   // Project AI Instruction
   // ================================
 
@@ -637,6 +689,11 @@ export const useProjectStore = defineStore('project', () => {
     createProjectTag,
     updateProjectTag,
     deleteProjectTag,
+    fetchProjectColumns,
+    createProjectColumn,
+    updateProjectColumn,
+    deleteProjectColumn,
+    reorderProjectColumns,
 
     // Project AI Instruction Actions
     fetchProjectInstruction,
