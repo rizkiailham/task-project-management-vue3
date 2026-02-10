@@ -138,7 +138,7 @@ function handleReject() {
       <Button
         type="button"
         unstyled
-        class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 transition-colors"
+        class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-3 py-[5px] text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 transition-colors"
         @click="handleReject"
       >
         {{ config.cancelLabel }}
@@ -147,7 +147,7 @@ function handleReject() {
       <Button
         type="button"
         unstyled
-        class="inline-flex justify-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        class="inline-flex justify-center rounded-md px-3 py-[5px] text-sm font-semibold shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         :class="[
           config.confirmBtnClass,
           isCountdownActive ? 'opacity-60 cursor-not-allowed' : ''

@@ -17,7 +17,7 @@ import TipTapChatEditor from './TipTapChatEditor.vue'
 import Button from 'primevue/button'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
-import { Circle, ChevronDown, ChevronRight, Plus, Settings, Sparkles, Trash2, X } from 'lucide-vue-next'
+import { Circle, ChevronDown, ChevronRight, Plus, Settings, Sparkles, Trash, X } from 'lucide-vue-next'
 
 const props = defineProps({
   topOffset: {
@@ -354,7 +354,7 @@ watch(
             aria-label="Clear chat"
             unstyled
           >
-            <Trash2 class="w-4 h-4" />
+            <Trash class="w-4 h-4" />
           </Button>
           <Button
             @click="close"
@@ -812,5 +812,6 @@ details[open] summary::after {
   background: #9ca3af;
 }
 </style>
+
 
 

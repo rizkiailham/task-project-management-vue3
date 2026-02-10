@@ -11,7 +11,7 @@ import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
 import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Avatar from 'primevue/avatar'
-import { Link2, MoreHorizontal, Plus, Lock, ChevronDown, Check, Trash2 } from 'lucide-vue-next'
+import { Link2, MoreHorizontal, Plus, Lock, ChevronDown, Check, Trash } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const projectStore = useProjectStore()
@@ -625,7 +625,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
                     @click="removeField(field.id)"
                     :title="t('common.delete', 'Delete')"
                   >
-                    <Trash2 class="w-4 h-4" />
+                    <Trash class="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -1007,3 +1007,4 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 }
 
 </style>
+

@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n'
 import { useTaskStore, useKanbanColumnStore, useUIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
-import { Plus, MoreHorizontal, Pencil, ArrowLeft, ArrowRight, EyeOff, Trash2, ChevronDown } from 'lucide-vue-next'
+import { Plus, MoreHorizontal, Pencil, ArrowLeft, ArrowRight, EyeOff, Trash, ChevronDown } from 'lucide-vue-next'
 
 // PrimeVue
 import Avatar from 'primevue/avatar'
@@ -389,7 +389,7 @@ function getColumnMenuItems(column, index) {
     { type: 'divider' },
     {
       label: t('projects.kanban.columns.menu.delete'),
-      icon: Trash2,
+      icon: Trash,
       action: () => emit('delete-column', column)
     }
   ]
@@ -966,3 +966,4 @@ onUnmounted(() => {
   position: absolute;
 }
 </style>
+

@@ -36,7 +36,7 @@ import {
   Pin,
   Copy,
   Pencil,
-  Trash2,
+  Trash,
   Calendar
 } from 'lucide-vue-next'
 
@@ -1026,7 +1026,7 @@ async function handleAddComment() {
                     class="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                     @click="handleDeleteSubtask(subtask.id)"
                   >
-                    <i class="pi pi-trash text-[10px]"></i>
+                    <Trash class="w-3 h-3" />
                   </button>
                 </div>
 
@@ -1176,7 +1176,7 @@ async function handleAddComment() {
                               class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
                               @click="notify('Delete comment')"
                             >
-                              <Trash2 class="w-3.5 h-3.5" />
+                              <Trash class="w-3.5 h-3.5" />
                               <span>Delete comment</span>
                             </button>
                           </div>
@@ -1319,3 +1319,4 @@ async function handleAddComment() {
 }
 
 </style>
+

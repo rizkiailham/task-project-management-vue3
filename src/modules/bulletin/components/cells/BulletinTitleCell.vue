@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
-import { FilePenLine, MoreHorizontal, Pencil, Trash2 } from 'lucide-vue-next'
+import { FilePenLine, MoreHorizontal, Pencil, Trash } from 'lucide-vue-next'
 
 const props = defineProps({
   params: Object
@@ -25,7 +25,7 @@ function onDelete() {
 const menuItems = computed(() => ([
   { id: 'edit', label: t('common.edit'), icon: Pencil, action: onEdit },
   { id: 'content', label: t('bulletin.actions.contentEditor'), icon: FilePenLine, action: onContent },
-  { id: 'delete', label: t('common.delete'), icon: Trash2, action: onDelete }
+  { id: 'delete', label: t('common.delete'), icon: Trash, action: onDelete }
 ]))
 </script>
 
@@ -52,3 +52,4 @@ const menuItems = computed(() => ([
     </div>
   </div>
 </template>
+

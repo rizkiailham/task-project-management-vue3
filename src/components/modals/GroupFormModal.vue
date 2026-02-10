@@ -6,7 +6,7 @@ import { ref, computed, watch } from 'vue'
 import { useGroupStore, useUIStore } from '@/stores'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import FormInput from '@/components/ui/FormInput.vue'
-import { ChevronDown, Search, Trash2, Plus, X } from 'lucide-vue-next'
+import { ChevronDown, Search, Trash, Plus, X } from 'lucide-vue-next'
 import { getUsers } from '@/api/user.api'
 
 const props = defineProps({
@@ -456,7 +456,7 @@ async function handleSubmit() {
                         :disabled="busyUserIds.has(getUserId(user))"
                         @click="handleRemoveUser(user)"
                       >
-                        <Trash2 class="w-4 h-4" />
+                        <Trash class="w-4 h-4" />
                       </button>
                       <button
                         v-else
@@ -528,7 +528,7 @@ async function handleSubmit() {
                       :disabled="busyUserIds.has(getUserId(user))"
                       @click="handleRemoveUser(user)"
                     >
-                      <Trash2 class="w-4 h-4" />
+                      <Trash class="w-4 h-4" />
                     </button>
                     <button
                       v-else
@@ -628,3 +628,4 @@ async function handleSubmit() {
   overflow-y: auto;
 }
 </style>
+

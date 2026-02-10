@@ -10,7 +10,7 @@ import {
   GripVertical, 
   Eye, 
   EyeOff, 
-  Trash2, 
+  Trash, 
   Pencil
 } from 'lucide-vue-next'
 import { VueDraggableNext } from 'vue-draggable-next'
@@ -446,7 +446,7 @@ defineExpose({ saveChanges })
                      title="Delete"
                      @click="removeColumn(column.id)"
                    >
-                     <Trash2 class="w-4 h-4" />
+                     <Trash class="w-4 h-4" />
                    </button>
                  </div>
               </template>
@@ -622,3 +622,4 @@ defineExpose({ saveChanges })
   border-color: #d1d5db;
 }
 </style>
+

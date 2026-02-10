@@ -1,5 +1,5 @@
 <script setup>
-import { Pencil, Trash2 } from 'lucide-vue-next'
+import { Pencil, Trash } from 'lucide-vue-next'
 
 const props = defineProps({
   params: Object
@@ -33,8 +33,9 @@ function onDelete() {
         @click.stop="onDelete"
         title="Delete"
       >
-        <Trash2 class="w-3.5 h-3.5" />
+        <Trash class="w-3.5 h-3.5" />
       </button>
     </div>
   </div>
 </template>
+

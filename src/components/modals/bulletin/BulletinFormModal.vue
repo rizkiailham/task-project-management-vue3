@@ -8,7 +8,7 @@ import { upload } from '@/api'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import FormInput from '@/components/ui/FormInput.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { Plus, Upload, Trash2 } from 'lucide-vue-next'
+import { Plus, Upload, Trash } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -301,7 +301,7 @@ async function handleSubmit() {
                 @click="removeThumbnail"
                 :disabled="isUploading"
               >
-                <Trash2 class="w-4 h-4" />
+                <Trash class="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -352,3 +352,4 @@ async function handleSubmit() {
     </template>
   </BaseModal>
 </template>
+
