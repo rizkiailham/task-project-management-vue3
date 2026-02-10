@@ -4,7 +4,8 @@ import {
   AlertTriangle, 
   Trash, 
   Info, 
-  CheckCircle
+  CheckCircle,
+  X
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
@@ -24,11 +25,13 @@ const props = defineProps({
   }
 })
 const { t } = useI18n()
+const dialogType = computed(() => props.message.group || props.message.dialogType || 'info')
+const isDeleteDialog = computed(() => ['delete', 'destructive'].includes(dialogType.value))
 
 // Configuration for different dialog types
 // types: 'delete', 'countdown', 'info' (default), 'success', 'warning'
 const config = computed(() => {
-  const type = props.message.group || props.message.dialogType || 'info'
+  const type = dialogType.value
   
   switch (type) {
     case 'delete':
@@ -111,7 +114,7 @@ function handleReject() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 p-5 bg-white rounded-md shadow-xl max-w-md w-full border border-gray-100">
+  <div class="flex flex-col p-5 bg-white rounded-md shadow-xl max-w-md w-full border border-gray-100">
     <!-- Header -->
     <div class="flex items-start gap-4">
       <div 
@@ -131,11 +134,21 @@ function handleReject() {
           </p>
         </div>
       </div>
+
+      <Button
+        type="button"
+        unstyled
+        class="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+        @click="handleReject"
+      >
+        <X class="h-4 w-4" />
+      </Button>
     </div>
 
     <!-- Footer -->
     <div class="flex justify-end gap-3 mt-2">
       <Button
+        v-if="isDeleteDialog"
         type="button"
         unstyled
         class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-3 py-[5px] text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 transition-colors"
