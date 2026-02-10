@@ -13,8 +13,8 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useTaskStore, useProjectStore, useKanbanColumnStore, useUIStore, useUserStore } from '@/stores'
 import { reorderTasks } from '@/api/task.api'
-import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import KanbanBoard from '@/components/task/KanbanBoard.vue'
+import { useConfirm } from 'primevue/useconfirm'
 
 const route = useRoute()
 const taskStore = useTaskStore()
@@ -23,16 +23,13 @@ const kanbanColumnStore = useKanbanColumnStore()
 const uiStore = useUIStore()
 const userStore = useUserStore()
 const { t } = useI18n()
+const confirm = useConfirm()
 
 // Immediate sync of route param to store to ensure data loading uses correct ID
 if (route.params.itemId) {
   projectStore.selectProjectItem(route.params.itemId)
 }
 
-// Delete confirmation modal state
-const deleteConfirmVisible = ref(false)
-const deleteConfirmLoading = ref(false)
-const deleteTargetColumn = ref(null)
 const viewLoading = ref(false)
 
 // Computed properties
@@ -83,22 +80,19 @@ const tasksByColumn = computed(() => {
 
 // Event handlers
 function handleDeleteColumn(column) {
-  deleteTargetColumn.value = column
-  deleteConfirmVisible.value = true
-}
-
-async function confirmDeleteColumn() {
-  if (!deleteTargetColumn.value || deleteConfirmLoading.value) return
-  deleteConfirmLoading.value = true
-  try {
-    await kanbanColumnStore.deleteColumn(deleteTargetColumn.value.id)
-    deleteConfirmVisible.value = false
-    deleteTargetColumn.value = null
-  } catch (error) {
-    uiStore.showApiError(error)
-  } finally {
-    deleteConfirmLoading.value = false
-  }
+  if (!column?.id) return
+  confirm.require({
+    dialogType: 'delete',
+    header: t('projects.kanban.columns.deleteConfirm.title'),
+    message: t('projects.kanban.columns.deleteConfirm.message', { name: column.label }),
+    accept: async () => {
+      try {
+        await kanbanColumnStore.deleteColumn(column.id)
+      } catch (error) {
+        uiStore.showApiError(error)
+      }
+    }
+  })
 }
 
 function openTaskPanel(task) {
@@ -200,15 +194,6 @@ userStore.fetchUsers({ limit: 100 })
       :has-loaded-columns="hasLoadedColumns"
       @open-task="openTaskPanel"
       @delete-column="handleDeleteColumn"
-    />
-
-    <!-- Delete Confirmation Modal -->
-    <DeleteConfirmModal
-      v-model:visible="deleteConfirmVisible"
-      :loading="deleteConfirmLoading"
-      :title="t('projects.kanban.columns.deleteConfirm.title')"
-      :message="t('projects.kanban.columns.deleteConfirm.message', { name: deleteTargetColumn?.label })"
-      @confirm="confirmDeleteColumn"
     />
   </div>
 </template>

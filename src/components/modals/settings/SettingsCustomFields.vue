@@ -8,9 +8,9 @@ import { useUIStore } from '@/stores'
 import FormInput from '@/components/ui/FormInput.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { CircleHelp, Plus, Type, Hash, CheckSquare, ListFilter, Calendar, User, Trash2 } from 'lucide-vue-next'
+import { CircleHelp, Plus, Type, Hash, CheckSquare, ListFilter, Calendar, User, Trash } from 'lucide-vue-next'
 import ColorPicker from '@/components/ui/ColorPicker.vue'
-import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
+import { useConfirm } from 'primevue/useconfirm'
 import * as customFieldApi from '@/api/customField.api'
 
 const props = defineProps({
@@ -28,6 +28,7 @@ const emit = defineEmits(['update:canSave', 'update:isSaving'])
 
 const uiStore = useUIStore()
 const { t } = useI18n()
+const confirm = useConfirm()
 const typeOptions = computed(() => ([
   { id: 'text', label: t('settings.customFields.types.text'), badge: t('settings.customFields.badges.text') },
   { id: 'number', label: t('settings.customFields.types.number'), badge: t('settings.customFields.badges.number') },
@@ -60,9 +61,6 @@ const selectedFieldId = ref(null)
 const isLoadingFields = ref(false)
 const isSaving = ref(false)
 const isDeleting = ref(false)
-const showDeleteModal = ref(false)
-const pendingDeleteId = ref(null)
-const pendingDeleteLabel = ref('')
 
 const listWidth = ref(280)
 const isResizing = ref(false)
@@ -440,47 +438,34 @@ async function saveSelectedField() {
   }
 }
 
-async function deleteSelectedField() {
+function handleDeleteSelectedField() {
   if (!selectedField.value) return
-  pendingDeleteId.value = selectedField.value.id
-  pendingDeleteLabel.value = selectedField.value.label || t('settings.customFields.labels.customField')
-  showDeleteModal.value = true
-}
+  const field = selectedField.value
 
-async function confirmDeleteSelectedField() {
-  if (!pendingDeleteId.value) return
-  const fieldId = pendingDeleteId.value
-  const targetField = customFields.value.find((field) => field.id === fieldId)
-  const isNewField = !targetField || targetField.isNew
-  if (isNewField) {
-    customFields.value = customFields.value.filter((field) => field.id !== fieldId)
-    selectedFieldId.value = customFields.value[0]?.id || null
-    showDeleteModal.value = false
-    pendingDeleteId.value = null
-    pendingDeleteLabel.value = ''
-    return
-  }
+  confirm.require({
+    dialogType: 'delete',
+    header: t('settings.customFields.delete.title', { label: field.label || t('settings.customFields.labels.customField') }),
+    message: t('settings.customFields.delete.message'),
+    accept: async () => {
+      if (field.isNew) {
+        customFields.value = customFields.value.filter((f) => f.id !== field.id)
+        selectedFieldId.value = customFields.value[0]?.id || null
+        return
+      }
 
-  isDeleting.value = true
-  try {
-    const response = await customFieldApi.deleteCustomField(fieldId)
-    customFields.value = customFields.value.filter((field) => field.id !== fieldId)
-    selectedFieldId.value = customFields.value[0]?.id || null
-    uiStore.showApiSuccess(response, t('settings.customFields.messages.deleted'))
-    showDeleteModal.value = false
-    pendingDeleteId.value = null
-    pendingDeleteLabel.value = ''
-  } catch (error) {
-    uiStore.showApiError(error, t('settings.customFields.errors.delete'))
-  } finally {
-    isDeleting.value = false
-  }
-}
-
-function cancelDeleteSelectedField() {
-  showDeleteModal.value = false
-  pendingDeleteId.value = null
-  pendingDeleteLabel.value = ''
+      try {
+        isDeleting.value = true
+        const response = await customFieldApi.deleteCustomField(field.id)
+        customFields.value = customFields.value.filter((f) => f.id !== field.id)
+        selectedFieldId.value = customFields.value[0]?.id || null
+        uiStore.showApiSuccess(response, t('settings.customFields.messages.deleted'))
+      } catch (error) {
+        uiStore.showApiError(error, t('settings.customFields.errors.delete'))
+      } finally {
+        isDeleting.value = false
+      }
+    }
+  })
 }
 
 function addOption(parentId = null) {
@@ -617,11 +602,11 @@ onUnmounted(() => {
           type="button"
           class="settings-delete cursor-pointer"
           :disabled="isDeleting"
-          @click="deleteSelectedField"
+          @click="handleDeleteSelectedField"
           :title="t('settings.customFields.actions.deleteField')"
           aria-label="Delete field"
         >
-          <Trash2 class="w-4 h-4 text-red-500" />
+          <Trash class="w-4 h-4 text-red-500" />
         </button>
       </div>
 
@@ -822,14 +807,6 @@ onUnmounted(() => {
 
     </div>
 
-    <DeleteConfirmModal
-      v-model:visible="showDeleteModal"
-      :title="t('settings.customFields.delete.title', { label: pendingDeleteLabel })"
-      :message="t('settings.customFields.delete.message')"
-      :loading="isDeleting"
-      @confirm="confirmDeleteSelectedField"
-      @cancel="cancelDeleteSelectedField"
-    />
   </div>
 </template>
 
@@ -1361,3 +1338,4 @@ onUnmounted(() => {
   font-size: 14px;
 }
 </style>
+

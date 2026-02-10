@@ -96,10 +96,9 @@ function confirmArchive() {
 
 function confirmDelete() {
   confirm.require({
-    message: t('projects.settings.deleteConfirm.message'),
+    dialogType: 'delete',
     header: t('projects.settings.deleteConfirm.title'),
-    icon: 'pi pi-exclamation-triangle',
-    acceptClass: 'p-button-danger',
+    message: t('projects.settings.deleteConfirm.message'),
     accept: async () => {
       try {
         const response = await projectStore.deleteProject(project.value.id)

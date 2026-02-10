@@ -10,7 +10,7 @@ import { getRoles } from '@/api/role.api'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Button from 'primevue/button'
 import UserProfileModal from '@/components/modals/UserProfileModal.vue'
-import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
+import { useConfirm } from 'primevue/useconfirm'
 import { MoreHorizontal, Search, X, ChevronDown } from 'lucide-vue-next'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
@@ -18,6 +18,7 @@ import { resolveSearchKeywords } from '@/utils/search'
 const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const confirm = useConfirm()
 
 const searchQuery = ref('')
 const searchResults = ref({ users: [], groups: [], matched: 0, matchedGroups: 0 })
@@ -31,9 +32,6 @@ const pendingRoleChanges = ref({})
 const isSaving = ref(false)
 const selectedProfile = ref(null)
 const showProfileModal = ref(false)
-const showRemoveModal = ref(false)
-const isRemoving = ref(false)
-const pendingRemoveEntry = ref(null)
 const roles = ref([])
 const isLoadingRoles = ref(false)
 const updatingRoleIds = ref(new Set())
@@ -288,28 +286,26 @@ function openProfile(entry) {
 
 function confirmRemove(entry) {
   if (!entry) return
-  pendingRemoveEntry.value = entry
-  showRemoveModal.value = true
-}
-
-async function handleRemoveAccess() {
-  if (!pendingRemoveEntry.value) return
-  const entry = pendingRemoveEntry.value
-  if (entry.isPendingAdd) {
-    accessEntries.value = accessEntries.value.filter(
-      (pending) => !(pending.isPendingAdd && pending.id === entry.id && pending.type === entry.type)
-    )
-  } else {
-    if (entry.accessId) {
-      pendingRemovals.value.add(entry.accessId)
+  confirm.require({
+    dialogType: 'delete',
+    header: t('settings.project.remove.title'),
+    message: t('settings.project.remove.message'),
+    accept: () => {
+      if (entry.isPendingAdd) {
+        accessEntries.value = accessEntries.value.filter(
+          (pending) => !(pending.isPendingAdd && pending.id === entry.id && pending.type === entry.type)
+        )
+      } else {
+        if (entry.accessId) {
+          pendingRemovals.value.add(entry.accessId)
+        }
+        if (entry.accessId) {
+          const { [entry.accessId]: _removed, ...rest } = pendingRoleChanges.value
+          pendingRoleChanges.value = rest
+        }
+      }
     }
-    if (entry.accessId) {
-      const { [entry.accessId]: _removed, ...rest } = pendingRoleChanges.value
-      pendingRoleChanges.value = rest
-    }
-  }
-  showRemoveModal.value = false
-  pendingRemoveEntry.value = null
+  })
 }
 
 watch(projectId, () => {
@@ -658,14 +654,7 @@ defineExpose({ saveChanges, pendingChanges })
     :entry="selectedProfile"
   />
 
-  <DeleteConfirmModal
-    v-model:visible="showRemoveModal"
-    :title="t('settings.project.remove.title')"
-    :message="t('settings.project.remove.message')"
-    :loading="isRemoving"
-    @confirm="handleRemoveAccess"
-    @cancel="showRemoveModal = false"
-  />
+
 </template>
 
 <style scoped>

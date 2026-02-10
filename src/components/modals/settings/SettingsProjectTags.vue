@@ -8,7 +8,7 @@ import { useProjectStore, useUIStore } from '@/stores'
 import { Plus } from 'lucide-vue-next'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import ColorPicker from '@/components/ui/ColorPicker.vue'
-import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
+
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
 

@@ -11,12 +11,12 @@ import BulletinGrid from '@/modules/bulletin/components/BulletinGrid.vue'
 import CategoryGrid from '@/modules/bulletin/components/CategoryGrid.vue'
 import BulletinFormModal from '@/components/modals/bulletin/BulletinFormModal.vue'
 import CategoryFormModal from '@/components/modals/bulletin/CategoryFormModal.vue'
-import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import AIChatButton from '@/components/ai/AIChatButton.vue'
 import { Menu, Search, Plus } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
+import { useConfirm } from 'primevue/useconfirm'
 
 const bulletinStore = useBulletinStore()
 const categoryStore = useCategoryStore()
@@ -24,6 +24,7 @@ const groupStore = useGroupStore()
 const uiStore = useUIStore()
 const router = useRouter()
 const { t } = useI18n()
+const confirm = useConfirm()
 
 const activeTab = ref('bulletin')
 const searchQuery = ref('')
@@ -32,12 +33,8 @@ const isLoading = ref(false)
 
 const showBulletinModal = ref(false)
 const showCategoryModal = ref(false)
-const showBulletinDeleteModal = ref(false)
-const showCategoryDeleteModal = ref(false)
 const selectedBulletin = ref(null)
 const selectedCategory = ref(null)
-const isDeletingBulletin = ref(false)
-const isDeletingCategory = ref(false)
 
 function toggleSidebar() {
   if (uiStore.isMobile) {
@@ -142,24 +139,21 @@ function openContentEditor(bulletin) {
   router.push({ name: 'BulletinContentEditor', params: { bulletinId: bulletin.id } })
 }
 
-function openDeleteBulletinModal(bulletin) {
-  selectedBulletin.value = bulletin
-  showBulletinDeleteModal.value = true
-}
-
-async function handleDeleteBulletin() {
-  if (!selectedBulletin.value?.id) return
-  isDeletingBulletin.value = true
-  try {
-    const response = await bulletinStore.deleteBulletin(selectedBulletin.value.id)
-    uiStore.showApiSuccess(response)
-    showBulletinDeleteModal.value = false
-    selectedBulletin.value = null
-  } catch (error) {
-    uiStore.showApiError(error)
-  } finally {
-    isDeletingBulletin.value = false
-  }
+function handleDeleteBulletin(bulletin) {
+  if (!bulletin?.id) return
+  confirm.require({
+    dialogType: 'delete',
+    header: `${t('common.delete')} ${bulletin.title || '-'}`,
+    message: t('settings.customFields.delete.message'),
+    accept: async () => {
+      try {
+        const response = await bulletinStore.deleteBulletin(bulletin.id)
+        uiStore.showApiSuccess(response)
+      } catch (error) {
+        uiStore.showApiError(error)
+      }
+    }
+  })
 }
 
 function openAddCategoryModal() {
@@ -172,24 +166,21 @@ function openEditCategoryModal(category) {
   showCategoryModal.value = true
 }
 
-function openDeleteCategoryModal(category) {
-  selectedCategory.value = category
-  showCategoryDeleteModal.value = true
-}
-
-async function handleDeleteCategory() {
-  if (!selectedCategory.value?.id) return
-  isDeletingCategory.value = true
-  try {
-    const response = await categoryStore.deleteCategory(selectedCategory.value.id)
-    uiStore.showApiSuccess(response)
-    showCategoryDeleteModal.value = false
-    selectedCategory.value = null
-  } catch (error) {
-    uiStore.showApiError(error)
-  } finally {
-    isDeletingCategory.value = false
-  }
+function handleDeleteCategory(category) {
+  if (!category?.id) return
+  confirm.require({
+    dialogType: 'delete',
+    header: `${t('common.delete')} ${category.name || '-'}`,
+    message: t('settings.customFields.delete.message'),
+    accept: async () => {
+      try {
+        const response = await categoryStore.deleteCategory(category.id)
+        uiStore.showApiSuccess(response)
+      } catch (error) {
+        uiStore.showApiError(error)
+      }
+    }
+  })
 }
 
 async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
@@ -338,7 +329,7 @@ watch(searchQuery, (query) => {
           :isLoading="isLoading"
           @edit="openEditBulletinModal"
           @content="openContentEditor"
-          @delete="openDeleteBulletinModal"
+          @delete="handleDeleteBulletin"
           @paginationChange="handlePaginationChange"
         />
       </div>
@@ -348,7 +339,7 @@ watch(searchQuery, (query) => {
           :categories="filteredCategories"
           :meta="categoryMeta"
           @edit="openEditCategoryModal"
-          @delete="openDeleteCategoryModal"
+          @delete="handleDeleteCategory"
           @paginationChange="handleCategoryPaginationChange"
         />
       </div>
@@ -366,22 +357,6 @@ watch(searchQuery, (query) => {
       v-model:visible="showCategoryModal"
       :category="selectedCategory"
       @saved="categoryStore.fetchCategories({ page: categoryMeta.currentPage, limit: categoryMeta.itemsPerPage })"
-    />
-
-    <DeleteConfirmModal
-      v-model:visible="showBulletinDeleteModal"
-      :title="selectedBulletin?.title ? `Delete ${selectedBulletin.title}` : 'Delete Bulletin'"
-      :loading="isDeletingBulletin"
-      @confirm="handleDeleteBulletin"
-      @cancel="showBulletinDeleteModal = false"
-    />
-
-    <DeleteConfirmModal
-      v-model:visible="showCategoryDeleteModal"
-      :title="selectedCategory?.name ? `Delete ${selectedCategory.name}` : 'Delete Category'"
-      :loading="isDeletingCategory"
-      @confirm="handleDeleteCategory"
-      @cancel="showCategoryDeleteModal = false"
     />
   </div>
 </template>

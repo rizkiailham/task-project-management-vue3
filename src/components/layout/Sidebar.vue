@@ -14,7 +14,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUIStore, useNotificationStore, useAuthStore, useProjectStore } from '@/stores'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
-import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
+import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { useI18n } from 'vue-i18n'
@@ -50,6 +50,7 @@ const uiStore = useUIStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
+const confirm = useConfirm()
 
 // User menu items for DropdownMenu component
 const userMenuItems = computed(() => [
@@ -207,9 +208,6 @@ const projectRenameId = ref(null)
 const projectRenameValue = ref('')
 const childRenameTarget = ref({ projectId: null, key: null })
 const childRenameValue = ref('')
-const deleteConfirmVisible = ref(false)
-const deleteConfirmLoading = ref(false)
-const deleteTarget = ref({ type: '', projectId: null, childKey: null, label: '' })
 
 // Local project child items logic removed in favor of store items
 // watch(projects, (list) => { ... }, { immediate: true })
@@ -337,9 +335,6 @@ watch(
     ) {
       cancelProjectRename()
       cancelChildRename()
-      deleteConfirmVisible.value = false
-      deleteConfirmLoading.value = false
-      deleteTarget.value = { type: '', projectId: null, childKey: null, label: '' }
     }
   }
 )
@@ -430,29 +425,37 @@ async function addChildItem(projectId, type) {
 
 // function removeChildItem(projectId, key) { ... } // Replaced by deleteProjectItem logic
 
-function openDeleteConfirm(target) {
-  deleteTarget.value = target
-  deleteConfirmVisible.value = true
+function confirmDeleteProject(project) {
+  confirm.require({
+    dialogType: 'delete',
+    header: project.name ? `${t('common.delete')} ${project.name}` : t('sidebar.delete.projectTitle'),
+    message: t('sidebar.delete.projectMessage'),
+    accept: async () => {
+      try {
+        await projectStore.deleteProject(project.id)
+        uiStore.showApiSuccess(null, t('sidebar.messages.projectDeleted'))
+      } catch (error) {
+        uiStore.showApiError(error, t('sidebar.messages.deleteFailed'))
+      }
+    }
+  })
 }
 
-async function confirmDelete() {
-  if (deleteConfirmLoading.value) return
-  deleteConfirmLoading.value = true
-
-  try {
-    if (deleteTarget.value.type === 'project') {
-      const response = await projectStore.deleteProject(deleteTarget.value.projectId)
-      uiStore.showApiSuccess(response, t('sidebar.messages.projectDeleted'))
-    } else if (deleteTarget.value.type === 'child') {
-      const response = await projectStore.deleteProjectItem(deleteTarget.value.projectId, deleteTarget.value.childKey)
-      uiStore.showApiSuccess(response, t('sidebar.messages.itemDeleted'))
+function confirmDeleteChild(projectId, item) {
+  const childId = item.key || item.id
+  confirm.require({
+    dialogType: 'delete',
+    header: item.name ? `${t('common.delete')} ${item.name}` : t('sidebar.delete.childTitle'),
+    message: t('sidebar.delete.childMessage'),
+    accept: async () => {
+      try {
+        await projectStore.deleteProjectItem(projectId, childId)
+        uiStore.showApiSuccess(null, t('sidebar.messages.itemDeleted'))
+      } catch (error) {
+        uiStore.showApiError(error, t('sidebar.messages.deleteFailed'))
+      }
     }
-    deleteConfirmVisible.value = false
-  } catch (error) {
-    uiStore.showApiError(error, t('sidebar.messages.deleteFailed'))
-  } finally {
-    deleteConfirmLoading.value = false
-  }
+  })
 }
 
 async function handleItemReorder(event, projectId) {
@@ -535,9 +538,7 @@ async function handleItemReorder(event, projectId) {
   }
 }
 
-function cancelDelete() {
-  deleteConfirmVisible.value = false
-}
+
 
 function copyLink(link) {
   if (!link) {
@@ -631,11 +632,7 @@ function getProjectMenuItems(project) {
       id: 'delete',
       type: 'item',
       label: t('common.delete'),
-      action: () => openDeleteConfirm({
-        type: 'project',
-        projectId: project.id,
-        label: project.name
-      })
+      action: () => confirmDeleteProject(project)
     }
   ]
 }
@@ -689,12 +686,7 @@ function getChildMenuItems(projectId, item) {
       id: 'delete',
       type: 'item',
       label: t('common.delete'),
-      action: () => openDeleteConfirm({
-        type: 'child',
-        projectId,
-        childKey: item.id,
-        label: item.name
-      })
+      action: () => confirmDeleteChild(projectId, item)
     }
   ]
   
@@ -1133,18 +1125,7 @@ async function handleLogout() {
     ></div>
   </div>
 
-  <DeleteConfirmModal
-    v-model:visible="deleteConfirmVisible"
-    :title="deleteTarget.type === 'project'
-      ? t('sidebar.delete.projectTitle', { name: deleteTarget.label })
-      : t('sidebar.delete.childTitle', { name: deleteTarget.label })"
-    :message="deleteTarget.type === 'project'
-      ? t('sidebar.delete.projectMessage')
-      : t('sidebar.delete.childMessage')"
-    :loading="deleteConfirmLoading"
-    @confirm="confirmDelete"
-    @cancel="cancelDelete"
-  />
+
 </template>
 
 <style scoped>

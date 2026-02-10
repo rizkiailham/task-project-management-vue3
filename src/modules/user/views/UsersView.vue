@@ -12,18 +12,21 @@ import RolesGrid from '@/modules/user/components/RolesGrid.vue'
 import GroupsGrid from '@/modules/user/components/GroupsGrid.vue'
 import UserFormModal from '@/components/modals/UserFormModal.vue'
 import InviteUserModal from '@/components/modals/InviteUserModal.vue'
-import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal.vue'
 import RoleFormModal from '@/components/modals/RoleFormModal.vue'
 import GroupFormModal from '@/components/modals/GroupFormModal.vue'
 import { Search, Plus, UserPlus, Menu } from 'lucide-vue-next'
 import AIChatButton from '@/components/ai/AIChatButton.vue'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
+import { useI18n } from 'vue-i18n'
+import { useConfirm } from 'primevue/useconfirm'
 
 const userStore = useUserStore()
 const uiStore = useUIStore()
 const roleStore = useRoleStore()
 const groupStore = useGroupStore()
+const { t } = useI18n()
+const confirm = useConfirm()
 
 // State
 const activeTab = ref('users')
@@ -49,21 +52,15 @@ function toggleSidebar() {
 // Modal states
 const showUserFormModal = ref(false)
 const showInviteModal = ref(false)
-const showDeleteModal = ref(false)
 const selectedUser = ref(null)
-const isDeleting = ref(false)
 
 // Role modal states
 const showRoleFormModal = ref(false)
-const showRoleDeleteModal = ref(false)
 const selectedRole = ref(null)
-const isDeletingRole = ref(false)
 
 // Group modal states
 const showGroupFormModal = ref(false)
-const showGroupDeleteModal = ref(false)
 const selectedGroup = ref(null)
-const isDeletingGroup = ref(false)
 
 // Tab definitions
 const tabs = [
@@ -317,33 +314,30 @@ function openEditUserModal(user) {
   showUserFormModal.value = true
 }
 
-function openDeleteModal(user) {
-  selectedUser.value = user
-  showDeleteModal.value = true
-}
-
-async function handleDeleteUser() {
-  if (!selectedUser.value) return
-  
-  isDeleting.value = true
-  try {
-    const response = await userStore.deleteUser(selectedUser.value.id)
-    uiStore.showApiSuccess(response, 'User deleted successfully')
-    showDeleteModal.value = false
-    selectedUser.value = null
-  } catch (error) {
-    uiStore.showApiError(error, 'Failed to delete user')
-  } finally {
-    isDeleting.value = false
-  }
+function handleDeleteUser(user) {
+  if (!user?.id) return
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.name || '-'
+  confirm.require({
+    dialogType: 'delete',
+    header: `${t('common.delete')} ${displayName}`,
+    message: t('settings.customFields.delete.message'),
+    accept: async () => {
+      try {
+        const response = await userStore.deleteUser(user.id)
+        uiStore.showApiSuccess(response)
+      } catch (error) {
+        uiStore.showApiError(error)
+      }
+    }
+  })
 }
 
 async function handleResendInvite(user) {
   try {
     const response = await userStore.resendInvite(user.id)
-    uiStore.showApiSuccess(response, 'Invitation email resent successfully')
+    uiStore.showApiSuccess(response)
   } catch (error) {
-    uiStore.showApiError(error, 'Failed to resend invitation')
+    uiStore.showApiError(error)
   }
 }
 
@@ -370,25 +364,21 @@ function openEditRoleModal(role) {
   showRoleFormModal.value = true
 }
 
-function openRoleDeleteModal(role) {
-  selectedRole.value = role
-  showRoleDeleteModal.value = true
-}
-
-async function handleDeleteRole() {
-  if (!selectedRole.value) return
-  
-  isDeletingRole.value = true
-  try {
-    const response = await roleStore.deleteRole(selectedRole.value.id)
-    uiStore.showApiSuccess(response, 'Role deleted successfully')
-    showRoleDeleteModal.value = false
-    selectedRole.value = null
-  } catch (error) {
-    uiStore.showApiError(error, 'Failed to delete role')
-  } finally {
-    isDeletingRole.value = false
-  }
+function handleDeleteRole(role) {
+  if (!role?.id) return
+  confirm.require({
+    dialogType: 'delete',
+    header: `${t('common.delete')} ${role.name || '-'}`,
+    message: t('settings.customFields.delete.message'),
+    accept: async () => {
+      try {
+        const response = await roleStore.deleteRole(role.id)
+        uiStore.showApiSuccess(response)
+      } catch (error) {
+        uiStore.showApiError(error)
+      }
+    }
+  })
 }
 
 function handleRoleSaved() {
@@ -406,25 +396,21 @@ function openEditGroupModal(group) {
   showGroupFormModal.value = true
 }
 
-function openGroupDeleteModal(group) {
-  selectedGroup.value = group
-  showGroupDeleteModal.value = true
-}
-
-async function handleDeleteGroup() {
-  if (!selectedGroup.value) return
-
-  isDeletingGroup.value = true
-  try {
-    const response = await groupStore.deleteGroup(selectedGroup.value.id)
-    uiStore.showApiSuccess(response, 'Group deleted successfully')
-    showGroupDeleteModal.value = false
-    selectedGroup.value = null
-  } catch (error) {
-    uiStore.showApiError(error, 'Failed to delete group')
-  } finally {
-    isDeletingGroup.value = false
-  }
+function handleDeleteGroup(group) {
+  if (!group?.id) return
+  confirm.require({
+    dialogType: 'delete',
+    header: `${t('common.delete')} ${group.name || '-'}`,
+    message: t('settings.customFields.delete.message'),
+    accept: async () => {
+      try {
+        const response = await groupStore.deleteGroup(group.id)
+        uiStore.showApiSuccess(response)
+      } catch (error) {
+        uiStore.showApiError(error)
+      }
+    }
+  })
 }
 
 function handleGroupSaved() {
@@ -534,7 +520,7 @@ function handleGroupSaved() {
           :meta="usersMeta"
           :roleOptions="userRoleOptions"
           @edit="openEditUserModal"
-          @delete="openDeleteModal"
+          @delete="handleDeleteUser"
           @resendInvite="handleResendInvite"
           @filter="handleUserFilter"
           @paginationChange="handlePaginationChange"
@@ -548,7 +534,7 @@ function handleGroupSaved() {
             :groups="filteredGroups"
             :meta="groupsMeta"
             @edit="openEditGroupModal"
-            @delete="openGroupDeleteModal"
+            @delete="handleDeleteGroup"
             @paginationChange="handleGroupPaginationChange"
           />
         </div>
@@ -562,7 +548,7 @@ function handleGroupSaved() {
             :roles="filteredRoles"
             :meta="rolesMeta"
             @edit="openEditRoleModal"
-            @delete="openRoleDeleteModal"
+            @delete="handleDeleteRole"
             @paginationChange="handleRolePaginationChange"
           />
         </div>
@@ -574,15 +560,6 @@ function handleGroupSaved() {
       v-model:visible="showUserFormModal"
       :user="selectedUser"
       @saved="handleUserSaved"
-    />
-
-    <!-- Delete Confirmation Modal -->
-    <DeleteConfirmModal
-      v-model:visible="showDeleteModal"
-      :title="`Delete ${selectedUser?.firstName} ${selectedUser?.lastName}`"
-      :loading="isDeleting"
-      @confirm="handleDeleteUser"
-      @cancel="showDeleteModal = false"
     />
 
     <!-- Invite User Modal -->
@@ -598,30 +575,11 @@ function handleGroupSaved() {
       @saved="handleRoleSaved"
     />
 
-    <!-- Role Delete Confirmation Modal -->
-    <DeleteConfirmModal
-      v-model:visible="showRoleDeleteModal"
-      :title="`Delete role: ${selectedRole?.name}`"
-      :loading="isDeletingRole"
-      @confirm="handleDeleteRole"
-      @cancel="showRoleDeleteModal = false"
-    />
-
     <!-- Group Form Modal -->
     <GroupFormModal
       v-model:visible="showGroupFormModal"
       :group="selectedGroup"
       @saved="handleGroupSaved"
-    />
-
-    <!-- Group Delete Confirmation Modal -->
-    <DeleteConfirmModal
-      v-model:visible="showGroupDeleteModal"
-      :title="`Delete ${selectedGroup?.name}`"
-      message="This action will permanently delete the group. User accounts within the group will remain unaffected."
-      :loading="isDeletingGroup"
-      @confirm="handleDeleteGroup"
-      @cancel="showGroupDeleteModal = false"
     />
   </div>
 </template>
