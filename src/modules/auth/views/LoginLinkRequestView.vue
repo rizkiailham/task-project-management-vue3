@@ -6,8 +6,7 @@ import { ref, computed } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useUIStore } from '@/stores'
 import desidiaLogo from '@/assets/desidia.svg'
 
 import FormInput from '@/components/ui/FormInput.vue'
@@ -15,7 +14,7 @@ import Button from 'primevue/button'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
-const toast = useToast()
+const uiStore = useUIStore()
 
 const validationSchema = computed(() => yup.object({
   email: yup
@@ -33,21 +32,11 @@ const isSuccess = ref(false)
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
   try {
-    await authStore.requestLoginLink(values.email)
+    const response = await authStore.requestLoginLink(values.email)
     isSuccess.value = true
-    toast.add({
-      severity: 'success',
-      summary: t('auth.loginLink.requestedTitle'),
-      detail: t('auth.loginLink.requestedDetail'),
-      life: 4000
-    })
+    uiStore.showApiSuccess(response, t('auth.loginLink.requestedDetail'), t('auth.loginLink.requestedTitle'))
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.loginLink.requestFailedTitle'),
-      detail: error?.response?.data?.message || error?.message || t('auth.loginLink.requestFailed'),
-      life: 6000
-    })
+    uiStore.showApiError(error, t('auth.loginLink.requestFailed'), t('auth.loginLink.requestFailedTitle'))
   } finally {
     isSubmitting.value = false
   }

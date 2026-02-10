@@ -7,8 +7,7 @@ import { ref, computed } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useUIStore } from '@/stores'
 import desidiaLogo from '@/assets/desidia.svg'
 
 // PrimeVue
@@ -17,7 +16,7 @@ import Button from 'primevue/button'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
-const toast = useToast()
+const uiStore = useUIStore()
 
 // Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
@@ -42,21 +41,11 @@ const isSuccess = ref(false)
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
   try {
-    await authStore.requestPasswordReset(values.email)
+    const response = await authStore.requestPasswordReset(values.email)
     isSuccess.value = true
-    toast.add({
-      severity: 'success',
-      summary: t('auth.forgotPassword.emailSent'),
-      detail: t('auth.forgotPassword.checkEmail'),
-      life: 4000
-    })
+    uiStore.showApiSuccess(response, t('auth.forgotPassword.checkEmail'), t('auth.forgotPassword.emailSent'))
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.forgotPassword.requestFailed'),
-      detail: error?.response?.data?.message || error?.message || t('auth.forgotPassword.failedToSend'),
-      life: 6000
-    })
+    uiStore.showApiError(error, t('auth.forgotPassword.failedToSend'), t('auth.forgotPassword.requestFailed'))
   } finally {
     isSubmitting.value = false
   }

@@ -8,8 +8,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useUIStore } from '@/stores'
 import desidiaLogo from '@/assets/desidia.svg'
 
 // PrimeVue
@@ -20,7 +19,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const toast = useToast()
+const uiStore = useUIStore()
 
 // Get token/email from URL (supports base64 payload in query string)
 const token = ref('')
@@ -109,39 +108,24 @@ const isSubmitting = ref(false)
 // Methods
 const onSubmit = handleSubmit(async (values) => {
   if (!token.value) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.resetPassword.invalidLinkTitle'),
-      detail: t('auth.resetPassword.invalidLink'),
-      life: 6000
-    })
+    uiStore.showError(t('auth.resetPassword.invalidLink'), t('auth.resetPassword.invalidLinkTitle'))
     return
   }
 
   isSubmitting.value = true
 
   try {
-    await authStore.resetPassword({
+    const response = await authStore.resetPassword({
       email: values.email,
       token: token.value,
       password: values.password,
       confirmPassword: values.confirmPassword
     })
 
-    toast.add({
-      severity: 'success',
-      summary: t('auth.resetPassword.resetSuccessTitle'),
-      detail: t('auth.resetPassword.passwordResetSuccess'),
-      life: 4000
-    })
+    uiStore.showApiSuccess(response, t('auth.resetPassword.passwordResetSuccess'), t('auth.resetPassword.resetSuccessTitle'))
     router.push({ name: 'Login' })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.resetPassword.resetFailedTitle'),
-      detail: error?.response?.data?.message || error?.message || t('auth.resetPassword.resetFailed'),
-      life: 6000
-    })
+    uiStore.showApiError(error, t('auth.resetPassword.resetFailed'), t('auth.resetPassword.resetFailedTitle'))
   } finally {
     isSubmitting.value = false
   }

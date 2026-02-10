@@ -391,7 +391,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      await authApi.requestPasswordReset(email)
+      const response = await authApi.requestPasswordReset(email)
+      return response
     } catch (err) {
       error.value = err.message || 'Password reset request failed'
       throw err
@@ -409,7 +410,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      await authApi.resetPassword(data)
+      const response = await authApi.resetPassword(data)
+      return response
     } catch (err) {
       error.value = err.message || 'Password reset failed'
       throw err
@@ -427,7 +429,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      await authApi.requestLoginLink(email)
+      const response = await authApi.requestLoginLink(email)
+      return response
     } catch (err) {
       error.value = err.message || 'Login link request failed'
       throw err

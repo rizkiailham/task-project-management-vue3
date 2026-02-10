@@ -14,8 +14,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useUIStore } from '@/stores'
 import desidiaLogo from '@/assets/desidia.svg'
 import { get } from '@/api/httpClient'
 
@@ -28,7 +27,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const toast = useToast()
+const uiStore = useUIStore()
 
 // Form validation schema with localized messages
 const validationSchema = computed(() => yup.object({
@@ -60,26 +59,16 @@ const redirectPath = computed(() => route.query.redirect || '/app')
 const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
   try {
-    await authStore.login({
+    const response = await authStore.login({
       email: values.email,
       password: values.password,
       // rememberMe: rememberMe.value
     })
 
-    toast.add({
-      severity: 'success',
-      summary: t('auth.login.loginSuccessful'),
-      detail: t('auth.login.welcomeBack'),
-      life: 4000
-    })
+    uiStore.showApiSuccess(response, t('auth.login.welcomeBack'), t('auth.login.loginSuccessful'))
     router.push(redirectPath.value)
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.login.loginFailed'),
-      detail: error?.response?.data?.message || error?.message || t('auth.login.invalidCredentials'),
-      life: 6000
-    })
+    uiStore.showApiError(error, t('auth.login.invalidCredentials'), t('auth.login.loginFailed'))
   } finally {
     isSubmitting.value = false
   }
@@ -125,12 +114,7 @@ onMounted(async () => {
     await authStore.completeSocialLogin({ accessToken })
     router.replace(redirectToken?.redirect || redirectPath.value)
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.login.loginFailed'),
-      detail: error?.message || t('auth.social.loginFailed'),
-      life: 6000
-    })
+    uiStore.showApiError(error, t('auth.social.loginFailed'), t('auth.login.loginFailed'))
   } finally {
     isSubmitting.value = false
   }
@@ -147,12 +131,7 @@ async function handleSocialLogin(provider) {
 
     window.location.href = redirectUrl
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.login.loginFailed'),
-      detail: error?.message || t('auth.social.loginFailed'),
-      life: 6000
-    })
+    uiStore.showApiError(error, t('auth.social.loginFailed'), t('auth.login.loginFailed'))
   }
 }
 </script>
