@@ -65,7 +65,7 @@ const dialogVisible = computed({
     :pt="{
       root: { class: ['rounded-xl overflow-hidden shadow-2xl border-0', dialogClass].filter(Boolean).join(' ') },
       header: { class: 'bg-white border-b border-gray-200 px-6 py-4' },
-      content: { class: 'bg-white px-6 py-5' },
+      content: { class: 'bg-white px-6 pb-5' },
       footer: { class: 'bg-gray-50 border-t border-gray-200 px-6 py-4' },
       mask: { class: 'bg-black/40' }
     }"

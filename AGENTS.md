@@ -19,7 +19,7 @@ These rules apply to all future work in this repository.
 - For tables (AG Grid), modals, inputs, and buttons, use existing Vue components already present in the codebase.
 - For tables, use AG Grid and follow pagination patterns from `src/modules/user/components/UsersGrid.vue`.
 - For AG Grid pagination footers, only render them when total items exceed the current page size (or totalPages > 1).
-- For delete confirmations, use the existing `DeleteConfirmModal` pattern used in the Users UI.
+- For confirmations (including delete actions), use the global PrimeVue `ConfirmDialog` flow (`useConfirm`) with `src/components/ui/AppConfirmDialog.vue`; do not introduce local delete-confirm modal components.
 - For toasts tied to API calls, show backend response messages for success/error instead of hardcoding frontend strings.
 - Always localize user-facing strings using the project's localization system.
 - For Settings modal content, follow the established layout and styling from `SettingsModal.vue` and `SettingsCustomFields.vue`:

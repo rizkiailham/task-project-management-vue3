@@ -211,7 +211,7 @@ async function handleSubmit() {
       <h2 class="text-base font-semibold text-gray-900">{{ modalTitle }}</h2>
     </template>
 
-    <div class="max-h-[60vh] overflow-y-auto -my-5 -mx-6 px-6 py-5 space-y-4">
+    <div class="max-h-[60vh] overflow-y-auto -my-5 -mx-6 px-6 pb-5 space-y-4">
       <FormInput
         id="bulletin-title"
         v-model="formData.title"

@@ -497,7 +497,7 @@ const avatarInitial = computed(() => {
 
     <form
       @submit.prevent="onSubmit"
-      class="user-form max-h-[60vh] overflow-y-auto -my-5 -mx-6 px-6 py-5 space-y-4"
+      class="user-form max-h-[60vh] overflow-y-auto -my-5 -mx-6 px-6 pb-5 space-y-4"
     >
       <!-- Avatar Section -->
       <div class="pt-4 pb-5">
