@@ -5,6 +5,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUIStore } from '@/stores'
+import { useConfirm } from 'primevue/useconfirm'
 import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
 import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
 import SettingsProjectInstruction from '@/components/modals/settings/SettingsProjectInstruction.vue'
@@ -18,6 +19,7 @@ import { HelpCircle, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const uiStore = useUIStore()
+const confirm = useConfirm()
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
 
@@ -242,6 +244,37 @@ const pendingChanges = computed(() => {
   return false
 })
 
+function confirmUnsavedChanges() {
+  return new Promise((resolve) => {
+    confirm.require({
+      message: t('settings.project.unsaved.confirm'),
+      header: t('common.confirm'),
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: t('common.confirm'),
+      rejectLabel: t('common.cancel'),
+      acceptClass: 'p-button-primary p-button-sm',
+      rejectClass: 'p-button-outlined p-button-secondary p-button-sm',
+      accept: () => {
+        confirm.close()
+        resolve(true)
+      },
+      reject: () => {
+        confirm.close()
+        resolve(false)
+      }
+    })
+  })
+}
+
+async function selectSideItem(nextItemId) {
+  if (nextItemId === activeSideItem.value) return
+  if (pendingChanges.value) {
+    const confirmed = await confirmUnsavedChanges()
+    if (!confirmed) return
+  }
+  activeSideItem.value = nextItemId
+}
+
 defineExpose({ saveChanges, pendingChanges })
 </script>
 
@@ -270,7 +303,7 @@ defineExpose({ saveChanges, pendingChanges })
             type="button"
             class="settings-list-row pl-3 py-1"
             :class="{ 'is-selected': activeSideItem === item.id }"
-            @click="activeSideItem = item.id"
+            @click="selectSideItem(item.id)"
           >
             {{ item.label }}
           </button>

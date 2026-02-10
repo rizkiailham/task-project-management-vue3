@@ -24,7 +24,7 @@ const confirm = useConfirm()
 const isVisible = computed({
   get: () => uiStore.activeModal === 'settings',
   set: (val) => {
-    if (!val) uiStore.closeModal()
+    if (!val) closeModal()
   }
 })
 
