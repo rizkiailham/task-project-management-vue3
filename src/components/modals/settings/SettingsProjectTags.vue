@@ -375,13 +375,15 @@ defineExpose({ saveChanges })
   pointer-events: none;
   box-sizing: content-box;
   height: 100%;
-  display: block;
+  display: flex; /* Changed from block to flex */
+  align-items: center; /* Center text vertically */
   width: max-content;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   color: inherit;
   user-select: none;
+  line-height: normal; /* Reset line-height to let flex center it */
 }
 
 /* Input: Hidden by default, Visible on focus */

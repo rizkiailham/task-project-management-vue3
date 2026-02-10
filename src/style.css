@@ -125,6 +125,13 @@ textarea,
   font-size: 13px !important;
 }
 
+/* Fix for Select/MultiSelect label alignment */
+.p-select-label,
+.p-multiselect-label {
+  display: flex !important;
+  align-items: center !important;
+}
+
 #app {
   min-height: 100vh;
 }

@@ -1233,14 +1233,15 @@ onUnmounted(() => {
   pointer-events: none;
   box-sizing: content-box;
   height: 100%;
-  /* Removed display: flex to rely on line-height for vertical center */
-  display: block; 
+  display: flex; /* Changed from block to flex */
+  align-items: center; /* Center text vertically */
   width: max-content;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   color: inherit;
   user-select: none;
+  line-height: normal; /* Reset line-height to let flex center it */
 }
 
 /* Input: Hidden by default, Visible on focus */
