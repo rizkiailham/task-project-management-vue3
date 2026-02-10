@@ -13,22 +13,11 @@ const visibleToasts = computed(() =>
   uiStore.toasts.filter(t => !t.dismissed)
 )
 
-const iconMap = {
-  success: 'pi pi-check-circle',
-  error: 'pi pi-times-circle',
-  warning: 'pi pi-exclamation-triangle',
-  info: 'pi pi-info-circle'
-}
-
 const colorMap = {
-  success: 'bg-green-50 border-green-200 text-green-800 dark-edit:bg-green-900/20 dark-edit:border-green-800 dark-edit:text-green-400',
-  error: 'bg-red-50 border-red-200 text-red-800 dark-edit:bg-red-900/20 dark-edit:border-red-800 dark-edit:text-red-400',
-  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800 dark-edit:bg-yellow-900/20 dark-edit:border-yellow-800 dark-edit:text-yellow-400',
-  info: 'bg-blue-50 border-blue-200 text-blue-800 dark-edit:bg-blue-900/20 dark-edit:border-blue-800 dark-edit:text-blue-400'
-}
-
-function getIcon(type) {
-  return iconMap[type] || iconMap.info
+  success: 'bg-[#b9fdad] border-[#22c55e] text-gray-900',
+  error: 'bg-[#f8dadb] border-[#ef4444] text-gray-900',
+  warning: 'bg-[#fef2cc] border-[#eab308] text-gray-900',
+  info: 'bg-[#d7e6fc] border-[#3b82f6] text-gray-900'
 }
 
 function getColorClasses(type) {
@@ -44,17 +33,13 @@ function getColorClasses(type) {
           v-for="toast in visibleToasts"
           :key="toast.id"
           :class="[
-            'flex items-start gap-3 rounded-lg border p-4 shadow-lg backdrop-blur-sm',
+            'flex items-center gap-3 rounded-lg border-1 p-4 shadow-lg backdrop-blur-sm',
             'min-w-[300px] max-w-[400px]',
             getColorClasses(toast.type)
           ]"
         >
-          <!-- Icon -->
-          <i :class="[getIcon(toast.type), 'text-lg mt-0.5']"></i>
-          
           <!-- Content -->
           <div class="flex-1 min-w-0">
-            <p v-if="toast.title" class="font-semibold">{{ toast.title }}</p>
             <p class="text-sm opacity-90">{{ toast.message }}</p>
             
             <!-- Action Button -->
@@ -70,7 +55,7 @@ function getColorClasses(type) {
           <!-- Close Button -->
           <button
             @click="uiStore.dismissToast(toast.id)"
-            class="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+            class="flex-shrink-0 opacity-80 hover:opacity-100 transition-opacity"
           >
             <i class="pi pi-times text-sm"></i>
           </button>
