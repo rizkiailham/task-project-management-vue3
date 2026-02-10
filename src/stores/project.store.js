@@ -558,6 +558,39 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  // ================================
+  // Project AI Instruction
+  // ================================
+
+  async function fetchProjectInstruction(projectId) {
+    if (!projectId) return null
+    try {
+      return await projectApi.getProjectInstruction(projectId)
+    } catch (err) {
+      error.value = err.message || 'Failed to fetch project instruction'
+      throw err
+    }
+  }
+
+  async function upsertProjectInstruction(data) {
+    try {
+      return await projectApi.upsertProjectInstruction(data)
+    } catch (err) {
+      error.value = err.message || 'Failed to save project instruction'
+      throw err
+    }
+  }
+
+  async function deleteProjectInstruction(projectId) {
+    if (!projectId) return null
+    try {
+      return await projectApi.deleteProjectInstruction(projectId)
+    } catch (err) {
+      error.value = err.message || 'Failed to reset project instruction'
+      throw err
+    }
+  }
+
   return {
     // State
     projects,
@@ -603,6 +636,11 @@ export const useProjectStore = defineStore('project', () => {
     fetchProjectTags,
     createProjectTag,
     updateProjectTag,
-    deleteProjectTag
+    deleteProjectTag,
+
+    // Project AI Instruction Actions
+    fetchProjectInstruction,
+    upsertProjectInstruction,
+    deleteProjectInstruction
   }
 })

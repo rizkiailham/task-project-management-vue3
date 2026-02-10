@@ -243,3 +243,30 @@ export async function deleteProjectTag(tagId) {
 export async function reorderProjectTags(data) {
   return post('/project-tags/reorder', data)
 }
+
+/**
+ * Get project AI instruction by project ID
+ * @param {string} projectId
+ * @returns {Promise<Object>}
+ */
+export async function getProjectInstruction(projectId) {
+  return get(`/project-ai-instruction/${projectId}`)
+}
+
+/**
+ * Create or update project AI instruction
+ * @param {Object} data - { projectId, prompt, preferredLanguage }
+ * @returns {Promise<Object>}
+ */
+export async function upsertProjectInstruction(data) {
+  return post('/project-ai-instruction', data)
+}
+
+/**
+ * Reset project AI instruction to default
+ * @param {string} projectId
+ * @returns {Promise<Object>}
+ */
+export async function deleteProjectInstruction(projectId) {
+  return del(`/project-ai-instruction/${projectId}`)
+}

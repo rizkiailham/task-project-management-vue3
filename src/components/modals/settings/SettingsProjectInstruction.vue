@@ -15,13 +15,14 @@ const uiStore = useUIStore()
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
 
-const project = computed(() => projectStore.currentProject)
+const projectId = computed(() => projectStore.currentProjectId)
 const isSaving = ref(false)
+const isLoading = ref(false)
 
-const languageOptions = [
-  { label: 'English', value: 'en' },
-  { label: 'Norwegian', value: 'no' }
-]
+const languageOptions = computed(() => ([
+  { label: t('settings.languageOptions.en', 'English'), value: 'en' },
+  { label: t('settings.languageOptions.no', 'Norwegian'), value: 'no' }
+]))
 
 const schema = computed(() => yup.object({
   instruction: yup.string().nullable(),
@@ -49,8 +50,17 @@ watch([canSave, isSaving, hasPendingChanges], () => {
   emit('update:hasPendingChanges', hasPendingChanges.value)
 }, { immediate: true })
 
-watch(project, (value) => {
-  if (!value) {
+function normalizeInstructionResponse(response) {
+  const data = response?.instruction || response?.data?.instruction || response?.data || response
+  if (!data || typeof data !== 'object') return null
+  return {
+    prompt: data.prompt || '',
+    preferredLanguage: data.preferredLanguage || 'en'
+  }
+}
+
+async function loadInstruction() {
+  if (!projectId.value) {
     resetForm({
       values: {
         instruction: '',
@@ -59,32 +69,70 @@ watch(project, (value) => {
     })
     return
   }
-  // TODO: Map actual fields from project when backend is ready.
-  // Using mocks/placeholders for now or assuming fields exist on project object
-  resetForm({
-    values: {
-      instruction: value.instruction || '',
-      language: value.language || 'en'
-    }
-  })
+
+  isLoading.value = true
+  try {
+    const response = await projectStore.fetchProjectInstruction(projectId.value)
+    const normalized = normalizeInstructionResponse(response)
+    resetForm({
+      values: {
+        instruction: normalized?.prompt || '',
+        language: normalized?.preferredLanguage || 'en'
+      }
+    })
+  } catch (error) {
+    // 404/no data should keep defaults without surfacing as blocking error.
+    resetForm({
+      values: {
+        instruction: '',
+        language: 'en'
+      }
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+watch(projectId, () => {
+  loadInstruction()
 }, { immediate: true })
 
 const onSubmit = handleSubmit(async (values) => {
+  if (!projectId.value || isLoading.value) return
   isSaving.value = true
   try {
     const instructionValue = values.instruction?.trim() || ''
     const languageValue = values.language || 'en'
-    
-    if (project.value?.id) {
-      const response = await projectStore.updateProject(project.value.id, {
-        instruction: instructionValue,
-        language: languageValue
+
+    if (!instructionValue) {
+      const response = await projectStore.deleteProjectInstruction(projectId.value)
+      uiStore.showApiSuccess(response, t('settings.project.instruction.messages.reset', 'Project AI instruction reset to default'))
+      resetForm({
+        values: {
+          instruction: '',
+          language: 'en'
+        }
       })
-      uiStore.showApiSuccess(response, t('projects.settings.messages.updated'))
-      resetForm({ values: { instruction: instructionValue, language: languageValue } })
+      return
     }
+
+    const response = await projectStore.upsertProjectInstruction({
+      projectId: projectId.value,
+      prompt: instructionValue,
+      preferredLanguage: languageValue
+    })
+
+    const normalized = normalizeInstructionResponse(response)
+    resetForm({
+      values: {
+        instruction: normalized?.prompt || instructionValue,
+        language: normalized?.preferredLanguage || languageValue
+      }
+    })
+
+    uiStore.showApiSuccess(response, t('settings.project.instruction.messages.saved', 'Project AI instruction saved successfully'))
   } catch (error) {
-    uiStore.showApiError(error, t('projects.settings.errors.update'))
+    uiStore.showApiError(error, t('settings.project.instruction.messages.saveFailed', 'Failed to save project AI instruction'))
   } finally {
     isSaving.value = false
   }
@@ -98,7 +146,12 @@ defineExpose({ saveChanges })
 </script>
 
 <template>
-  <div class="settings-project-instruction">
+  <div v-if="!projectId" class="settings-project-empty">
+    <div class="settings-project-empty-title">{{ t('settings.project.empty.title') }}</div>
+    <p class="settings-project-empty-text">{{ t('settings.project.empty.description') }}</p>
+  </div>
+
+  <div v-else class="settings-project-instruction">
     <div class="settings-project-header">
       <div class="settings-project-title">{{ t('settings.project.instruction.title', 'Default AI Custom Instruction') }}</div>
       <p class="settings-project-description">
@@ -142,6 +195,25 @@ defineExpose({ saveChanges })
 </template>
 
 <style scoped>
+.settings-project-empty {
+  padding: 28px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.settings-project-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.settings-project-empty-text {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 6px;
+}
+
 .settings-project-header {
   display: flex;
   flex-direction: column;

@@ -722,6 +722,22 @@
         "description": "Eksporter all prosjektdata for sikkerhetskopiering eller analyse. Filen lastes ned automatisk når den er klar, og du vil bli varslet via e-post.",
         "button": "Eksporter prosjektdata"
       },
+      "instruction": {
+        "title": "Standard AI-tilpasset instruksjon",
+        "description": "Din innebygde assistent for prosjektstyring og produktivitet. Tilpass hvordan AI-assistenten oppforer seg og kommuniserer med deg og teamet ditt. La feltet vaere tomt for standardinstruksjon.",
+        "fields": {
+          "guidelines": "Hvilke retningslinjer eller instruksjoner skal assistenten folge i generell chat?",
+          "language": "Foretrukket sprak"
+        },
+        "placeholders": {
+          "guidelines": "f.eks. skriv tydelig og konsist"
+        },
+        "messages": {
+          "saved": "Prosjektets AI-instruksjon er lagret",
+          "saveFailed": "Kunne ikke lagre prosjektets AI-instruksjon",
+          "reset": "Prosjektets AI-instruksjon er tilbakestilt til standard"
+        }
+      },
       "email": {
         "title": "Rediger e-post",
         "fields": {
@@ -1063,3 +1079,4 @@
     "archive": "Arkiver"
   }
 }
+

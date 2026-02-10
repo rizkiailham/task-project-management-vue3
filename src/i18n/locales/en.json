@@ -731,6 +731,22 @@
         "description": "Export all project data for backup or analysis. The file will download automatically once ready, and you'll be notified by email.",
         "button": "Export project data"
       },
+      "instruction": {
+        "title": "Default AI Custom Instruction",
+        "description": "Your built-in assistant for project management and productivity. Customize how AI assistant behaves and communicates with you and your team. Leave it empty with default assistant instruction",
+        "fields": {
+          "guidelines": "What guidelines or instructions should the assistant follow for general chat?",
+          "language": "Preferred language"
+        },
+        "placeholders": {
+          "guidelines": "e.g. write with clear and concise manners"
+        },
+        "messages": {
+          "saved": "Project AI instruction saved successfully",
+          "saveFailed": "Failed to save project AI instruction",
+          "reset": "Project AI instruction reset to default"
+        }
+      },
       "email": {
         "title": "Edit email",
         "fields": {
