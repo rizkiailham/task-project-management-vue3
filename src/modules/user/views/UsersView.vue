@@ -64,16 +64,16 @@ const selectedGroup = ref(null)
 
 // Tab definitions
 const tabs = [
-  { id: 'users', label: 'Users' },
-  { id: 'groups', label: 'Groups' },
-  { id: 'role', label: 'Role' }
+  { id: 'users', label: t('users.management.tabs.users') },
+  { id: 'groups', label: t('users.management.tabs.groups') },
+  { id: 'role', label: t('users.management.tabs.roles') }
 ]
 
 // Computed
 const searchPlaceholder = computed(() => {
-  if (activeTab.value === 'groups') return 'Search group'
-  if (activeTab.value === 'role') return 'Search role'
-  return 'Search user'
+  if (activeTab.value === 'groups') return t('users.management.search.groups')
+  if (activeTab.value === 'role') return t('users.management.search.roles')
+  return t('users.management.search.users')
 })
 
 const filteredUsers = computed(() => {
@@ -153,7 +153,7 @@ async function handleUserSearch() {
     })
   } catch (error) {
     console.error('Error fetching users:', error)
-    uiStore.showApiError(error, 'Failed to load users')
+    uiStore.showApiError(error, t('users.management.errors.loadUsers'))
   } finally {
     isLoading.value = false
   }
@@ -164,7 +164,7 @@ async function handleGroupSearch() {
     await fetchGroupsWithSearch({ page: 1, limit: groupsMeta.value.itemsPerPage })
   } catch (error) {
     console.error('Error fetching groups:', error)
-    uiStore.showApiError(error, 'Failed to load groups')
+    uiStore.showApiError(error, t('users.management.errors.loadGroups'))
   }
 }
 
@@ -173,7 +173,7 @@ async function handleRoleSearch() {
     await fetchRolesWithSearch({ page: 1, limit: rolesMeta.value.itemsPerPage })
   } catch (error) {
     console.error('Error fetching roles:', error)
-    uiStore.showApiError(error, 'Failed to load roles')
+    uiStore.showApiError(error, t('users.management.errors.loadRoles'))
   }
 }
 
@@ -216,7 +216,7 @@ watch(activeTab, async (newTab) => {
       await fetchRolesWithSearch({ page: 1, limit: rolesMeta.value.itemsPerPage })
     } catch (error) {
       console.error('Error fetching roles:', error)
-      uiStore.showApiError(error, 'Failed to load roles')
+      uiStore.showApiError(error, t('users.management.errors.loadRoles'))
     }
   }
 
@@ -225,7 +225,7 @@ watch(activeTab, async (newTab) => {
       await fetchGroupsWithSearch({ page: 1, limit: groupsMeta.value.itemsPerPage })
     } catch (error) {
       console.error('Error fetching groups:', error)
-      uiStore.showApiError(error, 'Failed to load groups')
+      uiStore.showApiError(error, t('users.management.errors.loadGroups'))
     }
   }
 })
@@ -237,7 +237,7 @@ onMounted(async () => {
     await userStore.fetchUsers({ page: 1 })
   } catch (error) {
     console.error('Error fetching users:', error)
-    uiStore.showApiError(error, 'Failed to load users')
+    uiStore.showApiError(error, t('users.management.errors.loadUsers'))
   } finally {
     isLoading.value = false
   }
@@ -259,7 +259,7 @@ async function handlePaginationChange({ page, limit, sortBy, orderBy }) {
     })
   } catch (error) {
     console.error('Error fetching users:', error)
-    uiStore.showApiError(error, 'Failed to load users')
+    uiStore.showApiError(error, t('users.management.errors.loadUsers'))
   } finally {
     isLoading.value = false
   }
@@ -270,7 +270,7 @@ async function handleGroupPaginationChange({ page, limit }) {
     await fetchGroupsWithSearch({ page, limit })
   } catch (error) {
     console.error('Error fetching groups:', error)
-    uiStore.showApiError(error, 'Failed to load groups')
+    uiStore.showApiError(error, t('users.management.errors.loadGroups'))
   }
 }
 
@@ -279,7 +279,7 @@ async function handleRolePaginationChange({ page, limit }) {
     await fetchRolesWithSearch({ page, limit })
   } catch (error) {
     console.error('Error fetching roles:', error)
-    uiStore.showApiError(error, 'Failed to load roles')
+    uiStore.showApiError(error, t('users.management.errors.loadRoles'))
   }
 }
 
@@ -298,7 +298,7 @@ async function handleUserFilter({ isActive, roleId }) {
     })
   } catch (error) {
     console.error('Error fetching users:', error)
-    uiStore.showApiError(error, 'Failed to load users')
+    uiStore.showApiError(error, t('users.management.errors.loadUsers'))
   } finally {
     isLoading.value = false
   }
@@ -475,7 +475,7 @@ function handleGroupSaved() {
               class="inline-flex items-center gap-1.5 h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
             >
               <Plus class="w-4 h-4" />
-              New User
+              {{ t('users.management.actions.newUser') }}
             </button>
 
             <!-- Invite User Button -->
@@ -483,7 +483,7 @@ function handleGroupSaved() {
               @click="openInviteModal"
               class="inline-flex items-center gap-1.5 h-8 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-md transition-colors"
             >
-              Invite User
+              {{ t('users.management.actions.inviteUser') }}
             </button>
           </template>
           <template v-else-if="activeTab === 'groups'">
@@ -492,7 +492,7 @@ function handleGroupSaved() {
               class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
             >
               <Plus class="w-4 h-4" />
-              New Group
+              {{ t('users.management.actions.newGroup') }}
             </button>
           </template>
           <template v-else-if="activeTab === 'role'">
@@ -501,7 +501,7 @@ function handleGroupSaved() {
               class="inline-flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
             >
               <Plus class="w-4 h-4" />
-              New Role
+              {{ t('users.management.actions.newRole') }}
             </button>
           </template>
           

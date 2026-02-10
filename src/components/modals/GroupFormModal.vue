@@ -4,6 +4,7 @@
  */
 import { ref, computed, watch } from 'vue'
 import { useGroupStore, useUIStore } from '@/stores'
+import { useI18n } from 'vue-i18n'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import FormInput from '@/components/ui/FormInput.vue'
 import { ChevronDown, Search, Trash, Plus, X } from 'lucide-vue-next'
@@ -18,6 +19,7 @@ const emit = defineEmits(['update:visible', 'saved'])
 
 const groupStore = useGroupStore()
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 const formData = ref({
   name: '',
@@ -40,9 +42,9 @@ let searchTimeout = null
 const isEditing = computed(() => !!props.group?.id)
 const modalTitle = computed(() => {
   if (isEditing.value && props.group?.name) {
-    return `Manage Group - ${props.group.name}`
+    return `${t('users.groupForm.titles.manageGroup')} - ${props.group.name}`
   }
-  return 'Create New Group'
+  return t('users.groupForm.titles.createGroup')
 })
 
 const dialogVisible = computed({
@@ -127,7 +129,7 @@ async function loadGroupDetails() {
       baseUsers.value = fetchedUsers
     }
   } catch (error) {
-    uiStore.showApiError(error, 'Failed to load group details')
+    uiStore.showApiError(error, t('users.groupForm.errors.loadDetails'))
   }
 }
 
@@ -156,6 +158,7 @@ async function fetchUsers(keywords = '') {
     } else {
       baseUsers.value = []
     }
+    uiStore.showApiError(error, t('users.groupForm.errors.loadUsers'))
   } finally {
     isLoadingUsers.value = false
   }
@@ -262,7 +265,7 @@ async function handleAddUser(user) {
     }
     updateUserJoinState(id, true)
   } catch (error) {
-    uiStore.showApiError(error, 'Failed to add user to group')
+    uiStore.showApiError(error, t('users.groupForm.errors.addUser'))
   } finally {
     setBusy(id, false)
   }
@@ -290,7 +293,7 @@ async function handleRemoveUser(user) {
     }
     updateUserJoinState(id, false)
   } catch (error) {
-    uiStore.showApiError(error, 'Failed to remove user from group')
+    uiStore.showApiError(error, t('users.groupForm.errors.removeUser'))
   } finally {
     setBusy(id, false)
   }
@@ -298,7 +301,7 @@ async function handleRemoveUser(user) {
 
 async function handleSubmit() {
   if (!formData.value.name.trim()) {
-    uiStore.showError('Group name is required')
+    uiStore.showError(t('users.groupForm.validation.nameRequired'))
     return
   }
 
@@ -311,20 +314,20 @@ async function handleSubmit() {
 
     if (isEditing.value) {
       const response = await groupStore.updateGroup(props.group.id, payload)
-      uiStore.showApiSuccess(response, 'Group updated successfully')
+      uiStore.showApiSuccess(response, t('users.groupForm.messages.updated'))
     } else {
       const response = await groupStore.createGroup(payload)
       const newGroup = response?.group || response?.data || response
       if (pendingUserIds.value.length > 0 && newGroup?.id) {
         await groupStore.addUsers(newGroup.id, pendingUserIds.value)
       }
-      uiStore.showApiSuccess(response, 'Group created successfully')
+      uiStore.showApiSuccess(response, t('users.groupForm.messages.created'))
     }
 
     emit('saved')
     closeModal()
   } catch (error) {
-    uiStore.showApiError(error, 'Failed to save group')
+    uiStore.showApiError(error, t('users.groupForm.errors.save'))
   } finally {
     isSubmitting.value = false
   }
@@ -353,7 +356,7 @@ async function handleSubmit() {
       <!-- Scrollable content area -->
       <div
         :class="[
-          'px-4 py-5 space-y-0 h-full',
+          'px-4 space-y-0 h-full',
           isEditing ? (searchQuery ? 'overflow-hidden' : 'overflow-y-auto') : 'overflow-visible'
         ]"
       >
@@ -368,7 +371,7 @@ async function handleSubmit() {
             class="w-4 h-4 text-gray-500 transition-transform"
             :class="{ '-rotate-90': !detailsExpanded }"
           />
-          <span class="text-sm font-medium text-gray-900">Details</span>
+          <span class="text-sm font-medium text-gray-900">{{ t('users.groupForm.sections.details') }}</span>
         </button>
 
         <div v-show="detailsExpanded" class="pb-4 space-y-4">
@@ -376,9 +379,9 @@ async function handleSubmit() {
             <FormInput
               id="group-name"
               v-model="formData.name"
-              label="Name *"
+              :label="t('users.groupForm.fields.name')"
               labelClass="block text-xs text-gray-500 mb-1"
-              placeholder="Enter group name"
+              :placeholder="t('users.groupForm.placeholders.name')"
               class="w-full"
             />
           </div>
@@ -387,9 +390,9 @@ async function handleSubmit() {
               id="group-description"
               v-model="formData.description"
               as="textarea"
-              label="Description"
+              :label="t('users.groupForm.fields.description')"
               labelClass="block text-xs text-gray-500 mb-1"
-              placeholder="Enter a brief description for this group"
+              :placeholder="t('users.groupForm.placeholders.description')"
               rows="3"
               class="w-full text-sm"
             />
@@ -408,7 +411,7 @@ async function handleSubmit() {
             class="w-4 h-4 text-gray-500 transition-transform"
             :class="{ '-rotate-90': !usersExpanded }"
           />
-          <span class="text-sm font-medium text-gray-900">User list</span>
+          <span class="text-sm font-medium text-gray-900">{{ t('users.groupForm.sections.userList') }}</span>
         </button>
 
         <div v-show="usersExpanded" class="pb-4">
@@ -418,13 +421,13 @@ async function handleSubmit() {
                 v-if="!searchQuery && isLoadingUsers"
                 class="px-4 py-6 text-center text-sm text-gray-400"
               >
-                Loading users...
+                {{ t('users.groupForm.loadingUsers') }}
               </div>
               <div
                 v-else-if="baseUsers.length === 0"
                 class="px-4 py-6 text-center text-sm text-gray-400"
               >
-                No users found
+                {{ t('users.groupForm.emptyUsers') }}
               </div>
               <div v-else class="flex flex-col">
                 <div
@@ -466,7 +469,7 @@ async function handleSubmit() {
                         @click="handleAddUser(user)"
                       >
                         <Plus class="w-3.5 h-3.5" />
-                        Add to group
+                        {{ t('users.groupForm.actions.addToGroup') }}
                       </button>
                     </div>
                   </div>
@@ -483,20 +486,20 @@ async function handleSubmit() {
         <div class="search-backdrop" @click="clearSearch"></div>
         <div class="search-panel">
           <div class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Search results
+            {{ t('users.groupForm.search.results') }}
           </div>
           <div class="search-panel-content">
             <div
               v-if="isLoadingUsers"
               class="px-4 py-6 text-center text-sm text-gray-400"
             >
-              Loading users...
+              {{ t('users.groupForm.loadingUsers') }}
             </div>
             <div
               v-else-if="searchResults.length === 0"
               class="px-4 py-6 text-center text-sm text-gray-400"
             >
-              No users found
+              {{ t('users.groupForm.emptyUsers') }}
             </div>
             <div v-else class="flex flex-col">
               <div
@@ -538,7 +541,7 @@ async function handleSubmit() {
                       @click="handleAddUser(user)"
                     >
                       <Plus class="w-3.5 h-3.5" />
-                      Add to group
+                      {{ t('users.groupForm.actions.addToGroup') }}
                     </button>
                   </div>
                 </div>
@@ -556,9 +559,9 @@ async function handleSubmit() {
           <FormInput
             id="group-search"
             v-model="searchQuery"
-            label="Search users"
+            :label="t('users.groupForm.search.label')"
             labelClass="sr-only"
-            placeholder="Search users"
+            :placeholder="t('users.groupForm.search.placeholder')"
             class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-blue-500"
           />
         </div>
@@ -566,18 +569,18 @@ async function handleSubmit() {
           <button
             type="button"
             class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            @click="closeModal"
-            :disabled="isSubmitting"
-          >
-            Cancel
-          </button>
+          @click="closeModal"
+          :disabled="isSubmitting"
+        >
+          {{ t('common.cancel') }}
+        </button>
           <button
             type="button"
             class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             @click="handleSubmit"
             :disabled="isSubmitting"
           >
-            {{ isSubmitting ? 'Saving...' : 'Save changes' }}
+            {{ isSubmitting ? t('common.saving') : t('common.saveChanges') }}
           </button>
         </div>
       </div>

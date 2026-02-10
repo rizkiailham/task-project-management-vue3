@@ -593,6 +593,66 @@
     },
     "saveChanges": "Lagre endringer",
     "changesSaved": "Endringer lagret",
+    "notification": {
+      "sections": {
+        "email": "E-postvarsler",
+        "inApp": "Varsler i appen"
+      },
+      "items": {
+        "taskAssigned": {
+          "title": "Oppgave tildelt",
+          "description": "Fa varsler nar en oppgave blir tildelt deg."
+        },
+        "taskCompleted": {
+          "title": "Oppgave fullfort",
+          "description": "Fa varsler nar tildelte oppgaver fullfores."
+        },
+        "comments": {
+          "title": "Kommentarer",
+          "description": "Fa varsler nar noen kommenterer oppgavene dine."
+        },
+        "dueSoon": {
+          "title": "Forfaller snart",
+          "description": "Fa paminnelser nar forfallsdatoen naermer seg."
+        },
+        "weeklyDigest": {
+          "title": "Ukentlig sammendrag",
+          "description": "Fa et ukentlig sammendrag av prosjektaktivitet."
+        },
+        "mentions": {
+          "title": "Omtaler",
+          "description": "Fa varsler nar noen nevner deg."
+        }
+      },
+      "actions": {
+        "save": "Lagre innstillinger"
+      },
+      "messages": {
+        "saved": "Varslingsinnstillinger lagret"
+      },
+      "errors": {
+        "save": "Kunne ikke lagre varslingsinnstillinger"
+      }
+    },
+    "profileView": {
+      "actions": {
+        "changeAvatar": "Bytt avatar"
+      },
+      "avatarHelp": "JPG, GIF eller PNG. Maks 2MB.",
+      "fields": {
+        "emailAddress": "E-postadresse"
+      },
+      "validation": {
+        "firstNameMin": "Fornavn ma vaere minst 2 tegn",
+        "lastNameMin": "Etternavn ma vaere minst 2 tegn"
+      },
+      "messages": {
+        "updated": "Profil oppdatert"
+      },
+      "errors": {
+        "update": "Kunne ikke oppdatere profil"
+      }
+    },
     "modal": {
       "groups": {
         "account": "Konto",
@@ -933,6 +993,116 @@
       "update": "Kunne ikke oppdatere bruker",
       "avatarUpload": "Kunne ikke laste opp avatar",
       "uploadFailed": "Opplasting mislyktes"
+    },
+    "management": {
+      "tabs": {
+        "users": "Brukere",
+        "groups": "Grupper",
+        "roles": "Roller"
+      },
+      "search": {
+        "users": "Sok brukere",
+        "groups": "Sok grupper",
+        "roles": "Sok roller"
+      },
+      "actions": {
+        "newUser": "Ny bruker",
+        "inviteUser": "Inviter bruker",
+        "newGroup": "Ny gruppe",
+        "newRole": "Ny rolle"
+      },
+      "errors": {
+        "loadUsers": "Kunne ikke laste brukere",
+        "loadGroups": "Kunne ikke laste grupper",
+        "loadRoles": "Kunne ikke laste roller"
+      }
+    },
+    "roleForm": {
+      "titles": {
+        "createRole": "Opprett rolle",
+        "manageRole": "Administrer rolle"
+      },
+      "sections": {
+        "details": "Detaljer",
+        "accessPermission": "Tilgangsrettigheter"
+      },
+      "fields": {
+        "name": "Navn",
+        "description": "Beskrivelse"
+      },
+      "placeholders": {
+        "name": "Rollenavn",
+        "description": "Rollebeskrivelse"
+      },
+      "table": {
+        "section": "Seksjon",
+        "read": "Les",
+        "write": "Skriv",
+        "delete": "Slett"
+      },
+      "permissions": {
+        "userManagement": "Brukeradministrasjon",
+        "rolesAndPermission": "Roller og rettigheter",
+        "groupAndTeams": "Grupper og team",
+        "userInvitation": "Brukerinvitasjon",
+        "project": "Prosjekt",
+        "projectSettings": "Prosjektinnstillinger",
+        "taskManager": "Oppgavebehandling",
+        "taskAssignment": "Oppgavetildeling",
+        "workflowConfiguration": "Arbeidsflytkonfigurasjon"
+      },
+      "validation": {
+        "nameRequired": "Rollenavn er pakrevd"
+      },
+      "messages": {
+        "created": "Rolle opprettet",
+        "updated": "Rolle oppdatert"
+      },
+      "errors": {
+        "save": "Kunne ikke lagre rolle"
+      }
+    },
+    "groupForm": {
+      "titles": {
+        "createGroup": "Opprett gruppe",
+        "manageGroup": "Administrer gruppe"
+      },
+      "sections": {
+        "details": "Detaljer",
+        "userList": "Brukerliste"
+      },
+      "fields": {
+        "name": "Navn",
+        "description": "Beskrivelse"
+      },
+      "placeholders": {
+        "name": "Gruppenavn",
+        "description": "Gruppebeskrivelse"
+      },
+      "search": {
+        "label": "Sok brukere",
+        "placeholder": "Sok brukere",
+        "results": "Sokeresultater"
+      },
+      "actions": {
+        "addToGroup": "Legg til i gruppe"
+      },
+      "loadingUsers": "Laster brukere...",
+      "emptyUsers": "Ingen brukere funnet",
+      "validation": {
+        "nameRequired": "Gruppenavn er pakrevd"
+      },
+      "messages": {
+        "created": "Gruppe opprettet",
+        "updated": "Gruppe oppdatert"
+      },
+      "errors": {
+        "loadDetails": "Kunne ikke laste gruppedetaljer",
+        "loadUsers": "Kunne ikke laste brukere",
+        "addUser": "Kunne ikke legge til bruker i gruppen",
+        "removeUser": "Kunne ikke fjerne bruker fra gruppen",
+        "save": "Kunne ikke lagre gruppe"
+      }
     },
     "invite": {
       "title": "Inviter bruker",

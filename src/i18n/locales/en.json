@@ -602,6 +602,66 @@
     },
     "saveChanges": "Save changes",
     "changesSaved": "Changes saved successfully",
+    "notification": {
+      "sections": {
+        "email": "Email notifications",
+        "inApp": "In-app notifications"
+      },
+      "items": {
+        "taskAssigned": {
+          "title": "Task assigned",
+          "description": "Receive updates when a task is assigned to you."
+        },
+        "taskCompleted": {
+          "title": "Task completed",
+          "description": "Receive updates when assigned tasks are completed."
+        },
+        "comments": {
+          "title": "Comments",
+          "description": "Receive updates when someone comments on your tasks."
+        },
+        "dueSoon": {
+          "title": "Due soon",
+          "description": "Receive reminders when task due dates are close."
+        },
+        "weeklyDigest": {
+          "title": "Weekly digest",
+          "description": "Receive a weekly summary of project activity."
+        },
+        "mentions": {
+          "title": "Mentions",
+          "description": "Receive updates when someone mentions you."
+        }
+      },
+      "actions": {
+        "save": "Save preferences"
+      },
+      "messages": {
+        "saved": "Notification preferences saved"
+      },
+      "errors": {
+        "save": "Failed to save notification preferences"
+      }
+    },
+    "profileView": {
+      "actions": {
+        "changeAvatar": "Change avatar"
+      },
+      "avatarHelp": "JPG, GIF or PNG. 2MB max.",
+      "fields": {
+        "emailAddress": "Email address"
+      },
+      "validation": {
+        "firstNameMin": "First name must be at least 2 characters",
+        "lastNameMin": "Last name must be at least 2 characters"
+      },
+      "messages": {
+        "updated": "Profile updated successfully"
+      },
+      "errors": {
+        "update": "Failed to update profile"
+      }
+    },
     "modal": {
       "groups": {
         "account": "Account",
@@ -942,6 +1002,116 @@
       "update": "Failed to update user",
       "avatarUpload": "Failed to upload avatar",
       "uploadFailed": "Upload failed"
+    },
+    "management": {
+      "tabs": {
+        "users": "Users",
+        "groups": "Groups",
+        "roles": "Roles"
+      },
+      "search": {
+        "users": "Search users",
+        "groups": "Search groups",
+        "roles": "Search roles"
+      },
+      "actions": {
+        "newUser": "New User",
+        "inviteUser": "Invite User",
+        "newGroup": "New Group",
+        "newRole": "New Role"
+      },
+      "errors": {
+        "loadUsers": "Failed to load users",
+        "loadGroups": "Failed to load groups",
+        "loadRoles": "Failed to load roles"
+      }
+    },
+    "roleForm": {
+      "titles": {
+        "createRole": "Create Role",
+        "manageRole": "Manage Role"
+      },
+      "sections": {
+        "details": "Details",
+        "accessPermission": "Access permission"
+      },
+      "fields": {
+        "name": "Name",
+        "description": "Description"
+      },
+      "placeholders": {
+        "name": "Role name",
+        "description": "Role description"
+      },
+      "table": {
+        "section": "Section",
+        "read": "Read",
+        "write": "Write",
+        "delete": "Delete"
+      },
+      "permissions": {
+        "userManagement": "User Management",
+        "rolesAndPermission": "Roles and Permission",
+        "groupAndTeams": "Group and Teams",
+        "userInvitation": "User Invitation",
+        "project": "Project",
+        "projectSettings": "Project Settings",
+        "taskManager": "Task Manager",
+        "taskAssignment": "Task Assignment",
+        "workflowConfiguration": "Workflow Configuration"
+      },
+      "validation": {
+        "nameRequired": "Role name is required"
+      },
+      "messages": {
+        "created": "Role created successfully",
+        "updated": "Role updated successfully"
+      },
+      "errors": {
+        "save": "Failed to save role"
+      }
+    },
+    "groupForm": {
+      "titles": {
+        "createGroup": "Create Group",
+        "manageGroup": "Manage Group"
+      },
+      "sections": {
+        "details": "Details",
+        "userList": "User List"
+      },
+      "fields": {
+        "name": "Name",
+        "description": "Description"
+      },
+      "placeholders": {
+        "name": "Group name",
+        "description": "Group description"
+      },
+      "search": {
+        "label": "Search users",
+        "placeholder": "Search users",
+        "results": "Search Results"
+      },
+      "actions": {
+        "addToGroup": "Add to group"
+      },
+      "loadingUsers": "Loading users...",
+      "emptyUsers": "No users found",
+      "validation": {
+        "nameRequired": "Group name is required"
+      },
+      "messages": {
+        "created": "Group created successfully",
+        "updated": "Group updated successfully"
+      },
+      "errors": {
+        "loadDetails": "Failed to load group details",
+        "loadUsers": "Failed to load users",
+        "addUser": "Failed to add user to group",
+        "removeUser": "Failed to remove user from group",
+        "save": "Failed to save group"
+      }
     },
     "invite": {
       "title": "Invite user",

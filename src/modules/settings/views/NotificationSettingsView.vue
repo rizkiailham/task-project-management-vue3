@@ -4,12 +4,14 @@
  */
 import { ref } from 'vue'
 import { useUIStore } from '@/stores'
+import { useI18n } from 'vue-i18n'
 
 // PrimeVue
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 
 const uiStore = useUIStore()
+const { t } = useI18n()
 
 // Notification preferences
 const preferences = ref({
@@ -45,9 +47,9 @@ async function savePreferences() {
   try {
     // TODO: Save to API
     await new Promise(resolve => setTimeout(resolve, 500))
-    uiStore.showSuccess('Notification preferences saved')
+    uiStore.showSuccess(t('settings.notification.messages.saved'))
   } catch (error) {
-    uiStore.showError('Failed to save preferences')
+    uiStore.showError(t('settings.notification.errors.save'))
   } finally {
     isLoading.value = false
   }
@@ -58,45 +60,45 @@ async function savePreferences() {
   <div class="mx-auto max-w-2xl space-y-6">
     <!-- Email Notifications -->
     <div class="rounded-lg border border-gray-200 bg-white p-6 dark-edit:border-gray-700 dark-edit:bg-gray-800">
-      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">Email Notifications</h2>
+      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">{{ t('settings.notification.sections.email') }}</h2>
       
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Task Assigned</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">When a task is assigned to you</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.taskAssigned.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.taskAssigned.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.email.taskAssigned" />
         </div>
         
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Task Completed</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">When a task you're watching is completed</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.taskCompleted.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.taskCompleted.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.email.taskCompleted" />
         </div>
         
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Comments</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">When someone comments on your task</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.comments.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.comments.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.email.taskCommented" />
         </div>
         
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Due Soon Reminders</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">Reminder before task due date</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.dueSoon.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.dueSoon.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.email.taskDueSoon" />
         </div>
         
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Weekly Digest</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">Weekly summary of your tasks</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.weeklyDigest.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.weeklyDigest.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.email.weeklyDigest" />
         </div>
@@ -105,29 +107,29 @@ async function savePreferences() {
 
     <!-- In-App Notifications -->
     <div class="rounded-lg border border-gray-200 bg-white p-6 dark-edit:border-gray-700 dark-edit:bg-gray-800">
-      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">In-App Notifications</h2>
+      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark-edit:text-white">{{ t('settings.notification.sections.inApp') }}</h2>
       
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Task Assigned</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">When a task is assigned to you</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.taskAssigned.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.taskAssigned.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.inApp.taskAssigned" />
         </div>
         
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Mentions</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">When someone mentions you</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.mentions.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.mentions.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.inApp.mentions" />
         </div>
         
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-gray-900 dark-edit:text-white">Comments</p>
-            <p class="text-sm text-gray-500 dark-edit:text-gray-400">When someone comments on your task</p>
+            <p class="font-medium text-gray-900 dark-edit:text-white">{{ t('settings.notification.items.comments.title') }}</p>
+            <p class="text-sm text-gray-500 dark-edit:text-gray-400">{{ t('settings.notification.items.comments.description') }}</p>
           </div>
           <ToggleSwitch v-model="preferences.inApp.taskCommented" />
         </div>
@@ -137,11 +139,10 @@ async function savePreferences() {
     <!-- Save Button -->
     <div class="flex justify-end">
       <Button 
-        label="Save Preferences" 
+        :label="t('settings.notification.actions.save')" 
         :loading="isLoading"
         @click="savePreferences"
       />
     </div>
   </div>
 </template>
-
