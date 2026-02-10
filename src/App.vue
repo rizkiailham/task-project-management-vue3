@@ -12,6 +12,7 @@ import ConfirmDialog from 'primevue/confirmdialog'
 
 // Layout components
 import ToastNotifications from '@/components/ui/ToastNotifications.vue'
+import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import GlobalLoader from '@/components/ui/GlobalLoader.vue'
 import CommandPalette from '@/components/ui/CommandPalette.vue'
 
@@ -68,7 +69,15 @@ function handleKeyboardShortcuts(event) {
 
     <!-- Global Components -->
     <Toast position="bottom-right" />
-    <ConfirmDialog class="app-confirm-dialog" />
+    <ConfirmDialog class="app-confirm-dialog">
+      <template #container="{ message, acceptCallback, rejectCallback }">
+        <AppConfirmDialog
+          :message="message"
+          :acceptCallback="acceptCallback"
+          :rejectCallback="rejectCallback"
+        />
+      </template>
+    </ConfirmDialog>
     <ToastNotifications />
     <GlobalLoader />
     <CommandPalette />
@@ -87,6 +96,16 @@ function handleKeyboardShortcuts(event) {
 </style>
 
 <style>
+.app-confirm-dialog {
+  border-radius: 0.375rem !important;
+  overflow: hidden;
+}
+
+.app-confirm-dialog.p-dialog {
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
 .app-confirm-dialog .p-dialog-title {
   font-size: 14px;
   font-weight: 600;
