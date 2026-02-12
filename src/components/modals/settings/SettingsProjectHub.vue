@@ -293,7 +293,7 @@ defineExpose({ saveChanges, pendingChanges })
                {{ group.label }}
                <component :is="group.icon" v-if="group.icon" class="w-3.5 h-3.5" />
              </div>
-             <button v-if="group.actionIcon" type="button" class="text-gray-400 hover:text-gray-600">
+             <button v-if="group.actionIcon" type="button" class="text-gray-400 hover:text-gray-700">
                <component :is="group.actionIcon" class="w-4 h-4" />
              </button>
           </div>
@@ -420,6 +420,9 @@ defineExpose({ saveChanges, pendingChanges })
 .settings-list {
   display: flex;
   flex-direction: column;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  background: #ffffff;
   min-width: 0;
   height: 100%;
   min-height: 240px;
@@ -448,10 +451,9 @@ defineExpose({ saveChanges, pendingChanges })
 
 .settings-list-title {
   font-size: 12px;
-  font-weight: 600;
-  color: #9ca3af;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-400);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .settings-list-body {
@@ -467,21 +469,22 @@ defineExpose({ saveChanges, pendingChanges })
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
   border-radius: 8px;
-  color: #374151;
+  color: var(--color-gray-700);
   text-align: left;
   min-height: 30px;
   width: 100%;
 }
 
 .settings-list-row:hover {
-  background: #f9fafb;
+  background: #f3f4f6;
 }
 
 .settings-list-row.is-selected {
-  background: #f3f4f6;
-  color: #111827;
+  background: #e5e7eb;
+  color: var(--color-gray-900);
 }
 
 .settings-divider {
@@ -528,13 +531,13 @@ defineExpose({ saveChanges, pendingChanges })
 
 .settings-project-empty-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-project-empty-text {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   margin-top: 6px;
 }
 
@@ -556,3 +559,8 @@ defineExpose({ saveChanges, pendingChanges })
   }
 }
 </style>
+
+
+
+
+

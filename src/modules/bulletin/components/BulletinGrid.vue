@@ -359,7 +359,7 @@ const gridComponents = {
 
 
 :deep(.ag-theme-quartz .ag-header-icon) {
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 :deep(.ag-theme-quartz .ag-body-viewport) {
@@ -401,8 +401,10 @@ const gridComponents = {
 }
 
 :deep(.ag-theme-quartz .ag-sort-indicator-icon) {
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 </style>
+
+
 
 

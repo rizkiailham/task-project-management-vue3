@@ -208,13 +208,13 @@ function handleClose() {
 
 .header-title {
   font-size: 15px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .header-subtitle {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .header-actions {
@@ -228,7 +228,7 @@ function handleClose() {
   padding: 0 14px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   transition: all 0.15s ease;
 }
 
@@ -239,7 +239,7 @@ function handleClose() {
 
 .editor-btn-primary {
   background-color: #2563eb;
-  color: #ffffff;
+  color: var(--color-white);
 }
 
 .editor-btn-primary:hover:not(:disabled) {
@@ -249,12 +249,12 @@ function handleClose() {
 .editor-btn-secondary {
   background-color: #ffffff;
   border: 1px solid #d1d5db;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .editor-btn-secondary:hover:not(:disabled) {
   border-color: #cbd5f5;
-  color: #1f2937;
+  color: var(--color-gray-800);
 }
 
 .content-editor-body {
@@ -274,3 +274,8 @@ function handleClose() {
   height: 100%;
 }
 </style>
+
+
+
+
+

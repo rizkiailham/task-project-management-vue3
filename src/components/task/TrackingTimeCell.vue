@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Avatar from 'primevue/avatar'
 import { DatePicker as VDatePicker } from 'v-calendar'
@@ -740,7 +740,7 @@ if (running.value) startTicking()
                 </button>
               </span>
 
-              <span class="text-xs text-gray-400 flex-shrink-0">→</span>
+              <span class="text-xs text-gray-400 flex-shrink-0">?</span>
 
               <!-- total count per data -->
               <span class="h-6 inline-flex items-center text-xs font-medium text-gray-600 tabular-nums flex-shrink-0">
@@ -888,34 +888,34 @@ if (running.value) startTicking()
   width: 100%;
   justify-content: space-between;
   font-size: 14px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 :deep(.desidia-inline-datepicker .vc-weekday) {
   font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-slate-400);
 }
 
 :deep(.desidia-inline-datepicker .vc-day-content) {
   width: 28px;
   height: 28px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 :deep(.desidia-inline-datepicker .vc-day.is-not-in-month .vc-day-content) {
-  color: #cbd5e1;
+  color: var(--color-slate-300);
 }
 
 :deep(.desidia-inline-datepicker .vc-day.is-today .vc-day-content) {
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 :deep(.desidia-inline-datepicker .vc-day.is-selected .vc-day-content) {
   background: #2563eb;
-  color: #ffffff;
+  color: var(--color-white);
   border-radius: 6px;
 }
 
@@ -934,8 +934,8 @@ if (running.value) startTicking()
 
 .desidia-calendar-today {
   font-size: 12px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
   padding: 2px 6px;
   border-radius: 6px;
   border: 1px solid #e5e7eb;
@@ -947,7 +947,7 @@ if (running.value) startTicking()
   justify-content: center;
   width: 24px;
   height: 24px;
-  color: #6b7280;
+  color: var(--color-gray-500);
   border-radius: 6px;
 }
 
@@ -956,3 +956,6 @@ if (running.value) startTicking()
   height: 14px;
 }
 </style>
+
+
+

@@ -108,7 +108,7 @@ function handleKeyboardShortcuts(event) {
 
 .app-confirm-dialog .p-dialog-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .app-confirm-dialog .p-dialog-content {
@@ -119,3 +119,4 @@ function handleKeyboardShortcuts(event) {
   font-size: 14px;
 }
 </style>
+

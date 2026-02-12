@@ -1383,7 +1383,7 @@ body.controlpanel .is-wrapper {
   box-sizing: border-box;
 }
 .builder-ui .is-controlpanel [class^=panel-] .subtitle {
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 .builder-ui .is-controlpanel [class^=panel-].panel-pop {
   position: fixed;
@@ -1729,7 +1729,7 @@ body.controlpanel .is-wrapper {
   padding-bottom: 26px;
 }
 .builder-ui .is-controlpanel .panel-dialog.element .subtitle, .builder-ui .is-controlpanel .panel-dialog.blockoptions .subtitle {
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 .builder-ui .is-controlpanel .panel-dialog.element .part-breadcrumb, .builder-ui .is-controlpanel .panel-dialog.blockoptions .part-breadcrumb {
   display: flex;
@@ -4293,3 +4293,4 @@ body.fullview.topspace .is-content-view iframe {
 }
 
 /* /content.css */
+

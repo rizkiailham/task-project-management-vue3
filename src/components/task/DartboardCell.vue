@@ -359,7 +359,7 @@ defineExpose({ refresh })
   border: 1px solid #d1d5db;
   border-radius: 4px;
   background: transparent;
-  color: #6b7280;
+  color: var(--color-gray-500);
   cursor: pointer;
   padding: 2px;
   height: 24px;
@@ -375,7 +375,7 @@ defineExpose({ refresh })
 }
 
 .icon-button:hover {
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .dartboard-cell {
@@ -396,7 +396,7 @@ defineExpose({ refresh })
 .open-text {
   display: none;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 @media (min-width: 640px) {
@@ -406,3 +406,7 @@ defineExpose({ refresh })
 }
 
 </style>
+
+
+
+

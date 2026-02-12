@@ -847,6 +847,7 @@ onUnmounted(() => {
   display: flex;
   /* padding-left: 15px; */
   flex-direction: column;
+  background: #ffffff;
   min-width: 0;
   height: 100%;
   min-height: 240px;
@@ -878,8 +879,8 @@ onUnmounted(() => {
 
 .settings-list-title {
   font-size: 12px;
-  font-weight: 600;
-  color: #9CA3af;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-400);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -888,7 +889,7 @@ onUnmounted(() => {
 
 .settings-list-subtitle {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-add-btn {
@@ -896,7 +897,7 @@ onUnmounted(() => {
   height: 28px;
   border-radius: 6px;
   border: 1px solid #e5e7eb;
-  color: #6b7280;
+  color: var(--color-gray-500);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -905,7 +906,7 @@ onUnmounted(() => {
 
 .settings-add-btn:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-list-body {
@@ -925,7 +926,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #374151;
+  color: var(--color-gray-700);
   border-radius: 6px;
   text-align: left;
 }
@@ -933,30 +934,32 @@ onUnmounted(() => {
 .settings-list-row--head {
   text-transform: uppercase;
   font-size: 10px;
-  font-weight: 600;
-  color: #9ca3af;
-  letter-spacing: 0.08em;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-400);
 }
 
 .settings-list-row:hover {
-  background: #f9fafb;
+  background: #f3f4f6;
 }
 
 .settings-list-row.is-selected {
-  background: #f3f4f6;
-  color: #111827;
+  background: #e5e7eb;
+  color: var(--color-gray-900);
 }
 
 .settings-list-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: var(--font-weight-medium);
+  text-transform: capitalize;
+  font-size: 14px;
 }
 
 .settings-list-empty {
   padding: 12px 10px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-divider {
@@ -1001,7 +1004,7 @@ onUnmounted(() => {
 
 .settings-editor-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-editor-section {
@@ -1011,9 +1014,8 @@ onUnmounted(() => {
 
 .settings-editor-section-title {
   font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  letter-spacing: 0.08em;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 .settings-editor-row {
@@ -1029,9 +1031,9 @@ onUnmounted(() => {
 }
 
 .settings-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 .settings-type-pill {
@@ -1042,8 +1044,8 @@ onUnmounted(() => {
   border: 1px solid #e5e7eb;
   padding: 4px 12px;
   font-size: 12px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
   background: #f9fafb;
 }
 
@@ -1077,25 +1079,27 @@ onUnmounted(() => {
 }
 
 .settings-toggle-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 .settings-toggle-subtitle {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-field-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 .settings-field-subtitle {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-option-header {
@@ -1111,25 +1115,25 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--color-gray-500);
   border-radius: 4px;
 }
 
 .settings-option-add-btn:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-option-add {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: 14px;
+  color: var(--color-gray-500);
   text-align: left;
   padding: 0;
   margin-top: 8px;
 }
 
 .settings-option-add:hover {
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .settings-option-list {
@@ -1188,7 +1192,6 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: 400;
   line-height: 20px; /* Exact match to container height */
-  letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   padding: 0 8px 0 9px; /* Unified padding */
@@ -1279,14 +1282,14 @@ onUnmounted(() => {
   padding: 4px;
   min-width: 28px;
   min-height: 28px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .settings-option-menu-trigger:hover {
   background-color: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-option-color {
@@ -1306,7 +1309,7 @@ onUnmounted(() => {
 .settings-delete {
   margin-top: 8px;
   font-size: 12px;
-  color: #ef4444;
+  color: var(--color-red-500);
   text-align: left;
 }
 
@@ -1326,7 +1329,7 @@ onUnmounted(() => {
 
 .settings-error-text {
   font-size: 11px;
-  color: #ef4444;
+  color: var(--color-red-500);
   margin-top: 4px;
 }
 
@@ -1338,4 +1341,9 @@ onUnmounted(() => {
   font-size: 14px;
 }
 </style>
+
+
+
+
+
 

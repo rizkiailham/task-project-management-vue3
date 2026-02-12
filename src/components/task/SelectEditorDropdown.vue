@@ -560,7 +560,7 @@ defineExpose({ refresh })
 
 .tag-placeholder {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .tag-pill {
@@ -570,7 +570,7 @@ defineExpose({ refresh })
   border-radius: 9999px;
   padding: 3px 10px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   line-height: 1;
   height: 22px;
   max-width: 160px;
@@ -599,7 +599,7 @@ defineExpose({ refresh })
 .chevron {
   width: 14px;
   height: 14px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   flex-shrink: 0;
 }
 
@@ -621,9 +621,9 @@ defineExpose({ refresh })
   height: 22px;
   border-radius: 6px;
   border: 1px solid #e5e7eb;
-  color: #6b7280;
+  color: var(--color-gray-500);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -641,7 +641,7 @@ defineExpose({ refresh })
   column-gap: 8px;
   padding: 6px 8px;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-gray-700);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -669,7 +669,7 @@ defineExpose({ refresh })
   border-radius: 9999px;
   padding: 3px 10px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   line-height: 1;
   height: 22px;
   max-width: 180px;
@@ -686,11 +686,11 @@ defineExpose({ refresh })
   width: 16px;
   height: 16px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .option-more {
-  color: #9ca3af;
+  color: var(--color-gray-400);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -700,7 +700,10 @@ defineExpose({ refresh })
 }
 
 .option-more:hover {
-  color: #6b7280;
+  color: var(--color-gray-500);
   background-color: #f3f4f6;
 }
 </style>
+
+
+

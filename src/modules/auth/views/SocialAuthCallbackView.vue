@@ -148,7 +148,7 @@ onMounted(async () => {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  color: #2563eb;
+  color: var(--color-primary-600);
 }
 
 .auth-logo-icon {
@@ -159,13 +159,13 @@ onMounted(async () => {
   text-align: center;
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-800);
   margin-bottom: 1.25rem;
 }
 
 .auth-loading {
   font-size: 0.95rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .auth-error-state {
@@ -174,7 +174,7 @@ onMounted(async () => {
 }
 
 .auth-error-text {
-  color: #ef4444;
+  color: var(--color-red-500);
   font-size: 0.9rem;
 }
 
@@ -182,10 +182,13 @@ onMounted(async () => {
   width: 100%;
   border-radius: 10px;
   padding: 0.7rem 1rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: 1px solid transparent;
   box-sizing: border-box;
-  color: #ffffff;
+  color: var(--color-white);
 }
 </style>
+
+
+

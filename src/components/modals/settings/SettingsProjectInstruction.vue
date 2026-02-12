@@ -161,7 +161,7 @@ defineExpose({ saveChanges })
 
     <form @submit="onSubmit" class="mt-6 space-y-6">
       <div>
-        <label class="block text-xs text-gray-700 mb-2">
+        <label class="block text-xs mb-2">
           {{ t('settings.project.instruction.fields.guidelines', 'What guidelines or instructions should the assistant follow for general chat?') }}
         </label>
         <FormInput
@@ -175,7 +175,7 @@ defineExpose({ saveChanges })
       </div>
 
       <div class="flex items-center justify-between">
-        <label class="block text-xs text-gray-700 mr-4 whitespace-nowrap">
+        <label class="block text-xs mr-4 whitespace-nowrap">
           {{ t('settings.project.instruction.fields.language', 'Preferred language') }}
         </label>
         <div class="w-[200px]">
@@ -204,13 +204,13 @@ defineExpose({ saveChanges })
 
 .settings-project-empty-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-project-empty-text {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   margin-top: 6px;
 }
 
@@ -222,13 +222,17 @@ defineExpose({ saveChanges })
 
 .settings-project-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-project-description {
   font-size: 12px;
-  color: #4b5563;
+  color: var(--color-gray-500);
   line-height: 1.5;
+  font-weight: var(--font-weight-medium);
 }
 </style>
+
+
+

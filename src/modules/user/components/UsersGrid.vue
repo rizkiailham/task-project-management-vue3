@@ -515,7 +515,7 @@ const gridComponents = {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   background-color: #ffffff;
-  color: #6b7280;
+  color: var(--color-gray-500);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -537,7 +537,7 @@ const gridComponents = {
 
 .pagination-page-active {
   background-color: #f3f4f6;
-  color: #6b7280;
+  color: var(--color-gray-500);
   border-color: #d1d5db;
 }
 
@@ -616,7 +616,7 @@ const gridComponents = {
 }
 
 :deep(.ag-theme-quartz .ag-header-icon) {
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 /* Body viewport - scrollable area */
@@ -662,8 +662,10 @@ const gridComponents = {
 
 /* Sort icons */
 :deep(.ag-theme-quartz .ag-sort-indicator-icon) {
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 </style>
+
+
 
 

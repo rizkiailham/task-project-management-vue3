@@ -147,8 +147,7 @@ const onSubmit = handleSubmit(async (values) => {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  color: #2563eb;
-  
+  color: var(--color-primary-600);
 }
 
 .auth-logo-icon {
@@ -158,7 +157,7 @@ const onSubmit = handleSubmit(async (values) => {
 .auth-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-800);
   margin-bottom: 0.3rem;
 }
 
@@ -176,8 +175,8 @@ const onSubmit = handleSubmit(async (values) => {
 
 .auth-label {
   font-size: 0.85rem;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 
@@ -197,7 +196,7 @@ const onSubmit = handleSubmit(async (values) => {
 }
 
 .auth-error {
-  color: #ef4444;
+  color: var(--color-red-500);
   font-size: 0.8rem;
 }
 
@@ -205,10 +204,10 @@ const onSubmit = handleSubmit(async (values) => {
   width: 100%;
   border-radius: 10px;
   padding: 0.65rem 1rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: none;
-  color: #ffffff;
+  color: var(--color-white);
 }
 
 .auth-footer {
@@ -216,8 +215,8 @@ const onSubmit = handleSubmit(async (values) => {
 }
 
 .auth-link {
-  color: #2563eb;
-  font-weight: 600;
+  color: var(--color-primary-600);
+  font-weight: var(--font-weight-medium);
   font-size: 0.85rem;
 }
 
@@ -235,18 +234,21 @@ const onSubmit = handleSubmit(async (values) => {
   place-items: center;
   margin: 0 auto;
   background: rgba(34, 197, 94, 0.15);
-  color: #16a34a;
+  color: var(--color-green-600);
   font-size: 1.2rem;
 }
 
 .auth-success-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-800);
 }
 
 .auth-success-text {
   font-size: 0.88rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 </style>
+
+
+

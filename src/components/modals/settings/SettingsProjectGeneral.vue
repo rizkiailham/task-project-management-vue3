@@ -192,7 +192,10 @@ defineExpose({ saveChanges })
 
 .settings-project-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 </style>
+
+
+

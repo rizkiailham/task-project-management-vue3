@@ -830,7 +830,7 @@ const avatarInitial = computed(() => {
 .user-form :deep(.p-inputnumber-button) {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .user-form :deep(.p-inputnumber-button:hover) {
@@ -851,3 +851,5 @@ const avatarInitial = computed(() => {
 .user-form :deep(.p-multiselect-label) {
 }
 </style>
+
+

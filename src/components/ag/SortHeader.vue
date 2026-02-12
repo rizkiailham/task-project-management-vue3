@@ -113,12 +113,14 @@ function handleHeaderClick(event) {
 .sort-header__icon {
   width: 12px;
   height: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   flex-shrink: 0;
   margin: -3px 0;
 }
 
 .sort-header__icon--active {
-  color: #374151;
+  color: var(--color-gray-700);
 }
 </style>
+
+

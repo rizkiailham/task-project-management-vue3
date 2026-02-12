@@ -362,9 +362,9 @@ watch([() => props.visible, userId], async ([isVisible, id]) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--color-white);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -377,18 +377,18 @@ watch([() => props.visible, userId], async ([isVisible, id]) => {
 
 .user-profile-name {
   font-size: 14px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .user-profile-email {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .user-profile-loading {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .user-profile-section {
@@ -399,8 +399,8 @@ watch([() => props.visible, userId], async ([isVisible, id]) => {
 
 .user-profile-section-title {
   font-size: 13px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .user-profile-grid {
@@ -418,16 +418,15 @@ watch([() => props.visible, userId], async ([isVisible, id]) => {
 
 .user-profile-field-label {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .user-profile-field-value {
   margin-top: 4px;
   font-size: 13px;
-  color: #111827;
-  font-weight: 500;
+  color: var(--color-gray-900);
+  font-weight: var(--font-weight-medium);
   word-break: break-word;
 }
 
@@ -437,3 +436,8 @@ watch([() => props.visible, userId], async ([isVisible, id]) => {
   }
 }
 </style>
+
+
+
+
+

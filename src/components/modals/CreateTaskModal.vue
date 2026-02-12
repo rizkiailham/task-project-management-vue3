@@ -365,7 +365,7 @@ function closeModal() {
 }
 
 .create-task-modal :deep(.p-dialog-header-close) {
-  color: #9ca3af;
+  color: var(--color-gray-400);
   border-radius: 0.5rem;
   transition: all 0.15s;
   width: 2rem;
@@ -373,7 +373,7 @@ function closeModal() {
 }
 
 .create-task-modal :deep(.p-dialog-header-close:hover) {
-  color: #4b5563;
+  color: var(--color-gray-700);
   background-color: #f3f4f6;
 }
 
@@ -395,6 +395,8 @@ function closeModal() {
 
 .create-task-modal :deep(.p-inputtext::placeholder),
 .create-task-modal :deep(.p-textarea::placeholder) {
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 </style>
+
+

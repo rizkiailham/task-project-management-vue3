@@ -679,13 +679,13 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-project-empty-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-project-empty-text {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   margin-top: 6px;
 }
 
@@ -705,8 +705,8 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-form-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-form-header-actions {
@@ -724,21 +724,21 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   border-radius: 4px;
   background: transparent;
   border: 0;
-  color: #6b7280;
+  color: var(--color-gray-500);
   cursor: pointer;
 }
 
 .settings-form-icon-btn:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-form-label {
   display: block;
   margin-bottom: 8px;
   font-size: 12px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 .settings-form-access-grid {
@@ -769,14 +769,14 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-form-access-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-form-access-text {
   font-size: 12px;
   line-height: 1.4;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   max-width: 260px;
 }
 
@@ -805,8 +805,8 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-form-fields-title {
   font-size: 12px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 @media (max-width: 900px) {
@@ -832,12 +832,12 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-form-add-icon:hover {
   background: #f3f4f6;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .settings-form-field-card {
@@ -857,8 +857,8 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-form-field-card-title {
   font-size: 13px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 .settings-form-field-card-body {
@@ -875,8 +875,8 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-form-field-label {
   font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
   margin-left: 2px;
 }
 
@@ -892,7 +892,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-form-toggle-item label {
@@ -927,7 +927,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   gap: 6px;
   padding: 0 10px;
   font-size: 14px;
-  color: #4b5563;
+  color: var(--color-gray-700);
   background: #ffffff;
 }
 
@@ -946,7 +946,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   background: transparent;
   padding: 10px 12px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .settings-form-property-search:focus {
@@ -965,19 +965,19 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   text-align: left;
   padding: 8px 12px;
   font-size: 13px;
-  color: #374151;
+  color: var(--color-gray-700);
   transition: all 0.2s;
 }
 
 .settings-form-property-item:hover {
   background: #f3f4f6;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .settings-form-property-empty {
   padding: 10px 12px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   text-align: center;
 }
 
@@ -1007,4 +1007,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 }
 
 </style>
+
+
+
 

@@ -479,13 +479,13 @@ defineExpose({ saveChanges })
 
 .settings-project-empty-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-project-empty-text {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   margin-top: 6px;
 }
 
@@ -497,14 +497,15 @@ defineExpose({ saveChanges })
 
 .settings-project-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-project-description {
   font-size: 12px;
-  color: #4b5563;
+  color: var(--color-gray-500);
   line-height: 1.5;
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-option-header {
@@ -515,8 +516,8 @@ defineExpose({ saveChanges })
 
 .settings-field-title {
   font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-option-add-btn {
@@ -525,13 +526,13 @@ defineExpose({ saveChanges })
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--color-gray-500);
   border-radius: 4px;
 }
 
 .settings-option-add-btn:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-option-add-btn:disabled {
@@ -569,8 +570,8 @@ defineExpose({ saveChanges })
 }
 
 .settings-option-add {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: 14px;
+  color: var(--color-gray-500);
   text-align: left;
   padding: 0;
   margin-top: 12px;
@@ -583,7 +584,7 @@ defineExpose({ saveChanges })
 }
 
 .settings-option-add:hover {
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-option-add:disabled {
@@ -594,9 +595,9 @@ defineExpose({ saveChanges })
 .btn-action-save {
   padding: 6px 16px;
   background-color: #2563eb;
-  color: white;
+  color: var(--color-white);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   border-radius: 6px;
   transition: background-color 0.2s;
 }
@@ -608,9 +609,9 @@ defineExpose({ saveChanges })
 .btn-action-cancel {
   padding: 6px 12px;
   background-color: #ffffff;
-  color: #6b7280;
+  color: var(--color-gray-500);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   transition: all 0.2s;
@@ -618,8 +619,13 @@ defineExpose({ saveChanges })
 
 .btn-action-cancel:hover {
   background-color: #f9fafb;
-  color: #374151;
+  color: var(--color-gray-700);
   border-color: #d1d5db;
 }
 </style>
+
+
+
+
+
 

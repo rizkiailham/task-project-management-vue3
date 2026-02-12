@@ -746,18 +746,18 @@ function onGridReady(params) {
   display: inline-flex;
   width: 14px;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   font-size: 14px;
 }
 
 :deep(.ag-theme-quartz .ag-group-expanded .ag-icon-tree-open),
 :deep(.ag-theme-quartz .ag-group-contracted .ag-icon-tree-closed) {
-  color: #4b5563;
+  color: var(--color-gray-700);
   opacity: 0.9;
 }
 
 :deep(.ag-theme-quartz .ag-group-contracted) {
-  color: #4b5563;
+  color: var(--color-gray-700);
   opacity: 0.9;
 }
 
@@ -869,3 +869,5 @@ function onGridReady(params) {
 }
 </style>
 ```
+
+

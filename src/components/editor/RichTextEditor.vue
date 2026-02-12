@@ -290,7 +290,7 @@ function replaceSelectedText(newText) {
 }
 
 .dark .ck.ck-editor__main > .ck-editor__editable {
-  color: #e5e7eb;
+  color: var(--color-gray-200);
 }
 
 .ck.ck-toolbar {
@@ -304,7 +304,7 @@ function replaceSelectedText(newText) {
 }
 
 .dark .ck.ck-toolbar .ck-button {
-  color: #e5e7eb !important;
+  color: var(--color-gray-200) !important;
 }
 
 .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused {
@@ -312,3 +312,5 @@ function replaceSelectedText(newText) {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
 }
 </style>
+
+

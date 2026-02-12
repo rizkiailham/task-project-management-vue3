@@ -318,13 +318,13 @@ onMounted(() => {
   border-radius: 12px;
   padding: 40px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-placeholder-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
   margin-bottom: 6px;
 }
 
@@ -380,6 +380,12 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
+.settings-modal :deep(.settings-nav-title),
+.settings-modal :deep(.settings-nav-item) {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+}
+
 @media (max-width: 900px) {
   .settings-body {
     grid-template-columns: 1fr;
@@ -432,3 +438,8 @@ onMounted(() => {
   }
 }
 </style>
+
+
+
+
+

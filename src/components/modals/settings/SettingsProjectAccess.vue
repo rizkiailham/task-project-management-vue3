@@ -667,13 +667,13 @@ defineExpose({ saveChanges, pendingChanges })
 
 .settings-project-empty-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-project-empty-text {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   margin-top: 6px;
 }
 
@@ -685,19 +685,21 @@ defineExpose({ saveChanges, pendingChanges })
 
 .settings-project-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-project-subtitle {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-500);
   max-width: 520px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
 }
 
 .settings-project-highlight {
   color: var(--color-primary-600);
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-project-controls {
@@ -720,7 +722,7 @@ defineExpose({ saveChanges, pendingChanges })
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-project-search-input {
@@ -730,7 +732,7 @@ defineExpose({ saveChanges, pendingChanges })
   border: 1px solid #e5e7eb;
   padding: 4px 12px 4px 34px;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-gray-700);
   background: #ffffff;
   display: flex;
   align-items: center;
@@ -750,7 +752,7 @@ defineExpose({ saveChanges, pendingChanges })
   min-width: 120px;
   flex: 1;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-gray-700);
   background: transparent;
 }
 
@@ -767,16 +769,16 @@ defineExpose({ saveChanges, pendingChanges })
   padding: 2px 8px;
   border-radius: 999px;
   background: #eef2ff;
-  color: #1d4ed8;
+  color: var(--color-primary-700);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-project-chip-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #1d4ed8;
+  color: var(--color-primary-700);
 }
 
 .settings-project-search-panel {
@@ -797,7 +799,7 @@ defineExpose({ saveChanges, pendingChanges })
 .settings-project-search-state {
   padding: 10px 12px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-project-search-list {
@@ -818,11 +820,10 @@ defineExpose({ saveChanges, pendingChanges })
 
 .settings-project-search-title {
   font-size: 10px;
-  font-weight: 600;
-  color: #9ca3af;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-400);
   padding: 4px 12px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .settings-project-search-item {
@@ -832,7 +833,7 @@ defineExpose({ saveChanges, pendingChanges })
   padding: 8px 12px;
   text-align: left;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-gray-700);
   width: 100%;
 }
 
@@ -852,9 +853,9 @@ defineExpose({ saveChanges, pendingChanges })
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--color-white);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   flex-shrink: 0;
 }
 
@@ -864,22 +865,22 @@ defineExpose({ saveChanges, pendingChanges })
 }
 
 .settings-project-search-name {
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-project-search-meta {
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-project-search-more {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   text-align: center;
   padding: 6px 0 2px;
 }
 
 .settings-project-search-more:hover {
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .settings-project-actions {
@@ -899,9 +900,9 @@ defineExpose({ saveChanges, pendingChanges })
   grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(140px, 1fr) 40px;
   gap: 12px;
   padding: 10px 16px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #9ca3af;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-400);
 }
 
 .settings-project-row {
@@ -925,7 +926,7 @@ defineExpose({ saveChanges, pendingChanges })
 .settings-project-loading {
   grid-column: 1 / -1;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .settings-project-user {
@@ -942,26 +943,26 @@ defineExpose({ saveChanges, pendingChanges })
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--color-white);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   flex-shrink: 0;
 }
 
 .settings-project-name {
   font-size: 13px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-project-email {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .settings-project-login {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-500);
   text-align: left;
 }
 
@@ -977,7 +978,7 @@ defineExpose({ saveChanges, pendingChanges })
   height: 30px;
   border-radius: 8px;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-project-role-dropdown {
@@ -1011,12 +1012,12 @@ defineExpose({ saveChanges, pendingChanges })
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .settings-project-more:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-project-more:disabled {
@@ -1024,3 +1025,8 @@ defineExpose({ saveChanges, pendingChanges })
   cursor: not-allowed;
 }
 </style>
+
+
+
+
+

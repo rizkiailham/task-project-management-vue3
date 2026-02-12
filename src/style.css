@@ -41,7 +41,7 @@
   --topbar-height: 56px;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Transitions */
   --transition-fast: 150ms ease;
@@ -95,6 +95,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  font-size: 14px;
   background-color: var(--color-gray-50);
   color: var(--color-gray-900);
 }
@@ -134,6 +135,11 @@ textarea,
 
 #app {
   min-height: 100vh;
+}
+
+/* Global utility override: make Tailwind font-medium bolder app-wide */
+.font-medium {
+  font-weight: var(--font-weight-medium);
 }
 
 /* Custom scrollbar */
@@ -203,7 +209,7 @@ textarea,
 
 .ag-theme-quartz .ag-header-row {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .ag-theme-quartz .ag-header-cell-text {
@@ -217,7 +223,7 @@ textarea,
 }
 
 .ag-theme-quartz .ag-cell.ag-column-first {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 /* Task status badges */
@@ -710,3 +716,6 @@ a.text-primary:hover,
 .p-tooltip.assignee-tooltip .p-tooltip-arrow {
   border-top-color: #ffffff !important;
 }
+
+
+

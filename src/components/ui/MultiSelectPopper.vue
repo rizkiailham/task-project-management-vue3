@@ -898,7 +898,7 @@ function getTextColor(hex) {
 
 .tag-placeholder {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .tag-pill {
@@ -908,7 +908,7 @@ function getTextColor(hex) {
   border-radius: 4px;
   padding: 3px 10px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   line-height: 1;
   height: 22px;
   max-width: 160px;
@@ -923,10 +923,10 @@ function getTextColor(hex) {
   justify-content: center;
   border-radius: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   line-height: 1;
   height: 22px;
-  color: #6b7280;
+  color: var(--color-gray-500);
   flex-shrink: 0;
 }
 
@@ -988,7 +988,7 @@ function getTextColor(hex) {
   border: 1px solid #e5e7eb;
   padding: 6px 8px;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-gray-700);
   outline: none;
 }
 
@@ -1001,9 +1001,9 @@ function getTextColor(hex) {
   height: 24px;
   border-radius: 4px;
   border: 1px solid #e5e7eb;
-  color: #6b7280;
+  color: var(--color-gray-500);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1029,7 +1029,7 @@ function getTextColor(hex) {
   gap: 8px;
   padding: 6px 10px;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-gray-700);
   background-color: #ffffff;
   border: 0;
   cursor: pointer;
@@ -1059,7 +1059,7 @@ function getTextColor(hex) {
   border-radius: 4px;
   padding: 3px 10px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   line-height: 1;
   height: 22px;
   max-width: 180px;
@@ -1078,7 +1078,7 @@ function getTextColor(hex) {
 }
 
 .option-more {
-  color: #9ca3af;
+  color: var(--color-gray-400);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1089,14 +1089,14 @@ function getTextColor(hex) {
 }
 
 .option-more:hover {
-  color: #6b7280;
+  color: var(--color-gray-500);
   background-color: #f3f4f6;
 }
 
 .option-empty {
   padding: 12px 10px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 .tag-color-popper {
@@ -1115,3 +1115,6 @@ function getTextColor(hex) {
   width: 240px;
 }
 </style>
+
+
+

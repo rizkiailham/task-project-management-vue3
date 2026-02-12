@@ -237,7 +237,7 @@ function changePageSize(size) {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   background-color: #ffffff;
-  color: #6b7280;
+  color: var(--color-gray-500);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -256,12 +256,16 @@ function changePageSize(size) {
 .pagination-page {
   min-width: 32px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .pagination-page-active {
   background-color: #f3f4f6;
-  color: #6b7280;
+  color: var(--color-gray-500);
   border-color: #d1d5db;
 }
 </style>
+
+
+
+

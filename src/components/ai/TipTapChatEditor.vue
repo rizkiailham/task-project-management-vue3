@@ -406,17 +406,17 @@ defineExpose({ focus, handleSend })
 .tiptap-chat-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   pointer-events: none;
   height: 0;
 }
 
 .tiptap-chat-editor .mention {
   background-color: #ede9fe;
-  color: #F97316;
+  color: var(--color-orange-500);
   border-radius: 4px;
   padding: 0 4px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 /* Task List Styles */
@@ -442,7 +442,7 @@ defineExpose({ focus, handleSend })
 
 .tiptap-chat-editor ul[data-type="taskList"] li[data-checked="true"] > div {
   text-decoration: line-through;
-  color: #9ca3af;
+  color: var(--color-gray-400);
 }
 
 /* Tippy themes for dropdowns */
@@ -459,4 +459,8 @@ defineExpose({ focus, handleSend })
   padding: 0;
 }
 </style>
+
+
+
+
 

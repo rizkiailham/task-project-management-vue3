@@ -260,14 +260,15 @@ defineExpose({ saveChanges })
 
 .settings-project-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-project-description {
   font-size: 12px;
-  color: #4b5563;
+  color: var(--color-gray-500);
   line-height: 1.5;
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-option-header {
@@ -279,8 +280,8 @@ defineExpose({ saveChanges })
 
 .settings-field-title {
   font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-option-add-btn {
@@ -289,13 +290,13 @@ defineExpose({ saveChanges })
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--color-gray-500);
   border-radius: 4px;
 }
 
 .settings-option-add-btn:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-option-list {
@@ -353,7 +354,6 @@ defineExpose({ saveChanges })
   font-size: 12px;
   font-weight: 400;
   line-height: 20px;
-  letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   padding: 0 6px; /* Unified padding */
@@ -465,8 +465,8 @@ defineExpose({ saveChanges })
 }
 
 .settings-option-add {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: 14px;
+  color: var(--color-gray-500);
   text-align: left;
   padding: 0;
   margin-top: 8px;
@@ -476,6 +476,11 @@ defineExpose({ saveChanges })
 }
 
 .settings-option-add:hover {
-  color: #374151;
+  color: var(--color-gray-700);
 }
 </style>
+
+
+
+
+

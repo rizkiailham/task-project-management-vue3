@@ -366,13 +366,13 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-project-empty-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
 }
 
 .settings-project-empty-text {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   margin-top: 6px;
 }
 
@@ -385,8 +385,8 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-project-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-email-header-actions {
@@ -404,21 +404,21 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   border-radius: 4px;
   background: transparent;
   border: 0;
-  color: #6b7280;
+  color: var(--color-gray-500);
   cursor: pointer;
 }
 
 .settings-email-icon-btn:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-email-label {
   display: block;
   margin-bottom: 8px;
   font-size: 12px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 .settings-email-access-grid {
@@ -449,14 +449,14 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 
 .settings-email-access-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-email-access-text {
   font-size: 12px;
   line-height: 1.4;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   max-width: 260px;
 }
 
@@ -508,3 +508,6 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   }
 }
 </style>
+
+
+

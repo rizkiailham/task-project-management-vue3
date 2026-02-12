@@ -326,6 +326,11 @@ async function handleProjectClick(project) {
   // Don't navigate to project - only expand/collapse
 }
 
+function onProjectRowClick(project) {
+  if (projectRenameId.value === project.id) return
+  handleProjectClick(project)
+}
+
 watch(
   () => [route.params.projectId, route.params.itemId],
   ([nextProjectId, nextItemId], [prevProjectId, prevItemId]) => {
@@ -845,7 +850,7 @@ async function handleLogout() {
               :key="item.label"
               @click="navigateTo(item)"
               :class="[
-                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-[14px] font-medium cursor-pointer transition-colors w-full min-w-0 group',
                 item.active
                   ? 'bg-[#e5e6ec] text-gray-900'
                   : 'text-gray-900 hover:bg-[#e5e6ec]'
@@ -854,7 +859,7 @@ async function handleLogout() {
                 <span class="w-5 h-5 flex items-center justify-center text-gray-900">
                   <component :is="item.icon" class="w-[18px] h-[18px] text-gray-900" />
                 </span>
-                <span class="flex-1 text-left truncate">{{ item.label }}</span>
+                <span class="flex-1 text-left truncate font-medium">{{ item.label }}</span>
                 <span v-if="item.badge" class="bg-primary-500 text-white text-[11px] py-0.5 px-2 rounded-full font-medium ml-1">
                   {{ item.badge }}
                 </span>
@@ -865,12 +870,12 @@ async function handleLogout() {
           <div class="sidebar-project-header flex items-center justify-between px-3 mt-10 pb-0 mb-2">
             <Button
               type="button"
-              class="flex items-center px-3 gap-1.5 text-[14px] font-semibold text-gray-600 uppercase tracking-wide"
+              class="flex items-center px-3 gap-1.5 text-[14px] font-medium text-gray-400 uppercase tracking-wide"
               @click="toggleProjects"
               :aria-expanded="projectsExpanded"
               unstyled
             >
-              {{ t('sidebar.projectSection.title') }}
+              <span class="font-bold">{{ t('sidebar.projectSection.title') }}</span>
               <ChevronDown
                 class="sidebar-project-chevron w-3.5 h-3.5 text-gray-500 transition-transform"
                 :class="{ '-rotate-90': !projectsExpanded }"
@@ -891,12 +896,13 @@ async function handleLogout() {
               <div v-for="project in projects" :key="project.id" class="dropdown-section relative">
                 <div
                   :class="[
-                    'sidebar-project-row flex items-center gap-2.5 px-3 rounded-md text-sm transition-colors w-full min-w-0 group',
+                    'sidebar-project-row flex items-center gap-2.5 px-3 rounded-md text-[14px] font-medium transition-colors w-full min-w-0 group',
+                    { 'is-renaming-project': projectRenameId === project.id },
                     isProjectActive(project.id) && !projectStore.activeProjectItemId
                       ? 'bg-[#e5e6ec] text-gray-900'
                       : 'text-gray-900 hover:bg-[#e5e6ec]'
                   ]"
-                  @click="handleProjectClick(project)"
+                  @click="onProjectRowClick(project)"
                 >
                   <button
                     class="sidebar-project-trigger flex items-center gap-2.5 min-w-0 flex-1 w-full cursor-pointer"
@@ -919,16 +925,18 @@ async function handleLogout() {
                         v-if="projectRenameId === project.id"
                         class="sidebar-rename-wrapper sidebar-rename-wrapper--project inline-flex w-full items-center"
                         :data-project-rename="project.id"
+                        @click.stop
                       >
                         <InputText
                           v-model="projectRenameValue"
                           class="sidebar-rename-input sidebar-rename-input--project w-full text-sm"
+                          @click.stop
                           @keydown.enter.prevent="saveProjectRename(project)"
                           @keydown.esc.prevent="cancelProjectRename"
                           @blur="saveProjectRename(project)"
                         />
                       </span>
-                      <span v-else class="truncate">{{ project.name }}</span>
+                      <span v-else class="truncate font-medium">{{ project.name }}</span>
                     </span>
                   </button>
                   <div class="sidebar-project-actions flex items-center gap-1 ml-auto">
@@ -981,7 +989,7 @@ async function handleLogout() {
                       v-for="item in getProjectChildren(project.id)"
                       :key="item.key"
                       :class="[
-                        'sidebar-child-row submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-[13px] cursor-pointer transition-all group relative',
+                        'sidebar-child-row submenu-item flex items-center gap-2.5 py-1.5 px-3 pl-10 rounded-md text-[14px] font-medium cursor-pointer transition-all group relative',
                         (item.type === 'report' && isReportDisabled(project.id))
                           ? 'text-gray-400 cursor-not-allowed'
                           : 'text-gray-900 hover:bg-[#e5e6ec] hover:text-gray-900',
@@ -1013,7 +1021,7 @@ async function handleLogout() {
                             autoFocus
                           />
                         </span>
-                        <span v-else class="truncate">{{ item.label || item.name }}</span>
+                        <span v-else class="truncate font-medium">{{ item.label || item.name }}</span>
                       </span>
                       <DropdownMenu
                         v-if="!(item.type === 'report' && isReportDisabled(project.id))"
@@ -1051,12 +1059,12 @@ async function handleLogout() {
 
         <!-- System Options (fixed bottom) -->
         <div class="absolute inset-x-0 bottom-0 border-t border-gray-200 bg-[#f4f4f5] px-3 pt-4 pb-0 system-options pb-8">
-          <div class="text-[11px] font-semibold text-[14px] font-semibold text-gray-600 uppercase tracking-wide px-3 mb-2">System options</div>
+          <div class="text-[14px] font-bold text-gray-400 uppercase tracking-wide px-3 mb-2">System options</div>
           <div class="space-y-1">
             <button
               type="button"
               :class="[
-                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-[14px] font-medium cursor-pointer transition-colors w-full min-w-0 group',
                 isSettingsActive
                   ? 'bg-[#e5e6ec] text-gray-900'
                   : 'text-gray-900 hover:bg-[#e5e6ec]'
@@ -1067,12 +1075,12 @@ async function handleLogout() {
                 <circle cx="12" cy="12" r="3"></circle>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
-              <span>Settings</span>
+              <span class="font-medium">Settings</span>
             </button>
             <button
               type="button"
               :class="[
-                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-[14px] font-medium cursor-pointer transition-colors w-full min-w-0 group',
                 isUsersActive
                   ? 'bg-[#e5e6ec] text-gray-900'
                   : 'text-gray-900 hover:bg-[#e5e6ec]'
@@ -1085,12 +1093,12 @@ async function handleLogout() {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
-              <span>Users</span>
+              <span class="font-medium">Users</span>
             </button>
             <button
               type="button"
               :class="[
-                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-[14px] font-medium cursor-pointer transition-colors w-full min-w-0 group',
                 isBulletinActive
                   ? 'bg-[#e5e6ec] text-gray-900'
                   : 'text-gray-900 hover:bg-[#e5e6ec]'
@@ -1098,18 +1106,18 @@ async function handleLogout() {
               @click="goToBulletin"
             >
               <Newspaper class="w-[18px] h-[18px] text-gray-900" />
-              <span>{{ t('sidebar.bulletin') }}</span>
+              <span class="font-medium">{{ t('sidebar.bulletin') }}</span>
             </button>
             <button
               type="button"
               :class="[
-                'flex items-center gap-2.5 py-2 px-3 rounded-md text-sm cursor-pointer transition-colors w-full min-w-0 group',
+                'flex items-center gap-2.5 py-2 px-3 rounded-md text-[14px] font-medium cursor-pointer transition-colors w-full min-w-0 group',
                 'text-gray-900 hover:bg-[#e5e6ec]'
               ]"
               @click="goToHelp"
             >
               <CircleHelp class="w-[18px] h-[18px] text-gray-900" />
-              <span>{{ t('sidebar.helpResources') }}</span>
+              <span class="font-medium">{{ t('sidebar.helpResources') }}</span>
             </button>
           </div>
         </div>
@@ -1179,8 +1187,8 @@ async function handleLogout() {
 }
 
 .sidebar-rename-input {
-  font-weight: 400;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
   border-color: #d1d5db;
   box-shadow: none;
   border: 1px solid;
@@ -1197,11 +1205,11 @@ async function handleLogout() {
 }
 
 .sidebar-rename-input--project {
-  font-size: 0.875rem;
+  font-size: 14px;
 }
 
 .sidebar-rename-input--child {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .sidebar-rename-wrapper--project {
@@ -1221,15 +1229,20 @@ async function handleLogout() {
 }
 
 .sidebar-project-actions {
-  width: 0;
-  overflow: hidden;
+  width: 3rem;
   opacity: 0;
-  transition: opacity 0.15s ease, width 0.15s ease;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
 .sidebar-project-row:hover .sidebar-project-actions {
-  width: 3rem;
   opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-project-row.is-renaming-project .sidebar-project-actions {
+  opacity: 0.9;
+  pointer-events: auto;
 }
 
 .sidebar-project-chevron,
@@ -1287,3 +1300,7 @@ async function handleLogout() {
   transform: scale(0.95) translateY(-4px);
 }
 </style>
+
+
+
+

@@ -529,7 +529,7 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 .notion-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   pointer-events: none;
   height: 0;
 }
@@ -596,7 +596,7 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
 /* Mentions */
 .notion-editor .mention {
   @apply bg-primary-100 text-primary-700 rounded px-1 py-0.5 font-medium;
-  color: #F97316!important
+  color: var(--color-orange-500) !important;
 }
 
 /* Links */
@@ -661,3 +661,5 @@ defineExpose({ focus, getContent, getText, clearContent, editor })
   padding: 0;
 }
 </style>
+
+

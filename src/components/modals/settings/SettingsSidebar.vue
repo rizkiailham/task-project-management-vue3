@@ -57,6 +57,8 @@ function selectSection(sectionId) {
   background: #f3f4f6;
   border-right: 1px solid #f3f4f6;
   padding: 20px 10px;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -78,20 +80,18 @@ function selectSection(sectionId) {
   align-items: center;
   justify-content: space-between;
   padding-right: 10px;
-  margin-bottom: 6px;
 }
 
 .settings-nav-title {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   padding: 0 10px;
-  color: #9CA3af;
+  color: var(--color-gray-400);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .settings-nav-action {
-  color: #9ca3af;
+  color: var(--color-gray-400);
   padding: 2px;
   border-radius: 4px;
   display: flex;
@@ -102,16 +102,16 @@ function selectSection(sectionId) {
 
 .settings-nav-action:hover {
   background: #e5e7eb;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .settings-nav-item {
   text-align: left;
-  font-size: 13px;
+  font-size: 14px;
   height: 28px;
   padding: 0 10px;
   border-radius: 6px;
-  color: #374151;
+  color: var(--color-gray-700);
   transition: background 0.15s ease, color 0.15s ease;
   white-space: nowrap;
   overflow: hidden;
@@ -123,7 +123,7 @@ function selectSection(sectionId) {
 }
 
 .settings-nav-item:hover {
-  background: #f3f4f6;
+  background: #e5e7eb;
 }
 
 .settings-nav-item.is-active {
@@ -140,3 +140,7 @@ function selectSection(sectionId) {
   }
 }
 </style>
+
+
+
+

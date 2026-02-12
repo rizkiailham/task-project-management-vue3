@@ -725,11 +725,11 @@ watch(
 }
 
 .ai-markdown :deep(strong) {
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .ai-markdown :deep(a) {
-  color: #2563eb;
+  color: var(--color-primary-600);
   text-decoration: underline;
 }
 
@@ -742,7 +742,7 @@ watch(
 
 .ai-markdown :deep(pre) {
   background: #6b7280;
-  color: #f9fafb;
+  color: var(--color-gray-50);
   padding: 0.75rem;
   border-radius: 6px;
   overflow-x: auto;
@@ -757,7 +757,7 @@ watch(
 .ai-markdown :deep(blockquote) {
   border-left: 3px solid #e5e7eb;
   padding-left: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
   margin: 0.5rem 0;
 }
 
@@ -785,13 +785,13 @@ details summary::-webkit-details-marker {
 details summary::after {
   content: '+';
   margin-left: auto;
-  color: #9ca3af;
+  color: var(--color-gray-400);
   font-size: 0.75rem;
 }
 
 details[open] summary::after {
   content: '-';
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 /* History dropdown scrollbar */
@@ -812,6 +812,9 @@ details[open] summary::after {
   background: #9ca3af;
 }
 </style>
+
+
+
 
 
 

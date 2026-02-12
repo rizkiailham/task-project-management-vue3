@@ -468,7 +468,7 @@ defineExpose({ open, close, toggle, isOpen })
 .dropdown-menu :deep(button[aria-selected='true']),
 .dropdown-menu :deep(button.is-selected) {
   background: #e5e6ec;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .dropdown-menu :deep(input),
@@ -478,3 +478,5 @@ defineExpose({ open, close, toggle, isOpen })
   box-shadow: none;
 }
 </style>
+
+

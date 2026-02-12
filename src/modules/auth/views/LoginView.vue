@@ -267,7 +267,7 @@ async function handleSocialLogin(provider) {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  color: #2563eb;
+  color: var(--color-primary-600);
 }
 
 .auth-logo-icon {
@@ -278,7 +278,7 @@ async function handleSocialLogin(provider) {
   text-align: center;
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-800);
   margin-bottom: 1.75rem;
 }
 
@@ -300,8 +300,8 @@ async function handleSocialLogin(provider) {
 
 .auth-label {
   font-size: 0.85rem;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
 }
 
 
@@ -331,7 +331,7 @@ async function handleSocialLogin(provider) {
 }
 
 .auth-error {
-  color: #ef4444;
+  color: var(--color-red-500);
   font-size: 0.8rem;
 }
 
@@ -349,18 +349,18 @@ async function handleSocialLogin(provider) {
 
 .auth-remember-label {
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
 }
 
 .auth-primary {
   width: 100%;
   border-radius: 10px;
   padding: 0.7rem 1rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: 1px solid transparent;
   box-sizing: border-box;
-  color: #ffffff;
+  color: var(--color-white);
 }
 
 .auth-divider {
@@ -368,7 +368,7 @@ async function handleSocialLogin(provider) {
   align-items: center;
   text-align: center;
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   margin: 1.5rem 0 1rem;
   position: relative;
 }
@@ -401,10 +401,10 @@ async function handleSocialLogin(provider) {
   border-radius: 10px;
   padding: 0.55rem 1rem;
   justify-content: center;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   border: 1px solid #e2e8f0;
   background: #f8fafc;
-  color: #1f2937;
+  color: var(--color-gray-800);
 }
 
 .auth-social-icon {
@@ -419,8 +419,8 @@ async function handleSocialLogin(provider) {
 }
 
 .auth-link {
-  color: #2563eb;
-  font-weight: 600;
+  color: var(--color-primary-600);
+  font-weight: var(--font-weight-medium);
   font-size: 0.85rem;
 }
 
@@ -431,3 +431,6 @@ async function handleSocialLogin(provider) {
   text-align: center;
 }
 </style>
+
+
+

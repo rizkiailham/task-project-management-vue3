@@ -241,13 +241,19 @@ function confirmImport() {
 
 .settings-project-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
 }
 
 .settings-project-description {
   font-size: 12px;
-  color: #4b5563;
+  color: var(--color-gray-500);
   line-height: 1.5;
+  font-weight: var(--font-weight-medium);
 }
 </style>
+
+
+
+
+
