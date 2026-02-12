@@ -111,7 +111,7 @@ function selectSection(sectionId) {
   height: 28px;
   padding: 0 10px;
   border-radius: 6px;
-  color: var(--color-gray-700);
+  color: var(--color-gray-500);
   transition: background 0.15s ease, color 0.15s ease;
   white-space: nowrap;
   overflow: hidden;

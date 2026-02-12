@@ -348,9 +348,9 @@ onMounted(() => {
 }
 
 .settings-modal :deep(.p-dialog) {
-  height: var(--settings-modal-height, 90vh);
-  max-height: var(--settings-modal-height, 90vh);
-  min-height: var(--settings-modal-height, 90vh);
+  height: var(--settings-modal-height, min(90vh, 720px));
+  max-height: var(--settings-modal-height, min(90vh, 720px));
+  min-height: var(--settings-modal-height, min(90vh, 720px));
   display: flex;
   flex-direction: column;
   position: relative;
@@ -398,7 +398,9 @@ onMounted(() => {
 .settings-dialog.p-dialog {
   position: relative;
   --settings-footer-height: 58px;
-  --settings-modal-height: 90vh;
+  --settings-modal-height: min(90vh, 720px);
+  align-self: flex-start;
+  margin-top: 16vh;
   height: var(--settings-modal-height);
   max-height: var(--settings-modal-height);
   min-height: var(--settings-modal-height);

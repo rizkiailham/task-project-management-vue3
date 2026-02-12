@@ -31,6 +31,14 @@ These rules apply to all future work in this repository.
   - Use the Settings modal empty state pattern for “Select a project first” (dashed border, centered text).
   - Follow the existing padding and typography: list header padding 19px, editor padding 24px/28px, section titles 16px/600, subtitles 12px/gray.
 
+## Font styling
+- In templates, prefer Tailwind typography utilities (`font-medium`, `text-*`) for consistency.
+- In scoped CSS, avoid hardcoded numeric weights (`font-weight: 500/600`); use design tokens like `font-weight: var(--font-weight-medium)`.
+- For Settings project sections, keep typography consistent across child components:
+  - Title: `16px`, `font-weight: var(--font-weight-medium)`, `color: var(--color-gray-900)`.
+  - Subtitle/Description: `12px`, `font-weight: var(--font-weight-medium)`, `color: var(--color-gray-500)`, `line-height: 1.5`.
+- For list/sidebar item labels, use `font-medium` consistently for active and inactive states.
+
 ## Implementation approach
 - Search the codebase for similar patterns before implementing a feature.
 - Prefer extending existing modules over adding new ones.

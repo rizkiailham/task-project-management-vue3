@@ -581,7 +581,7 @@ onUnmounted(() => {
             v-for="field in customFields"
             :key="field.id"
             type="button"
-            class="settings-list-row pl-3 py-1"
+            class="settings-list-row pl-4 py-1"
             :class="{ 'is-selected': field.id === selectedFieldId }"
             @click="selectField(field.id)"
           >
@@ -869,8 +869,7 @@ onUnmounted(() => {
 
 
 .settings-list-header {
-  padding: 19px;
-  padding-bottom: 8px;
+  padding: 19px 20px 1px 20px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -896,7 +895,7 @@ onUnmounted(() => {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #f3f4f6;
   color: var(--color-gray-500);
   display: inline-flex;
   align-items: center;
@@ -926,7 +925,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--color-gray-700);
+  color: var(--color-gray-500);
   border-radius: 6px;
   text-align: left;
 }
@@ -943,8 +942,7 @@ onUnmounted(() => {
 }
 
 .settings-list-row.is-selected {
-  background: #e5e7eb;
-  color: var(--color-gray-900);
+  background: #f3f4f6;
 }
 
 .settings-list-name {
