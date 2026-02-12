@@ -1,0 +1,627 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Default module",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/project-forms": {
+      "get": {
+        "summary": "Find All",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "621c3984-342a-4109-9eb2-fd7466c3244e",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": [
+                  {
+                    "id": "8e748a83-c5ed-4bea-bc0c-50b58df35a05",
+                    "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                    "name": "Testing Form",
+                    "slug": "form-CdZRZ9En3MGwnWFlOjt1iL8nhvysvaDE",
+                    "index": 1,
+                    "description": "Testing Form",
+                    "customFields": [
+                      {
+                        "key": "name",
+                        "label": "Name",
+                        "isShow": true,
+                        "isRequired": true,
+                        "defaultValue": "Bebas"
+                      }
+                    ],
+                    "isPrivate": true,
+                    "action": "create",
+                    "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                    "projectItem": {
+                      "id": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                      "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                      "parentId": null,
+                      "type": "task",
+                      "name": "Task",
+                      "slug": "item-b6d63847c969460d",
+                      "index": 1,
+                      "meta": null,
+                      "createdAt": "2026-02-09T21:47:11.046Z",
+                      "updatedAt": "2026-02-09T21:47:11.046Z"
+                    },
+                    "createdAt": "2026-02-11T19:50:55.068Z",
+                    "updatedAt": "2026-02-11T19:50:55.068Z"
+                  },
+                  {
+                    "id": "18065788-730e-4427-a7b6-eeb678dc147f",
+                    "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                    "name": "Testing Form",
+                    "slug": "form-ubqvkn0CVQOOJepKpKqfY5GeRDH0n47i",
+                    "index": 2,
+                    "description": "Testing Form",
+                    "customFields": [
+                      {
+                        "key": "name",
+                        "label": "Name",
+                        "isShow": true,
+                        "isRequired": true,
+                        "defaultValue": "Bebas"
+                      },
+                      {
+                        "key": "description",
+                        "label": "Description",
+                        "isShow": true,
+                        "isRequired": false,
+                        "defaultValue": "Bebas"
+                      }
+                    ],
+                    "isPrivate": true,
+                    "action": "create",
+                    "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                    "projectItem": {
+                      "id": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                      "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                      "parentId": null,
+                      "type": "task",
+                      "name": "Task",
+                      "slug": "item-b6d63847c969460d",
+                      "index": 1,
+                      "meta": null,
+                      "createdAt": "2026-02-09T21:47:11.046Z",
+                      "updatedAt": "2026-02-09T21:47:11.046Z"
+                    },
+                    "createdAt": "2026-02-11T19:51:25.099Z",
+                    "updatedAt": "2026-02-11T19:51:25.099Z"
+                  },
+                  {
+                    "id": "da13f9d4-4c75-4174-8ae8-9568425f5055",
+                    "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                    "name": "Testing Form 3",
+                    "slug": "form-Jy7uO1mivdG28hwMVkCleEvOtVETeIho",
+                    "index": 3,
+                    "description": "Testing Form",
+                    "customFields": [
+                      {
+                        "key": "name",
+                        "label": "Name",
+                        "isShow": true,
+                        "isRequired": true,
+                        "defaultValue": "Bebas"
+                      },
+                      {
+                        "key": "description",
+                        "label": "Description",
+                        "isShow": true,
+                        "isRequired": false,
+                        "defaultValue": "Bebas"
+                      },
+                      {
+                        "key": "isMagic",
+                        "label": "Is Magic?",
+                        "isShow": true,
+                        "isRequired": false,
+                        "defaultValue": "true"
+                      }
+                    ],
+                    "isPrivate": true,
+                    "action": "create",
+                    "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                    "projectItem": {
+                      "id": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                      "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                      "parentId": null,
+                      "type": "task",
+                      "name": "Task",
+                      "slug": "item-b6d63847c969460d",
+                      "index": 1,
+                      "meta": null,
+                      "createdAt": "2026-02-09T21:47:11.046Z",
+                      "updatedAt": "2026-02-09T21:47:11.046Z"
+                    },
+                    "createdAt": "2026-02-11T20:19:56.642Z",
+                    "updatedAt": "2026-02-11T20:19:56.642Z"
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Create",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": "{\n    \"projectId\": \"621c3984-342a-4109-9eb2-fd7466c3244e\",\n    \"name\": \"Testing Form 3\",\n    \"description\": \"Testing Form\",\n    \"isPrivate\": true,\n    \"action\": \"create\",\n    \"projectItemId\": \"a7690e1b-c122-45a2-b612-46bc9b9716e2\", // Base on mockup it refrence to Boards\n    \"customFields\": [\n        {\n            \"key\": \"name\",\n            \"label\": \"Name\",\n            \"isShow\": true,\n            \"isRequired\": true,\n            \"defaultValue\": \"Bebas\"\n        },\n        {\n            \"key\": \"description\",\n            \"label\": \"Description\",\n            \"isShow\": true,\n            \"isRequired\": false,\n            \"defaultValue\": \"Bebas\" // String\n        },\n        {\n            \"key\": \"isMagic\",\n            \"label\": \"Is Magic?\",\n            \"isShow\": true,\n            \"isRequired\": false,\n            \"defaultValue\": \"true\" // String\n        }\n    ]\n}"
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/project-forms/{idOrSlug}": {
+      "get": {
+        "summary": "Find One",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "18065788-730e-4427-a7b6-eeb678dc147f",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "data": {
+                    "id": "18065788-730e-4427-a7b6-eeb678dc147f",
+                    "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                    "name": "Testing Form",
+                    "slug": "form-ubqvkn0CVQOOJepKpKqfY5GeRDH0n47i",
+                    "index": 2,
+                    "description": "Testing Form",
+                    "customFields": [
+                      {
+                        "key": "name",
+                        "label": "Name",
+                        "isShow": true,
+                        "isRequired": true,
+                        "defaultValue": "Bebas"
+                      },
+                      {
+                        "key": "description",
+                        "label": "Description",
+                        "isShow": true,
+                        "isRequired": false,
+                        "defaultValue": "Bebas"
+                      }
+                    ],
+                    "isPrivate": true,
+                    "action": "create",
+                    "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                    "projectItem": {
+                      "id": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                      "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                      "parentId": null,
+                      "type": "task",
+                      "name": "Task",
+                      "slug": "item-b6d63847c969460d",
+                      "index": 1,
+                      "meta": null,
+                      "createdAt": "2026-02-09T21:47:11.046Z",
+                      "updatedAt": "2026-02-09T21:47:11.046Z"
+                    },
+                    "createdAt": "2026-02-11T19:51:25.099Z",
+                    "updatedAt": "2026-02-11T19:51:25.099Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "Update",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "da13f9d4-4c75-4174-8ae8-9568425f5055",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "customFields": [
+                  {
+                    "key": "name",
+                    "label": "Name",
+                    "isShow": true,
+                    "isRequired": true,
+                    "defaultValue": "Bebas"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Project form updated successfully",
+                  "data": {
+                    "id": "da13f9d4-4c75-4174-8ae8-9568425f5055",
+                    "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                    "name": "Testing Form 3",
+                    "slug": "form-Jy7uO1mivdG28hwMVkCleEvOtVETeIho",
+                    "index": 3,
+                    "description": "Testing Form",
+                    "customFields": [
+                      {
+                        "key": "name",
+                        "label": "Name",
+                        "isShow": true,
+                        "isRequired": true,
+                        "defaultValue": "Bebas"
+                      }
+                    ],
+                    "isPrivate": true,
+                    "action": "create",
+                    "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                    "createdAt": "2026-02-11T20:19:56.642Z",
+                    "updatedAt": "2026-02-11T20:19:56.642Z"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/project-forms/{id}": {
+      "delete": {
+        "summary": "Delete",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "8669415d-00bf-47c3-b9ca-850ca2e6216e",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Project form removed successfully"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/project-forms/reorder": {
+      "post": {
+        "summary": "Reorder",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "Bearer {{token}}",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "example": {
+                "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                "formIds": [
+                  "da13f9d4-4c75-4174-8ae8-9568425f5055",
+                  "8e748a83-c5ed-4bea-bc0c-50b58df35a05",
+                  "18065788-730e-4427-a7b6-eeb678dc147f"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "message": "Project forms reordered successfully",
+                  "data": [
+                    {
+                      "id": "da13f9d4-4c75-4174-8ae8-9568425f5055",
+                      "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                      "name": "Testing Form 3",
+                      "slug": "form-Jy7uO1mivdG28hwMVkCleEvOtVETeIho",
+                      "index": 1,
+                      "description": "Testing Form",
+                      "customFields": [
+                        {
+                          "key": "name",
+                          "label": "Name",
+                          "isShow": true,
+                          "isRequired": true,
+                          "defaultValue": "Bebas"
+                        }
+                      ],
+                      "isPrivate": true,
+                      "action": "create",
+                      "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                      "projectItem": {
+                        "id": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                        "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                        "parentId": null,
+                        "type": "task",
+                        "name": "Task",
+                        "slug": "item-b6d63847c969460d",
+                        "index": 1,
+                        "meta": null,
+                        "createdAt": "2026-02-09T21:47:11.046Z",
+                        "updatedAt": "2026-02-09T21:47:11.046Z"
+                      },
+                      "createdAt": "2026-02-11T20:19:56.642Z",
+                      "updatedAt": "2026-02-11T20:19:56.642Z"
+                    },
+                    {
+                      "id": "8e748a83-c5ed-4bea-bc0c-50b58df35a05",
+                      "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                      "name": "Testing Form",
+                      "slug": "form-CdZRZ9En3MGwnWFlOjt1iL8nhvysvaDE",
+                      "index": 2,
+                      "description": "Testing Form",
+                      "customFields": [
+                        {
+                          "key": "name",
+                          "label": "Name",
+                          "isShow": true,
+                          "isRequired": true,
+                          "defaultValue": "Bebas"
+                        }
+                      ],
+                      "isPrivate": true,
+                      "action": "create",
+                      "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                      "projectItem": {
+                        "id": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                        "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                        "parentId": null,
+                        "type": "task",
+                        "name": "Task",
+                        "slug": "item-b6d63847c969460d",
+                        "index": 1,
+                        "meta": null,
+                        "createdAt": "2026-02-09T21:47:11.046Z",
+                        "updatedAt": "2026-02-09T21:47:11.046Z"
+                      },
+                      "createdAt": "2026-02-11T19:50:55.068Z",
+                      "updatedAt": "2026-02-11T19:50:55.068Z"
+                    },
+                    {
+                      "id": "18065788-730e-4427-a7b6-eeb678dc147f",
+                      "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                      "name": "Testing Form",
+                      "slug": "form-ubqvkn0CVQOOJepKpKqfY5GeRDH0n47i",
+                      "index": 3,
+                      "description": "Testing Form",
+                      "customFields": [
+                        {
+                          "key": "name",
+                          "label": "Name",
+                          "isShow": true,
+                          "isRequired": true,
+                          "defaultValue": "Bebas"
+                        },
+                        {
+                          "key": "description",
+                          "label": "Description",
+                          "isShow": true,
+                          "isRequired": false,
+                          "defaultValue": "Bebas"
+                        }
+                      ],
+                      "isPrivate": true,
+                      "action": "create",
+                      "projectItemId": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                      "projectItem": {
+                        "id": "a7690e1b-c122-45a2-b612-46bc9b9716e2",
+                        "projectId": "621c3984-342a-4109-9eb2-fd7466c3244e",
+                        "parentId": null,
+                        "type": "task",
+                        "name": "Task",
+                        "slug": "item-b6d63847c969460d",
+                        "index": 1,
+                        "meta": null,
+                        "createdAt": "2026-02-09T21:47:11.046Z",
+                        "updatedAt": "2026-02-09T21:47:11.046Z"
+                      },
+                      "createdAt": "2026-02-11T19:51:25.099Z",
+                      "updatedAt": "2026-02-11T19:51:25.099Z"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}

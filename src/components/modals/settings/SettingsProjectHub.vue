@@ -301,7 +301,7 @@ defineExpose({ saveChanges, pendingChanges })
             v-for="item in group.items"
             :key="item.id"
             type="button"
-            class="settings-list-row pl-3 py-1"
+            class="settings-list-row pl-4 py-1"
             :class="{ 'is-selected': activeSideItem === item.id }"
             @click="selectSideItem(item.id)"
           >
@@ -443,7 +443,7 @@ defineExpose({ saveChanges, pendingChanges })
 }
 
 .settings-list-header {
-  padding: 12px 12px 8px 12px;
+  padding: 12px 16px 0px 16px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -471,8 +471,8 @@ defineExpose({ saveChanges, pendingChanges })
   gap: 8px;
   font-size: 14px;
   font-weight: var(--font-weight-medium);
-  border-radius: 8px;
-  color: var(--color-gray-700);
+  border-radius: 6px;
+  color: var(--color-gray-500);
   text-align: left;
   min-height: 30px;
   width: 100%;
@@ -483,8 +483,7 @@ defineExpose({ saveChanges, pendingChanges })
 }
 
 .settings-list-row.is-selected {
-  background: #e5e7eb;
-  color: var(--color-gray-900);
+  background: #f3f4f6;
 }
 
 .settings-divider {

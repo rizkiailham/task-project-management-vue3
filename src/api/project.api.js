@@ -198,6 +198,37 @@ export async function deleteProjectItem(projectId, itemId) {
 export async function reorderProjectItems(projectId, itemIds) {
   return post(`/projects/${projectId}/items/reorder`, { itemIds })
 }
+
+/**
+ * Get project forms
+ * Based on project-form.json doc: GET /project-forms
+ * @param {Object} params - { projectId, ... }
+ * @returns {Promise<Object|Object[]>}
+ */
+export async function getProjectForms(params = {}, config = {}) {
+  return get('/project-forms', params, config)
+}
+
+/**
+ * Create a project form
+ * Based on project-form.json doc: POST /project-forms
+ * @param {Object} data
+ * @returns {Promise<Object>}
+ */
+export async function createProjectForm(data, config = {}) {
+  return post('/project-forms', data, config)
+}
+
+/**
+ * Update a project form
+ * Based on project-form.json doc: PATCH /project-forms/{idOrSlug}
+ * @param {string} formId
+ * @param {Object} data
+ * @returns {Promise<Object>}
+ */
+export async function updateProjectForm(formId, data, config = {}) {
+  return patch(`/project-forms/${formId}`, data, config)
+}
 /**
  * Get project tags
  * @param {Object} params - { projectId }

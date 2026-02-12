@@ -1,10 +1,11 @@
 <script setup>
 /**
- * SettingsProjectForms - Project form builder settings (dummy data).
+ * SettingsProjectForms - Project form builder settings.
  */
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
+import * as projectApi from '@/api/project.api'
 import FormInput from '@/components/ui/FormInput.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
@@ -21,11 +22,14 @@ const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendin
 
 const projectId = computed(() => projectStore.currentProjectId)
 const isSaving = ref(false)
+const isLoading = ref(false)
+const loadedFormId = ref(null)
 const addPropertyMenuRef = ref(null)
 const addPropertyInlineMenuRef = ref(null)
 const propertySearch = ref('')
+let loadToken = 0
 
-const boardOptions = [
+const fallbackBoardOptions = [
   { label: 'DSD/Task', value: 'task-board' },
   { label: 'General', value: 'general-board' },
   { label: 'Board for tenant', value: 'tenant-board' },
@@ -183,6 +187,112 @@ function createField(key) {
   }
 }
 
+function toArray(value) {
+  if (Array.isArray(value)) return value
+  return []
+}
+
+function getObjectList(response) {
+  if (Array.isArray(response)) return response
+  if (Array.isArray(response?.data)) return response.data
+  if (Array.isArray(response?.items)) return response.items
+  if (Array.isArray(response?.forms)) return response.forms
+  if (response?.form && typeof response.form === 'object') return [response.form]
+  if (response?.projectForm && typeof response.projectForm === 'object') return [response.projectForm]
+  if (response && typeof response === 'object') return [response]
+  return []
+}
+
+function normalizeAccess(value) {
+  if (value === 'public' || value === false) return 'public'
+  return 'private'
+}
+
+function toApiIsPrivate(access) {
+  return access !== 'public'
+}
+
+function normalizeActionId(value) {
+  if (!value) return actionOptions[0].value
+  const normalized = String(value)
+  const apiToUiMap = {
+    create: 'create-task',
+    comment: 'add-comment',
+    send_agent: 'send-agent',
+    send_skill: 'send-skill'
+  }
+  return apiToUiMap[normalized] || normalized
+}
+
+function toApiAction(actionId) {
+  const normalized = String(actionId || '').trim()
+  const uiToApiMap = {
+    'create-task': 'create',
+    'add-comment': 'comment',
+    'send-agent': 'send_agent',
+    'send-skill': 'send_skill'
+  }
+  return uiToApiMap[normalized] || normalized || 'create'
+}
+
+function inferRightLabel(type) {
+  const map = {
+    text: 'Text',
+    textarea: 'Text',
+    number: 'Number',
+    select: 'Select',
+    multiselect: 'Select',
+    date: 'Date',
+    user: 'User'
+  }
+  return map[type] || 'Text'
+}
+
+function normalizeFieldValue(type, value) {
+  if (type === 'multiselect') {
+    if (Array.isArray(value)) return value
+    return value ? [value] : []
+  }
+  return value ?? ''
+}
+
+function buildFieldFromApi(rawField, index = 0) {
+  const rawKey = rawField?.key || rawField?.slug || rawField?.fieldKey || `field-${index + 1}`
+  const key = rawKey === 'name' ? 'title' : rawKey
+  const catalogField = propertyCatalog.find((item) => item.key === key)
+  const type = rawField?.type || catalogField?.type || 'text'
+
+  const optionsFromApi = toArray(rawField?.options).map((option) => {
+    if (typeof option === 'string') {
+      return { label: option, value: option }
+    }
+    return {
+      ...option,
+      label: option?.label ?? option?.name ?? option?.value ?? '',
+      value: option?.value ?? option?.id ?? option?.label ?? option?.name ?? ''
+    }
+  })
+  const options = optionsFromApi.length > 0 ? optionsFromApi : (catalogField?.options || [])
+
+  let value = rawField?.value
+  if (value === undefined) value = rawField?.defaultValue
+  value = normalizeFieldValue(type, value)
+
+  return {
+    id: rawField?.id || `${key}-${Date.now()}-${index}`,
+    key,
+    label: rawField?.label || catalogField?.label || key,
+    type,
+    rightLabel: rawField?.rightLabel || rawField?.badge || catalogField?.rightLabel || inferRightLabel(type),
+    placeholder: rawField?.placeholder || catalogField?.placeholder || '',
+    options,
+    locked: Boolean(rawField?.locked ?? (key === 'title') ?? catalogField?.locked),
+    required: Boolean(rawField?.required ?? rawField?.isRequired ?? (key === 'title')),
+    visible: rawField?.visible ?? rawField?.isShow ?? true,
+    value
+  }
+}
+
 function getStatusOption(value) {
   const statusField = propertyCatalog.find(p => p.key === 'status')
   return statusField?.options?.find(o => o.value === value)
@@ -223,6 +333,20 @@ const formState = ref({
 const formFields = ref(createDefaultFields())
 const savedSnapshot = ref('')
 
+const boardOptions = computed(() => {
+  if (!projectId.value) return fallbackBoardOptions
+  const items = projectStore.getProjectItems(projectId.value) || []
+  const mapped = items.map((item) => ({
+    label: item?.name || item?.slug || 'Board',
+    value: item?.id
+  })).filter((item) => item.value)
+  return mapped.length > 0 ? mapped : fallbackBoardOptions
+})
+
+function getDefaultBoardId() {
+  return boardOptions.value[0]?.value || fallbackBoardOptions[0]?.value || ''
+}
+
 const privateLink = computed(() => {
   const project = projectStore.currentProject
   const prefix = project?.initial || project?.name || 'project'
@@ -244,7 +368,7 @@ const hasPendingChanges = computed(() => {
   return createSnapshot() !== savedSnapshot.value
 })
 
-const canSave = computed(() => hasPendingChanges.value && !isSaving.value)
+const canSave = computed(() => hasPendingChanges.value && !isSaving.value && !isLoading.value)
 
 function createSnapshot() {
   return JSON.stringify({
@@ -254,21 +378,100 @@ function createSnapshot() {
     actionId: formState.value.actionId,
     fields: formFields.value.map((field) => ({
       key: field.key,
-      value: field.value
+      label: field.label,
+      type: field.type,
+      rightLabel: field.rightLabel,
+      placeholder: field.placeholder,
+      required: field.required,
+      visible: field.visible,
+      locked: field.locked,
+      value: field.value,
+      options: toArray(field.options).map((option) => ({
+        label: option?.label ?? '',
+        value: option?.value ?? ''
+      }))
     }))
   })
 }
 
 function resetToDefault() {
+  loadedFormId.value = null
   formState.value = {
     name: 'Default - Create task',
     access: 'private',
-    boardId: boardOptions[0].value,
+    boardId: getDefaultBoardId(),
     actionId: actionOptions[0].value
   }
   formFields.value = createDefaultFields()
   propertySearch.value = ''
   savedSnapshot.value = createSnapshot()
+}
+
+function applyApiForm(form) {
+  loadedFormId.value = form?.id || form?.formId || null
+
+  const nextBoardId = form?.boardId || form?.projectItemId || form?.board?.id || getDefaultBoardId()
+  const nextActionId = normalizeActionId(form?.actionId || form?.action || form?.actionType)
+  formState.value = {
+    name: form?.name || form?.title || 'Default - Create task',
+    access: normalizeAccess(form?.access ?? form?.visibility ?? form?.sharing ?? form?.isPrivate),
+    boardId: nextBoardId,
+    actionId: nextActionId
+  }
+
+  const incomingFields = toArray(
+    form?.customFields ||
+      form?.fields ||
+      form?.formFields ||
+      form?.properties ||
+      form?.items
+  )
+  const mappedFields = incomingFields.length > 0
+    ? incomingFields.map((field, index) => buildFieldFromApi(field, index))
+    : createDefaultFields()
+
+  const hasTitle = mappedFields.some((field) => field.key === 'title')
+  formFields.value = hasTitle ? mappedFields : [{ ...createDefaultFields()[0] }, ...mappedFields]
+  propertySearch.value = ''
+  savedSnapshot.value = createSnapshot()
+}
+
+async function loadFormFromApi() {
+  if (!projectId.value) {
+    resetToDefault()
+    return
+  }
+
+  const token = ++loadToken
+  isLoading.value = true
+  try {
+    await projectStore.fetchProjectItems(projectId.value)
+    const response = await projectApi.getProjectForms({ projectId: projectId.value })
+    if (token !== loadToken) return
+
+    const forms = getObjectList(response)
+      .filter((item) => String(item?.projectId || item?.project?.id || '') === String(projectId.value))
+      .sort((a, b) => {
+        const ia = Number(a?.index ?? 0)
+        const ib = Number(b?.index ?? 0)
+        return ia - ib
+      })
+    const selected = forms[0]
+
+    if (selected) {
+      applyApiForm(selected)
+    } else {
+      resetToDefault()
+    }
+  } catch (error) {
+    if (token !== loadToken) return
+    uiStore.showApiError(error, t('settings.project.forms.errors.load', 'Failed to load form settings'))
+    resetToDefault()
+  } finally {
+    if (token === loadToken) {
+      isLoading.value = false
+    }
+  }
 }
 
 function addPropertyField(propertyKey) {
@@ -297,19 +500,49 @@ async function handleCopyPrivateLink() {
 }
 
 async function saveChanges() {
-  if (!hasPendingChanges.value || isSaving.value) return
+  if (!projectId.value || !hasPendingChanges.value || isSaving.value || isLoading.value) return
   isSaving.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 350))
+    const payload = {
+      projectId: projectId.value,
+      name: formState.value.name.trim(),
+      description: formState.value.name.trim(),
+      isPrivate: toApiIsPrivate(formState.value.access),
+      action: toApiAction(formState.value.actionId),
+      projectItemId: formState.value.boardId,
+      customFields: formFields.value.map((field) => ({
+        key: field.key === 'title' ? 'name' : field.key,
+        label: field.label,
+        isShow: Boolean(field.visible),
+        isRequired: Boolean(field.required),
+        defaultValue: Array.isArray(field.value) ? field.value.join(',') : (field.value ?? '')
+      }))
+    }
+
+    let response
+    if (loadedFormId.value) {
+      response = await projectApi.updateProjectForm(loadedFormId.value, payload)
+    } else {
+      response = await projectApi.createProjectForm(payload)
+    }
+
+    const returned = response?.data || response?.form || response?.projectForm || response
+    if (returned?.id || returned?.formId) {
+      loadedFormId.value = returned.id || returned.formId
+    }
     savedSnapshot.value = createSnapshot()
-    uiStore.showSuccess(t('settings.project.forms.messages.saved', 'Form settings saved'))
+    uiStore.showApiSuccess(response, t('settings.project.forms.messages.saved', 'Form settings saved'))
+    return response
+  } catch (error) {
+    uiStore.showApiError(error, t('settings.project.forms.errors.save', 'Failed to save form settings'))
+    throw error
   } finally {
     isSaving.value = false
   }
 }
 
 watch(projectId, () => {
-  resetToDefault()
+  loadFormFromApi()
 }, { immediate: true })
 
 watch([canSave, isSaving, hasPendingChanges], () => {
@@ -690,8 +923,9 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 }
 
 .settings-form {
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
   padding-right: 4px;
   padding-bottom: 20px;
 }
