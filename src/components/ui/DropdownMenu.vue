@@ -52,6 +52,21 @@ const props = defineProps({
     default: '13rem'
   },
   /**
+   * Optional fixed anchor coordinates in viewport pixels
+   * When provided, menu positioning uses this point instead of trigger bounds.
+   */
+  anchor: {
+    type: Object,
+    default: null
+  },
+  /**
+   * Distance in px between trigger and menu
+   */
+  offset: {
+    type: [Number, String],
+    default: 8
+  },
+  /**
    * Close dropdown when clicking an item
    */
   closeOnSelect: {
@@ -117,17 +132,33 @@ function resolveMenuWidth() {
   return parsed
 }
 
+function resolveAnchorRect() {
+  if (!props.anchor || typeof props.anchor !== 'object') return null
+  const x = Number(props.anchor.x)
+  const y = Number(props.anchor.y)
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null
+  return {
+    left: x,
+    right: x,
+    top: y,
+    bottom: y
+  }
+}
+
 const menuStyle = computed(() => {
   if (typeof window === 'undefined') return { width: props.width, top: '0', left: '0' }
   const vw = viewportWidth.value // Dependency to trigger re-calc on resize
   const heightTick = menuHeightTick.value // Force recompute after open
+  const anchorRect = resolveAnchorRect()
 
-  if (!triggerRef.value) {
+  if (!triggerRef.value && !anchorRect) {
     return { width: props.width, top: '0', left: '0' }
   }
 
-  const rect = triggerRef.value.getBoundingClientRect()
+  const rect = anchorRect || triggerRef.value.getBoundingClientRect()
   const viewportPadding = 8
+  const parsedOffset = Number.parseFloat(String(props.offset))
+  const menuOffset = Number.isNaN(parsedOffset) ? 8 : parsedOffset
   const menuWidth = resolveMenuWidth()
   const viewportHeight = window.innerHeight
   const availableTop = rect.top - viewportPadding
@@ -151,14 +182,14 @@ const menuStyle = computed(() => {
   if (effectiveOpenUp) {
     // Open upwards: position bottom of menu at top of trigger
     verticalStyle = {
-      bottom: `${viewportHeight - rect.top + 8}px`,
+      bottom: `${viewportHeight - rect.top + menuOffset}px`,
       top: 'auto',
       maxHeight: `${Math.max(availableTop, 120)}px`
     }
   } else {
     // Open downwards: position top of menu at bottom of trigger
     verticalStyle = {
-      top: `${Math.max(rect.bottom + 8, viewportPadding)}px`,
+      top: `${Math.max(rect.bottom + menuOffset, viewportPadding)}px`,
       bottom: 'auto',
       maxHeight: `${Math.max(availableBottom, 120)}px`
     }

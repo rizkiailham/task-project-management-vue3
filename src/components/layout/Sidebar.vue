@@ -14,6 +14,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUIStore, useNotificationStore, useAuthStore, useProjectStore } from '@/stores'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import { useContextMenu } from '@/composables/useContextMenu'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -51,6 +52,7 @@ const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
 const confirm = useConfirm()
+const { openContextMenu } = useContextMenu()
 
 // User menu items for DropdownMenu component
 const userMenuItems = computed(() => [
@@ -331,6 +333,16 @@ function onProjectRowClick(project) {
   handleProjectClick(project)
 }
 
+function onProjectRowContextMenu(event, project) {
+  if (projectRenameId.value === project.id) return
+  openContextMenu(event, {
+    items: getProjectMenuItems(project),
+    width: '12rem',
+    variant: 'sidebar',
+    data: { projectId: project.id, project }
+  })
+}
+
 watch(
   () => [route.params.projectId, route.params.itemId],
   ([nextProjectId, nextItemId], [prevProjectId, prevItemId]) => {
@@ -349,7 +361,10 @@ function startProjectRename(project) {
   projectRenameValue.value = project.name
   nextTick(() => {
     const input = document.querySelector(`[data-project-rename="${project.id}"] input`)
-    if (input) input.focus()
+    if (input) {
+      input.focus({ preventScroll: true })
+      input.select?.()
+    }
   })
 }
 
@@ -379,7 +394,10 @@ function startChildRename(projectId, item) {
   childRenameValue.value = getChildLabel(item)
   nextTick(() => {
     const input = document.querySelector(`[data-child-rename="${projectId}-${item.key}"] input`)
-    if (input) input.focus()
+    if (input) {
+      input.focus({ preventScroll: true })
+      input.select?.()
+    }
   })
 }
 
@@ -610,6 +628,16 @@ async function openChildItem(projectId, item) {
     // For items without routes, just show toast without activating
     uiStore.showInfo(t('sidebar.messages.comingSoon'))
   }
+}
+
+function onChildRowContextMenu(event, projectId, item) {
+  if (item.type === 'report' && isReportDisabled(projectId)) return
+  openContextMenu(event, {
+    items: getChildMenuItems(projectId, { key: item.key, ...item }),
+    width: '12rem',
+    variant: 'sidebar',
+    data: { projectId, item }
+  })
 }
 
 function getProjectMenuItems(project) {
@@ -903,6 +931,7 @@ async function handleLogout() {
                       : 'text-gray-900 hover:bg-[#e5e6ec]'
                   ]"
                   @click="onProjectRowClick(project)"
+                  @contextmenu.prevent="onProjectRowContextMenu($event, project)"
                 >
                   <button
                     class="sidebar-project-trigger flex items-center gap-2.5 min-w-0 flex-1 w-full cursor-pointer"
@@ -936,7 +965,7 @@ async function handleLogout() {
                           @blur="saveProjectRename(project)"
                         />
                       </span>
-                      <span v-else class="truncate font-medium">{{ project.name }}</span>
+                      <span v-else class="sidebar-item-label sidebar-item-label--project truncate font-medium">{{ project.name }}</span>
                     </span>
                   </button>
                   <div class="sidebar-project-actions flex items-center gap-1 ml-auto">
@@ -996,6 +1025,7 @@ async function handleLogout() {
                           { 'bg-[#e5e6ec] font-medium': isProjectActive(project.id) && item.key === (projectStore.activeProjectItemId || (route.name === 'ProjectNoteList' ? 'notes-list' : null)) }
                       ]"
                       @click="openChildItem(project.id, item)"
+                      @contextmenu.prevent="onChildRowContextMenu($event, project.id, item)"
                     >
                       <!-- Drag Handle (visible on hover) -->
                       <span class="drag-handle absolute left-4 w-4 h-full flex items-center justify-center opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing hover:opacity-100 transition-opacity">
@@ -1007,25 +1037,25 @@ async function handleLogout() {
                       </span>
                       <span class="flex-1 min-w-0 text-left truncate">
                         <span
-                          v-if="childRenameTarget.projectId === project.id && childRenameTarget.key === item.id"
+                          v-if="childRenameTarget.projectId === project.id && childRenameTarget.key === item.key"
                           class="sidebar-rename-wrapper sidebar-rename-wrapper--child inline-flex w-full items-center"
-                          :data-child-rename="`${project.id}-${item.id}`"
+                          :data-child-rename="`${project.id}-${item.key}`"
                           @click.stop
                         >
                           <InputText
                             v-model="childRenameValue"
                             class="sidebar-rename-input sidebar-rename-input--child w-full text-[13px]"
-                            @keydown.enter.prevent="saveChildRename(project.id, { key: item.id, ...item })"
+                            @keydown.enter.prevent="saveChildRename(project.id, { key: item.key, ...item })"
                             @keydown.esc.prevent="cancelChildRename"
-                            @blur="saveChildRename(project.id, { key: item.id, ...item })"
+                            @blur="saveChildRename(project.id, { key: item.key, ...item })"
                             autoFocus
                           />
                         </span>
-                        <span v-else class="truncate font-medium">{{ item.label || item.name }}</span>
+                        <span v-else class="sidebar-item-label sidebar-item-label--child truncate font-medium">{{ item.label || item.name }}</span>
                       </span>
                       <DropdownMenu
                         v-if="!(item.type === 'report' && isReportDisabled(project.id))"
-                        :items="getChildMenuItems(project.id, { key: item.id, ...item })"
+                        :items="getChildMenuItems(project.id, { key: item.key, ...item })"
                         position="left"
                         width="12rem"
                         variant="sidebar"
@@ -1192,8 +1222,8 @@ async function handleLogout() {
   border-color: #d1d5db;
   box-shadow: none;
   border: 1px solid;
-  padding: 0 0.5rem;
-  line-height: 1;
+  padding: 0 0.2rem;
+  line-height: 1.25;
   box-sizing: border-box;
   height: 100%;
   margin: 0;
@@ -1217,6 +1247,20 @@ async function handleLogout() {
 }
 
 .sidebar-rename-wrapper--child {
+  height: 1.5rem;
+}
+
+.sidebar-item-label {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.sidebar-item-label--project {
+  height: 1.75rem;
+}
+
+.sidebar-item-label--child {
   height: 1.5rem;
 }
 

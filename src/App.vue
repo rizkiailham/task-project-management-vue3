@@ -15,6 +15,7 @@ import ToastNotifications from '@/components/ui/ToastNotifications.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import GlobalLoader from '@/components/ui/GlobalLoader.vue'
 import CommandPalette from '@/components/ui/CommandPalette.vue'
+import AppContextMenu from '@/components/ui/AppContextMenu.vue'
 
 // Modal components
 import CreateTaskModal from '@/components/modals/CreateTaskModal.vue'
@@ -81,6 +82,7 @@ function handleKeyboardShortcuts(event) {
     <ToastNotifications />
     <GlobalLoader />
     <CommandPalette />
+    <AppContextMenu />
 
     <!-- Global Modals -->
     <CreateTaskModal />

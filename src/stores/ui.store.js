@@ -33,6 +33,19 @@ export const useUIStore = defineStore('ui', () => {
   const activeModal = ref(null)
   const modalData = ref(null)
 
+  // Context menu state
+  const contextMenu = ref({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    items: [],
+    width: '12rem',
+    closeOnSelect: true,
+    variant: 'default',
+    data: null
+  })
+  const contextMenuRevision = ref(0)
+
   // Loading states
   const globalLoading = ref(false)
   const loadingMessage = ref('')
@@ -196,6 +209,90 @@ export const useUIStore = defineStore('ui', () => {
   function closeModal() {
     activeModal.value = null
     modalData.value = null
+  }
+
+  // ================================
+  // Context Menu Actions
+  // ================================
+
+  function isRightClickEvent(event) {
+    if (!event) return false
+    return event.type === 'contextmenu' || event.button === 2
+  }
+
+  function normalizeContextMenuWidth(width) {
+    if (typeof width === 'number') return `${width}px`
+    if (typeof width === 'string' && width.trim()) return width
+    return '12rem'
+  }
+
+  function wrapContextMenuItems(items, contextData) {
+    return items.map((item) => {
+      if (!item || typeof item !== 'object') return item
+
+      const wrapped = { ...item }
+
+      if (Array.isArray(item.items)) {
+        wrapped.items = wrapContextMenuItems(item.items, contextData)
+      }
+
+      if (typeof item.action === 'function') {
+        wrapped.action = () => item.action(contextData)
+      }
+
+      return wrapped
+    })
+  }
+
+  function openContextMenu(event, options = {}) {
+    if (!isRightClickEvent(event)) return
+
+    event.preventDefault?.()
+    event.stopPropagation?.()
+
+    const menuItems = Array.isArray(options.items) ? options.items : []
+    const contextData = options.data ?? null
+
+    if (menuItems.length === 0) {
+      closeContextMenu()
+      return
+    }
+
+    contextMenu.value = {
+      isOpen: true,
+      x: Number.isFinite(event.clientX) ? event.clientX : 0,
+      y: Number.isFinite(event.clientY) ? event.clientY : 0,
+      items: wrapContextMenuItems(menuItems, contextData),
+      width: normalizeContextMenuWidth(options.width),
+      closeOnSelect: options.closeOnSelect !== false,
+      variant: typeof options.variant === 'string' && options.variant ? options.variant : 'default',
+      data: contextData
+    }
+
+    contextMenuRevision.value += 1
+  }
+
+  function updateContextMenuPosition(event) {
+    if (!contextMenu.value.isOpen || !isRightClickEvent(event)) return
+
+    event.preventDefault?.()
+    event.stopPropagation?.()
+
+    contextMenu.value = {
+      ...contextMenu.value,
+      x: Number.isFinite(event.clientX) ? event.clientX : contextMenu.value.x,
+      y: Number.isFinite(event.clientY) ? event.clientY : contextMenu.value.y
+    }
+
+    contextMenuRevision.value += 1
+  }
+
+  function closeContextMenu() {
+    if (!contextMenu.value.isOpen) return
+    contextMenu.value = {
+      ...contextMenu.value,
+      isOpen: false
+    }
   }
 
   // ================================
@@ -388,6 +485,8 @@ export const useUIStore = defineStore('ui', () => {
     isResizingTaskDetailSidebar,
     activeModal,
     modalData,
+    contextMenu,
+    contextMenuRevision,
     globalLoading,
     loadingMessage,
     toasts,
@@ -427,6 +526,11 @@ export const useUIStore = defineStore('ui', () => {
     // Modal Actions
     openModal,
     closeModal,
+
+    // Context Menu Actions
+    openContextMenu,
+    updateContextMenuPosition,
+    closeContextMenu,
 
     // Loading Actions
     setGlobalLoading,
