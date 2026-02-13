@@ -7,6 +7,10 @@ import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore } from '@/stores'
 import * as projectApi from '@/api/project.api'
 import { getRoles } from '@/api/role.api'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/en'
+import 'dayjs/locale/nb'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Button from 'primevue/button'
 import UserProfileModal from '@/components/modals/UserProfileModal.vue'
@@ -15,7 +19,9 @@ import { MoreHorizontal, Search, X, ChevronDown } from 'lucide-vue-next'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
 
-const { t } = useI18n()
+dayjs.extend(relativeTime)
+
+const { t, locale } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
 const confirm = useConfirm()
@@ -81,20 +87,12 @@ const visibleSearchSections = computed(() =>
 
 function getLastLoginLabel(entry) {
   if (!entry.lastLoginValue) return t('settings.project.lastLogin.never', 'Never')
-  
-  const loginDate = new Date(entry.lastLoginValue)
-  const now = new Date()
-  const diffMs = now - loginDate
-  const diffMinutes = Math.floor(diffMs / (1000 * 60))
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  
-  if (diffMinutes < 5) return t('settings.project.lastLogin.justNow', 'Just now')
-  if (diffMinutes < 60) return t('settings.project.lastLogin.minutesAgo', '{minutes} mins ago', { minutes: diffMinutes })
-  if (diffHours < 24) return t('settings.project.lastLogin.hoursAgo', '{hours} hrs ago', { hours: diffHours })
-  if (diffDays < 7) return t('settings.project.lastLogin.daysAgo', '{days} days ago', { days: diffDays })
-  
-  return loginDate.toLocaleDateString()
+
+  const loginDate = dayjs(entry.lastLoginValue)
+  if (!loginDate.isValid()) return t('settings.project.lastLogin.never', 'Never')
+
+  const activeLocale = String(locale.value || 'en').toLowerCase().startsWith('no') ? 'nb' : 'en'
+  return loginDate.locale(activeLocale).fromNow()
 }
 
 function getAvatarInitials(name) {
