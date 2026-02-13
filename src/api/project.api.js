@@ -229,6 +229,16 @@ export async function createProjectForm(data, config = {}) {
 export async function updateProjectForm(formId, data, config = {}) {
   return patch(`/project-forms/${formId}`, data, config)
 }
+
+/**
+ * Delete a project form
+ * Based on project-form.json doc: DELETE /project-forms/{idOrSlug}
+ * @param {string} formId
+ * @returns {Promise<void>}
+ */
+export async function deleteProjectForm(formId, config = {}) {
+  return del(`/project-forms/${formId}`, config)
+}
 /**
  * Get project tags
  * @param {Object} params - { projectId }

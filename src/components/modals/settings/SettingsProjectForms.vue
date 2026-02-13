@@ -3,6 +3,7 @@
  * SettingsProjectForms - Project form builder settings.
  */
 import { computed, ref, watch } from 'vue'
+import { useConfirm } from 'primevue/useconfirm'
 import { useI18n } from 'vue-i18n'
 import { useProjectStore, useUIStore, useUserStore } from '@/stores'
 import * as projectApi from '@/api/project.api'
@@ -13,14 +14,19 @@ import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
 import UserMultiSearchDropdown from '@/components/user/UserMultiSearchDropdown.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Avatar from 'primevue/avatar'
-import { Link2, MoreHorizontal, Plus, Lock, ChevronDown, Check, Trash } from 'lucide-vue-next'
+import { Link2, MoreHorizontal, Plus, Lock, ChevronDown, Check, Trash, Copy, ExternalLink } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
 const userStore = useUserStore()
 
-const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
+const props = defineProps({
+  formId: { type: String, default: '' }
+})
+
+const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges', 'form-deleted', 'form-renamed'])
+const confirm = useConfirm()
 
 const projectId = computed(() => projectStore.currentProjectId)
 const isSaving = ref(false)
@@ -53,7 +59,7 @@ const actionMenuItems = computed(() => [
   {
     id: 'open-preview',
     label: t('settings.project.forms.context.openPreview', 'Open preview'),
-    action: () => uiStore.showInfo(t('settings.project.forms.messages.preview', 'Preview is not available yet.'))
+    action: () => handleOpenPreview()
   },
   {
     id: 'copy-private-link',
@@ -69,7 +75,8 @@ const actionMenuItems = computed(() => [
   {
     id: 'delete',
     label: t('settings.project.forms.context.delete', 'Delete'),
-    action: () => uiStore.showWarning(t('settings.project.forms.messages.delete', 'Delete action is not available yet.'))
+    danger: true,
+    action: () => handleDeleteForm()
   }
 ])
 
@@ -706,6 +713,17 @@ const privateLink = computed(() => {
   return `${origin}/forms?project_id=${encodeURIComponent(pid)}`
 })
 
+const publicLink = computed(() => {
+  const fid = loadedFormId.value
+  if (!fid) return ''
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://app.dartai.com'
+  return `${origin}/p/r/${fid}`
+})
+
+const isPublicAndSaved = computed(() => {
+  return formState.value.access === 'public' && !!loadedFormId.value && !hasPendingChanges.value
+})
+
 const availableProperties = computed(() => {
   const keyword = propertySearch.value.trim().toLowerCase()
   return propertyCatalog.filter((property) => {
@@ -834,7 +852,7 @@ async function createInitialFormWithTitleField() {
   return responseData?.saved || responseData?.form || responseData?.projectForm || responseData
 }
 
-async function loadFormFromApi() {
+async function loadFormFromApi(targetFormId = '') {
   if (!projectId.value) {
     projectStatusOptions.value = []
     resetToDefault()
@@ -861,7 +879,17 @@ async function loadFormFromApi() {
         const ib = Number(b?.index ?? 0)
         return ia - ib
       })
-    const selected = forms[0]
+
+    // Select form by targetFormId or formId prop, or fall back to first form
+    const idToFind = targetFormId || props.formId
+    let selected = null
+    if (idToFind) {
+      selected = forms.find((f) => {
+        const fid = getPersistedFormId(f)
+        return fid && String(fid) === String(idToFind)
+      })
+    }
+    if (!selected) selected = forms[0]
 
     if (selected) {
       applyApiForm(selected)
@@ -884,6 +912,10 @@ async function loadFormFromApi() {
       isLoading.value = false
     }
   }
+}
+
+function loadFormById(formId) {
+  loadFormFromApi(formId)
 }
 
 function addPropertyField(propertyKey) {
@@ -909,6 +941,61 @@ async function handleCopyPrivateLink() {
   } catch {
     uiStore.showError(t('settings.project.forms.messages.linkCopyFailed', 'Failed to copy private link'))
   }
+}
+
+async function handleCopyPublicLink() {
+  try {
+    await navigator.clipboard.writeText(publicLink.value)
+    uiStore.showSuccess(t('settings.project.forms.messages.publicLinkCopied', 'Public link copied'))
+  } catch {
+    uiStore.showError(t('settings.project.forms.messages.linkCopyFailed', 'Failed to copy link'))
+  }
+}
+
+function handleOpenPublicLink() {
+  if (publicLink.value) {
+    window.open(publicLink.value, '_blank', 'noopener,noreferrer')
+  }
+}
+
+function handleOpenPreview() {
+  const pid = projectId.value
+  if (!pid) return
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const url = `${origin}/forms?project_id=${encodeURIComponent(pid)}`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+function handleDeleteForm() {
+  const formId = loadedFormId.value
+  if (!formId) {
+    uiStore.showWarning(t('settings.project.forms.messages.deleteNoForm', 'No saved form to delete.'))
+    return
+  }
+
+  confirm.require({
+    message: t('settings.project.forms.messages.deleteConfirm', 'Are you sure you want to delete this form? This action cannot be undone.'),
+    header: t('common.confirm', 'Confirm'),
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: t('common.delete', 'Delete'),
+    rejectLabel: t('common.cancel', 'Cancel'),
+    acceptClass: 'p-button-danger p-button-sm',
+    rejectClass: 'p-button-outlined p-button-secondary p-button-sm',
+    accept: async () => {
+      confirm.close()
+      try {
+        await projectApi.deleteProjectForm(formId)
+        uiStore.showSuccess(t('settings.project.forms.messages.deleted', 'Form deleted successfully'))
+        emit('form-deleted', formId)
+        resetToDefault()
+      } catch (error) {
+        uiStore.showApiError(error, t('settings.project.forms.errors.delete', 'Failed to delete form'))
+      }
+    },
+    reject: () => {
+      confirm.close()
+    }
+  })
 }
 
 async function saveChanges() {
@@ -963,6 +1050,8 @@ async function saveChanges() {
     }
     savedSnapshot.value = createSnapshot()
     uiStore.showApiSuccess(response, t('settings.project.forms.messages.saved', 'Form settings saved'))
+    // Optimistic FE update — notify Hub so sidebar label updates after save
+    emit('form-renamed', { formId: loadedFormId.value, name: formState.value.name })
     return response
   } catch (error) {
     uiStore.showApiError(error, t('settings.project.forms.errors.save', 'Failed to save form settings'))
@@ -1026,7 +1115,8 @@ watch([canSave, isSaving, hasPendingChanges], () => {
   emit('update:hasPendingChanges', hasPendingChanges.value)
 }, { immediate: true })
 
-defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
+defineExpose({ saveChanges, pendingChanges: hasPendingChanges, loadFormById, loadedFormId })
+
 </script>
 
 <template>
@@ -1100,6 +1190,42 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
               {{ t('settings.project.forms.access.public.description', 'Anyone who has the link can send email to this address') }}
             </span>
           </button>
+        </div>
+
+        <!-- Public link section -->
+        <div v-if="isPublicAndSaved" class="settings-form-public-link">
+          <div class="settings-form-public-link-header">
+            <span class="settings-form-public-link-label">Public link</span>
+            <span class="settings-form-public-link-badge">
+              <span class="settings-form-public-link-dot"></span>
+              Live
+            </span>
+          </div>
+          <div class="settings-form-public-link-row">
+            <input
+              type="text"
+              class="settings-form-public-link-input"
+              :value="publicLink"
+              readonly
+              @focus="$event.target.select()"
+            />
+            <button
+              type="button"
+              class="settings-form-public-link-btn"
+              :title="t('settings.project.forms.actions.copyPublicLink', 'Copy public link')"
+              @click="handleCopyPublicLink"
+            >
+              <Copy class="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              class="settings-form-public-link-btn"
+              :title="t('settings.project.forms.actions.openPublicLink', 'Open public link')"
+              @click="handleOpenPublicLink"
+            >
+              <ExternalLink class="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1504,6 +1630,91 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   line-height: 1.4;
   color: var(--color-gray-400);
   max-width: 260px;
+}
+
+/* ─── Public Link ─────────────────────────────────────── */
+.settings-form-public-link {
+  margin-top: 16px;
+}
+
+.settings-form-public-link-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.settings-form-public-link-label {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+}
+
+.settings-form-public-link-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 6px;
+  border-radius: 9999px;
+  border: 1px solid #22c55e;
+  font-size: 11px;
+  font-weight: 500;
+  color: #22c55e;
+  line-height: 1.6;
+}
+
+.settings-form-public-link-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.settings-form-public-link-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-form-public-link-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-gray-600);
+  background: #ffffff;
+  outline: none;
+  cursor: text;
+}
+
+.settings-form-public-link-input:focus {
+  border-color: var(--p-primary-500, #3b82f6);
+  box-shadow: 0 0 0 1px var(--p-primary-500, #3b82f6);
+}
+
+.settings-form-public-link-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.settings-form-public-link-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: var(--color-gray-700);
 }
 
 .settings-form-grid {

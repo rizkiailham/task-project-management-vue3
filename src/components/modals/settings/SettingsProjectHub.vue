@@ -4,8 +4,9 @@
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useUIStore } from '@/stores'
+import { useProjectStore, useUIStore } from '@/stores'
 import { useConfirm } from 'primevue/useconfirm'
+import * as projectApi from '@/api/project.api'
 import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
 import SettingsProjectAccess from '@/components/modals/settings/SettingsProjectAccess.vue'
 import SettingsProjectInstruction from '@/components/modals/settings/SettingsProjectInstruction.vue'
@@ -19,9 +20,100 @@ import { HelpCircle, Plus } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const uiStore = useUIStore()
+const projectStore = useProjectStore()
 const confirm = useConfirm()
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
+
+const projectId = computed(() => projectStore.currentProjectId)
+
+// ─── Dynamic form items ──────────────────────────────────
+const formItems = ref([])
+
+function unwrapData(response) {
+  if (response && typeof response === 'object' && Object.prototype.hasOwnProperty.call(response, 'data')) return response.data
+  return response
+}
+
+function getFormList(response) {
+  const source = unwrapData(response)
+  if (Array.isArray(source)) return source
+  if (Array.isArray(source?.data)) return source.data
+  if (Array.isArray(source?.forms)) return source.forms
+  if (source?.form && typeof source.form === 'object') return [source.form]
+  if (source?.projectForm && typeof source.projectForm === 'object') return [source.projectForm]
+  return []
+}
+
+function getFormId(form) {
+  return form?.id || form?.formId || form?.slug || null
+}
+
+function getFormProjectId(form) {
+  return form?.projectId || form?.project?.id || form?.project?.projectId || ''
+}
+
+async function loadForms() {
+  const pid = projectId.value
+  if (!pid) { formItems.value = []; return }
+  try {
+    const response = await projectApi.getProjectForms({ projectId: pid })
+    const forms = getFormList(response)
+      .filter(item => String(getFormProjectId(item)) === String(pid))
+      .sort((a, b) => (Number(a?.index ?? 0)) - (Number(b?.index ?? 0)))
+    formItems.value = forms.map(form => ({
+      id: `form-${getFormId(form)}`,
+      formId: getFormId(form),
+      label: form?.name || form?.title || 'Untitled form'
+    }))
+  } catch {
+    formItems.value = []
+  }
+}
+
+async function handleCreateForm() {
+  const pid = projectId.value
+  if (!pid) return
+  try {
+    const data = {
+      projectId: pid,
+      name: `Form ${formItems.value.length + 1}`,
+      description: `Form ${formItems.value.length + 1}`,
+      isPrivate: true,
+      action: 'create',
+      customFields: [{ key: 'name', label: 'Title', isShow: true, isRequired: true, defaultValue: '' }]
+    }
+    const items = projectStore.getProjectItems(pid) || []
+    if (items[0]?.id) data.projectItemId = items[0].id
+    const response = await projectApi.createProjectForm(data)
+    const rd = unwrapData(response)
+    const created = rd?.saved || rd?.form || rd?.projectForm || rd
+    const createdId = getFormId(created)
+    await loadForms()
+    if (createdId) activeSideItem.value = `form-${createdId}`
+    uiStore.showSuccess(t('settings.project.forms.messages.created', 'Form created'))
+  } catch (error) {
+    uiStore.showApiError(error, t('settings.project.forms.errors.create', 'Failed to create form'))
+  }
+}
+
+function handleFormDeleted() {
+  loadForms().then(() => {
+    if (formItems.value.length > 0) {
+      activeSideItem.value = formItems.value[0].id
+    } else {
+      activeSideItem.value = 'general'
+    }
+  })
+}
+
+function handleFormRenamed({ formId, name }) {
+  // Optimistic FE update — update the sidebar label immediately
+  const item = formItems.value.find(f => f.formId === formId || f.id === `form-${formId}`)
+  if (item) {
+    item.label = name || 'Untitled form'
+  }
+}
 
 const menuGroups = computed(() => [
   {
@@ -43,9 +135,10 @@ const menuGroups = computed(() => [
     label: t('settings.project.menu.groups.forms', 'FORMS'),
     icon: HelpCircle,
     actionIcon: Plus,
-    items: [
-      { id: 'form-default', label: t('settings.project.menu.items.defaultForm', 'Default - Create task') }
-    ]
+    onAction: handleCreateForm,
+    items: formItems.value.length > 0
+      ? formItems.value
+      : [{ id: 'form-default', label: t('settings.project.menu.items.defaultForm', 'Default - Create task') }]
   },
   {
     k: 'email',
@@ -99,6 +192,18 @@ watch(() => uiStore.modalData, (data) => {
   // Search in all groups
   const exists = menuGroups.value.some(group => group.items.some(item => item.id === tab))
   if (exists) activeSideItem.value = tab
+}, { immediate: true })
+
+// Computed helpers for form section detection
+const isFormSection = computed(() => activeSideItem.value.startsWith('form-'))
+const activeFormId = computed(() => {
+  if (!isFormSection.value) return ''
+  return activeSideItem.value.replace(/^form-/, '')
+})
+
+// Load forms when projectId changes
+watch(projectId, () => {
+  loadForms()
 }, { immediate: true })
 
 function startResize(event) {
@@ -167,7 +272,7 @@ function syncState() {
     emit('update:hasPendingChanges', emailHasPendingChanges.value)
     return
   }
-  if (activeSideItem.value === 'form-default') {
+  if (activeSideItem.value === 'form-default' || isFormSection.value) {
     emit('update:canSave', formCanSave.value)
     emit('update:isSaving', formIsSaving.value)
     emit('update:hasPendingChanges', formHasPendingChanges.value)
@@ -204,7 +309,7 @@ watch([emailCanSave, emailIsSaving, emailHasPendingChanges], () => {
   syncState()
 })
 watch([formCanSave, formIsSaving, formHasPendingChanges], () => {
-  if (activeSideItem.value !== 'form-default') return
+  if (activeSideItem.value !== 'form-default' && !isFormSection.value) return
   syncState()
 })
 
@@ -228,7 +333,7 @@ function saveChanges() {
   if (activeSideItem.value === 'email-default') {
     emailSectionRef.value?.saveChanges?.()
   }
-  if (activeSideItem.value === 'form-default') {
+  if (activeSideItem.value === 'form-default' || isFormSection.value) {
     formSectionRef.value?.saveChanges?.()
   }
 }
@@ -240,7 +345,7 @@ const pendingChanges = computed(() => {
   if (activeSideItem.value === 'status') return statusHasPendingChanges.value
   if (activeSideItem.value === 'tags') return tagsHasPendingChanges.value
   if (activeSideItem.value === 'email-default') return emailHasPendingChanges.value
-  if (activeSideItem.value === 'form-default') return formHasPendingChanges.value
+  if (activeSideItem.value === 'form-default' || isFormSection.value) return formHasPendingChanges.value
   return false
 })
 
@@ -293,7 +398,7 @@ defineExpose({ saveChanges, pendingChanges })
                {{ group.label }}
                <component :is="group.icon" v-if="group.icon" class="w-3.5 h-3.5" />
              </div>
-             <button v-if="group.actionIcon" type="button" class="text-gray-400 hover:text-gray-700">
+             <button v-if="group.actionIcon" type="button" class="text-gray-400 hover:text-gray-700" @click.stop="group.onAction && group.onAction()">
                <component :is="group.actionIcon" class="w-4 h-4" />
              </button>
           </div>
@@ -305,7 +410,7 @@ defineExpose({ saveChanges, pendingChanges })
             :class="{ 'is-selected': activeSideItem === item.id }"
             @click="selectSideItem(item.id)"
           >
-            {{ item.label }}
+            <span class="settings-list-row-label">{{ item.label }}</span>
           </button>
         </div>
       </div>
@@ -368,12 +473,16 @@ defineExpose({ saveChanges, pendingChanges })
           @update:hasPendingChanges="emailHasPendingChanges = $event"
         />
       </div>
-      <div v-else-if="activeSideItem === 'form-default'" class="settings-section-wrapper settings-section-wrapper--form">
+      <div v-else-if="isFormSection || activeSideItem === 'form-default'" class="settings-section-wrapper settings-section-wrapper--form">
         <SettingsProjectForms
+          :key="activeFormId || 'default'"
           ref="formSectionRef"
+          :form-id="activeFormId"
           @update:canSave="formCanSave = $event"
           @update:isSaving="formIsSaving = $event"
           @update:hasPendingChanges="formHasPendingChanges = $event"
+          @form-deleted="handleFormDeleted"
+          @form-renamed="handleFormRenamed"
         />
       </div>
       <div v-else class="settings-project-placeholder">
@@ -476,6 +585,14 @@ defineExpose({ saveChanges, pendingChanges })
   text-align: left;
   min-height: 30px;
   width: 100%;
+  min-width: 0;
+}
+
+.settings-list-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .settings-list-row:hover {
