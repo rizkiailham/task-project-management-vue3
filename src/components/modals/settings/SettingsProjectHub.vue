@@ -368,7 +368,7 @@ defineExpose({ saveChanges, pendingChanges })
           @update:hasPendingChanges="emailHasPendingChanges = $event"
         />
       </div>
-      <div v-else-if="activeSideItem === 'form-default'" class="settings-section-wrapper">
+      <div v-else-if="activeSideItem === 'form-default'" class="settings-section-wrapper settings-section-wrapper--form">
         <SettingsProjectForms
           ref="formSectionRef"
           @update:canSave="formCanSave = $event"
@@ -519,7 +519,14 @@ defineExpose({ saveChanges, pendingChanges })
 .settings-section-wrapper {
   width: 100%;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
+}
+
+.settings-section-wrapper--form {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
 }
 
 .settings-project-placeholder {

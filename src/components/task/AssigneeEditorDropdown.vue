@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Avatar from 'primevue/avatar'
+import { getAvatarColor } from '@/utils/avatarColor'
+import { Check } from 'lucide-vue-next'
 
 const props = defineProps({
   params: {
@@ -38,28 +40,6 @@ function selectAssignee(option) {
   props.params.context?.updateField?.(pathKey, 'assignee', option.value)
 }
 
-// Color palette for assignee avatars
-const avatarColors = [
-  '#3B82F6', // blue
-  '#10B981', // green
-  '#F59E0B', // amber
-  '#EF4444', // red
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#06B6D4', // cyan
-  '#F97316', // orange
-]
-
-function getAvatarColor(name) {
-  if (!name || name === 'Unassigned') return '#9CA3AF' // gray for unassigned
-  // Generate consistent color based on name hash
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return avatarColors[Math.abs(hash) % avatarColors.length]
-}
-
 const currentAssignee = computed(() => selectedAssignee.value || teamOptions.value[0].value)
 
 
@@ -89,15 +69,87 @@ defineExpose({ refresh })
       </button>
     </template>
     <template v-for="option in teamOptions" :key="option.value">
-      <div
-        class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+      <button
+        type="button"
+        class="aed-list-item"
+        :class="{ 'is-selected': selectedAssignee === option.value }"
         @click="selectAssignee(option)"
       >
-        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-[12px] font-semibold text-gray-800">
-          {{ option.avatar }}
-        </span>
-        {{ option.label }}
-      </div>
+        <Avatar
+          :label="option.avatar?.length <= 2 ? option.avatar : option.label?.charAt(0)?.toUpperCase()"
+          :image="option.avatar?.length > 2 ? option.avatar : undefined"
+          shape="circle"
+          class="aed-list-avatar"
+          :style="option.avatar?.length > 2 ? { backgroundColor: 'transparent' } : { backgroundColor: getAvatarColor(option.label) }"
+        />
+        <div class="aed-list-info">
+          <span class="aed-list-name">{{ option.label }}</span>
+        </div>
+        <Check v-if="selectedAssignee === option.value" class="aed-list-check" />
+      </button>
     </template>
   </DropdownMenu>
 </template>
+
+<style scoped>
+.aed-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--color-gray-700, #374151);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.aed-list-item:hover {
+  background: #f3f4f6;
+}
+
+.aed-list-item.is-selected {
+  background: var(--p-primary-50, #eff6ff);
+  color: var(--p-primary-700, #1d4ed8);
+}
+
+.aed-list-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px;
+  font-size: 11px !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.aed-list-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow: hidden;
+  flex: 1;
+  gap: 1px;
+}
+
+.aed-list-name {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.aed-list-check {
+  width: 14px;
+  height: 14px;
+  color: var(--p-primary-500, #3b82f6);
+  flex-shrink: 0;
+}
+</style>

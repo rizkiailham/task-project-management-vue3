@@ -156,8 +156,13 @@ const languageOptions = computed(() =>
 )
 const userOptions = computed(() =>
   userStore.users.map((user) => ({
+    id: user.id,
+    value: user.id,
     label: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.id,
-    value: user.id
+    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.id,
+    email: user.email || '',
+    initials: (user.firstName || user.name || '?').charAt(0),
+    avatarUrl: user.avatar || ''
   }))
 )
 
@@ -389,6 +394,15 @@ function normalizeCustomFieldValue(field, value) {
     if (value === null || value === '') return []
     return [value]
   }
+  if (field.type === 'user') {
+    if (Array.isArray(value)) {
+      return value[0] ?? null
+    }
+    if (value && typeof value === 'object') {
+      return value.value ?? value.id ?? value.key ?? value
+    }
+    return value
+  }
   if (field.type === 'date' && field.settings?.isDateRange) {
     if (value && typeof value === 'object') {
       return {
@@ -419,6 +433,13 @@ function normalizeCustomFieldPayloadValue(field, value) {
     return list
       .map((item) => (item && typeof item === 'object' ? item.value ?? item.id ?? item.key ?? item : item))
       .filter((item) => item !== undefined && item !== null && item !== '')
+  }
+  if (field.type === 'user') {
+    const singleValue = Array.isArray(value) ? value[0] : value
+    if (singleValue && typeof singleValue === 'object') {
+      return singleValue.value ?? singleValue.id ?? singleValue.key ?? null
+    }
+    return singleValue ?? null
   }
   if (value && typeof value === 'object') {
     return value.value ?? value.id ?? value.key ?? value

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
 import FormInput from '@/components/ui/FormInput.vue'
+import UserMultiSearchDropdown from '@/components/user/UserMultiSearchDropdown.vue'
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 
@@ -169,17 +170,12 @@ function mapInputListeners(events) {
       </template>
 
       <template v-else-if="field.type === 'user'">
-        <FormInput
-          :id="`custom-${getFieldKey(field)}`"
+        <label class="mb-1.5 text-xs text-gray-500">{{ field.label }}</label>
+        <UserMultiSearchDropdown
           :modelValue="modelValue[getFieldKey(field)]"
-          :as="field.settings?.isAllowMultiple ? 'multiselect' : 'select'"
-          :label="field.label"
-          labelClass="mb-1.5 text-xs text-gray-500"
+          :multiple="!!field.settings?.isAllowMultiple"
           :options="userOptions"
-          optionLabel="label"
-          optionValue="value"
-          display="chip"
-          class="w-full"
+          :placeholder="field.label"
           @update:modelValue="(value) => updateValue(getFieldKey(field), value)"
         />
       </template>

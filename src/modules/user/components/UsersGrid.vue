@@ -17,6 +17,7 @@ import {
 } from 'lucide-vue-next'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import SortHeader from '@/components/ag/SortHeader.vue'
+import { getAvatarColor } from '@/utils/avatarColor'
 
 // Cell renderer components
 import NameCell from './cells/NameCell.vue'
@@ -28,21 +29,6 @@ LicenseManager.setLicenseKey(
 )
 
 ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
-
-// Avatar colors palette
-const avatarColors = [
-  '#F59E0B', '#3B82F6', '#10B981', '#8B5CF6',
-  '#EF4444', '#EC4899', '#06B6D4', '#F97316',
-]
-
-function getAvatarColor(name) {
-  if (!name) return avatarColors[0]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return avatarColors[Math.abs(hash) % avatarColors.length]
-}
 
 const props = defineProps({
   users: { type: Array, default: () => [] },

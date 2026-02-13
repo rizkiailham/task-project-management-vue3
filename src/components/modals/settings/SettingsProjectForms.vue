@@ -4,12 +4,13 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useProjectStore, useUIStore } from '@/stores'
+import { useProjectStore, useUIStore, useUserStore } from '@/stores'
 import * as projectApi from '@/api/project.api'
 import FormInput from '@/components/ui/FormInput.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
 import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
+import UserMultiSearchDropdown from '@/components/user/UserMultiSearchDropdown.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Avatar from 'primevue/avatar'
 import { Link2, MoreHorizontal, Plus, Lock, ChevronDown, Check, Trash } from 'lucide-vue-next'
@@ -17,6 +18,7 @@ import { Link2, MoreHorizontal, Plus, Lock, ChevronDown, Check, Trash } from 'lu
 const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const userStore = useUserStore()
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
 
@@ -27,13 +29,16 @@ const loadedFormId = ref(null)
 const addPropertyMenuRef = ref(null)
 const addPropertyInlineMenuRef = ref(null)
 const propertySearch = ref('')
+const projectStatusOptions = ref([])
 let loadToken = 0
 
-const fallbackBoardOptions = [
-  { label: 'DSD/Task', value: 'task-board' },
-  { label: 'General', value: 'general-board' },
-  { label: 'Board for tenant', value: 'tenant-board' },
-  { label: 'Board for technician', value: 'technician-board' }
+const DEFAULT_FORM_NAME = 'Default - Create task'
+const STATUS_PROGRESS_OPTIONS = [
+  { id: '0', status: 'todo', progress: 0, defaultColor: '#9ca3af' },
+  { id: '25', status: 'in_progress', progress: 25, defaultColor: '#14b8a6' },
+  { id: '50', status: 'in_progress', progress: 50, defaultColor: '#a855f7' },
+  { id: '75', status: 'in_progress', progress: 75, defaultColor: '#f97316' },
+  { id: '100', status: 'done', progress: 100, defaultColor: '#22c55e' }
 ]
 
 const actionOptions = [
@@ -81,11 +86,7 @@ const propertyCatalog = [
     type: 'select',
     rightLabel: 'Tags',
     placeholder: 'Select tags',
-    options: [
-      { label: 'Bug', value: 'bug' },
-      { label: 'Enhancement', value: 'enhancement' },
-      { label: 'Urgent', value: 'urgent' }
-    ]
+    options: []
   },
   {
     key: 'priority',
@@ -106,12 +107,8 @@ const propertyCatalog = [
     rightLabel: 'Status',
     placeholder: 'Select status',
     locked: true,
-    options: [
-      { label: 'Backlog', value: 'backlog', status: 'todo', progress: 0, color: '#9ca3af' },
-      { label: 'In Progress', value: 'in-progress', status: 'in_progress', progress: 25, color: '#3b82f6' },
-      { label: 'Done', value: 'done', status: 'done', progress: 100, color: '#22c55e' }
-    ],
-    defaultValue: 'backlog'
+    options: [],
+    defaultValue: ''
   },
   {
     key: 'assignee',
@@ -119,11 +116,7 @@ const propertyCatalog = [
     type: 'select',
     rightLabel: 'User',
     placeholder: 'Select assignee',
-    options: [
-      { label: 'John Doe', value: 'john-doe' },
-      { label: 'Nina Park', value: 'nina-park' },
-      { label: 'Aldo Felix', value: 'aldo-felix' }
-    ]
+    options: []
   },
   {
     key: 'subscribers',
@@ -131,11 +124,7 @@ const propertyCatalog = [
     type: 'multiselect',
     rightLabel: 'User',
     placeholder: 'Select subscribers',
-    options: [
-      { label: 'John Doe', value: 'john-doe' },
-      { label: 'Nina Park', value: 'nina-park' },
-      { label: 'Aldo Felix', value: 'aldo-felix' }
-    ]
+    options: []
   },
   {
     key: 'attachments',
@@ -161,17 +150,24 @@ const propertyCatalog = [
     type: 'select',
     rightLabel: 'User',
     placeholder: 'Select user',
-    options: [
-      { label: 'John Doe', value: 'john-doe' },
-      { label: 'Nina Park', value: 'nina-park' },
-      { label: 'Aldo Felix', value: 'aldo-felix' }
-    ]
+    options: []
   }
 ]
 
 function createField(key) {
   const property = propertyCatalog.find((item) => item.key === key)
   if (!property) return null
+  const options = getFieldOptions(key, property.options || [])
+  let defaultValue = property.defaultValue ?? (property.type === 'multiselect' ? [] : '')
+  if (key === 'status') {
+    defaultValue = options[0]?.value || ''
+  }
+  if (key === 'assignee' || key === 'supervisor') {
+    defaultValue = null
+  }
+  if (key === 'subscribers') {
+    defaultValue = []
+  }
   return {
     id: `${key}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     key: property.key,
@@ -179,11 +175,11 @@ function createField(key) {
     type: property.type,
     rightLabel: property.rightLabel,
     placeholder: property.placeholder,
-    options: property.options || [],
+    options,
     locked: Boolean(property.locked),
     required: false,
     visible: true,
-    value: property.defaultValue ?? (property.type === 'multiselect' ? [] : '')
+    value: defaultValue
   }
 }
 
@@ -192,14 +188,219 @@ function toArray(value) {
   return []
 }
 
+function parseMaybeJson(value) {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim()
+  if (!trimmed) return value
+  const isJsonObject = trimmed.startsWith('{') && trimmed.endsWith('}')
+  const isJsonArray = trimmed.startsWith('[') && trimmed.endsWith(']')
+  if (!isJsonObject && !isJsonArray) return value
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return value
+  }
+}
+
+function normalizeStatusIconValue(icon) {
+  const raw = String(icon ?? '0')
+  const legacyMap = {
+    '1': '25',
+    '2': '50',
+    '3': '75',
+    '4': '100',
+    '5': '100'
+  }
+  const mapped = legacyMap[raw] || raw
+  return STATUS_PROGRESS_OPTIONS.some((item) => item.id === mapped) ? mapped : '0'
+}
+
+function resolveStatusIconProps(icon) {
+  const iconValue = normalizeStatusIconValue(icon)
+  const option = STATUS_PROGRESS_OPTIONS.find((item) => item.id === iconValue) || STATUS_PROGRESS_OPTIONS[0]
+  return {
+    status: option.status,
+    progress: option.progress,
+    color: option.defaultColor
+  }
+}
+
+function mapProjectColumnsToStatusOptions(columns) {
+  return toArray(columns)
+    .slice()
+    .sort((a, b) => (Number(a?.index) || 0) - (Number(b?.index) || 0))
+    .map((column) => {
+      const iconProps = resolveStatusIconProps(column?.icon)
+      return {
+        label: column?.name || 'Status',
+        value: column?.id || column?.name,
+        ...iconProps
+      }
+    })
+    .filter((option) => option.value)
+}
+
+function normalizeOption(option) {
+  if (option === null || option === undefined) return null
+  if (typeof option !== 'object') {
+    return {
+      label: String(option),
+      value: option
+    }
+  }
+  if (Array.isArray(option)) return null
+  const nextValue = option.value ?? option.id ?? option.key ?? option.slug ?? option.name ?? option.label
+  if (nextValue === null || nextValue === undefined || nextValue === '') return null
+  return {
+    ...option,
+    label: option.label ?? option.name ?? option.email ?? String(nextValue),
+    value: nextValue
+  }
+}
+
+function mergeOptionsByValue(...optionGroups) {
+  const merged = new Map()
+  optionGroups
+    .flatMap((group) => toArray(group))
+    .forEach((item) => {
+      const option = normalizeOption(item)
+      if (!option) return
+      const key = String(option.value)
+      if (!merged.has(key)) {
+        merged.set(key, option)
+        return
+      }
+      merged.set(key, {
+        ...merged.get(key),
+        ...option,
+        value: merged.get(key).value
+      })
+    })
+  return Array.from(merged.values())
+}
+
+function extractOptionValue(entry) {
+  const parsed = parseMaybeJson(entry)
+  const option = normalizeOption(parsed)
+  if (option) return option.value
+  return parsed
+}
+
+function normalizeSingleOptionValue(value) {
+  const parsed = parseMaybeJson(value)
+  const option = normalizeOption(parsed)
+  if (option) return option.value
+  if (parsed === null || parsed === undefined) return ''
+  return parsed
+}
+
+function normalizeMultiOptionValues(value) {
+  const parsed = parseMaybeJson(value)
+  if (Array.isArray(parsed)) {
+    return parsed
+      .map((entry) => extractOptionValue(entry))
+      .filter((entry) => entry !== null && entry !== undefined && entry !== '')
+  }
+  if (typeof parsed === 'string') {
+    const trimmed = parsed.trim()
+    if (!trimmed) return []
+    return trimmed.split(',').map((entry) => entry.trim()).filter(Boolean)
+  }
+  if (parsed === null || parsed === undefined || parsed === '') return []
+  const single = extractOptionValue(parsed)
+  if (single === null || single === undefined || single === '') return []
+  return [single]
+}
+
+function normalizeUserSelectionValue(value) {
+  const parsed = parseMaybeJson(value)
+  if (parsed === null || parsed === undefined || parsed === '') return null
+
+  if (typeof parsed === 'string' || typeof parsed === 'number') {
+    const resolved = resolveUserById(parsed)
+    if (resolved) return resolved
+    const fallback = String(parsed)
+    return {
+      id: fallback,
+      name: fallback,
+      email: '',
+      initials: fallback.charAt(0),
+      avatarUrl: ''
+    }
+  }
+
+  if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+    const normalized = normalizeOption(parsed)
+    if (!normalized) return null
+    const resolved = resolveUserById(normalized.value)
+    if (resolved) return resolved
+    const displayName = parsed.name || normalized.label || parsed.email || String(normalized.value)
+    return {
+      id: normalized.value,
+      name: displayName,
+      email: parsed.email || '',
+      initials: parsed.initials || displayName.charAt(0),
+      avatarUrl: parsed.avatarUrl || parsed.avatar || ''
+    }
+  }
+
+  return null
+}
+
+function extractSelectedOptionsFromValue(fieldKey, value) {
+  const parsed = parseMaybeJson(value)
+  if (fieldKey === 'tags' || fieldKey === 'status') {
+    const option = normalizeOption(parsed)
+    return option ? [option] : []
+  }
+  if (fieldKey === 'subscribers') {
+    const entries = Array.isArray(parsed) ? parsed : [parsed]
+    return entries.map((entry) => normalizeOption(parseMaybeJson(entry))).filter(Boolean)
+  }
+  return []
+}
+
+function getFieldOptions(fieldKey, fallbackOptions = [], selectedOptions = []) {
+  if (fieldKey === 'status') {
+    return mergeOptionsByValue(selectedOptions, projectStatusOptions.value, fallbackOptions)
+  }
+  if (fieldKey === 'tags') {
+    return mergeOptionsByValue(selectedOptions, getProjectTagOptions(), fallbackOptions)
+  }
+  if (fieldKey === 'subscribers') {
+    return mergeOptionsByValue(selectedOptions, getUserOptions(), fallbackOptions)
+  }
+  return mergeOptionsByValue(selectedOptions, fallbackOptions)
+}
+
+function toApiOptionObject(value, options = []) {
+  const normalizedValue = extractOptionValue(value)
+  if (normalizedValue === null || normalizedValue === undefined || normalizedValue === '') return null
+  const fromOptions = mergeOptionsByValue(options).find((option) => String(option.value) === String(normalizedValue))
+  if (fromOptions) return fromOptions
+  const normalized = normalizeOption(value)
+  if (normalized) return normalized
+  return {
+    label: String(normalizedValue),
+    value: normalizedValue
+  }
+}
+
+function unwrapResponseData(response) {
+  if (response && typeof response === 'object' && Object.prototype.hasOwnProperty.call(response, 'data')) {
+    return response.data
+  }
+  return response
+}
+
 function getObjectList(response) {
-  if (Array.isArray(response)) return response
-  if (Array.isArray(response?.data)) return response.data
-  if (Array.isArray(response?.items)) return response.items
-  if (Array.isArray(response?.forms)) return response.forms
-  if (response?.form && typeof response.form === 'object') return [response.form]
-  if (response?.projectForm && typeof response.projectForm === 'object') return [response.projectForm]
-  if (response && typeof response === 'object') return [response]
+  const source = unwrapResponseData(response)
+  if (Array.isArray(source)) return source
+  if (Array.isArray(source?.data)) return source.data
+  if (Array.isArray(source?.items)) return source.items
+  if (Array.isArray(source?.forms)) return source.forms
+  if (source?.form && typeof source.form === 'object') return [source.form]
+  if (source?.projectForm && typeof source.projectForm === 'object') return [source.projectForm]
   return []
 }
 
@@ -250,10 +451,118 @@ function inferRightLabel(type) {
 
 function normalizeFieldValue(type, value) {
   if (type === 'multiselect') {
-    if (Array.isArray(value)) return value
-    return value ? [value] : []
+    return normalizeMultiOptionValues(value)
   }
   return value ?? ''
+}
+
+function getProjectIdFromForm(form) {
+  return form?.projectId || form?.project?.id || form?.project?.projectId || ''
+}
+
+function getPersistedFormId(form) {
+  return form?.id || form?.formId || form?.slug || null
+}
+
+function normalizeDefaultValueForApi(field) {
+  const rawValue = field?.value
+
+  if (field?.key === 'assignee' || field?.key === 'supervisor') {
+    const selectedUser = normalizeUserSelectionValue(rawValue)
+    if (!selectedUser) return ''
+    return JSON.stringify({
+      id: selectedUser.id,
+      value: selectedUser.id,
+      label: selectedUser.name || selectedUser.email || String(selectedUser.id),
+      name: selectedUser.name || '',
+      email: selectedUser.email || '',
+      initials: selectedUser.initials || '',
+      avatarUrl: selectedUser.avatarUrl || ''
+    })
+  }
+
+  if (field?.key === 'tags') {
+    const selectedTag = toApiOptionObject(rawValue, field?.options)
+    return selectedTag ? JSON.stringify(selectedTag) : ''
+  }
+
+  if (field?.key === 'status') {
+    const selectedStatus = toApiOptionObject(rawValue, field?.options)
+    return selectedStatus ? JSON.stringify(selectedStatus) : ''
+  }
+
+  if (field?.key === 'subscribers') {
+    const selectedValues = normalizeMultiOptionValues(rawValue)
+    const selectedUsers = selectedValues
+      .map((entry) => toApiOptionObject(entry, field?.options))
+      .filter(Boolean)
+    return selectedUsers.length > 0 ? JSON.stringify(selectedUsers) : ''
+  }
+
+  if (Array.isArray(rawValue)) {
+    const hasObjectEntry = rawValue.some((entry) => entry && typeof entry === 'object')
+    if (hasObjectEntry) {
+      return JSON.stringify(rawValue)
+    }
+    return rawValue
+      .map((entry) => {
+        if (entry === null || entry === undefined) return ''
+        if (typeof entry === 'object') return String(entry.value ?? entry.id ?? entry.label ?? '')
+        return String(entry)
+      })
+      .filter(Boolean)
+      .join(',')
+  }
+
+  if (rawValue === null || rawValue === undefined) return ''
+  if (typeof rawValue === 'object') return JSON.stringify(rawValue)
+  return String(rawValue)
+}
+
+/**
+ * Resolve a user ID to a user object from the userStore.
+ */
+function resolveUserById(userId) {
+  if (!userId) return null
+  const id = String(userId)
+  const user = userStore.users.find(u => String(u.id) === id)
+  if (!user) return null
+  return {
+    id: user.id,
+    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.name,
+    email: user.email || '',
+    initials: (user.firstName || user.name || '?').charAt(0),
+    avatarUrl: user.avatar
+  }
+}
+
+function getUserOptions() {
+  return userStore.users.map((user) => {
+    const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.name || String(user.id)
+    return {
+      id: user.id,
+      value: user.id,
+      label: name,
+      name,
+      email: user.email || '',
+      initials: (user.firstName || user.name || name || '?').charAt(0),
+      avatarUrl: user.avatar || ''
+    }
+  })
+}
+
+/**
+ * Get the current project tags as select options.
+ */
+function getProjectTagOptions() {
+  const pid = projectId.value
+  if (!pid) return []
+  const tags = projectStore.projectTags[pid] || []
+  return tags.map(tag => ({
+    label: tag.name,
+    value: tag.name,
+    color: tag.color
+  }))
 }
 
 function buildFieldFromApi(rawField, index = 0) {
@@ -261,22 +570,25 @@ function buildFieldFromApi(rawField, index = 0) {
   const key = rawKey === 'name' ? 'title' : rawKey
   const catalogField = propertyCatalog.find((item) => item.key === key)
   const type = rawField?.type || catalogField?.type || 'text'
+  const rawValue = rawField?.value === undefined ? rawField?.defaultValue : rawField?.value
+  const parsedValue = parseMaybeJson(rawValue)
+  const selectedOptions = extractSelectedOptionsFromValue(key, parsedValue)
 
-  const optionsFromApi = toArray(rawField?.options).map((option) => {
-    if (typeof option === 'string') {
-      return { label: option, value: option }
-    }
-    return {
-      ...option,
-      label: option?.label ?? option?.name ?? option?.value ?? '',
-      value: option?.value ?? option?.id ?? option?.label ?? option?.name ?? ''
-    }
-  })
-  const options = optionsFromApi.length > 0 ? optionsFromApi : (catalogField?.options || [])
+  const optionsFromApi = toArray(rawField?.options)
+  const options = getFieldOptions(
+    key,
+    optionsFromApi.length > 0 ? optionsFromApi : (catalogField?.options || []),
+    selectedOptions
+  )
 
-  let value = rawField?.value
-  if (value === undefined) value = rawField?.defaultValue
-  value = normalizeFieldValue(type, value)
+  let value = normalizeFieldValue(type, parsedValue)
+  if (key === 'assignee' || key === 'supervisor') {
+    value = normalizeUserSelectionValue(parsedValue)
+  } else if (key === 'tags' || key === 'status') {
+    value = normalizeSingleOptionValue(parsedValue)
+  } else if (key === 'subscribers') {
+    value = normalizeMultiOptionValues(parsedValue)
+  }
 
   return {
     id: rawField?.id || `${key}-${Date.now()}-${index}`,
@@ -293,58 +605,60 @@ function buildFieldFromApi(rawField, index = 0) {
   }
 }
 
-function getStatusOption(value) {
-  const statusField = propertyCatalog.find(p => p.key === 'status')
-  return statusField?.options?.find(o => o.value === value)
+function getStatusOption(value, options = projectStatusOptions.value) {
+  return toArray(options).find((option) => String(option?.value) === String(value))
+}
+
+function createTitleField() {
+  return {
+    id: `title-${Date.now()}`,
+    key: 'title',
+    label: 'Title',
+    type: 'text',
+    rightLabel: 'Title',
+    placeholder: 'Write a task name',
+    options: [],
+    locked: true,
+    required: true,
+    visible: true,
+    value: ''
+  }
 }
 
 function createDefaultFields() {
-  return ['title', 'status', 'attachments', 'custom-text', 'supervisor'].map((key) => {
-    if (key === 'title') {
-      return {
-        id: `title-${Date.now()}`,
-        key: 'title',
-        label: 'Title',
-        type: 'text',
-        rightLabel: 'Title',
-        placeholder: 'Write a task name',
-        options: [],
-        locked: true,
-        required: true,
-        visible: true,
-        value: ''
-      }
-    }
-    const field = createField(key)
-    if (field && key === 'status') {
-      field.required = true
-      field.visible = true
-    }
-    return field
-  }).filter(Boolean)
+  return [createTitleField()]
 }
 
 const formState = ref({
-  name: 'Default - Create task',
+  name: DEFAULT_FORM_NAME,
+  description: '',
   access: 'private',
-  boardId: 'task-board',
+  boardId: '',
   actionId: 'create-task'
 })
 const formFields = ref(createDefaultFields())
 const savedSnapshot = ref('')
 
 const boardOptions = computed(() => {
-  if (!projectId.value) return fallbackBoardOptions
+  if (!projectId.value) return []
   const items = projectStore.getProjectItems(projectId.value) || []
   const mapped = items.map((item) => ({
     label: item?.name || item?.slug || 'Board',
     value: item?.id
   })).filter((item) => item.value)
-  return mapped.length > 0 ? mapped : fallbackBoardOptions
+  return mapped
 })
 
 function getDefaultBoardId() {
-  return boardOptions.value[0]?.value || fallbackBoardOptions[0]?.value || ''
+  return boardOptions.value[0]?.value || ''
+}
+
+function resolveProjectItemId() {
+  const current = formState.value.boardId
+  if (current && boardOptions.value.some((option) => String(option.value) === String(current))) {
+    return current
+  }
+  return getDefaultBoardId()
 }
 
 const privateLink = computed(() => {
@@ -373,6 +687,7 @@ const canSave = computed(() => hasPendingChanges.value && !isSaving.value && !is
 function createSnapshot() {
   return JSON.stringify({
     name: formState.value.name.trim(),
+    description: formState.value.description?.trim() || '',
     access: formState.value.access,
     boardId: formState.value.boardId,
     actionId: formState.value.actionId,
@@ -397,7 +712,8 @@ function createSnapshot() {
 function resetToDefault() {
   loadedFormId.value = null
   formState.value = {
-    name: 'Default - Create task',
+    name: DEFAULT_FORM_NAME,
+    description: '',
     access: 'private',
     boardId: getDefaultBoardId(),
     actionId: actionOptions[0].value
@@ -408,12 +724,13 @@ function resetToDefault() {
 }
 
 function applyApiForm(form) {
-  loadedFormId.value = form?.id || form?.formId || null
+  loadedFormId.value = getPersistedFormId(form)
 
   const nextBoardId = form?.boardId || form?.projectItemId || form?.board?.id || getDefaultBoardId()
   const nextActionId = normalizeActionId(form?.actionId || form?.action || form?.actionType)
   formState.value = {
-    name: form?.name || form?.title || 'Default - Create task',
+    name: form?.name || form?.title || DEFAULT_FORM_NAME,
+    description: form?.description || '',
     access: normalizeAccess(form?.access ?? form?.visibility ?? form?.sharing ?? form?.isPrivate),
     boardId: nextBoardId,
     actionId: nextActionId
@@ -436,8 +753,53 @@ function applyApiForm(form) {
   savedSnapshot.value = createSnapshot()
 }
 
+async function resolveExistingFormId() {
+  if (!projectId.value) return null
+  const response = await projectApi.getProjectForms({ projectId: projectId.value })
+  const forms = getObjectList(response)
+    .filter((item) => String(getProjectIdFromForm(item)) === String(projectId.value))
+    .sort((a, b) => {
+      const ia = Number(a?.index ?? 0)
+      const ib = Number(b?.index ?? 0)
+      return ia - ib
+    })
+  return getPersistedFormId(forms[0])
+}
+
+function createTitleFieldPayload() {
+  return {
+    key: 'name',
+    label: 'Title',
+    isShow: true,
+    isRequired: true,
+    defaultValue: ''
+  }
+}
+
+async function createInitialFormWithTitleField() {
+  if (!projectId.value) return null
+  const name = formState.value.name?.trim() || DEFAULT_FORM_NAME
+  const data = {
+    projectId: projectId.value,
+    name,
+    description: formState.value.description?.trim() || name,
+    isPrivate: true,
+    action: 'create',
+    customFields: [createTitleFieldPayload()]
+  }
+  const projectItemId = resolveProjectItemId()
+  if (projectItemId) {
+    data.projectItemId = projectItemId
+  }
+
+  const response = await projectApi.createProjectForm(data)
+  const responseData = unwrapResponseData(response)
+  return responseData?.saved || responseData?.form || responseData?.projectForm || responseData
+}
+
 async function loadFormFromApi() {
   if (!projectId.value) {
+    projectStatusOptions.value = []
     resetToDefault()
     return
   }
@@ -445,12 +807,18 @@ async function loadFormFromApi() {
   const token = ++loadToken
   isLoading.value = true
   try {
-    await projectStore.fetchProjectItems(projectId.value)
+    const [, , , columns] = await Promise.all([
+      projectStore.fetchProjectItems(projectId.value),
+      projectStore.fetchProjectTags(projectId.value),
+      userStore.users.length === 0 ? userStore.fetchUsers({ limit: 50 }) : Promise.resolve(),
+      projectStore.fetchProjectColumns(projectId.value).catch(() => [])
+    ])
+    projectStatusOptions.value = mapProjectColumnsToStatusOptions(columns)
     const response = await projectApi.getProjectForms({ projectId: projectId.value })
     if (token !== loadToken) return
 
     const forms = getObjectList(response)
-      .filter((item) => String(item?.projectId || item?.project?.id || '') === String(projectId.value))
+      .filter((item) => String(getProjectIdFromForm(item)) === String(projectId.value))
       .sort((a, b) => {
         const ia = Number(a?.index ?? 0)
         const ib = Number(b?.index ?? 0)
@@ -461,10 +829,17 @@ async function loadFormFromApi() {
     if (selected) {
       applyApiForm(selected)
     } else {
-      resetToDefault()
+      const created = await createInitialFormWithTitleField()
+      if (token !== loadToken) return
+      if (created) {
+        applyApiForm(created)
+      } else {
+        resetToDefault()
+      }
     }
   } catch (error) {
     if (token !== loadToken) return
+    projectStatusOptions.value = []
     uiStore.showApiError(error, t('settings.project.forms.errors.load', 'Failed to load form settings'))
     resetToDefault()
   } finally {
@@ -503,32 +878,50 @@ async function saveChanges() {
   if (!projectId.value || !hasPendingChanges.value || isSaving.value || isLoading.value) return
   isSaving.value = true
   try {
-    const payload = {
+    const data = {
       projectId: projectId.value,
       name: formState.value.name.trim(),
-      description: formState.value.name.trim(),
+      description: formState.value.description?.trim() || formState.value.name.trim(),
       isPrivate: toApiIsPrivate(formState.value.access),
       action: toApiAction(formState.value.actionId),
-      projectItemId: formState.value.boardId,
-      customFields: formFields.value.map((field) => ({
-        key: field.key === 'title' ? 'name' : field.key,
-        label: field.label,
-        isShow: Boolean(field.visible),
-        isRequired: Boolean(field.required),
-        defaultValue: Array.isArray(field.value) ? field.value.join(',') : (field.value ?? '')
-      }))
+      customFields: formFields.value.map((field) => {
+        return {
+          key: field.key === 'title' ? 'name' : field.key,
+          label: field.label,
+          isShow: Boolean(field.visible),
+          isRequired: Boolean(field.required),
+          defaultValue: normalizeDefaultValueForApi(field)
+        }
+      })
+    }
+    const projectItemId = resolveProjectItemId()
+    if (projectItemId) {
+      data.projectItemId = projectItemId
     }
 
     let response
-    if (loadedFormId.value) {
-      response = await projectApi.updateProjectForm(loadedFormId.value, payload)
-    } else {
-      response = await projectApi.createProjectForm(payload)
+    let targetFormId = loadedFormId.value
+    if (!targetFormId) {
+      targetFormId = await resolveExistingFormId()
+      if (targetFormId) {
+        loadedFormId.value = targetFormId
+      }
     }
 
-    const returned = response?.data || response?.form || response?.projectForm || response
-    if (returned?.id || returned?.formId) {
-      loadedFormId.value = returned.id || returned.formId
+    if (targetFormId) {
+      response = await projectApi.updateProjectForm(targetFormId, data)
+    } else {
+      response = await projectApi.createProjectForm(data)
+    }
+
+    const responseData = unwrapResponseData(response)
+    const returned = responseData?.saved || responseData?.form || responseData?.projectForm || responseData
+    const returnedFormId = getPersistedFormId(returned)
+    if (returnedFormId) {
+      loadedFormId.value = returnedFormId
+    }
+    if (typeof returned?.description === 'string') {
+      formState.value.description = returned.description
     }
     savedSnapshot.value = createSnapshot()
     uiStore.showApiSuccess(response, t('settings.project.forms.messages.saved', 'Form settings saved'))
@@ -545,6 +938,50 @@ watch(projectId, () => {
   loadFormFromApi()
 }, { immediate: true })
 
+watch(projectStatusOptions, () => {
+  formFields.value.forEach((field) => {
+    if (field.key !== 'status') return
+    const selectedOptions = extractSelectedOptionsFromValue('status', field.value)
+    field.options = getFieldOptions('status', field.options, selectedOptions)
+    field.value = normalizeSingleOptionValue(field.value)
+    if (!field.value && field.options.length > 0) {
+      field.value = field.options[0].value
+    }
+  })
+}, { deep: true, immediate: true })
+
+// Keep tags field options in sync with project tags
+watch(() => projectStore.projectTags[projectId.value], () => {
+  formFields.value.forEach(field => {
+    if (field.key === 'tags') {
+      const selectedOptions = extractSelectedOptionsFromValue('tags', field.value)
+      field.options = getFieldOptions('tags', field.options, selectedOptions)
+      field.value = normalizeSingleOptionValue(field.value)
+    }
+  })
+}, { deep: true })
+
+watch(() => userStore.users, () => {
+  const userOptions = getUserOptions()
+  formFields.value.forEach((field) => {
+    if (field.key === 'subscribers') {
+      const selectedOptions = extractSelectedOptionsFromValue('subscribers', field.value)
+      field.options = mergeOptionsByValue(selectedOptions, userOptions, field.options)
+      field.value = normalizeMultiOptionValues(field.value)
+    }
+
+    if (field.key === 'assignee' || field.key === 'supervisor') {
+      if (
+        typeof field.value === 'string' ||
+        typeof field.value === 'number' ||
+        (field.value && typeof field.value === 'object' && !field.value.name)
+      ) {
+        field.value = normalizeUserSelectionValue(field.value)
+      }
+    }
+  })
+}, { deep: true, immediate: true })
+
 watch([canSave, isSaving, hasPendingChanges], () => {
   emit('update:canSave', canSave.value)
   emit('update:isSaving', isSaving.value)
@@ -555,7 +992,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 </script>
 
 <template>
-  <div>
+  <div class="settings-form-shell">
     <div v-if="!projectId" class="settings-project-empty">
       <div class="settings-project-empty-title">{{ t('settings.project.empty.title') }}</div>
       <p class="settings-project-empty-text">{{ t('settings.project.empty.description') }}</p>
@@ -717,7 +1154,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
               </div>
 
               <!-- Default Value Input -->
-              <div class="settings-form-field-row">
+              <div v-if="field.key !== 'attachments'" class="settings-form-field-row">
                 <label class="settings-form-field-label">{{ t('settings.project.forms.fields.defaultValue', 'Default') }}</label>
                 
                 <!-- User Selector for Supervisor/User types -->
@@ -734,8 +1171,7 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
                           :image="field.value.avatarUrl || field.value.avatar" 
                           :label="!field.value.avatarUrl && !field.value.avatar ? (field.value.initials || field.value.name?.charAt(0) || '?') : undefined" 
                           shape="circle" 
-                          size="small"
-                          class="w-5 h-5 text-[10px] bg-primary-100 text-primary-700 font-semibold flex-shrink-0"
+                          class="settings-form-avatar flex-shrink-0"
                         />
                         <span class="truncate text-xs">{{ field.value.name }}</span>
                       </div>
@@ -756,12 +1192,12 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
                     <button type="button" class="w-full h-[32px] flex items-center justify-between px-2 bg-white border border-gray-300 rounded-md text-sm text-left hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 transition-colors">
                       <div v-if="field.value" class="flex items-center gap-2 overflow-hidden">
                          <TaskProgressIcon 
-                            :status="getStatusOption(field.value)?.status || 'todo'" 
-                            :progress="getStatusOption(field.value)?.progress || 0"
-                            :color="getStatusOption(field.value)?.color || '#9ca3af'"
+                            :status="getStatusOption(field.value, field.options)?.status || 'todo'" 
+                            :progress="getStatusOption(field.value, field.options)?.progress || 0"
+                            :color="getStatusOption(field.value, field.options)?.color || '#9ca3af'"
                             size="sm"
                          />
-                        <span class="truncate text-xs">{{ getStatusOption(field.value)?.label || field.value }}</span>
+                        <span class="truncate text-xs">{{ getStatusOption(field.value, field.options)?.label || field.value }}</span>
                       </div>
                       <span v-else class="text-gray-400 text-xs">{{ t('settings.project.forms.placeholders.status', 'Select status') }}</span>
                       <ChevronDown class="w-3.5 h-3.5 text-gray-400" />
@@ -798,6 +1234,14 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
                   rows="1"
                   autoResize
                   class="w-full"
+                  :placeholder="field.placeholder"
+                />
+                <UserMultiSearchDropdown
+                  v-else-if="field.key === 'subscribers'"
+                  v-model="field.value"
+                  :multiple="true"
+                  :projectId="projectId"
+                  :options="field.options"
                   :placeholder="field.placeholder"
                 />
                 <FormInput
@@ -922,12 +1366,22 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   margin-top: 6px;
 }
 
+.settings-form-shell {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .settings-form {
   min-height: 0;
-  max-height: none;
-  overflow: visible;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
   padding-bottom: 20px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .settings-form-header {
@@ -1145,6 +1599,17 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
   background: #ffffff;
 }
 
+/* Avatar in assignee/supervisor trigger – keep it small */
+.settings-form-avatar {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px;
+  font-size: 9px !important;
+  background-color: var(--p-primary-100, #dbeafe);
+  color: var(--p-primary-700, #1d4ed8);
+  font-weight: 600;
+}
+
 /* ToggleSwitch scaling to match design (small) without breaking consistency */
 .settings-form-field-card-body :deep(.p-toggleswitch) {
     transform: scale(0.8);
@@ -1241,7 +1706,3 @@ defineExpose({ saveChanges, pendingChanges: hasPendingChanges })
 }
 
 </style>
-
-
-
-

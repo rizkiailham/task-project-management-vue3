@@ -1,7 +1,8 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Search, User as UserIcon } from 'lucide-vue-next'
+import { Check, ChevronDown, Search, User as UserIcon } from 'lucide-vue-next'
+import { getAvatarColor } from '@/utils/avatarColor'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Avatar from 'primevue/avatar'
 import { debounce } from '@/utils/debounce'
@@ -124,13 +125,13 @@ onMounted(() => {
     
     <template #content>
       <!-- Search Input -->
-      <div class="p-2 border-b border-gray-100 dark-edit:border-gray-700">
-        <div class="relative">
-          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+      <div class="usd-search-wrapper">
+        <div class="usd-search-container">
+          <Search class="usd-search-icon" />
           <input
             v-model="searchQuery"
             type="text"
-            class="w-full bg-gray-50 dark-edit:bg-gray-800 border-none rounded-md py-1.5 pl-8 pr-3 text-xs focus:ring-1 focus:ring-primary-500 outline-none transition-all"
+            class="usd-search-input"
             :placeholder="t('common.search') + '...'"
             @click.stop
           />
@@ -138,96 +139,94 @@ onMounted(() => {
       </div>
       
       <!-- List Area -->
-      <div class="max-h-[280px] overflow-y-auto py-1 custom-scrollbar">
+      <div class="usd-list custom-scrollbar">
         <!-- Unassigned option (only when not searching) -->
         <button
           v-if="showUnassigned && !searchQuery"
           type="button"
-          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 text-gray-600 dark-edit:text-gray-400 transition-colors"
-          :class="{ 'bg-primary-50 dark-edit:bg-primary-900/20 text-primary-600 dark-edit:text-primary-400': !modelValue }"
+          class="usd-list-item"
+          :class="{ 'is-selected': !modelValue }"
           @click="handleUnassign"
         >
-          <div class="w-6 h-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center" :class="{ 'border-primary-300': !modelValue }">
-            <UserIcon class="w-3 h-3" />
+          <div class="usd-unassigned-avatar" :class="{ 'is-selected': !modelValue }">
+            <UserIcon class="usd-unassigned-icon" />
           </div>
-          <span class="font-medium flex-1 text-left">{{ t('taskDetail.unassigned') || 'Unassigned' }}</span>
-          <i v-if="!modelValue" class="pi pi-check text-[10px] text-primary-500"></i>
+          <div class="usd-list-info">
+            <span class="usd-list-name">{{ t('taskDetail.unassigned') || 'Unassigned' }}</span>
+          </div>
+          <Check v-if="!modelValue" class="usd-list-check" />
         </button>
 
-        <div v-if="isSearching" class="px-3 py-6 text-center">
-             <div class="flex flex-col items-center gap-2">
-                 <div class="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                 <div class="text-[10px] text-gray-400">{{ t('common.loading') }}...</div>
-             </div>
+        <div v-if="isSearching" class="usd-list-loading">
+          <div class="usd-list-spinner"></div>
+          <div class="usd-list-loading-text">{{ t('common.loading') }}...</div>
         </div>
         
         <template v-else>
           <!-- Show search results if searching, otherwise show initial users -->
           <div v-if="searchQuery && searchResults.length > 0">
-            <div class="px-3 py-1.5 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+            <div class="usd-list-section-title">
                {{ t('common.results') || 'Results' }}
             </div>
             <button
               v-for="user in searchResults"
               :key="user.id"
               type="button"
-              class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 text-gray-700 dark-edit:text-gray-300 transition-colors"
-              :class="{ 'bg-primary-50 dark-edit:bg-primary-900/20 text-primary-600 dark-edit:text-primary-400': modelValue?.id === user.id }"
+              class="usd-list-item"
+              :class="{ 'is-selected': modelValue?.id === user.id }"
               @click="handleSelect(user)"
             >
               <Avatar
                 :image="user.avatarUrl"
                 :label="!user.avatarUrl ? user.initials : undefined"
                 shape="circle"
-                size="small"
-                class="w-6 h-6 text-[10px] bg-primary-100 text-primary-700 font-semibold"
-                :style="!user.avatarUrl ? {} : { backgroundColor: 'transparent' }"
+                class="usd-list-avatar"
+                :style="{ backgroundColor: user.avatarUrl ? 'transparent' : getAvatarColor(user.name) }"
               />
-              <div class="flex flex-col items-start overflow-hidden flex-1">
-                <span class="font-medium truncate w-full text-left">{{ user.name }}</span>
-                <span class="text-[9px] text-gray-400 truncate w-full text-left">{{ user.email }}</span>
+              <div class="usd-list-info">
+                <span class="usd-list-name">{{ user.name }}</span>
+                <span class="usd-list-email">{{ user.email }}</span>
               </div>
-              <i v-if="modelValue?.id === user.id" class="pi pi-check text-[10px] text-primary-500"></i>
+              <Check v-if="modelValue?.id === user.id" class="usd-list-check" />
             </button>
           </div>
           
           <div v-else-if="!searchQuery && initialUsers.length > 0">
-            <div class="px-3 py-1.5 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+            <div class="usd-list-section-title">
                {{ t('settings.project.search.users') }}
             </div>
             <button
               v-for="user in initialUsers"
               :key="user.id"
               type="button"
-              class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 dark-edit:hover:bg-gray-800 text-gray-700 dark-edit:text-gray-300 transition-colors"
-              :class="{ 'bg-primary-50 dark-edit:bg-primary-900/20 text-primary-600 dark-edit:text-primary-400': modelValue?.id === user.id }"
+              class="usd-list-item"
+              :class="{ 'is-selected': modelValue?.id === user.id }"
               @click="handleSelect(user)"
             >
               <Avatar
                 :image="user.avatarUrl"
                 :label="!user.avatarUrl ? user.initials : undefined"
                 shape="circle"
-                size="small"
-                class="w-6 h-6 text-[10px] bg-blue-100 text-blue-700 font-semibold"
-                :style="!user.avatarUrl ? {} : { backgroundColor: 'transparent' }"
+                class="usd-list-avatar"
+                :style="{ backgroundColor: user.avatarUrl ? 'transparent' : getAvatarColor(user.name) }"
               />
-              <div class="flex flex-col items-start overflow-hidden flex-1">
-                <span class="font-medium truncate w-full text-left">{{ user.name }}</span>
-                <span class="text-[9px] text-gray-400 truncate w-full text-left">{{ user.email }}</span>
+              <div class="usd-list-info">
+                <span class="usd-list-name">{{ user.name }}</span>
+                <span class="usd-list-email">{{ user.email }}</span>
               </div>
-              <i v-if="modelValue?.id === user.id" class="pi pi-check text-[10px] text-primary-500"></i>
+              <Check v-if="modelValue?.id === user.id" class="usd-list-check" />
             </button>
           </div>
 
           <!-- Empty states -->
-          <div v-else-if="searchQuery && searchQuery.length >= 3" class="px-3 py-10 text-center">
-            <UserIcon class="w-8 h-8 text-gray-200 mx-auto mb-2" />
-            <div class="text-[11px] text-gray-500 font-medium">{{ t('common.noResults') }}</div>
-            <div class="text-[9px] text-gray-400 mt-1">Try a different search term</div>
+          <div v-else-if="searchQuery && searchQuery.length >= 3" class="usd-list-empty">
+            <UserIcon class="usd-list-empty-icon" />
+            <div class="usd-list-empty-text">{{ t('common.noResults') }}</div>
+            <div class="usd-list-empty-hint">Try a different search term</div>
           </div>
           
-          <div v-else-if="searchQuery && searchQuery.length < 3" class="px-3 py-10 text-center">
-             <div class="text-[10px] text-gray-400 italic">
+          <div v-else-if="searchQuery && searchQuery.length < 3" class="usd-list-empty">
+             <div class="usd-list-empty-hint">
                  {{ t('settings.project.search.minChars') }}
              </div>
           </div>
@@ -238,17 +237,227 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ─── Search ──────────────────────────────────────────── */
+.usd-search-wrapper {
+  padding: 0px 8px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.usd-search-container {
+  position: relative;
+}
+
+.usd-search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.usd-search-input {
+  width: 100%;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px 6px 28px;
+  font-size: 12px;
+  color: var(--color-gray-700, #374151);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.usd-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.usd-search-input:focus {
+  border-color: var(--p-primary-500, #3b82f6);
+  box-shadow: 0 0 0 1px var(--p-primary-500, #3b82f6);
+  background: #ffffff;
+}
+
+/* ─── User List ───────────────────────────────────────── */
+.usd-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.usd-list-section-title {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+
+.usd-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--color-gray-700, #374151);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.usd-list-item:hover {
+  background: #f3f4f6;
+}
+
+.usd-list-item.is-selected {
+  background: var(--p-primary-50, #eff6ff);
+  color: var(--p-primary-700, #1d4ed8);
+}
+
+.usd-list-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px;
+  font-size: 11px !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.usd-unassigned-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px dashed #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.12s ease;
+}
+
+.usd-unassigned-avatar.is-selected {
+  border-color: var(--p-primary-300, #93c5fd);
+}
+
+.usd-unassigned-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.usd-list-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow: hidden;
+  flex: 1;
+  gap: 1px;
+}
+
+.usd-list-name {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.usd-list-email {
+  font-size: 12px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.usd-list-check {
+  width: 14px;
+  height: 14px;
+  color: var(--p-primary-500, #3b82f6);
+  flex-shrink: 0;
+}
+
+/* ─── Loading ─────────────────────────────────────────── */
+.usd-list-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 12px;
+}
+
+.usd-list-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--p-primary-500, #3b82f6);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: usd-spin 0.6s linear infinite;
+}
+
+@keyframes usd-spin {
+  to { transform: rotate(360deg); }
+}
+
+.usd-list-loading-text {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* ─── Empty State ─────────────────────────────────────── */
+.usd-list-empty {
+  padding: 24px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.usd-list-empty-icon {
+  width: 28px;
+  height: 28px;
+  color: #d1d5db;
+}
+
+.usd-list-empty-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.usd-list-empty-hint {
+  font-size: 10px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ─── Scrollbar ───────────────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #e5e7eb;
   border-radius: 10px;
 }
-.dark-edit .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #374151;
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #d1d5db;
 }
 </style>
