@@ -4,6 +4,7 @@
  */
 import { computed } from 'vue'
 import { TaskStatus, TaskPriority } from '@/models'
+import AppTooltip from '@/components/ui/AppTooltip.vue'
 
 // PrimeVue
 import Avatar from 'primevue/avatar'
@@ -135,15 +136,15 @@ function handleToggle() {
     </div>
 
     <!-- Assignee -->
-    <Avatar 
-      v-if="task.assignee"
-      :label="task.assignee.name?.charAt(0)"
-      :image="task.assignee.avatar"
-      shape="circle"
-      size="small"
-      class="bg-primary-100 text-primary-700 flex-shrink-0"
-      v-tooltip="task.assignee.name"
-    />
+    <AppTooltip v-if="task.assignee" :content="task.assignee.name" placement="top">
+      <Avatar 
+        :label="task.assignee.name?.charAt(0)"
+        :image="task.assignee.avatar"
+        shape="circle"
+        size="small"
+        class="bg-primary-100 text-primary-700 flex-shrink-0"
+      />
+    </AppTooltip>
   </div>
 </template>
 

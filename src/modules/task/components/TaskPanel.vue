@@ -14,6 +14,7 @@ import Avatar from 'primevue/avatar'
 import Tag from 'primevue/tag'
 import ProgressBar from 'primevue/progressbar'
 import Skeleton from 'primevue/skeleton'
+import AppTooltip from '@/components/ui/AppTooltip.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -105,14 +106,15 @@ function formatDate(date) {
         <span class="text-sm text-gray-500 dark-edit:text-gray-400">Task Details</span>
       </div>
       <div class="flex items-center gap-1">
-        <Button 
-          icon="pi pi-external-link" 
-          text 
-          rounded 
-          size="small"
-          v-tooltip="'Open full page'"
-          @click="router.push({ name: 'TaskDetail', params: { taskId: task?.id } }); closePanel()"
-        />
+        <AppTooltip content="Open full page">
+          <Button 
+            icon="pi pi-external-link" 
+            text 
+            rounded 
+            size="small"
+            @click="router.push({ name: 'TaskDetail', params: { taskId: task?.id } }); closePanel()"
+          />
+        </AppTooltip>
         <Button 
           icon="pi pi-ellipsis-v" 
           text 

@@ -17,7 +17,6 @@ import Aura from '@primevue/themes/aura'
 import { definePreset, palette } from '@primevue/themes'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
-import Tooltip from 'primevue/tooltip'
 import Ripple from 'primevue/ripple'
 
 // I18n
@@ -68,7 +67,6 @@ app.use(ToastService)
 app.use(ConfirmationService)
 
 // PrimeVue directives
-app.directive('tooltip', Tooltip)
 app.directive('ripple', Ripple)
 
 // I18n - Internationalization

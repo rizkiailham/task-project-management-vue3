@@ -482,7 +482,8 @@ const floatingVars = {
   '--popper-theme-border-color': '#e5e7eb',
   '--popper-theme-border-radius': '12px',
   '--popper-theme-padding': '0px',
-  '--popper-theme-box-shadow': '0 18px 28px -18px rgba(15, 23, 42, 0.4)'
+  '--popper-theme-box-shadow': '0 18px 28px -18px rgba(15, 23, 42, 0.4)',
+  'font-size': '13px'
 }
 
 function applyFloatingVars(node) {
@@ -851,6 +852,7 @@ function getTextColor(hex) {
   --popper-theme-border-radius: 12px;
   --popper-theme-padding: 0px;
   --popper-theme-box-shadow: 0 18px 28px -18px rgba(15, 23, 42, 0.4);
+  font-size: 13px;
   display: block;
 }
 
@@ -1108,6 +1110,7 @@ function getTextColor(hex) {
   --popper-theme-border-radius: 12px;
   --popper-theme-padding: 12px;
   --popper-theme-box-shadow: 0 16px 28px -18px rgba(15, 23, 42, 0.4);
+  font-size: 13px;
   display: inline-flex;
 }
 

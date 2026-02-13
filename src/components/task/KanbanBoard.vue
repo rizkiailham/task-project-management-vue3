@@ -21,6 +21,7 @@ import { VueDraggableNext as Draggable } from 'vue-draggable-next'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
 import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
+import AppTooltip from '@/components/ui/AppTooltip.vue'
 
 const props = defineProps({
   columns: {
@@ -796,22 +797,22 @@ onUnmounted(() => {
                         @select="(user) => handleUpdateAssignee(task.id, user)"
                       >
                         <template #trigger>
-                          <Avatar
-                            v-if="task.assignee"
-                            :image="task.assignee.avatar"
-                            :label="!task.assignee.avatar ? task.assignee.name?.charAt(0) : undefined"
-                            shape="circle"
-                            class="text-[10px] bg-primary-100 text-primary-700 cursor-pointer hover:ring-2 hover:ring-primary-300 transition-all flex items-center justify-center p-0"
-                            v-tooltip="{ value: task.assignee.name, class: 'text-xs' }"
-                            :style="[{ width: '26px', height: '26px', fontSize: '13px' }, !task.assignee.avatar ? {} : { backgroundColor: 'transparent' }]"
-                          />
-                          <div 
-                            v-else 
-                            class="w-6 h-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-500 hover:text-gray-600 cursor-pointer transition-colors"
-                            v-tooltip="{ value: 'Assign user', class: 'text-xs' }"
-                          >
-                            <i class="pi pi-user" style="font-size: 10px;"></i>
-                          </div>
+                          <AppTooltip :content="task.assignee?.name || 'Assign user'" placement="top">
+                            <Avatar
+                              v-if="task.assignee"
+                              :image="task.assignee.avatar"
+                              :label="!task.assignee.avatar ? task.assignee.name?.charAt(0) : undefined"
+                              shape="circle"
+                              class="text-[10px] bg-primary-100 text-primary-700 cursor-pointer hover:ring-2 hover:ring-primary-300 transition-all flex items-center justify-center p-0"
+                              :style="[{ width: '26px', height: '26px', fontSize: '13px' }, !task.assignee.avatar ? {} : { backgroundColor: 'transparent' }]"
+                            />
+                            <div 
+                              v-else 
+                              class="w-6 h-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-500 hover:text-gray-600 cursor-pointer transition-colors"
+                            >
+                              <i class="pi pi-user" style="font-size: 10px;"></i>
+                            </div>
+                          </AppTooltip>
                         </template>
                       </UserSearchDropdown>
                     </div>
