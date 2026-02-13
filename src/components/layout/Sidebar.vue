@@ -965,10 +965,16 @@ async function handleLogout() {
                           @blur="saveProjectRename(project)"
                         />
                       </span>
-                      <span v-else class="sidebar-item-label sidebar-item-label--project truncate font-medium">{{ project.name }}</span>
+                      <span
+                        v-else
+                        class="sidebar-item-label sidebar-item-label--project truncate font-medium"
+                        :title="project.name"
+                      >
+                        {{ project.name }}
+                      </span>
                     </span>
                   </button>
-                  <div class="sidebar-project-actions flex items-center gap-1 ml-auto">
+                  <div class="sidebar-project-actions flex items-center gap-1">
                     <DropdownMenu
                       :items="getProjectMenuItems(project)"
                       position="left"
@@ -1051,25 +1057,35 @@ async function handleLogout() {
                             autoFocus
                           />
                         </span>
-                        <span v-else class="sidebar-item-label sidebar-item-label--child truncate font-medium">{{ item.label || item.name }}</span>
+                        <span
+                          v-else
+                          class="sidebar-item-label sidebar-item-label--child truncate font-medium"
+                          :title="item.label || item.name"
+                        >
+                          {{ item.label || item.name }}
+                        </span>
                       </span>
-                      <DropdownMenu
+                      <div
                         v-if="!(item.type === 'report' && isReportDisabled(project.id))"
-                        :items="getChildMenuItems(project.id, { key: item.key, ...item })"
-                        position="left"
-                        width="12rem"
-                        variant="sidebar"
+                        class="sidebar-child-actions"
                       >
-                        <template #trigger>
-                          <button
-                            type="button"
-                            class="child-menu-ellipsis w-6 h-6 flex items-center justify-center rounded text-gray-900 hover:text-gray-900 transition-colors cursor-pointer"
-                            :aria-label="t('sidebar.context.openMenu')"
-                          >
-                            <Ellipsis class="w-4 h-4" />
-                          </button>
-                        </template>
-                      </DropdownMenu>
+                        <DropdownMenu
+                          :items="getChildMenuItems(project.id, { key: item.key, ...item })"
+                          position="left"
+                          width="12rem"
+                          variant="sidebar"
+                        >
+                          <template #trigger>
+                            <button
+                              type="button"
+                              class="child-menu-ellipsis w-6 h-6 flex items-center justify-center rounded text-gray-900 hover:text-gray-900 transition-colors cursor-pointer"
+                              :aria-label="t('sidebar.context.openMenu')"
+                            >
+                              <Ellipsis class="w-4 h-4" />
+                            </button>
+                          </template>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </Draggable>
                 </div>
@@ -1202,14 +1218,8 @@ async function handleLogout() {
 
 .menu-ellipsis,
 .child-menu-ellipsis {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.group:hover .menu-ellipsis,
-.group:hover .child-menu-ellipsis,
-.submenu-item.group:hover .child-menu-ellipsis {
   opacity: 0.9;
+  transition: opacity 0.15s ease;
 }
 
 .project-toggle-arrow.rotate-90 {
@@ -1251,17 +1261,23 @@ async function handleLogout() {
 }
 
 .sidebar-item-label {
-  display: flex;
-  align-items: center;
+  display: block;
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: inherit;
 }
 
 .sidebar-item-label--project {
   height: 1.75rem;
+  line-height: 1.75rem;
 }
 
 .sidebar-item-label--child {
   height: 1.5rem;
+  line-height: 1.5rem;
 }
 
 .sidebar-project-row {
@@ -1273,19 +1289,45 @@ async function handleLogout() {
 }
 
 .sidebar-project-actions {
-  width: 3rem;
+  flex: 0 0 auto;
+  width: 0;
+  overflow: hidden;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: width 0.15s ease, opacity 0.15s ease, margin-left 0.15s ease;
 }
 
 .sidebar-project-row:hover .sidebar-project-actions {
+  width: 4.25rem;
+  margin-left: 0.25rem;
   opacity: 1;
   pointer-events: auto;
 }
 
 .sidebar-project-row.is-renaming-project .sidebar-project-actions {
+  width: 4.25rem;
+  margin-left: 0.25rem;
   opacity: 0.9;
+  pointer-events: auto;
+}
+
+.sidebar-project-row.is-renaming-project .sidebar-project-trigger {
+  flex: 1 1 calc(100% - 4.25rem);
+}
+
+.sidebar-child-actions {
+  flex: 0 0 auto;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: width 0.15s ease, opacity 0.15s ease, margin-left 0.15s ease;
+}
+
+.sidebar-child-row:hover .sidebar-child-actions {
+  width: 2rem;
+  margin-left: 0.25rem;
+  opacity: 1;
   pointer-events: auto;
 }
 
