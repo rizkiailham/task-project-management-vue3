@@ -47,6 +47,7 @@ const actionOptions = [
   { label: 'Send to agent', value: 'send-agent' },
   { label: 'Send to skill', value: 'send-skill' }
 ]
+const FIELD_KEY_DUPLICATE_SEPARATOR = '__'
 
 const actionMenuItems = computed(() => [
   {
@@ -449,6 +450,43 @@ function inferRightLabel(type) {
   return map[type] || 'Text'
 }
 
+function resolveFieldKeyFromApi(rawKey, fallback = '') {
+  const normalizedKey = String(rawKey || '').trim()
+  if (!normalizedKey) return fallback
+  if (normalizedKey === 'name' || normalizedKey === 'title') return 'title'
+
+  const hasCatalogMatch = propertyCatalog.some((item) => item.key === normalizedKey)
+  if (hasCatalogMatch) return normalizedKey
+
+  const normalizedCandidates = [
+    normalizedKey.replace(/__\d+$/, ''),
+    normalizedKey.replace(/_\d+$/, ''),
+    normalizedKey.replace(/-\d+$/, '')
+  ]
+
+  const matched = normalizedCandidates.find((candidate) =>
+    propertyCatalog.some((item) => item.key === candidate)
+  )
+
+  return matched || normalizedKey
+}
+
+function resolveFieldBaseKey(field) {
+  return resolveFieldKeyFromApi(field?.key || '', field?.key || '')
+}
+
+function createUniqueApiFieldKey(field, countsByBaseKey) {
+  const baseKey = resolveFieldBaseKey(field)
+  if (baseKey === 'title') return 'name'
+
+  const currentCount = countsByBaseKey.get(baseKey) || 0
+  const nextCount = currentCount + 1
+  countsByBaseKey.set(baseKey, nextCount)
+
+  if (nextCount === 1) return baseKey
+  return `${baseKey}${FIELD_KEY_DUPLICATE_SEPARATOR}${nextCount}`
+}
+
 function normalizeFieldValue(type, value) {
   if (type === 'multiselect') {
     return normalizeMultiOptionValues(value)
@@ -567,7 +605,7 @@ function getProjectTagOptions() {
 
 function buildFieldFromApi(rawField, index = 0) {
   const rawKey = rawField?.key || rawField?.slug || rawField?.fieldKey || `field-${index + 1}`
-  const key = rawKey === 'name' ? 'title' : rawKey
+  const key = resolveFieldKeyFromApi(rawKey, `field-${index + 1}`)
   const catalogField = propertyCatalog.find((item) => item.key === key)
   const type = rawField?.type || catalogField?.type || 'text'
   const rawValue = rawField?.value === undefined ? rawField?.defaultValue : rawField?.value
@@ -662,16 +700,15 @@ function resolveProjectItemId() {
 }
 
 const privateLink = computed(() => {
-  const project = projectStore.currentProject
-  const prefix = project?.initial || project?.name || 'project'
-  return `https://desidia.app/forms/${String(prefix).trim().toLowerCase().replace(/\s+/g, '-')}/private`
+  const pid = projectId.value
+  if (!pid) return ''
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://desidia.app'
+  return `${origin}/forms?project_id=${encodeURIComponent(pid)}`
 })
 
-const selectedFieldKeys = computed(() => new Set(formFields.value.map((field) => field.key)))
 const availableProperties = computed(() => {
   const keyword = propertySearch.value.trim().toLowerCase()
   return propertyCatalog.filter((property) => {
-    if (selectedFieldKeys.value.has(property.key)) return false
     if (!keyword) return true
     return property.label.toLowerCase().includes(keyword)
   })
@@ -878,6 +915,7 @@ async function saveChanges() {
   if (!projectId.value || !hasPendingChanges.value || isSaving.value || isLoading.value) return
   isSaving.value = true
   try {
+    const fieldKeyCounts = new Map()
     const data = {
       projectId: projectId.value,
       name: formState.value.name.trim(),
@@ -886,7 +924,7 @@ async function saveChanges() {
       action: toApiAction(formState.value.actionId),
       customFields: formFields.value.map((field) => {
         return {
-          key: field.key === 'title' ? 'name' : field.key,
+          key: createUniqueApiFieldKey(field, fieldKeyCounts),
           label: field.label,
           isShow: Boolean(field.visible),
           isRequired: Boolean(field.required),

@@ -30,6 +30,10 @@ const props = defineProps({
   placeholder: {
     type: String,
     default: ''
+  },
+  dark: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -291,11 +295,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <DropdownMenu position="right" width="18rem" :closeOnSelect="!multiple">
+  <DropdownMenu position="right" width="18rem" :closeOnSelect="!multiple" :variant="dark ? 'dark' : 'default'">
     <template #trigger>
       <button
         type="button"
         class="multi-trigger"
+        :class="{ 'is-dark': dark }"
       >
         <!-- Selected users display -->
         <div v-if="selectedUsers.length > 0" class="multi-trigger-content">
@@ -772,5 +777,117 @@ onMounted(() => {
 
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
   background: #d1d5db;
+}
+
+/* ─── Dark Mode Overrides ─────────────────────────────── */
+.multi-trigger.is-dark {
+  background: #35353a;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.multi-trigger.is-dark:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.multi-trigger.is-dark .multi-trigger-label {
+  color: #e2e8f0;
+}
+
+.multi-trigger.is-dark .multi-trigger-placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.multi-trigger.is-dark .multi-trigger-chevron {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.multi-trigger.is-dark .multi-trigger-avatar {
+  box-shadow: 0 0 0 1.5px #35353a;
+}
+
+.multi-trigger.is-dark .multi-trigger-avatar-overflow {
+  background: #4a4a50;
+  color: #d1d5db;
+  box-shadow: 0 0 0 1.5px #35353a;
+}
+
+</style>
+
+<!-- Unscoped: teleported dropdown dark mode overrides -->
+<style>
+.dropdown-menu--dark .multi-search-wrapper {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dropdown-menu--dark .multi-search-input {
+  background: #3a3a3f !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+
+.dropdown-menu--dark .multi-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.dropdown-menu--dark .multi-search-input:focus {
+  background: #3a3a3f !important;
+  border-color: var(--p-primary-500, #3b82f6) !important;
+}
+
+.dropdown-menu--dark .multi-chips-wrapper {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dropdown-menu--dark .multi-chip {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+  color: #93c5fd !important;
+}
+
+.dropdown-menu--dark .multi-chip-remove {
+  color: #60a5fa !important;
+}
+
+.dropdown-menu--dark .multi-chip-remove:hover {
+  background: rgba(37, 99, 235, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.dropdown-menu--dark .multi-list-section-title {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dropdown-menu--dark .multi-list-item {
+  color: #d1d5db !important;
+}
+
+.dropdown-menu--dark .multi-list-item:hover {
+  background: #3a3a3f !important;
+}
+
+.dropdown-menu--dark .multi-list-item.is-selected {
+  background: rgba(37, 99, 235, 0.15) !important;
+  color: #93c5fd !important;
+}
+
+.dropdown-menu--dark .multi-list-name {
+  color: #e2e8f0 !important;
+}
+
+.dropdown-menu--dark .multi-list-email {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dropdown-menu--dark .multi-list-check {
+  color: #60a5fa !important;
+}
+
+.dropdown-menu--dark .multi-list-empty-icon {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dropdown-menu--dark .multi-list-empty-text {
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 </style>

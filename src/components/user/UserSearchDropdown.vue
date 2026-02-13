@@ -22,6 +22,10 @@ const props = defineProps({
   showUnassigned: {
     type: Boolean,
     default: true
+  },
+  dark: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -118,7 +122,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <DropdownMenu ref="dropdownRef" position="right" width="18rem">
+  <DropdownMenu ref="dropdownRef" position="right" width="18rem" :variant="dark ? 'dark' : 'default'">
     <template #trigger>
       <slot name="trigger"></slot>
     </template>
@@ -460,4 +464,77 @@ onMounted(() => {
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
   background: #d1d5db;
 }
+
 </style>
+
+<!-- Unscoped: teleported dropdown dark mode overrides -->
+<style>
+.dropdown-menu--dark .usd-search-wrapper {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dropdown-menu--dark .usd-search-input {
+  background: #3a3a3f !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+
+.dropdown-menu--dark .usd-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.dropdown-menu--dark .usd-search-input:focus {
+  background: #3a3a3f !important;
+  border-color: var(--p-primary-500, #3b82f6) !important;
+}
+
+.dropdown-menu--dark .usd-list-section-title {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dropdown-menu--dark .usd-list-item {
+  color: #d1d5db !important;
+}
+
+.dropdown-menu--dark .usd-list-item:hover {
+  background: #3a3a3f !important;
+}
+
+.dropdown-menu--dark .usd-list-item.is-selected {
+  background: rgba(37, 99, 235, 0.15) !important;
+  color: #93c5fd !important;
+}
+
+.dropdown-menu--dark .usd-list-name {
+  color: #e2e8f0 !important;
+}
+
+.dropdown-menu--dark .usd-list-email {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dropdown-menu--dark .usd-list-check {
+  color: #60a5fa !important;
+}
+
+.dropdown-menu--dark .usd-unassigned-avatar {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dropdown-menu--dark .usd-unassigned-icon {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dropdown-menu--dark .usd-list-empty-icon {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dropdown-menu--dark .usd-list-empty-text {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dropdown-menu--dark .usd-list-empty-hint {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+</style>
+

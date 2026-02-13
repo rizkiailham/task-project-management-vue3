@@ -217,6 +217,9 @@ const menuStyle = computed(() => {
 })
 
 const menuClass = computed(() => {
+  if (props.variant === 'dark') {
+    return 'dropdown-menu dropdown-menu--dark fixed rounded-lg shadow-lg py-1 z-[9999] overflow-y-auto overflow-x-hidden'
+  }
   if (props.variant === 'sidebar') {
     return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
   }
@@ -507,6 +510,22 @@ defineExpose({ open, close, toggle, isOpen })
   background: transparent;
   border: none;
   box-shadow: none;
+}
+
+/* ─── Dark variant ────────────────────────────────────── */
+.dropdown-menu--dark {
+  background: #2f2f33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dropdown-menu--dark :deep(button:hover) {
+  background: #3a3a3f !important;
+}
+
+.dropdown-menu--dark :deep(button.is-selected) {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #93c5fd !important;
 }
 </style>
 

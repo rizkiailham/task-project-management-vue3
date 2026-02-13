@@ -16,6 +16,15 @@ const routes = [
   // Public Routes
   // ================================
   {
+    path: '/forms',
+    name: 'PublicProjectForm',
+    component: () => import('@/modules/project/views/PublicProjectFormView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Project Form'
+    }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/modules/auth/views/LoginView.vue'),
