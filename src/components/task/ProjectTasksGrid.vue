@@ -331,11 +331,15 @@ function onRowDragMove(event) {
   updated.splice(fromIndex, 1)
   updated.splice(toIndex, 0, movingData)
   
-  rowData.value = updated
-  
-  // Important: tell AG Grid the data changed but keep the node expanded/state
-  // gridApi.value.applyTransaction({ update: updated }) // applyTransaction might be too heavy?
-  // Just replacing ref triggers reactivity. AG Grid handles diff.
+  // Wrap in setTimeout to avoid "middle of drawing rows" error #252
+  // But we need to be careful not to flood the event loop, so maybe use a small debounce if needed.
+  // For now, strict setTimeout(..., 0) as recommended by AG Grid error.
+  setTimeout(() => {
+    // Re-validate to ensure we don't have stale closures if rapid drags happen? 
+    // Actually, onRowDragMove happens rapidly. 
+    // Basic protection against race conditions might be needed but let's trust the event order for now.
+    rowData.value = updated
+  }, 0)
 }
 
 async function handleRowDragEnd(event) {
@@ -353,7 +357,13 @@ const columnDefs = [
     headerName: 'Project',
     flex: 1,
     minWidth: 140,
-    cellRenderer: 'ProjectCell'
+    minWidth: 140,
+    cellClass: 'no-padding-cell',
+    cellRenderer: 'ProjectCell',
+    rowDragText: (params) => {
+      // Return title directly
+      return params.rowNode?.data?.title || 'Unknown Task';
+    }
   },
   {
     field: 'status',
@@ -365,7 +375,12 @@ const columnDefs = [
     cellClass: 'flex items-center justify-center p-0',
     headerClass: 'ag-header-cell-center',
     sortable: false,
-    filter: false
+    sortable: false,
+    filter: false,
+    rowDragText: (params) => {
+      // Return title directly
+      return params.rowNode?.data?.title || 'Unknown Task';
+    }
   },
   {
     field: 'assignee',
@@ -377,14 +392,24 @@ const columnDefs = [
     cellClass: 'flex items-center justify-center p-0',
     headerClass: 'ag-header-cell-center',
     sortable: false,
-    filter: false
+    sortable: false,
+    filter: false,
+    rowDragText: (params) => {
+      // Return title directly
+      return params.rowNode?.data?.title || 'Unknown Task';
+    }
   },
   {
     field: 'dueDate',
     headerName: 'Due Date',
     flex: 0.8,
     minWidth: 120,
-    cellRenderer: 'DueDateCell'
+    minWidth: 120,
+    cellRenderer: 'DueDateCell',
+    rowDragText: (params) => {
+      // Return title directly
+      return params.rowNode?.data?.title || 'Unknown Task';
+    }
   },
   {
     field: 'tags',
@@ -399,6 +424,10 @@ const columnDefs = [
         .map((tag) => (typeof tag === 'string' ? tag : tag?.name || tag?.label || tag?.value || tag?.id || ''))
         .filter(Boolean)
         .join(', ')
+    },
+    rowDragText: (params) => {
+      // Return title directly
+      return params.rowNode?.data?.title || 'Unknown Task';
     }
   }
 ]
@@ -410,7 +439,12 @@ const defaultColDef = {
   suppressMenu: true,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
-  headerComponent: 'SortHeader'
+  headerComponent: 'SortHeader',
+  rowDragText: (params, dragItemCount) => {
+    // Return title directly to override default count
+    const data = params.rowNode?.data;
+    return data?.title || 'Unknown Task';
+  }
 }
 
 const myTheme = themeQuartz.withParams({
@@ -444,22 +478,31 @@ const myTheme = themeQuartz.withParams({
 ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
 
 const autoGroupColumnDef = {
-  headerName: 'Title',
+  headerName: '',
   minWidth: 280,
   flex: 1.5,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerComponent: 'SortHeader',
-  rowDrag: true, // Enable drag and drop
+  // rowDrag: true, // Enable drag and drop custom implementation instead
+  rowDragText: (params, dragItemCount) => {
+    // Return title directly to override default count
+    const data = params.rowNode?.data;
+    return data?.title || 'Unknown Task';
+  },
   cellRendererParams: {
     suppressCount: true,
     suppressDoubleClickExpand: true,
     suppressEnterExpand: true,
+    suppressPadding: true,
     innerRenderer: 'DartboardCell'
   },
   cellRenderer: 'agGroupCellRenderer',
+  cellClass: 'no-padding-cell',
   valueGetter: (params) => params.data?.title // Ensure title is shown, not path key
 }
+
+const getTaskRowDragText = (params) => params?.rowNode?.data?.title || params?.defaultTextValue || ''
 
 
 
@@ -468,6 +511,10 @@ const gridOptions = ref({
   defaultColDef,
   animateRows: true,
   theme: myTheme,
+  rowDragEntireRow: true,
+  rowDragManaged: true, // Let grid manage the drag UI/ghost
+  suppressMoveWhenRowDragging: true, // Prevent default move behavior to keep control
+  rowDragText: (params) => getTaskRowDragText(params),
 
   components: {
     SortHeader,
@@ -493,10 +540,18 @@ const gridOptions = ref({
   },
   rowSelection: {
     mode: 'multiRow',
-    headerCheckbox: true,
+    headerCheckbox: false,
     checkboxes: true,
     enableSelectionWithoutKeys: true,
     enableClickSelection: false
+  },
+  selectionColumnDef: {
+    width: 25,
+    minWidth: 25,
+    maxWidth: 25,
+    resizable: false,
+    suppressHeaderMenuButton: true,
+    suppressHeaderFilterButton: true
   },
   getRowClass: (params) => {
     if (params.data?.isPlaceholder) return 'row-placeholder'
@@ -624,10 +679,30 @@ function onGridReady(params) {
   opacity: 1;
 }
 
+:deep(.ag-theme-quartz .ag-cell[col-id="ag-Grid-SelectionColumn"]),
+:deep(.ag-theme-quartz .ag-header-cell[col-id="ag-Grid-SelectionColumn"]),
+:deep(.ag-theme-quartz .ag-cell[col-id="ag-Grid-ControlsColumn"]),
+:deep(.ag-theme-quartz .ag-header-cell[col-id="ag-Grid-ControlsColumn"]) {
+  padding-right: 0 !important;
+  padding-left: 6px !important;
+}
+
+:deep(.ag-theme-quartz .ag-cell[col-id="ag-Grid-SelectionColumn"] .ag-selection-checkbox),
+:deep(.ag-theme-quartz .ag-header-cell[col-id="ag-Grid-SelectionColumn"] .ag-selection-checkbox),
+:deep(.ag-theme-quartz .ag-cell[col-id="ag-Grid-ControlsColumn"] .ag-selection-checkbox),
+:deep(.ag-theme-quartz .ag-header-cell[col-id="ag-Grid-ControlsColumn"] .ag-selection-checkbox) {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+
+:deep(.ag-theme-quartz .ag-header-cell::after) {
+  display: none !important;
+}
+
 :deep(.ag-theme-quartz .ag-group-value) {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0 !important;
   height: 100%;
   line-height: 1;
 }
@@ -642,11 +717,6 @@ function onGridReady(params) {
   align-items: center;
 }
 
-:deep(.ag-theme-quartz .ag-group-leaf-indent),
-:deep(.ag-theme-quartz .ag-group-child-indent) {
-  width: 20px;
-}
-
 :deep(.row-placeholder) {
   display: none !important;
   height: 0 !important;
@@ -656,12 +726,9 @@ function onGridReady(params) {
 }
 
 /* Row drag handle visibility */
+/* Row drag handle visibility */
 :deep(.ag-theme-quartz .ag-row-drag) {
-  cursor: grab;
-  opacity: 1 !important;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
+  display: none !important;
 }
 
 :deep(.ag-theme-quartz .ag-row-drag:active) {
@@ -714,7 +781,49 @@ function onGridReady(params) {
   flex: 1;
 }
 
+:deep(.ag-row-group-leaf-indent) {
+  margin-left: 0 !important;
+}
 
+:deep(.no-padding-cell) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+</style>
+
+<style>
+/* Global overrides for AG Grid dynamic elements */
+.ag-theme-quartz .ag-header-cell[col-id="ag-Grid-SelectionColumn"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.ag-theme-quartz .ag-header-select-all {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.ag-theme-quartz .no-padding-cell {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Hide resize handles by default; reveal on header hover/resize interaction */
+.ag-theme-quartz .ag-header-cell .ag-header-cell-resize {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.ag-theme-quartz .ag-header-cell:hover .ag-header-cell-resize,
+.ag-theme-quartz .ag-header-cell.ag-header-active .ag-header-cell-resize,
+.ag-theme-quartz .ag-header-cell.ag-header-cell-moving .ag-header-cell-resize,
+.ag-theme-quartz.ag-column-resizing .ag-header-cell .ag-header-cell-resize {
+  opacity: 1;
+  pointer-events: auto;
+}
 </style>
 
 

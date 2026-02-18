@@ -479,6 +479,7 @@ const columnDefs = [
     headerName: 'Dartboard',
     flex: 1,
     editable: true,
+    cellClass: 'no-padding-cell',
     valueSetter: (params) => {
       updateField(params.data?.pathKey, 'dartboard', params.newValue)
       return false
@@ -585,7 +586,8 @@ const autoGroupColumnDef = {
     suppressPadding: true,
     innerRenderer: 'DartboardCell'
   },
-  cellRenderer: 'agGroupCellRenderer'
+  cellRenderer: 'agGroupCellRenderer',
+  cellClass: 'no-padding-cell'
 }
 
 const gridOptions = ref({
@@ -624,7 +626,7 @@ const gridOptions = ref({
   },
   rowSelection: {
     mode: 'multiRow',
-    headerCheckbox: true,
+    headerCheckbox: false,
     checkboxes: true,
     enableSelectionWithoutKeys: true,
     enableClickSelection: false
@@ -791,7 +793,7 @@ function onGridReady(params) {
 :deep(.ag-theme-quartz .ag-group-value) {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0 !important;
   height: 100%;
   line-height: 1;
 }
@@ -804,11 +806,6 @@ function onGridReady(params) {
 
 :deep(.ag-theme-quartz .ag-cell .ag-cell-wrapper) {
   align-items: center;
-}
-
-:deep(.ag-theme-quartz .ag-group-leaf-indent),
-:deep(.ag-theme-quartz .ag-group-child-indent) {
-  width: 12px;
 }
 
 :deep(.ag-theme-quartz .ag-row-hover) {
@@ -866,6 +863,31 @@ function onGridReady(params) {
 :deep(.ag-group-value) {
   width: 100%;
   flex: 1;
+}
+
+:deep(.no-padding-cell) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+</style>
+
+<style>
+/* Global overrides for AG Grid dynamic elements */
+.ag-theme-quartz .ag-header-cell[col-id="ag-Grid-SelectionColumn"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.ag-theme-quartz .ag-header-select-all {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.ag-theme-quartz .no-padding-cell {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 </style>
 ```

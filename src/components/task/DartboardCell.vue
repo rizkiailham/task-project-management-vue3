@@ -33,6 +33,7 @@ const isExpanded = ref(localParams.value.node?.expanded || false)
 
 // Indentation based on level (20px per level like DartAI)
 const level = computed(() => localParams.value.node?.level || 0)
+const indentPx = computed(() => Math.max(0, level.value) * 12)
 
 const pathKey = computed(() => localParams.value.data?.pathKey || localParams.value.data?.id || localParams.value.data?.title)
 const focusKey = computed(() => localParams.value.context?.focusKey?.value || null)
@@ -235,7 +236,8 @@ defineExpose({ refresh })
 
 <template>
   <div
-    class="dartboard-cell w-full h-full flex items-center gap-1"
+    class="dartboard-cell w-full h-full flex items-center"
+    :style="{ '--task-indent': `${indentPx}px` }"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
@@ -381,11 +383,22 @@ defineExpose({ refresh })
 .dartboard-cell {
   display: flex;
   align-items: center;
-  gap: 6px;
   height: 100%;
   width: 100%;
+  box-sizing: border-box;
   min-width: 0; /* allow input to shrink before icons are compressed */
+  padding-left: var(--task-indent, 0px);
   padding-right: 8px; /* Add padding for the open button */
+}
+
+.dart-subtask-expand {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.12s ease;
 }
 
 .open-button {
