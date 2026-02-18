@@ -37,10 +37,11 @@ export async function createTask(data, config = {}) {
  * Update a task
  * @param {string} taskId
  * @param {Object} data
+ * @param {Object} config - Optional axios config
  * @returns {Promise<any>}
  */
-export async function updateTask(taskId, data) {
-  return patch(`/tasks/${taskId}`, data)
+export async function updateTask(taskId, data, config = {}) {
+  return patch(`/tasks/${taskId}`, data, config)
 }
 
 /**

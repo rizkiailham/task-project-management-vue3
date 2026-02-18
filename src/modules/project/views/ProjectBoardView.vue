@@ -134,7 +134,7 @@ async function handleCreateSubtask(payload) {
 
 async function handleUpdateTaskTitle({ taskId, title }) {
   try {
-    await taskStore.updateTask(taskId, { title })
+    await taskStore.updateTask(taskId, { title }, { silent: true })
   } catch (e) {
     console.error(e)
   }

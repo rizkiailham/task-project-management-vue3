@@ -201,8 +201,7 @@ function openCreateTaskModal() {
 // Grid Event Handlers
 async function handleUpdateTaskTitle({ taskId, title }) {
   try {
-    await taskStore.updateTask(taskId, { title })
-    await taskStore.fetchMyTasks() // Refresh to ensure sync
+    await taskStore.updateTask(taskId, { title }, { silent: true })
   } catch (error) {
     uiStore.showApiError(error, 'Failed to update task title')
   }

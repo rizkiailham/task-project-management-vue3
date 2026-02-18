@@ -41,6 +41,14 @@ const handleTaskClick = (task) => {
   // For now just console log or leave empty if the Grid handles it via emit
 }
 
+async function handleUpdateTaskTitle({ taskId, title }) {
+  try {
+    await taskStore.updateTask(taskId, { title }, { silent: true })
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to update task title')
+  }
+}
+
 async function handlePageChange(page) {
   try {
     await taskStore.fetchTasks({ page })
@@ -86,6 +94,7 @@ async function handleCreateSubtask({ parentId, projectItemId, kanbanColumnId } =
           :meta="taskStore.pagination"
           @task-click="handleTaskClick"
           @create-subtask="handleCreateSubtask"
+          @update-task-title="handleUpdateTaskTitle"
           @change-page="handlePageChange"
           @update:pageSize="handlePageSizeChange"
         />

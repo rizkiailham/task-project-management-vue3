@@ -19,6 +19,7 @@ const isFocused = ref(false)
 const isHovered = ref(false)
 const childCount = ref(0)
 const showSubtaskSummary = computed(() => childCount.value > 0)
+const suppressNextBlurCommit = ref(false)
 
 // Expand/collapse state
 const hasChildren = computed(() => {
@@ -94,11 +95,6 @@ watch(
 function onInput(event) {
   const newValue = event.target.value
   inputValue.value = newValue
-  if (props.params?.context?.updateTitle) {
-    props.params.context.updateTitle(pathKey.value, newValue)
-  } else {
-    props.params.setValue?.(newValue)
-  }
 }
 
 // Input style - dynamic width based on text length
@@ -123,6 +119,7 @@ function onKeydown(event) {
   if (event.key === 'Enter') {
     event.preventDefault()
     event.stopPropagation()
+    suppressNextBlurCommit.value = true
     commitTitle()
     // Blur to signal save/commit and close editing
     event.target?.blur?.()
@@ -143,13 +140,22 @@ function toggleSelect() {
 }
 
 function commitTitle() {
+  if (props.params?.context?.updateTitle) {
+    props.params.context.updateTitle(pathKey.value, inputValue.value)
+  } else {
+    props.params.setValue?.(inputValue.value)
+  }
   props.params?.context?.handleCommit?.(pathKey.value)
   // Re-sync child count in case a new subtask was added and committed
   syncChildCount()
 }
 
 function handleBlur() {
-  props.params?.context?.handleCommit?.(pathKey.value)
+  if (suppressNextBlurCommit.value) {
+    suppressNextBlurCommit.value = false
+    return
+  }
+  commitTitle()
 }
 
 const inputRef = ref(null)

@@ -485,8 +485,10 @@ export const useTaskStore = defineStore('task', () => {
    * Update a task
    * @param {string} taskId
    * @param {Object} data
+   * @param {Object} [options]
    */
-  async function updateTask(taskId, data) {
+  async function updateTask(taskId, data, options = {}) {
+    const { silent = false } = options
     error.value = null
 
     try {
@@ -495,7 +497,11 @@ export const useTaskStore = defineStore('task', () => {
         ...data,
         ...(resolvedProjectItemId ? { projectItemId: resolvedProjectItemId } : {})
       }
-      const response = await taskApi.updateTask(taskId, payload)
+      const response = await taskApi.updateTask(
+        taskId,
+        payload,
+        silent ? { metadata: { skipGlobalLoader: true } } : {}
+      )
       const taskData = response.task || response.data || response
       const task = createTask({
         ...taskData,

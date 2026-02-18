@@ -80,6 +80,7 @@ const emit = defineEmits(['task-click', 'update-assignee', 'update-due-date', 'r
 
 const gridApi = ref(null)
 const focusKey = ref(null)
+const pendingTitleUpdates = new Map()
 
 // Track which parent IDs should be auto-expanded after subtask creation
 const expandedParentIds = ref(new Set())
@@ -182,6 +183,7 @@ watch(
       // Build tree first, then flatten
       const tree = buildTree(newTasks)
       rowData.value = flattenTree(tree)
+      pendingTitleUpdates.clear()
       
       // Restore expansion for tracked parents after data refresh
       // Use setTimeout to ensure AG Grid has processed the new transaction/data
@@ -214,6 +216,42 @@ function updateField(pathKey, field, value) {
       emit('update-assignee', { taskId: task.id, user: value })
     }
   }
+}
+
+function findTaskInTreeById(taskList, taskId) {
+  if (!Array.isArray(taskList) || !taskId) return null
+  const lookupId = String(taskId)
+  for (const task of taskList) {
+    if (!task) continue
+    if (String(task.id) === lookupId) return task
+    const nested = Array.isArray(task.subTasks)
+      ? task.subTasks
+      : Array.isArray(task.children)
+        ? task.children
+        : []
+    const nestedMatch = findTaskInTreeById(nested, lookupId)
+    if (nestedMatch) return nestedMatch
+  }
+  return null
+}
+
+function findNodeByPathKey(pathKey) {
+  if (!gridApi.value || !pathKey) return null
+  const lookupKey = String(pathKey)
+
+  const byId = gridApi.value.getRowNode(lookupKey)
+  if (byId?.data) return byId
+
+  let matched = null
+  gridApi.value.forEachNode((node) => {
+    if (matched || !node?.data) return
+    const nodePathKey = node.data.pathKey ? String(node.data.pathKey) : ''
+    const nodeId = node.data.id ? String(node.data.id) : ''
+    if (nodePathKey === lookupKey || nodeId === lookupKey) {
+      matched = node
+    }
+  })
+  return matched
 }
 
 async function addSubtask(pathKey, options = {}) {
@@ -303,17 +341,45 @@ async function addSubtask(pathKey, options = {}) {
 }
 
 function updateTitle(pathKey, title) {
-  const node = gridApi.value?.getRowNode(pathKey)
-  if (node && node.data) {
-    node.data.title = title
+  const node = findNodeByPathKey(pathKey)
+  const resolvedTitle = title ?? ''
+
+  if (node?.data) {
+    // Keep typing updates local without forcing grid refresh.
+    // A refresh here can blur the input and trigger unwanted commit/API calls per character.
+    node.data.title = resolvedTitle
   }
 }
 
 function handleCommit(pathKey) {
-  const node = gridApi.value?.getRowNode(pathKey)
-  if (node && node.data && node.data.id) {
-    emit('update-task-title', { taskId: node.data.id, title: node.data.title })
+  const node = findNodeByPathKey(pathKey)
+  if (!node?.data?.id) return
+
+  const taskId = String(node.data.id)
+  if (taskId.startsWith('temp-')) return
+
+  const nextTitle = String(node.data.title ?? '').trim()
+  if (!nextTitle) return
+
+  const sourceTask = findTaskInTreeById(props.tasks, taskId)
+  const sourceTitle = String(sourceTask?.title ?? node.data?._raw?.title ?? '').trim()
+  if (sourceTitle === nextTitle) return
+
+  const pendingTitle = pendingTitleUpdates.get(taskId)
+  if (pendingTitle === nextTitle) return
+
+  pendingTitleUpdates.set(taskId, nextTitle)
+  setTimeout(() => {
+    if (pendingTitleUpdates.get(taskId) === nextTitle) {
+      pendingTitleUpdates.delete(taskId)
+    }
+  }, 3000)
+
+  if (node.data._raw) {
+    node.data._raw.title = nextTitle
   }
+
+  emit('update-task-title', { taskId: node.data.id, title: nextTitle })
 }
 
 // Manual row drag move for live preview
