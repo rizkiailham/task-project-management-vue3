@@ -400,7 +400,7 @@ onMounted(() => {
   --settings-footer-height: 58px;
   --settings-modal-height: min(90vh, 720px);
   align-self: flex-start;
-  margin-top: 16vh;
+  margin-top: 10vh;
   height: var(--settings-modal-height);
   max-height: var(--settings-modal-height);
   min-height: var(--settings-modal-height);
