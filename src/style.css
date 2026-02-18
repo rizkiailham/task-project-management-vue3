@@ -423,7 +423,7 @@ textarea,
 .p-multiselect-overlay {
   background: #f3f5f7 !important;
   border: 1px solid #e5e7eb !important;
-  border-radius: 8px !important;
+  border-radius: 6px !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
   overflow: hidden;
 }
@@ -695,4 +695,3 @@ a.text-primary:hover,
   font-size: 14px !important;
   font-weight: 400 !important;
 }
-

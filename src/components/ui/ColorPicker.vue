@@ -311,7 +311,7 @@ async function pickColorFromScreen() {
       <div v-if="customExpanded" class="mt-3 space-y-3 px-3">
         <!-- Gradient Canvas -->
         <div 
-          class="relative w-full h-40 rounded-lg cursor-crosshair overflow-hidden"
+          class="relative w-full h-40 rounded-md cursor-crosshair overflow-hidden"
           :style="{ background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }"
           @mousedown="handleCanvasClick"
           @mousemove="(e) => e.buttons === 1 && handleCanvasClick(e)"

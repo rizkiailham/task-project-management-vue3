@@ -218,12 +218,12 @@ const menuStyle = computed(() => {
 
 const menuClass = computed(() => {
   if (props.variant === 'dark') {
-    return 'dropdown-menu dropdown-menu--dark fixed rounded-lg shadow-lg py-1 z-[9999] overflow-y-auto overflow-x-hidden'
+    return 'dropdown-menu dropdown-menu--dark fixed rounded-[6px] shadow-md py-1 z-[9999] overflow-y-auto overflow-x-hidden'
   }
   if (props.variant === 'sidebar') {
-    return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
+    return 'dropdown-menu fixed bg-[#f3f5f7] rounded-[6px] shadow-md border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
   }
-  return 'dropdown-menu fixed bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
+  return 'dropdown-menu fixed bg-[#f3f5f7] rounded-[6px] shadow-md border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
 })
 
 const dividerClass = computed(() => {

@@ -119,7 +119,7 @@ const inputAttrs = computed(() => {
   return next
 })
 
-const mergedInputClass = computed(() => ['w-full', attrs.class, { 'p-invalid': props.invalid }])
+const mergedInputClass = computed(() => ['w-full', attrs.class, { 'p-invalid': props.invalid, 'rounded-md': isSelectLike.value }])
 
 const passThroughSlotNames = computed(() =>
   Object.keys(slots).filter((name) => !['label', 'labelRight', 'help'].includes(name))
