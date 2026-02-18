@@ -200,10 +200,12 @@ function changePageSize(size) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 52px;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
   background-color: #ffffff;
   border-top: 1px solid #e5e7eb;
-  padding: 0 16px;
+  padding: 8px 16px;
   width: 100%;
 }
 
@@ -220,12 +222,15 @@ function changePageSize(size) {
 .footer-filters {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .footer-pagination {
   display: flex;
   align-items: center;
-  margin-left: auto; /* Push to right if not using justify-between logic on parent, but parent uses justify-between */
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .pagination-btn {

@@ -8,7 +8,7 @@
  * - Clickable Assignee and Due Date cells
  * - Same theme as MyTasksGrid
  */
-import { computed, ref, watch, h, nextTick } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
@@ -24,15 +24,11 @@ import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
 import ProjectCell from '@/components/task/ProjectCell.vue'
 import StatusCell from '@/components/task/StatusCell.vue'
-import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import ProjectTasksGridColumnOptionsHeader from '@/components/task/projectTasksGrid/ProjectTasksGridColumnOptionsHeader.vue'
+import { useProjectTaskColumns } from '@/components/task/projectTasksGrid/useProjectTaskColumns'
+import { useProjectTaskFilters } from '@/components/task/projectTasksGrid/useProjectTaskFilters'
+import ProjectTasksGridFilterBar from '@/components/task/projectTasksGrid/ProjectTasksGridFilterBar.vue'
 import Pagination from '@/components/ui/Pagination.vue'
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronDown
-} from 'lucide-vue-next'
 
 
 const projectStore = useProjectStore()
@@ -79,6 +75,20 @@ function handlePageSizeChange(size) {
   emit('update:pageSize', size)
 }
 
+function handleToggleColumn(columnId) {
+  toggleColumnVisibility(columnId)
+  nextTick(() => {
+    applyColumnVisibilityToGrid(gridApi.value)
+  })
+}
+
+function handleRemoveCustomColumn(columnId) {
+  removeCustomColumn(columnId)
+  nextTick(() => {
+    applyColumnVisibilityToGrid(gridApi.value)
+  })
+}
+
 const emit = defineEmits([
   'task-click',
   'update-assignee',
@@ -96,6 +106,34 @@ const focusKey = ref(null)
 const pendingTitleUpdates = new Map()
 const statusOptions = ref([])
 const apiStatusOptions = ref([])
+const {
+  customColumns,
+  columnMenuDefinitions,
+  columnMenuItems,
+  managedColumnDefs,
+  setColumnScope,
+  applyColumnVisibilityToGrid,
+  toggleColumnVisibility,
+  removeCustomColumn,
+  mapTaskColumnMeta
+} = useProjectTaskColumns(t)
+
+const {
+  activeFilters,
+  filterableColumns,
+  addFilter,
+  removeFilter,
+  updateFilter,
+  resetFilters,
+  applyFilters,
+  getOperatorsForColumn
+} = useProjectTaskFilters(t, {
+  columnDefinitions: columnMenuDefinitions
+})
+
+function openFilterForColumn(colId) {
+  addFilter(colId)
+}
 
 // Track which parent IDs should be auto-expanded after subtask creation
 const expandedParentIds = ref(new Set())
@@ -354,6 +392,7 @@ function flattenTree(nodes, parentPathIds = []) {
       subtaskCount: node.subtaskCount || (node.children?.length || 0),
       completedSubtaskCount: node.completedSubtaskCount || 0,
       trackingTime: node.trackingTime || null,
+      ...mapTaskColumnMeta(node),
       kanbanColumnId: node.kanbanColumnId,
       kanbanColumnName: node.kanbanColumn?.name || '',
       kanbanColumnIcon: node.kanbanColumn?.icon || null,
@@ -374,6 +413,11 @@ function flattenTree(nodes, parentPathIds = []) {
 
 // Local row data for manual drag and drop management
 const rowData = ref([])
+
+// Filtered row data — applies active filters before AG Grid receives data
+const filteredRowData = computed(() => {
+  return applyFilters(rowData.value)
+})
 
 // Sync with tasks prop and restore expansion state
 watch(
@@ -406,9 +450,23 @@ watch(
 watch(
   () => [projectStore.activeProjectItemId, projectStore.currentProjectId],
   ([projectItemId, projectId]) => {
+    setColumnScope(projectItemId, projectId)
     loadApiStatusOptions(projectItemId, projectId)
+    nextTick(() => {
+      applyColumnVisibilityToGrid(gridApi.value)
+    })
   },
   { immediate: true }
+)
+
+watch(
+  [managedColumnDefs, customColumns],
+  () => {
+    nextTick(() => {
+      applyColumnVisibilityToGrid(gridApi.value)
+    })
+  },
+  { deep: true }
 )
 
 watch(
@@ -714,23 +772,23 @@ async function handleRowDragEnd(event) {
   emit('reorder-tasks', allRowIds)
 }
 
-const columnDefs = [
+const baseColumnDefs = [
   {
+    colId: 'projectName',
     field: 'projectName',
-    headerName: 'Project',
+    headerName: t('tasks.project', 'Project'),
     flex: 1,
-    minWidth: 140,
     minWidth: 140,
     cellClass: 'no-padding-cell',
     cellRenderer: 'ProjectCell',
     rowDragText: (params) => {
-      // Return title directly
-      return params.rowNode?.data?.title || 'Unknown Task';
+      return params.rowNode?.data?.title || 'Unknown Task'
     }
   },
   {
+    colId: 'status',
     field: 'status',
-    headerName: 'Status',
+    headerName: t('taskDetail.status', 'Status'),
     width: 60,
     minWidth: 100,
     maxWidth: 100,
@@ -738,16 +796,15 @@ const columnDefs = [
     cellClass: 'flex items-center justify-center p-0',
     headerClass: 'ag-header-cell-center',
     sortable: false,
-    sortable: false,
     filter: false,
     rowDragText: (params) => {
-      // Return title directly
-      return params.rowNode?.data?.title || 'Unknown Task';
+      return params.rowNode?.data?.title || 'Unknown Task'
     }
   },
   {
+    colId: 'assignee',
     field: 'assignee',
-    headerName: 'Assignee',
+    headerName: t('taskDetail.assignee', 'Assignee'),
     width: 60,
     minWidth: 100,
     maxWidth: 100,
@@ -755,28 +812,26 @@ const columnDefs = [
     cellClass: 'flex items-center justify-center p-0',
     headerClass: 'ag-header-cell-center',
     sortable: false,
-    sortable: false,
     filter: false,
     rowDragText: (params) => {
-      // Return title directly
-      return params.rowNode?.data?.title || 'Unknown Task';
+      return params.rowNode?.data?.title || 'Unknown Task'
     }
   },
   {
+    colId: 'dueDate',
     field: 'dueDate',
-    headerName: 'Due Date',
+    headerName: t('taskDetail.dueDate', 'Due date'),
     flex: 0.8,
-    minWidth: 120,
     minWidth: 120,
     cellRenderer: 'DueDateCell',
     rowDragText: (params) => {
-      // Return title directly
-      return params.rowNode?.data?.title || 'Unknown Task';
+      return params.rowNode?.data?.title || 'Unknown Task'
     }
   },
   {
+    colId: 'tags',
     field: 'tags',
-    headerName: 'Tags',
+    headerName: t('taskDetail.tags', 'Tags'),
     flex: 1,
     minWidth: 200,
     cellRenderer: 'TagEditorDropdown',
@@ -789,11 +844,32 @@ const columnDefs = [
         .join(', ')
     },
     rowDragText: (params) => {
-      // Return title directly
-      return params.rowNode?.data?.title || 'Unknown Task';
+      return params.rowNode?.data?.title || 'Unknown Task'
     }
   }
 ]
+
+const optionsColumnDef = {
+  colId: 'columnOptions',
+  field: 'columnOptions',
+  headerName: '',
+  width: 44,
+  minWidth: 44,
+  maxWidth: 44,
+  sortable: false,
+  filter: false,
+  resizable: false,
+  suppressMovable: true,
+  suppressMenu: true,
+  suppressHeaderMenuButton: true,
+  suppressHeaderFilterButton: true,
+  headerClass: 'ag-header-cell-center',
+  cellClass: 'column-options-cell p-0',
+  cellRenderer: () => '',
+  headerComponent: 'ProjectTasksGridColumnOptionsHeader'
+}
+
+const columnDefs = computed(() => [...baseColumnDefs, ...managedColumnDefs.value, optionsColumnDef])
 
 const defaultColDef = {
   sortable: true,
@@ -841,6 +917,7 @@ const myTheme = themeQuartz.withParams({
 ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
 
 const autoGroupColumnDef = {
+  colId: 'title',
   headerName: '',
   minWidth: 280,
   flex: 1.5,
@@ -870,7 +947,6 @@ const getTaskRowDragText = (params) => params?.rowNode?.data?.title || params?.d
 
 
 const gridOptions = ref({
-  columnDefs,
   defaultColDef,
   animateRows: true,
   theme: myTheme,
@@ -887,7 +963,8 @@ const gridOptions = ref({
     TrackingTimeCell,
     DartboardCell,
     ProjectCell,
-    StatusCell
+    StatusCell,
+    ProjectTasksGridColumnOptionsHeader
   },
 
 
@@ -897,6 +974,11 @@ const gridOptions = ref({
     updateField,
     tagOptions: ref([]),
     statusOptions,
+    columnMenuItems,
+    customColumns,
+    toggleColumnOption: handleToggleColumn,
+    removeCustomColumnOption: handleRemoveCustomColumn,
+    openFilterForColumn,
     updateStatus,
     addSubtask,
     updateTitle,
@@ -955,6 +1037,7 @@ function handleOpenTaskDetail(task) {
 
 function onGridReady(params) {
   gridApi.value = params.api
+  applyColumnVisibilityToGrid(gridApi.value)
 
   // Listen for custom openDartboardSidebar event from DartboardCell
   params.api.addEventListener('openDartboardSidebar', (event) => {
@@ -973,7 +1056,7 @@ function onGridReady(params) {
     <ag-grid-vue
       class="ag-theme-quartz w-full"
       :gridOptions="gridOptions"
-      :rowData="rowData"
+      :rowData="filteredRowData"
       :columnDefs="columnDefs"
       :autoGroupColumnDef="autoGroupColumnDef"
       :treeData="true"
@@ -1002,7 +1085,16 @@ function onGridReady(params) {
       :totalItems="totalRows"
     >
       <template #filters>
-         <slot name="footer-filters"></slot>
+        <ProjectTasksGridFilterBar
+          :activeFilters="activeFilters"
+          :filterableColumns="filterableColumns"
+          :statusOptions="statusOptions"
+          :getOperatorsForColumn="getOperatorsForColumn"
+          @add-filter="addFilter"
+          @remove-filter="removeFilter"
+          @update-filter="(id, updates) => updateFilter(id, updates)"
+          @reset-filters="resetFilters"
+        />
       </template>
     </Pagination>
 
@@ -1038,6 +1130,10 @@ function onGridReady(params) {
 :deep(.ag-theme-quartz .ag-row-hover .ag-selection-checkbox),
 :deep(.ag-theme-quartz .ag-row-selected .ag-selection-checkbox) {
   opacity: 1;
+}
+
+:deep(.ag-theme-quartz .ag-cell.column-options-cell .ag-cell-value) {
+  width: 100%;
 }
 
 :deep(.ag-theme-quartz .ag-header-select-all) {
@@ -1197,5 +1293,4 @@ function onGridReady(params) {
   pointer-events: auto;
 }
 </style>
-
 

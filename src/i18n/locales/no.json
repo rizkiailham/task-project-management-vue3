@@ -410,6 +410,18 @@
       "priority": "Prioritet",
       "dueDate": "Forfallsdato"
     },
+    "columnOptions": {
+      "title": "Kolonner",
+      "size": "Storrelse",
+      "timeTracking": "Tidsforing",
+      "createdBy": "Opprettet av",
+      "lastUpdatedBy": "Sist oppdatert av",
+      "timezone": "Tidssone",
+      "customColumns": "Egendefinerte kolonner",
+      "customPlaceholder": "Skriv kolonnenavn",
+      "addCustom": "Legg til egendefinert kolonne",
+      "removeCustom": "Fjern egendefinert kolonne"
+    },
     "placeholders": {
       "title": "Skriv inn oppgavetittel...",
       "description": "Legg til en beskrivelse...",
@@ -437,7 +449,9 @@
       "create": "Kunne ikke opprette oppgave",
       "titleRequired": "Vennligst skriv inn en oppgavetittel først",
       "generateDescription": "Kunne ikke generere beskrivelse"
-    }
+    },
+    "noFiltersFound": "Ingen filtre funnet",
+    "selectedLabel": "valgt"
   },
   "projects": {
     "title": "Prosjekter",
@@ -1257,4 +1271,3 @@
     "archive": "Arkiver"
   }
 }
-

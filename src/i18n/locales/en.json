@@ -413,6 +413,18 @@
       "priority": "Priority",
       "dueDate": "Due Date"
     },
+    "columnOptions": {
+      "title": "Columns",
+      "size": "Size",
+      "timeTracking": "Time tracking",
+      "createdBy": "Created by",
+      "lastUpdatedBy": "Last updated by",
+      "timezone": "Timezone",
+      "customColumns": "Custom columns",
+      "customPlaceholder": "Type custom column name",
+      "addCustom": "Add custom column",
+      "removeCustom": "Remove custom column"
+    },
     "placeholders": {
       "title": "Enter task title...",
       "description": "Add a description...",
@@ -440,7 +452,9 @@
       "create": "Failed to create task",
       "titleRequired": "Please enter a task title first",
       "generateDescription": "Failed to generate description"
-    }
+    },
+    "noFiltersFound": "No filters found",
+    "selectedLabel": "selected"
   },
   "projects": {
     "title": "Projects",

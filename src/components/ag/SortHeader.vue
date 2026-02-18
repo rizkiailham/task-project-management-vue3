@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, nextTick } from 'vue'
 import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -11,6 +11,8 @@ const props = defineProps({
 
 const sortState = ref(props.params?.column?.getSort?.() || null)
 const isSortable = computed(() => !!props.params?.column?.isSortable?.())
+const showContextMenu = ref(false)
+const contextMenuStyle = ref({})
 
 function syncSortState() {
   sortState.value = props.params?.column?.getSort?.() || null
@@ -18,14 +20,26 @@ function syncSortState() {
 
 onMounted(() => {
   props.params?.column?.addEventListener?.('sortChanged', syncSortState)
+  document.addEventListener('click', handleDocumentClick)
 })
 
 onBeforeUnmount(() => {
   props.params?.column?.removeEventListener?.('sortChanged', syncSortState)
+  document.removeEventListener('click', handleDocumentClick)
 })
 
 const isAsc = computed(() => sortState.value === 'asc')
 const isDesc = computed(() => sortState.value === 'desc')
+
+const colId = computed(() => props.params?.column?.getColId?.() || '')
+const canFilter = computed(() => {
+  const context = props.params?.context
+  return typeof context?.openFilterForColumn === 'function'
+})
+const canHide = computed(() => {
+  const context = props.params?.context
+  return typeof context?.toggleColumnOption === 'function'
+})
 
 function applySort(nextSort, event) {
   if (typeof props.params?.setSort === 'function') {
@@ -58,15 +72,110 @@ function handleHeaderClick(event) {
     applySort(null, event)
   }
 }
+
+function handleContextMenu(event) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  // Position the context menu near the cursor
+  const headerEl = event.currentTarget
+  const rect = headerEl.getBoundingClientRect()
+  contextMenuStyle.value = {
+    top: `${rect.bottom + 2}px`,
+    left: `${Math.min(event.clientX, window.innerWidth - 200)}px`
+  }
+  showContextMenu.value = true
+}
+
+function handleDocumentClick() {
+  if (showContextMenu.value) {
+    showContextMenu.value = false
+  }
+}
+
+function handleMenuFilter() {
+  showContextMenu.value = false
+  const context = props.params?.context
+  if (typeof context?.openFilterForColumn === 'function') {
+    context.openFilterForColumn(colId.value)
+  }
+}
+
+function handleMenuSortAsc() {
+  showContextMenu.value = false
+  applySort('asc')
+}
+
+function handleMenuSortDesc() {
+  showContextMenu.value = false
+  applySort('desc')
+}
+
+function handleMenuHide() {
+  showContextMenu.value = false
+  const context = props.params?.context
+  if (typeof context?.toggleColumnOption === 'function') {
+    context.toggleColumnOption(colId.value)
+  }
+}
 </script>
 
 <template>
-  <div class="sort-header" @click="handleHeaderClick">
+  <div class="sort-header" @click="handleHeaderClick" @contextmenu="handleContextMenu">
     <span class="sort-header__label">{{ params.displayName }}</span>
     <span v-if="isSortable" class="sort-header__icons">
       <ChevronUp :class="['sort-header__icon', { 'sort-header__icon--active': isAsc }]" />
       <ChevronDown :class="['sort-header__icon', { 'sort-header__icon--active': isDesc }]" />
     </span>
+
+    <!-- Context menu (teleported to body to avoid AG Grid clipping) -->
+    <Teleport to="body">
+      <div
+        v-if="showContextMenu"
+        class="sort-header-context-menu"
+        :style="contextMenuStyle"
+        @click.stop
+      >
+        <button
+          v-if="canFilter"
+          type="button"
+          class="sort-header-context-menu__item"
+          @click="handleMenuFilter"
+        >
+          Filter
+        </button>
+
+        <div v-if="canFilter && isSortable" class="sort-header-context-menu__divider" />
+
+        <button
+          v-if="isSortable"
+          type="button"
+          class="sort-header-context-menu__item"
+          @click="handleMenuSortAsc"
+        >
+          Sort ascending
+        </button>
+        <button
+          v-if="isSortable"
+          type="button"
+          class="sort-header-context-menu__item"
+          @click="handleMenuSortDesc"
+        >
+          Sort descending
+        </button>
+
+        <div v-if="canHide" class="sort-header-context-menu__divider" />
+
+        <button
+          v-if="canHide"
+          type="button"
+          class="sort-header-context-menu__item"
+          @click="handleMenuHide"
+        >
+          Hide column
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -121,6 +230,40 @@ function handleHeaderClick(event) {
 .sort-header__icon--active {
   color: var(--color-gray-700);
 }
+
+/* Context menu styles */
+.sort-header-context-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 170px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+}
+
+.sort-header-context-menu__item {
+  display: block;
+  width: 100%;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.sort-header-context-menu__item:hover {
+  background: #f3f4f6;
+}
+
+.sort-header-context-menu__divider {
+  height: 1px;
+  margin: 4px 0;
+  background: #e5e7eb;
+}
 </style>
-
-
