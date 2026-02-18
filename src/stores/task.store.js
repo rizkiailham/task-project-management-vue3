@@ -509,13 +509,23 @@ export const useTaskStore = defineStore('task', () => {
       })
 
       // Update in list
-      const index = tasks.value.findIndex(t => t.id === taskId)
+      const index = tasks.value.findIndex((t) => String(t.id) === String(taskId))
       if (index !== -1) {
         tasks.value[index] = task
       }
 
+      const myTaskIndex = myTasks.value.findIndex((t) => String(t.id) === String(taskId))
+      if (myTaskIndex !== -1) {
+        myTasks.value[myTaskIndex] = task
+      }
+
+      const subtaskIndex = subtasks.value.findIndex((t) => String(t.id) === String(taskId))
+      if (subtaskIndex !== -1) {
+        subtasks.value[subtaskIndex] = task
+      }
+
       // Update current if same
-      if (currentTask.value?.id === taskId) {
+      if (currentTask.value?.id && String(currentTask.value.id) === String(taskId)) {
         currentTask.value = task
       }
 

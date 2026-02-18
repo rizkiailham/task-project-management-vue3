@@ -94,27 +94,27 @@ defineExpose({ refresh })
       @select="handleSelectUser"
     >
       <template #trigger>
-        <div 
-          class="assignee-cell flex items-center justify-center cursor-pointer"
-        >
-          <AppTooltip :content="displayName" placement="top">
+        <AppTooltip :content="displayName" placement="top" :z-index="2147483000">
+          <div 
+            class="assignee-cell flex items-center justify-center cursor-pointer"
+          >
             <Avatar
               v-if="localAssignee"
               :image="localAssignee.avatar"
               :label="!localAssignee.avatar ? avatarInitial : undefined"
               shape="circle"
-              class="h-6 w-6 flex-shrink-0 text-[10px] font-semibold text-white border-2 border-white shadow-sm"
+              class="assignee-avatar h-6 w-6 flex-shrink-0 text-[10px] font-semibold text-white"
               :style="!localAssignee.avatar ? { backgroundColor: avatarColor } : { backgroundColor: 'transparent' }"
             />
             <span 
               v-else
-              class="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white flex-shrink-0 border-2 border-white shadow-sm"
+              class="assignee-avatar flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white flex-shrink-0"
               :style="{ backgroundColor: avatarColor }"
             >
               {{ avatarInitial }}
             </span>
-          </AppTooltip>
-        </div>
+          </div>
+        </AppTooltip>
       </template>
     </UserSearchDropdown>
   </div>
@@ -123,5 +123,12 @@ defineExpose({ refresh })
 <style scoped>
 .assignee-cell {
   cursor: pointer;
+}
+
+:deep(.assignee-avatar),
+:deep(.assignee-avatar img),
+:deep(.assignee-avatar .p-avatar-image) {
+  border: none !important;
+  box-shadow: none !important;
 }
 </style>

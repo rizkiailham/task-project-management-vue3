@@ -207,6 +207,22 @@ async function handleUpdateTaskTitle({ taskId, title }) {
   }
 }
 
+async function handleUpdateTaskStatus({ taskId, kanbanColumnId, projectItemId } = {}) {
+  if (!taskId || !kanbanColumnId) return
+  try {
+    await taskStore.updateTask(
+      taskId,
+      {
+        kanbanColumnId,
+        ...(projectItemId ? { projectItemId } : {})
+      },
+      { silent: true }
+    )
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to update task status')
+  }
+}
+
 async function handleCreateSubtask({ parentId, projectItemId, kanbanColumnId } = {}) {
   try {
     await taskStore.createNewTask({
@@ -270,6 +286,7 @@ async function handlePageSizeChange(limit) {
             @task-click="navigateToTask"
             @create-subtask="handleCreateSubtask"
             @update-task-title="handleUpdateTaskTitle"
+            @update-task-status="handleUpdateTaskStatus"
             @change-page="handlePageChange"
             @update:pageSize="handlePageSizeChange"
           >

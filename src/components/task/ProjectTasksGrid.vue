@@ -9,11 +9,13 @@
  * - Same theme as MyTasksGrid
  */
 import { computed, ref, watch, h, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import { useProjectStore } from '@/stores'
+import { getKanbanColumns } from '@/api/kanbanColumn.api'
 import SortHeader from '@/components/ag/SortHeader.vue'
 import AssigneeCell from '@/components/task/AssigneeCell.vue'
 import DueDateCell from '@/components/task/DueDateCell.vue'
@@ -34,6 +36,7 @@ import {
 
 
 const projectStore = useProjectStore()
+const { t } = useI18n()
 
 LicenseManager.setLicenseKey(
   '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_need_to_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
@@ -76,14 +79,209 @@ function handlePageSizeChange(size) {
   emit('update:pageSize', size)
 }
 
-const emit = defineEmits(['task-click', 'update-assignee', 'update-due-date', 'reorder-tasks', 'create-subtask', 'update-task-title', 'change-page', 'update:pageSize'])
+const emit = defineEmits([
+  'task-click',
+  'update-assignee',
+  'update-due-date',
+  'reorder-tasks',
+  'create-subtask',
+  'update-task-title',
+  'update-task-status',
+  'change-page',
+  'update:pageSize'
+])
 
 const gridApi = ref(null)
 const focusKey = ref(null)
 const pendingTitleUpdates = new Map()
+const statusOptions = ref([])
+const apiStatusOptions = ref([])
 
 // Track which parent IDs should be auto-expanded after subtask creation
 const expandedParentIds = ref(new Set())
+
+const STATUS_ICON_OPTIONS = [
+  { id: '0', status: 'todo', progress: 0, color: '#9ca3af' },
+  { id: '25', status: 'in_progress', progress: 25, color: '#14b8a6' },
+  { id: '50', status: 'in_progress', progress: 50, color: '#a855f7' },
+  { id: '75', status: 'in_progress', progress: 75, color: '#f97316' },
+  { id: '100', status: 'done', progress: 100, color: '#22c55e' }
+]
+
+function normalizeStatusIconValue(icon) {
+  const raw = String(icon ?? '0')
+  const legacyMap = {
+    '1': '25',
+    '2': '50',
+    '3': '75',
+    '4': '100',
+    '5': '100'
+  }
+  const mapped = legacyMap[raw] || raw
+  return STATUS_ICON_OPTIONS.some((item) => item.id === mapped) ? mapped : '0'
+}
+
+function resolveStatusIconProps(icon, fallbackStatus = 'todo') {
+  const normalizedIcon = normalizeStatusIconValue(icon)
+  const option = STATUS_ICON_OPTIONS.find((item) => item.id === normalizedIcon)
+  if (option) {
+    return {
+      icon: normalizedIcon,
+      status: option.status,
+      progress: option.progress,
+      color: option.color
+    }
+  }
+  if (fallbackStatus === 'done' || fallbackStatus === 'completed') {
+    return { ...STATUS_ICON_OPTIONS[4], icon: '100' }
+  }
+  if (fallbackStatus === 'in_progress') {
+    return { ...STATUS_ICON_OPTIONS[2], icon: '50' }
+  }
+  return { ...STATUS_ICON_OPTIONS[0], icon: '0' }
+}
+
+function walkTasks(tasks, visitor) {
+  if (!Array.isArray(tasks)) return
+  tasks.forEach((task) => {
+    if (!task) return
+    visitor(task)
+    const nested = Array.isArray(task.subTasks)
+      ? task.subTasks
+      : Array.isArray(task.children)
+        ? task.children
+        : []
+    if (nested.length) walkTasks(nested, visitor)
+  })
+}
+
+function buildStatusOptionsFromTasks(taskList) {
+  const options = new Map()
+  walkTasks(taskList, (task) => {
+    const columnId = task.kanbanColumnId || task.kanbanColumn?.id
+    if (!columnId) return
+
+    const iconProps = resolveStatusIconProps(task.kanbanColumn?.icon, task.status)
+    const key = String(columnId)
+    const next = {
+      id: key,
+      label: task.kanbanColumn?.name || task.status || t('taskDetail.status', 'Status'),
+      index: Number(task.kanbanColumn?.index) || Number.MAX_SAFE_INTEGER,
+      ...iconProps
+    }
+
+    if (!options.has(key)) {
+      options.set(key, next)
+      return
+    }
+
+    const prev = options.get(key)
+    options.set(key, {
+      ...prev,
+      label: prev.label || next.label,
+      index: Math.min(prev.index, next.index),
+      icon: next.icon || prev.icon,
+      status: next.status || prev.status,
+      progress: Number.isFinite(next.progress) ? next.progress : prev.progress,
+      color: next.color || prev.color
+    })
+  })
+
+  return Array.from(options.values()).sort((a, b) => {
+    const indexA = Number.isFinite(a.index) ? a.index : Number.MAX_SAFE_INTEGER
+    const indexB = Number.isFinite(b.index) ? b.index : Number.MAX_SAFE_INTEGER
+    if (indexA !== indexB) return indexA - indexB
+    return String(a.label || '').localeCompare(String(b.label || ''))
+  })
+}
+
+function mergeStatusOptions(primary = [], secondary = []) {
+  const merged = new Map()
+
+  primary.forEach((item) => {
+    if (!item?.id) return
+    merged.set(String(item.id), item)
+  })
+
+  secondary.forEach((item) => {
+    if (!item?.id) return
+    const key = String(item.id)
+    if (!merged.has(key)) {
+      merged.set(key, item)
+      return
+    }
+    const prev = merged.get(key)
+    merged.set(key, {
+      ...prev,
+      label: prev.label || item.label,
+      icon: prev.icon || item.icon,
+      status: prev.status || item.status,
+      progress: Number.isFinite(prev.progress) ? prev.progress : item.progress,
+      color: prev.color || item.color,
+      index: Number.isFinite(prev.index) ? prev.index : item.index
+    })
+  })
+
+  return Array.from(merged.values()).sort((a, b) => {
+    const indexA = Number.isFinite(a.index) ? a.index : Number.MAX_SAFE_INTEGER
+    const indexB = Number.isFinite(b.index) ? b.index : Number.MAX_SAFE_INTEGER
+    if (indexA !== indexB) return indexA - indexB
+    return String(a.label || '').localeCompare(String(b.label || ''))
+  })
+}
+
+function mapColumnsToStatusOptions(columns = []) {
+  const sorted = [...columns].sort((a, b) => (Number(a?.index) || 0) - (Number(b?.index) || 0))
+  return sorted.map((column) => {
+    const iconProps = resolveStatusIconProps(column?.icon)
+    return {
+      id: String(column.id),
+      label: column?.name || t('taskDetail.status', 'Status'),
+      index: Number(column?.index) || 0,
+      ...iconProps
+    }
+  })
+}
+
+async function loadApiStatusOptions(projectItemId, projectId) {
+  if (!projectItemId && !projectId) {
+    apiStatusOptions.value = []
+    return
+  }
+
+  try {
+    // Primary source: Kanban Column API (runtime statuses).
+    if (projectItemId) {
+      const response = await getKanbanColumns({
+        projectItemId,
+        limit: 100,
+        sortBy: 'index:ASC'
+      })
+      const columns = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : []
+
+      if (columns.length) {
+        apiStatusOptions.value = mapColumnsToStatusOptions(columns)
+        return
+      }
+    }
+
+    // Fallback source: Project Columns (default template/status values).
+    if (projectId) {
+      const fallbackResponse = await projectStore.fetchProjectColumns(projectId)
+      const fallbackColumns = Array.isArray(fallbackResponse) ? fallbackResponse : []
+      apiStatusOptions.value = mapColumnsToStatusOptions(fallbackColumns)
+      return
+    }
+
+    apiStatusOptions.value = []
+  } catch (error) {
+    apiStatusOptions.value = []
+  }
+}
 
 // Helper to build hierarchy from flat list (supports nested subTasks/children)
 function buildTree(flatTasks) {
@@ -157,6 +355,9 @@ function flattenTree(nodes, parentPathIds = []) {
       completedSubtaskCount: node.completedSubtaskCount || 0,
       trackingTime: node.trackingTime || null,
       kanbanColumnId: node.kanbanColumnId,
+      kanbanColumnName: node.kanbanColumn?.name || '',
+      kanbanColumnIcon: node.kanbanColumn?.icon || null,
+      kanbanColumn: node.kanbanColumn || null,
       projectItemId: node.projectItemId || node.projectId || null,
       projectId: node.projectId,
       children: node.children || [],
@@ -202,6 +403,23 @@ watch(
   { immediate: true, deep: true }
 )
 
+watch(
+  () => [projectStore.activeProjectItemId, projectStore.currentProjectId],
+  ([projectItemId, projectId]) => {
+    loadApiStatusOptions(projectItemId, projectId)
+  },
+  { immediate: true }
+)
+
+watch(
+  [() => props.tasks, apiStatusOptions],
+  ([tasksList, remoteOptions]) => {
+    const fromTasks = buildStatusOptionsFromTasks(tasksList)
+    statusOptions.value = mergeStatusOptions(remoteOptions, fromTasks)
+  },
+  { immediate: true, deep: true }
+)
+
 // Get data path for tree structure
 const getDataPath = (data) => data.path || [data.id || data.title]
 
@@ -210,7 +428,7 @@ const getRowId = (params) => params.data?.id || params.data?.pathKey || params.d
 
 function updateField(pathKey, field, value) {
   const resolvedKey = String(pathKey || '')
-  const task = props.tasks.find(t => String(t.id) === resolvedKey)
+  const task = findTaskInTreeById(props.tasks, resolvedKey)
   if (task) {
     if (field === 'assignee') {
       emit('update-assignee', { taskId: task.id, user: value })
@@ -380,6 +598,74 @@ function handleCommit(pathKey) {
   }
 
   emit('update-task-title', { taskId: node.data.id, title: nextTitle })
+}
+
+function updateStatus(payload = {}) {
+  const taskId = payload?.taskId ? String(payload.taskId) : ''
+  const kanbanColumnId = payload?.kanbanColumnId ? String(payload.kanbanColumnId) : ''
+  if (!taskId || !kanbanColumnId) return
+
+  const node = findNodeByPathKey(taskId)
+  const selectedOption = statusOptions.value.find((item) => String(item.id) === kanbanColumnId)
+  const currentColumnId = payload?.previousKanbanColumnId
+    ? String(payload.previousKanbanColumnId)
+    : node?.data?.kanbanColumnId
+      ? String(node.data.kanbanColumnId)
+      : ''
+  if (currentColumnId && currentColumnId === kanbanColumnId) return
+
+  // Important FE/BE mapping note:
+  // This "status" interaction is actually Kanban Column movement.
+  // We intentionally update `kanbanColumnId`/`kanbanColumn` only, not `status`.
+  if (node?.data) {
+    node.data.kanbanColumnId = kanbanColumnId
+    if (selectedOption?.label) {
+      node.data.kanbanColumnName = selectedOption.label
+    }
+    if (node.data._raw) {
+      node.data._raw.kanbanColumnId = kanbanColumnId
+      node.data._raw.kanbanColumn = {
+        ...(node.data._raw.kanbanColumn || {}),
+        id: kanbanColumnId,
+        name: selectedOption?.label || node.data._raw.kanbanColumn?.name
+      }
+    }
+    // Keep AG Grid cell visually synced immediately before API resolves.
+    gridApi.value?.refreshCells?.({
+      rowNodes: [node],
+      columns: ['status'],
+      force: true
+    })
+  } else {
+    // Fallback for cases where row node is not resolved yet.
+    const rowIndex = rowData.value.findIndex((row) => String(row.id) === taskId)
+    if (rowIndex !== -1) {
+      const nextRow = { ...rowData.value[rowIndex] }
+      nextRow.kanbanColumnId = kanbanColumnId
+      if (selectedOption?.label) {
+        nextRow.kanbanColumnName = selectedOption.label
+      }
+      if (nextRow._raw) {
+        nextRow._raw = {
+          ...nextRow._raw,
+          kanbanColumnId,
+          kanbanColumn: {
+            ...(nextRow._raw.kanbanColumn || {}),
+            id: kanbanColumnId,
+            name: selectedOption?.label || nextRow._raw.kanbanColumn?.name
+          }
+        }
+      }
+      rowData.value.splice(rowIndex, 1, nextRow)
+      rowData.value = [...rowData.value]
+    }
+  }
+
+  emit('update-task-status', {
+    taskId,
+    kanbanColumnId,
+    projectItemId: payload?.projectItemId || node?.data?.projectItemId || node?.data?._raw?.projectItemId || node?.data?._raw?.projectId || null
+  })
 }
 
 // Manual row drag move for live preview
@@ -610,6 +896,8 @@ const gridOptions = ref({
   context: {
     updateField,
     tagOptions: ref([]),
+    statusOptions,
+    updateStatus,
     addSubtask,
     updateTitle,
     handleCommit,
@@ -792,6 +1080,13 @@ function onGridReady(params) {
 
 :deep(.ag-theme-quartz .ag-cell .ag-cell-wrapper) {
   align-items: center;
+}
+
+/* Keep assignee tooltip visible above AG Grid row/cell clipping contexts */
+:deep(.ag-theme-quartz .ag-cell[col-id="assignee"]),
+:deep(.ag-theme-quartz .ag-cell[col-id="assignee"] .ag-cell-wrapper),
+:deep(.ag-theme-quartz .ag-cell[col-id="assignee"] .ag-cell-value) {
+  overflow: visible !important;
 }
 
 :deep(.row-placeholder) {
