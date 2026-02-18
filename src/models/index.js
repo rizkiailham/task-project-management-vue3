@@ -246,6 +246,12 @@ export function createTask(data = {}) {
   })
   return {
     id: data.id || null,
+    projectItemId:
+      data.projectItemId ||
+      data.projectItem?.id ||
+      data.project?.projectItemId ||
+      data.project?.itemId ||
+      null,
     projectId: data.projectId || data.project?.id || null,
     parentTaskId: data.parentTaskId || data.parentId || null,
     title: data.title || '',
@@ -449,6 +455,7 @@ export function createKanbanColumn(data = {}) {
 /**
  * @typedef {Object} Task
  * @property {string|null} id
+ * @property {string|null} projectItemId
  * @property {string|null} projectId
  * @property {string|null} parentTaskId
  * @property {string} title

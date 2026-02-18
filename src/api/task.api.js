@@ -7,10 +7,11 @@ import { get, post, patch, del } from './httpClient'
 /**
  * Get all tasks
  * @param {Object} params - Query parameters (e.g. { projectItemId, kanbanColumnId, ... })
+ * @param {Object} config - Optional axios config
  * @returns {Promise<any>}
  */
-export async function getTasks(params = {}) {
-  return get('/tasks', params)
+export async function getTasks(params = {}, config = {}) {
+  return get('/tasks', params, config)
 }
 
 /**
@@ -25,10 +26,11 @@ export async function getTask(taskId) {
 /**
  * Create a new task
  * @param {Object} data - Should include projectItemId, kanbanColumnId, title, etc.
+ * @param {Object} config - Optional axios config
  * @returns {Promise<any>}
  */
-export async function createTask(data) {
-  return post('/tasks', data)
+export async function createTask(data, config = {}) {
+  return post('/tasks', data, config)
 }
 
 /**
@@ -44,30 +46,44 @@ export async function updateTask(taskId, data) {
 /**
  * Delete a task
  * @param {string} taskId
+ * @param {string|null} [projectItemId]
  * @returns {Promise<void>}
  */
-export async function deleteTask(taskId) {
-  return del(`/tasks/${taskId}`)
+export async function deleteTask(taskId, projectItemId = null) {
+  if (!projectItemId) {
+    return del(`/tasks/${taskId}`)
+  }
+  return del(`/tasks/${taskId}`, {
+    data: { projectItemId }
+  })
 }
 
 /**
  * Update task status
  * @param {string} taskId
  * @param {string} status - 'completed' or 'incompleted'
+ * @param {string|null} [projectItemId]
  * @returns {Promise<any>}
  */
-export async function updateTaskStatus(taskId, status) {
-  return patch(`/tasks/${taskId}/status`, { status })
+export async function updateTaskStatus(taskId, status, projectItemId = null) {
+  return patch(`/tasks/${taskId}/status`, {
+    status,
+    ...(projectItemId ? { projectItemId } : {})
+  })
 }
 
 /**
  * Update task assignee
  * @param {string} taskId
  * @param {string|null} assigneeId
+ * @param {string|null} [projectItemId]
  * @returns {Promise<any>}
  */
-export async function updateTaskAssignee(taskId, assigneeId) {
-  return patch(`/tasks/${taskId}/assign`, { assignTo: assigneeId })
+export async function updateTaskAssignee(taskId, assigneeId, projectItemId = null) {
+  return patch(`/tasks/${taskId}/assign`, {
+    assignTo: assigneeId,
+    ...(projectItemId ? { projectItemId } : {})
+  })
 }
 
 /**

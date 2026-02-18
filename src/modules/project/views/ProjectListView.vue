@@ -56,6 +56,20 @@ async function handlePageSizeChange(limit) {
     uiStore.showApiError(error, 'Failed to change page size')
   }
 }
+
+async function handleCreateSubtask({ parentId, projectItemId, kanbanColumnId } = {}) {
+  if (!parentId) return
+  try {
+    await taskStore.createNewTask({
+      parentId,
+      ...(projectItemId ? { projectItemId } : {}),
+      ...(kanbanColumnId ? { kanbanColumnId } : {}),
+      title: 'New Task'
+    })
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to create subtask')
+  }
+}
 </script>
 
 <template>
@@ -71,6 +85,7 @@ async function handlePageSizeChange(limit) {
           :tasks="tasks" 
           :meta="taskStore.pagination"
           @task-click="handleTaskClick"
+          @create-subtask="handleCreateSubtask"
           @change-page="handlePageChange"
           @update:pageSize="handlePageSizeChange"
         />
@@ -78,4 +93,3 @@ async function handlePageSizeChange(limit) {
     </div>
   </div>
 </template>
-

@@ -364,8 +364,8 @@ defineExpose({ refresh })
   color: var(--color-gray-500);
   cursor: pointer;
   padding: 2px;
-  height: 24px;
-  min-height: 24px;
+  height: 20px;
+  min-height: 20px;
   min-width: 26px;
   font-size: 12px;
   flex-shrink: 0;

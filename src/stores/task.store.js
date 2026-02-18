@@ -248,6 +248,41 @@ export const useTaskStore = defineStore('task', () => {
     )
   }
 
+  function findTaskById(taskId) {
+    if (!taskId) return null
+    const taskIdStr = String(taskId)
+
+    const fromCurrent =
+      currentTask.value?.id && String(currentTask.value.id) === taskIdStr
+        ? currentTask.value
+        : null
+    if (fromCurrent) return fromCurrent
+
+    const fromSubtasks = subtasks.value.find((task) => String(task.id) === taskIdStr)
+    if (fromSubtasks) return fromSubtasks
+
+    return tasks.value.find((task) => String(task.id) === taskIdStr) || null
+  }
+
+  function resolveProjectItemIdForTask(taskId, projectItemId = null) {
+    if (projectItemId) return projectItemId
+
+    const task = findTaskById(taskId)
+    if (!task) return resolveProjectItemId(null)
+
+    const taskProjectItemId = task.projectItemId || task.projectId
+    if (taskProjectItemId) return taskProjectItemId
+
+    const parentId = task.parentId || task.parentTaskId
+    if (!parentId) return resolveProjectItemId(null)
+
+    const parentTask = findTaskById(parentId)
+    const parentProjectItemId = parentTask?.projectItemId || parentTask?.projectId
+    if (parentProjectItemId) return parentProjectItemId
+
+    return resolveProjectItemId(null)
+  }
+
   // ================================
   // Actions
   // ================================
@@ -358,21 +393,29 @@ export const useTaskStore = defineStore('task', () => {
    * @param {Object} data
    */
   async function createNewTask(data) {
-    const projectStore = useProjectStore()
-    const projectId = projectStore.activeProjectItemId
-    if (!projectId) return null
-
-    isLoading.value = true
+    const requestedParentId = data?.parentId || data?.parentTaskId || null
+    const isSubtaskCreate = Boolean(requestedParentId)
+    if (!isSubtaskCreate) {
+      isLoading.value = true
+    }
     error.value = null
 
     try {
-      const requestedParentId = data?.parentId || data?.parentTaskId || null
+      const parentTask = requestedParentId ? findTaskById(requestedParentId) : null
+      const resolvedProjectItemId = resolveProjectItemId(
+        data?.projectItemId || parentTask?.projectItemId || parentTask?.projectId
+      )
+      if (!resolvedProjectItemId) return null
+
       const response = await taskApi.createTask({
-        projectItemId: projectId,
-        ...data
-      })
+        ...data,
+        projectItemId: resolvedProjectItemId
+      }, isSubtaskCreate ? { metadata: { skipGlobalLoader: true } } : {})
       const taskData = response.task || response.data || response
-      let task = createTask(taskData)
+      let task = createTask({
+        ...taskData,
+        projectItemId: taskData?.projectItemId || resolvedProjectItemId
+      })
 
       // If creating a subtask, update parent's children array for immediate UI reflection
       if (requestedParentId) {
@@ -392,7 +435,12 @@ export const useTaskStore = defineStore('task', () => {
 
       if (requestedParentId && (taskData?.subTasks || taskData?.children)) {
         const flattened = flattenRawTasks(taskData)
-        const mapped = flattened.map((item) => createTask(item))
+        const mapped = flattened.map((item) =>
+          createTask({
+            ...item,
+            projectItemId: item?.projectItemId || resolvedProjectItemId
+          })
+        )
         upsertTasks(mapped)
 
         const createdCandidates = mapped.filter((item) => {
@@ -427,7 +475,9 @@ export const useTaskStore = defineStore('task', () => {
       error.value = err.message || 'Failed to create task'
       throw err
     } finally {
-      isLoading.value = false
+      if (!isSubtaskCreate) {
+        isLoading.value = false
+      }
     }
   }
 
@@ -440,9 +490,17 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null
 
     try {
-      const response = await taskApi.updateTask(taskId, data)
+      const resolvedProjectItemId = resolveProjectItemIdForTask(taskId, data?.projectItemId)
+      const payload = {
+        ...data,
+        ...(resolvedProjectItemId ? { projectItemId: resolvedProjectItemId } : {})
+      }
+      const response = await taskApi.updateTask(taskId, payload)
       const taskData = response.task || response.data || response
-      const task = createTask(taskData)
+      const task = createTask({
+        ...taskData,
+        projectItemId: taskData?.projectItemId || resolvedProjectItemId
+      })
 
       // Update in list
       const index = tasks.value.findIndex(t => t.id === taskId)
@@ -470,7 +528,8 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null
 
     try {
-      await taskApi.deleteTask(taskId)
+      const resolvedProjectItemId = resolveProjectItemIdForTask(taskId)
+      await taskApi.deleteTask(taskId, resolvedProjectItemId)
       tasks.value = tasks.value.filter(t => t.id !== taskId)
 
       if (currentTask.value?.id === taskId) {
@@ -494,9 +553,13 @@ export const useTaskStore = defineStore('task', () => {
     }
 
     try {
-      const response = await taskApi.updateTaskStatus(taskId, apiStatus)
+      const resolvedProjectItemId = resolveProjectItemIdForTask(taskId)
+      const response = await taskApi.updateTaskStatus(taskId, apiStatus, resolvedProjectItemId)
       const taskData = response.task || response.data || response
-      const task = createTask(taskData)
+      const task = createTask({
+        ...taskData,
+        projectItemId: taskData?.projectItemId || resolvedProjectItemId
+      })
 
       const index = tasks.value.findIndex(t => t.id === taskId)
       if (index !== -1) {
@@ -520,9 +583,13 @@ export const useTaskStore = defineStore('task', () => {
    */
   async function changeTaskAssignee(taskId, assigneeId) {
     try {
-      const response = await taskApi.updateTaskAssignee(taskId, assigneeId)
+      const resolvedProjectItemId = resolveProjectItemIdForTask(taskId)
+      const response = await taskApi.updateTaskAssignee(taskId, assigneeId, resolvedProjectItemId)
       const taskData = response.task || response.data || response
-      const task = createTask(taskData)
+      const task = createTask({
+        ...taskData,
+        projectItemId: taskData?.projectItemId || resolvedProjectItemId
+      })
 
       const index = tasks.value.findIndex(t => t.id === taskId)
       if (index !== -1) {
@@ -629,7 +696,10 @@ export const useTaskStore = defineStore('task', () => {
    * @param {Object} params
    */
   async function fetchMyTasks(params = {}) {
-    isLoading.value = true
+    const { silent = false, ...queryParams } = params
+    if (!silent) {
+      isLoading.value = true
+    }
     error.value = null
 
     try {
@@ -637,8 +707,8 @@ export const useTaskStore = defineStore('task', () => {
       // Try to fetch specific "my tasks" if endpoint exists, otherwise use getTasks with assigneeId
       const response = await taskApi.getTasks({
         assigneeId: authStore.userId,
-        ...params
-      })
+        ...queryParams
+      }, silent ? { metadata: { skipGlobalLoader: true } } : {})
 
       const payload = Array.isArray(response?.data)
         ? response.data
@@ -664,7 +734,9 @@ export const useTaskStore = defineStore('task', () => {
       console.warn('Failed to fetch my tasks (might need project context)', err)
       return []
     } finally {
-      isLoading.value = false
+      if (!silent) {
+        isLoading.value = false
+      }
     }
   }
 
@@ -721,14 +793,23 @@ export const useTaskStore = defineStore('task', () => {
     if (!currentTask.value) return null
 
     try {
+      const resolvedProjectItemId = resolveProjectItemIdForTask(
+        currentTask.value.id,
+        data?.projectItemId || currentTask.value.projectItemId || currentTask.value.projectId
+      )
+      if (!resolvedProjectItemId) return null
+
       const response = await taskApi.createTask({
-        projectItemId: currentTask.value.projectItemId || currentTask.value.projectId,
+        projectItemId: resolvedProjectItemId,
         kanbanColumnId: currentTask.value.kanbanColumnId,
         parentId: currentTask.value.id,
         ...data
       })
       const taskData = response.task || response.data || response
-      const subtask = createTask(taskData)
+      const subtask = createTask({
+        ...taskData,
+        projectItemId: taskData?.projectItemId || resolvedProjectItemId
+      })
       subtasks.value.push(subtask)
       return subtask
     } catch (err) {
@@ -748,9 +829,16 @@ export const useTaskStore = defineStore('task', () => {
         ? 'incompleted'
         : 'completed'
 
-      const response = await taskApi.updateTaskStatus(subtaskId, newStatus)
+      const resolvedProjectItemId = resolveProjectItemIdForTask(
+        subtaskId,
+        subtask.projectItemId || subtask.projectId
+      )
+      const response = await taskApi.updateTaskStatus(subtaskId, newStatus, resolvedProjectItemId)
       const taskData = response.task || response.data || response
-      const updated = createTask(taskData)
+      const updated = createTask({
+        ...taskData,
+        projectItemId: taskData?.projectItemId || resolvedProjectItemId
+      })
 
       const index = subtasks.value.findIndex(s => s.id === subtaskId)
       if (index !== -1) {
@@ -764,7 +852,8 @@ export const useTaskStore = defineStore('task', () => {
 
   async function deleteSubtaskItem(subtaskId) {
     try {
-      await taskApi.deleteTask(subtaskId)
+      const resolvedProjectItemId = resolveProjectItemIdForTask(subtaskId)
+      await taskApi.deleteTask(subtaskId, resolvedProjectItemId)
       subtasks.value = subtasks.value.filter(s => s.id !== subtaskId)
     } catch (err) {
       error.value = err.message || 'Failed to delete subtask'

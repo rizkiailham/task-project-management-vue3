@@ -118,18 +118,15 @@ async function handleReorderTasks(taskIds) {
 async function handleCreateSubtask(payload) {
   const parentId = typeof payload === 'object' ? payload.parentId : payload
   const kanbanColumnId = typeof payload === 'object' ? payload.kanbanColumnId : null
+  const projectItemId = typeof payload === 'object' ? payload.projectItemId : null
   if (!parentId) return
   try {
-    const response = await taskStore.createNewTask({
+    await taskStore.createNewTask({
       title: 'New Task',
       parentId,
+      ...(projectItemId ? { projectItemId } : {}),
       ...(kanbanColumnId ? { kanbanColumnId } : {})
     })
-    
-    // Refetch tasks to get updated parent with subTasks array
-    if (response?.task?.id || response?.data?.id || response?.id) {
-      await taskStore.fetchTasks()
-    }
   } catch (e) {
     console.error(e)
   }

@@ -156,6 +156,7 @@ function flattenTree(nodes, parentPathIds = []) {
       completedSubtaskCount: node.completedSubtaskCount || 0,
       trackingTime: node.trackingTime || null,
       kanbanColumnId: node.kanbanColumnId,
+      projectItemId: node.projectItemId || node.projectId || null,
       projectId: node.projectId,
       children: node.children || [],
       _raw: node
@@ -221,6 +222,12 @@ async function addSubtask(pathKey, options = {}) {
 
   const taskId = node.data?.id
   const parentKanbanColumnId = node.data?.kanbanColumnId || node.data?._raw?.kanbanColumnId || null
+  const parentProjectItemId =
+    node.data?.projectItemId ||
+    node.data?.projectId ||
+    node.data?._raw?.projectItemId ||
+    node.data?._raw?.projectId ||
+    null
   if (!taskId) return
 
   const { ensureEmpty = false, forceCreate = false } = options || {}
@@ -253,7 +260,11 @@ async function addSubtask(pathKey, options = {}) {
   node.setExpanded(true)
   
   // Emit to parent to create subtask via API
-  emit('create-subtask', { parentId: taskId, kanbanColumnId: parentKanbanColumnId })
+  emit('create-subtask', {
+    parentId: taskId,
+    kanbanColumnId: parentKanbanColumnId,
+    projectItemId: parentProjectItemId
+  })
 
   // Optimistic update: Add placeholder child immediately for instant UI feedback
   if (!gridApi.value?.getDragStatus?.()) {

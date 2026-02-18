@@ -208,15 +208,15 @@ async function handleUpdateTaskTitle({ taskId, title }) {
   }
 }
 
-async function handleCreateSubtask({ parentId }) {
+async function handleCreateSubtask({ parentId, projectItemId, kanbanColumnId } = {}) {
   try {
     await taskStore.createNewTask({
       parentId,
-      title: '',
-      status: TaskStatus.TODO,
-      priority: TaskPriority.MEDIUM
+      ...(projectItemId ? { projectItemId } : {}),
+      ...(kanbanColumnId ? { kanbanColumnId } : {}),
+      title: 'New Task'
     })
-    await taskStore.fetchMyTasks() // Refresh to show new subtask
+    await taskStore.fetchMyTasks({ silent: true }) // Refresh without global loader overlay
   } catch (error) {
     uiStore.showApiError(error, 'Failed to create subtask')
   }
@@ -267,8 +267,9 @@ async function handlePageSizeChange(limit) {
         <div v-if="uiStore.myTasksViewMode === ViewType.LIST" class="h-full overflow-hidden">
            <ProjectTasksGrid
             :tasks="treeTasks"
-            :meta="taskStore.pagination"
+           :meta="taskStore.pagination"
             @task-click="navigateToTask"
+            @create-subtask="handleCreateSubtask"
             @update-task-title="handleUpdateTaskTitle"
             @change-page="handlePageChange"
             @update:pageSize="handlePageSizeChange"
