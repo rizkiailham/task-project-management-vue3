@@ -1247,6 +1247,7 @@
     "description": "Beskrivelse",
     "addDescription": "Legg til en beskrivelse, / for AI",
     "subtasks": "Deloppgaver",
+    "parent": "Forelder",
     "addSubtask": "Legg til deloppgave",
     "completed": "Fullført",
     "activity": "Aktivitet",

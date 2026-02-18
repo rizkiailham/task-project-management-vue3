@@ -1256,6 +1256,7 @@
     "description": "Description",
     "addDescription": "Add a description, / for AI",
     "subtasks": "Subtasks",
+    "parent": "Parent",
     "addSubtask": "Add subtask",
     "completed": "Completed",
     "activity": "Activity",

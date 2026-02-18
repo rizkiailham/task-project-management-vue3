@@ -36,9 +36,14 @@ watch(
   { immediate: true }
 )
 
-const handleTaskClick = (task) => {
-  // Navigation handled by router or store actions if needed
-  // For now just console log or leave empty if the Grid handles it via emit
+async function handleTaskClick(task) {
+  if (!task?.id) return
+  try {
+    await taskStore.fetchTask(task.id)
+    uiStore.openTaskPanel()
+  } catch (error) {
+    uiStore.showApiError(error, 'Failed to open task details')
+  }
 }
 
 async function handleUpdateTaskTitle({ taskId, title }) {

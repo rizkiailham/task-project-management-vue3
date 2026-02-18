@@ -29,15 +29,16 @@ import {
   User as UserIcon, 
   Link2, 
   Paperclip, 
-  MoreHorizontal, 
-  X, 
+  MoreHorizontal,
+  X,
   Maximize2,
   Clock,
   Pin,
   Copy,
   Pencil,
   Trash,
-  Calendar
+  Calendar,
+  CornerUpLeft
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -78,6 +79,45 @@ const isLoading = computed(() => taskStore.isLoadingTask)
 const subtaskProgress = computed(() => taskStore.subtaskProgress)
 const sidebarWidth = computed(() => uiStore.taskDetailSidebarWidth)
 const isResizing = computed(() => uiStore.isResizingTaskDetailSidebar)
+const relatedTaskCache = ref(new Map())
+
+const parentTaskId = computed(() => task.value?.parentTaskId || null)
+const relationshipCount = computed(() => (parentTaskId.value ? 1 : 0))
+
+function cacheRelatedTask(taskData) {
+  if (!taskData?.id) return
+  const next = new Map(relatedTaskCache.value)
+  next.set(String(taskData.id), taskData)
+  relatedTaskCache.value = next
+}
+
+function findTaskById(taskId) {
+  if (!taskId) return null
+  const lookupId = String(taskId)
+  const fromCurrent =
+    task.value?.id && String(task.value.id) === lookupId
+      ? task.value
+      : null
+  if (fromCurrent) return fromCurrent
+
+  const fromSubtasks = subtasks.value.find((item) => String(item.id) === lookupId)
+  if (fromSubtasks) return fromSubtasks
+
+  const fromTasks = taskStore.tasks.find((item) => String(item.id) === lookupId)
+  if (fromTasks) return fromTasks
+
+  const fromMyTasks = taskStore.myTasks.find((item) => String(item.id) === lookupId)
+  if (fromMyTasks) return fromMyTasks
+
+  return relatedTaskCache.value.get(lookupId) || null
+}
+
+const parentTask = computed(() => findTaskById(parentTaskId.value))
+const parentTaskLabel = computed(() => {
+  if (parentTask.value?.title) return parentTask.value.title
+  if (!parentTaskId.value) return t('taskDetail.none')
+  return `#${parentTaskId.value}`
+})
 
 // Calculate right offset based on AI Chat sidebar visibility
 const rightOffset = computed(() => {
@@ -391,6 +431,7 @@ function handleClickOutside(event) {
 // Watch for task changes to sync local description
 watch(() => task.value?.id, (newId) => {
   if (newId) {
+    cacheRelatedTask(task.value)
     localDescription.value = normalizeProseMirrorHtml(task.value?.description || '')
     isEditingDescription.value = false
   }
@@ -478,6 +519,18 @@ async function handleUpdateProject(projectId) {
   if (!task.value) return
   try {
     await taskStore.updateTask(task.value.id, { projectId })
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+async function openRelatedTask(taskId) {
+  if (!taskId) return
+  try {
+    if (task.value?.id) {
+      cacheRelatedTask(task.value)
+    }
+    await taskStore.fetchTask(taskId)
   } catch (error) {
     uiStore.showApiError(error)
   }
@@ -902,11 +955,49 @@ async function handleAddComment() {
                 :class="{ 'rotate-90': isRelationshipsOpen }" 
               />
               Relationships
-              <span class="ml-0.5 text-[10px] text-gray-400">(0)</span>
+              <span class="ml-0.5 text-[10px] text-gray-400">({{ relationshipCount }})</span>
             </button>
             
             <div v-show="isRelationshipsOpen" class="mt-2 pl-4">
-              <div class="text-xs text-gray-400 italic">
+              <div v-if="parentTaskId" class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 text-gray-500 shrink-0 w-[5rem]">
+                  <CornerUpLeft class="w-3.5 h-3.5" />
+                  <span class="text-xs font-medium">{{ t('taskDetail.parent') }}</span>
+                </div>
+                
+                <button
+                  type="button"
+                  class="flex-1 min-w-0 flex items-center justify-between gap-3 p-1.5 rounded-md border border-gray-200 bg-white hover:border-primary-300 hover:shadow-sm hover:bg-gray-50 transition-all text-left group"
+                  @click="openRelatedTask(parentTaskId)"
+                >
+                  <span class="text-xs font-medium text-gray-700 truncate min-w-0 flex-1" :title="parentTaskLabel">
+                    {{ parentTaskLabel }}
+                  </span>
+                  
+                  <div class="flex items-center gap-2 shrink-0">
+                    <!-- Parent Assignee -->
+                    <div v-if="parentTask?.assignee" class="flex -space-x-1" :title="parentTask.assignee.name">
+                      <Avatar 
+                        :label="parentTask.assignee.name?.charAt(0)"
+                        shape="circle"
+                        size="small"
+                        class="bg-blue-100 text-blue-700 font-semibold ring-2 ring-white"
+                        style="width: 20px; height: 20px; font-size: 10px;"
+                      />
+                    </div>
+                    
+                    <!-- Parent Status -->
+                    <TaskProgressIcon 
+                      v-if="parentTask?.status"
+                      :status="parentTask.status" 
+                      :progress="getStatusProgress(parentTask.status)" 
+                      size="sm"
+                      :title="getStatusLabel(parentTask.status)"
+                    />
+                  </div>
+                </button>
+              </div>
+              <div v-else class="text-xs text-gray-400 italic">
                 No relationships yet
               </div>
             </div>
@@ -1015,16 +1106,19 @@ async function handleAddComment() {
                     class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                     @change="taskStore.toggleSubtaskCompletion(subtask.id)"
                   />
-                  <span
-                    class="text-sm flex-1"
+                  <button
+                    type="button"
+                    class="text-sm flex-1 text-left"
                     :class="subtask.isCompleted ? 'text-gray-400 line-through' : 'text-gray-700'"
+                    :title="subtask.title"
+                    @click="openRelatedTask(subtask.id)"
                   >
                     {{ subtask.title }}
-                  </span>
+                  </button>
                   <button
                     type="button"
                     class="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                    @click="handleDeleteSubtask(subtask.id)"
+                    @click.stop="handleDeleteSubtask(subtask.id)"
                   >
                     <Trash class="w-3 h-3" />
                   </button>
