@@ -4,7 +4,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUIStore, useAuthStore, useWorkspaceStore, useProjectStore, useNotificationStore } from '@/stores'
+import { useUIStore, useAuthStore, useProjectStore, useNotificationStore } from '@/stores'
 import { ViewType } from '@/models'
 import { useI18n } from 'vue-i18n'
 
@@ -21,7 +21,6 @@ const route = useRoute()
 const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
-const workspaceStore = useWorkspaceStore()
 const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
 const { t } = useI18n()
@@ -115,12 +114,7 @@ const pageTitle = computed(() => {
 const breadcrumbs = computed(() => {
   const items = []
 
-  if (workspaceStore.currentWorkspace) {
-    items.push({
-      label: workspaceStore.currentWorkspace.name,
-      route: { name: 'Workspace', params: { workspaceId: workspaceStore.currentWorkspaceId } }
-    })
-  } else if (authStore.user) {
+  if (authStore.user) {
     items.push({
       label: authStore.user.name || 'User',
       route: { name: 'Home' }

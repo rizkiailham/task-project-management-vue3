@@ -7,6 +7,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as projectApi from '@/api/project.api'
+import { setWorkspaceId } from '@/api/httpClient'
 
 export const useProjectStore = defineStore('project', () => {
   // ================================
@@ -189,6 +190,8 @@ export const useProjectStore = defineStore('project', () => {
 
     currentProject.value = project
     currentProjectItemId.value = null // Reset selected item so activeProjectItemId falls back to default
+    localStorage.setItem('currentProjectId', String(project?.id || projectId))
+    setWorkspaceId(null)
 
     return project
   }
@@ -285,6 +288,7 @@ export const useProjectStore = defineStore('project', () => {
 
       if (currentProject.value?.id === projectId) {
         currentProject.value = null
+        localStorage.removeItem('currentProjectId')
       }
       return response
     } catch (err) {
@@ -353,6 +357,7 @@ export const useProjectStore = defineStore('project', () => {
     projects.value = []
     currentProject.value = null
     currentProjectItemId.value = null
+    localStorage.removeItem('currentProjectId')
     projectItems.value = {}
     error.value = null
     projectItemsLoaded.clear()

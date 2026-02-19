@@ -5,7 +5,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useProjectStore, useWorkspaceStore, useUIStore } from '@/stores'
+import { useProjectStore, useUIStore } from '@/stores'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
@@ -19,7 +19,6 @@ import { useConfirm } from 'primevue/useconfirm'
 const router = useRouter()
 const { t } = useI18n()
 const projectStore = useProjectStore()
-const workspaceStore = useWorkspaceStore()
 const uiStore = useUIStore()
 const confirm = useConfirm()
 

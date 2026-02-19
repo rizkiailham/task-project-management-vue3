@@ -4,7 +4,7 @@
  */
 import { computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useTaskStore, useUIStore, useWorkspaceStore, useAIStore } from '@/stores'
+import { useTaskStore, useUIStore, useAIStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 
 // PrimeVue
@@ -20,7 +20,6 @@ const router = useRouter()
 const route = useRoute()
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
-const workspaceStore = useWorkspaceStore()
 const aiStore = useAIStore()
 
 // Computed

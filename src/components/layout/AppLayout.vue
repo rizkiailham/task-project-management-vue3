@@ -7,7 +7,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { useUIStore, useWorkspaceStore, useProjectStore, useNotificationStore, useAIChatStore } from '@/stores'
+import { useUIStore, useProjectStore, useNotificationStore, useAIChatStore } from '@/stores'
 
 import Sidebar from './Sidebar.vue'
 import Topbar from './Topbar.vue'
@@ -17,7 +17,6 @@ import AIChatSidebar from '@/components/ai/AIChatSidebar.vue'
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUIStore()
-const workspaceStore = useWorkspaceStore()
 const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
 const aiChatStore = useAIChatStore()
@@ -60,14 +59,6 @@ const leftOffset = computed(() => {
 // Initialize data on mount
 onMounted(async () => {
   try {
-    // Fetch workspaces
-    await workspaceStore.fetchWorkspaces()
-    
-    // If workspace ID in route, select it
-    if (route.params.workspaceId) {
-      await workspaceStore.selectWorkspace(route.params.workspaceId)
-    }
-    
     // Fetch notification count
     await notificationStore.fetchUnreadCount()
   } catch (error) {
@@ -77,16 +68,6 @@ onMounted(async () => {
     }
   }
 })
-
-// Watch for workspace changes in route
-watch(
-  () => route.params.workspaceId,
-  async (newWorkspaceId) => {
-    if (newWorkspaceId && newWorkspaceId !== workspaceStore.currentWorkspaceId) {
-      await workspaceStore.selectWorkspace(newWorkspaceId)
-    }
-  }
-)
 
 // Watch for project changes in route
 watch(
