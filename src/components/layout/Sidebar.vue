@@ -240,11 +240,13 @@ function toggleDashboards() {
 }
 
 function navigateToProject(project) {
+  const params = {
+    projectId: project.id
+  }
+
   router.push({
     name: 'ProjectList',
-    params: {
-      projectId: project.id
-    }
+    params
   })
   if (uiStore.isMobile) {
     uiStore.closeMobileSidebar()
@@ -616,6 +618,7 @@ async function openChildItem(projectId, item) {
 
     // Navigate - ProjectView's route watcher will handle selectProject
     // and ProjectBoardView's route watcher will handle selectProjectItem
+    
     router.push({ 
       name: routeName, 
       params,

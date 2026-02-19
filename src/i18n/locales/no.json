@@ -491,6 +491,7 @@
         "addSection": "Legg til kolonne",
         "addTask": "Legg til oppgave",
         "renamePrompt": "Gi nytt navn til kolonne",
+        "renameHint": "Klikk for a gi nytt navn",
         "menu": {
           "open": "Apne kolonnemeny",
           "rename": "Gi nytt navn til seksjon",

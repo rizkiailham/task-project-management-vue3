@@ -59,7 +59,8 @@ const emit = defineEmits([
   'add-filter',
   'remove-filter',
   'update-filter',
-  'reset-filters'
+  'reset-filters',
+  'update-sort'
 ])
 
 const { t } = useI18n()
@@ -68,6 +69,7 @@ const { t } = useI18n()
 const filterSearchQuery = ref('')
 const editingFilterId = ref(null)
 const filterPillRefs = ref({})
+const sortDropdownRef = ref(null)
 
 const activeColumnSet = computed(() => new Set(props.activeFilters.map((filter) => filter.column)))
 
@@ -119,6 +121,8 @@ function isSortActive(colId, direction) {
 }
 
 function handleSortSelect(item) {
+  sortDropdownRef.value?.close()
+  
   if (!item?.key) return
   
   // Handle nested selection (key format: "colId:direction")
@@ -435,6 +439,7 @@ onBeforeUnmount(() => {
             <div class="flex items-center gap-1">
               <!-- Active Sort Pill (Triggers Column Menu) -->
               <DropdownMenu
+                ref="sortDropdownRef"
                 :items="sortColumnItems"
                 position="left"
                 width="14rem"

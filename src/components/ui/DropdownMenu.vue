@@ -18,7 +18,7 @@
  * </DropdownMenu>
  */
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import { ChevronRight } from 'lucide-vue-next'
+import { ChevronRight, Check } from 'lucide-vue-next'
 
 const props = defineProps({
   /**
@@ -349,6 +349,67 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 
+// Submenu handling
+const activeSubmenuKey = ref(null)
+const submenuPosition = ref({ top: 0, left: 0 })
+const submenuTimeout = ref(null)
+
+const submenuStyle = computed(() => {
+  return {
+    top: `${submenuPosition.value.top}px`,
+    left: `${submenuPosition.value.left}px`
+  }
+})
+
+function handleSubmenuEnter(item, event) {
+  if (submenuTimeout.value) clearTimeout(submenuTimeout.value)
+  
+  // Use key if available, otherwise fallback to item itself (though key is safer)
+  // Ensure we have a valid key for comparison
+  const key = item.key || item.label || item.id
+  if (!key) return 
+  
+  activeSubmenuKey.value = key
+  
+  // Calculate position
+  const rect = event.currentTarget.getBoundingClientRect()
+  const viewportWidth = window.innerWidth
+  const submenuWidth = 192 // 12rem approx
+  
+  // Overlap slightly to ensure mouse move doesn't trigger leave
+  let left = rect.right
+  // Flip if not enough space on right
+  if (left + submenuWidth > viewportWidth) {
+    left = rect.left - submenuWidth
+  }
+  
+  submenuPosition.value = {
+    top: rect.top - 4, // Align slightly higher
+    left: left - 5 // Overlap by 5px
+  }
+}
+
+function handleSubmenuClick(item, event) {
+  const key = item.key || item.label || item.id
+  if (!key) return
+
+  if (activeSubmenuKey.value === key) {
+    activeSubmenuKey.value = null
+  } else {
+    handleSubmenuEnter(item, event)
+  }
+}
+
+function handleSubmenuLeave() {
+  submenuTimeout.value = setTimeout(() => {
+    activeSubmenuKey.value = null
+  }, 100)
+}
+
+function handleSubmenuListEnter() {
+  if (submenuTimeout.value) clearTimeout(submenuTimeout.value)
+}
+
 // Expose methods for parent component
 defineExpose({ open, close, toggle, isOpen })
 </script>
@@ -373,7 +434,7 @@ defineExpose({ open, close, toggle, isOpen })
             <slot name="content"></slot>
           </template>
 
-          <template v-for="(item, index) in items" :key="index">
+          <template v-for="(item, index) in items" :key="item.key || index">
             <!-- Divider -->
             <div v-if="item.type === 'divider'" :class="dividerClass"></div>
             
@@ -384,9 +445,11 @@ defineExpose({ open, close, toggle, isOpen })
             
             <!-- Menu Item -->
             <!-- Submenu Item (has items) -->
+            <!-- Submenu Item (has items) -->
             <div
               v-else-if="item.items && item.items.length"
-              class="relative group w-full"
+              class="relative w-full"
+              @click.stop="handleSubmenuClick(item, $event)"
             >
               <button
                 :class="[itemBaseClass, itemActiveClass]"
@@ -403,39 +466,44 @@ defineExpose({ open, close, toggle, isOpen })
                 <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
               </button>
               
-              <!-- Submenu Dropdown -->
-              <div 
-                :class="[
-                  'absolute top-0 hidden group-hover:block bg-[#f3f5f7] rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[12rem]',
-                  props.position === 'right' ? 'right-full mr-1' : 'left-full ml-1'
-                ]"
-              >
-                 <template v-for="(subItem, subIndex) in item.items" :key="subIndex">
-                    <!-- Divider -->
-                    <div v-if="subItem.type === 'divider'" :class="dividerClass"></div>
-                    
-                    <!-- Section Header -->
-                    <div v-else-if="subItem.type === 'header'" :class="headerClass">
-                      <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{{ subItem.label }}</span>
-                    </div>
+              <!-- Submenu Dropdown (Teleported) -->
+              <Teleport to="body">
+                <Transition name="dropdown">
+                  <div 
+                    v-if="activeSubmenuKey === (item.key || item.label || item.id)"
+                    class="dropdown-menu fixed z-[50000] min-w-[12rem] bg-[#f3f5f7] border border-gray-300 rounded-[6px] shadow-xl py-1"
+                    :style="submenuStyle"
+                    @click.stop
+                  >
+                     <template v-for="(subItem, subIndex) in item.items" :key="subIndex">
+                        <!-- Divider -->
+                        <div v-if="subItem.type === 'divider'" :class="dividerClass"></div>
+                        
+                        <!-- Section Header -->
+                        <div v-else-if="subItem.type === 'header'" :class="headerClass">
+                          <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{{ subItem.label }}</span>
+                        </div>
 
-                    <!-- Submenu Item -->
-                    <button
-                      v-else
-                      @click="handleItemClick(subItem, $event)"
-                      :class="[itemBaseClass, itemActiveClass]"
-                    >
-                       <div class="flex items-center gap-3">
-                          <component 
-                            v-if="subItem.icon" 
-                            :is="subItem.icon" 
-                            class="w-4 h-4 text-gray-500"
-                          />
-                          <span>{{ subItem.label }}</span>
-                       </div>
-                    </button>
-                 </template>
-              </div>
+                        <!-- Submenu Item (Recursive not fully supported here, simplified for 2 levels) -->
+                        <button
+                          v-else
+                          @click="handleItemClick(subItem, $event)"
+                          :class="[itemBaseClass, itemActiveClass]"
+                        >
+                           <div class="flex items-center gap-3">
+                              <component 
+                                v-if="subItem.icon" 
+                                :is="subItem.icon" 
+                                class="w-4 h-4 text-gray-500"
+                              />
+                              <span>{{ subItem.label }}</span>
+                           </div>
+                           <component v-if="subItem.active" :is="Check" class="w-3.5 h-3.5 text-blue-600" />
+                        </button>
+                     </template>
+                  </div>
+                </Transition>
+              </Teleport>
             </div>
 
             <!-- Standard Menu Item -->

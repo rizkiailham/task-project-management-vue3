@@ -38,7 +38,8 @@ const OPERATORS_BY_TYPE = {
   date: [
     { id: 'is', label: 'is' },
     { id: 'before', label: 'before' },
-    { id: 'after', label: 'after' }
+    { id: 'after', label: 'after' },
+    { id: 'between', label: 'between' }
   ]
 }
 

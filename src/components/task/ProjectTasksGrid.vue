@@ -154,6 +154,9 @@ function handleSortChange({ colId, sort }) {
     state: currentSort.value,
     defaultState: { sort: null }
   })
+  
+  // Emit sort change event for backend filtering/sorting
+  emit('sort-change', currentSort.value)
 }
 
 function openFilterForColumn(colId) {
@@ -827,7 +830,7 @@ const baseColumnDefs = [
     colId: 'assignee',
     field: 'assignee',
     headerName: t('taskDetail.assignee', 'Assignee'),
-    width: 100,
+    width: 120,
     minWidth: 80,
     headerComponent: 'SortHeader',
     cellRenderer: 'AssigneeCell',
@@ -879,7 +882,6 @@ const optionsColumnDef = {
   filter: false,
   resizable: false,
   suppressMovable: true,
-  suppressMenu: true,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerClass: 'ag-header-cell-center',
@@ -894,7 +896,6 @@ const defaultColDef = {
   sortable: true,
   resizable: true,
   filter: true,
-  suppressMenu: true,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerComponent: 'SortHeader',
@@ -943,6 +944,7 @@ const autoGroupColumnDef = {
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerComponent: 'SortHeader',
+  sortable: false, // Disable sorting to remove icon
   // rowDrag: true, // Enable drag and drop custom implementation instead
   rowDragText: (params, dragItemCount) => {
     // Return title directly to override default count
@@ -973,6 +975,7 @@ const gridOptions = ref({
   rowDragManaged: true, // Let grid manage the drag UI/ghost
   suppressMoveWhenRowDragging: true, // Prevent default move behavior to keep control
   rowDragText: (params) => getTaskRowDragText(params),
+  pagination: false,
 
   components: {
     SortHeader,
@@ -1314,4 +1317,3 @@ function onGridReady(params) {
   pointer-events: auto;
 }
 </style>
-

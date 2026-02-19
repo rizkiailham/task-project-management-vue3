@@ -90,7 +90,6 @@ const columnDefs = ref([
     width: 70,
     sortable: false,
     filter: false,
-    suppressMenu: true,
     cellRenderer: BulletinThumbnailCell
   },
   {
@@ -128,7 +127,6 @@ const columnDefs = ref([
     width: 80,
     sortable: false,
     filter: false,
-    suppressMenu: true,
     hide: true
   }
 ])
@@ -137,7 +135,6 @@ const defaultColDef = {
   sortable: true,
   resizable: true,
   filter: true,
-  suppressMenu: true,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerComponent: 'SortHeader'

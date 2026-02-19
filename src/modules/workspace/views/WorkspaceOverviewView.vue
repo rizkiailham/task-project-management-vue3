@@ -25,9 +25,8 @@ const members = computed(() => workspaceStore.members)
 
 function navigateToProject(project) {
   router.push({
-    name: 'Project',
+    name: 'ProjectList',
     params: {
-      workspaceId: workspaceStore.currentWorkspaceId,
       projectId: project.id
     }
   })

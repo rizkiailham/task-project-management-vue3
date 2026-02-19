@@ -81,11 +81,18 @@ app.config.errorHandler = (err, instance, info) => {
   console.error('Vue component:', instance)
   console.error('Error info:', info)
 
+
+  // Global error handler
   // In production, send to error tracking service
   if (import.meta.env.PROD) {
     // Example: errorTracker.capture(err, { component: instance, info })
   }
 }
+
+// Custom directives
+app.directive('focus', {
+  mounted: (el) => el.focus()
+})
 
 // Mount app
 app.mount('#app')

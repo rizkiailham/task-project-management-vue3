@@ -140,7 +140,6 @@ const columnDefs = ref([
     width: 120,
     sortable: false,
     filter: false,
-    suppressMenu: true,
     hide: true
   }
 ])
@@ -149,7 +148,6 @@ const defaultColDef = {
   sortable: true,
   resizable: true,
   filter: true,
-  suppressMenu: true,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerComponent: 'SortHeader'

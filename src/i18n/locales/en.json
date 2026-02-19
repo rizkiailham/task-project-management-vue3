@@ -40,7 +40,10 @@
     "open": "Open",
     "preview": "Preview",
     "processing": "Processing...",
-    "selectFile": "Select file"
+    "selectFile": "Select file",
+    "ascending": "Ascending",
+    "descending": "Descending",
+    "reset": "Reset"
   },
   "auth": {
     "login": {
@@ -361,6 +364,9 @@
     }
   },
   "tasks": {
+    "searchFilters": "Search filters...",
+    "filterBy": "Filter by",
+    "addFilter": "Add Filter",
     "title": "Tasks",
     "myTasks": "My Tasks",
     "allTasks": "All Tasks",
@@ -491,6 +497,7 @@
         "addSection": "Add section",
         "addTask": "Add task",
         "renamePrompt": "Rename column",
+        "renameHint": "Click to rename",
         "validation": {
           "nameRequired": "Column name is required"
         },

@@ -9,7 +9,7 @@
  */
 import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUIStore, useProjectStore, useTaskStore, useWorkspaceStore } from '@/stores'
+import { useUIStore, useProjectStore, useTaskStore } from '@/stores'
 
 import Dialog from 'primevue/dialog'
 import FormInput from '@/components/ui/FormInput.vue'
@@ -18,7 +18,6 @@ const router = useRouter()
 const uiStore = useUIStore()
 const projectStore = useProjectStore()
 const taskStore = useTaskStore()
-const workspaceStore = useWorkspaceStore()
 
 // Refs
 const searchInput = ref(null)
@@ -171,9 +170,8 @@ function selectItem(item) {
   } else if (item.type === 'project') {
     uiStore.closeSearch()
     router.push({
-      name: 'Project',
+      name: 'ProjectList',
       params: {
-        workspaceId: workspaceStore.currentWorkspaceId,
         projectId: item.id
       }
     })

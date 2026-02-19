@@ -131,9 +131,8 @@ const breadcrumbs = computed(() => {
     items.push({
       label: projectStore.currentProject.name,
       route: {
-        name: 'Project',
+        name: 'ProjectList',
         params: {
-          workspaceId: workspaceStore.currentWorkspaceId,
           projectId: projectStore.currentProjectId
         }
       }
@@ -144,7 +143,7 @@ const breadcrumbs = computed(() => {
 })
 
 const showViewSwitcher = computed(() => {
-  return ['Project', 'ProjectBoard', 'ProjectList', 'ProjectCalendar'].includes(route.name)
+  return ['ProjectBoard', 'ProjectList', 'ProjectCalendar'].includes(route.name)
 })
 
 const viewOptions = [
@@ -206,7 +205,6 @@ function setView(view) {
 
   if (routeMap[view] && projectStore.currentProjectId) {
     const params = {
-      workspaceId: workspaceStore.currentWorkspaceId,
       projectId: projectStore.currentProjectId
     }
 

@@ -537,7 +537,6 @@ const defaultColDef = {
   sortable: true,
   resizable: true,
   filter: true,
-  suppressMenu: true,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerComponent: 'SortHeader'

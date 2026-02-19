@@ -122,7 +122,7 @@ const routes = [
         component: () => import('@/modules/dashboard/views/HomeView.vue'),
         meta: {
           title: 'Home'
-        }
+        },
       },
       {
         path: 'my-tasks',
@@ -186,15 +186,87 @@ const routes = [
             component: () => import('@/modules/workspace/views/WorkspaceSettingsView.vue'),
             meta: {
               title: 'Workspace Settings',
-              permission: 'workspace.manage'
+            },
+          },
+        ]
+      },
+      // Legacy workspace-scoped project URLs -> project-scoped URLs
+      {
+        path: 'workspaces/:workspaceId/projects/:projectId',
+        redirect: to => ({
+          name: 'ProjectList',
+          params: { projectId: to.params.projectId },
+          query: to.query
+        })
+      },
+      {
+        path: 'workspaces/:workspaceId/projects/:projectId/:section/:itemId?',
+        redirect: (to) => {
+          const { projectId, section, itemId } = to.params
+          const baseParams = { projectId }
+
+          if (section === 'notes') {
+            if (itemId) {
+              return {
+                name: 'ProjectNote',
+                params: { projectId, itemId },
+                query: to.query
+              }
+            }
+            return {
+              name: 'ProjectNoteList',
+              params: baseParams,
+              query: to.query
             }
           }
-        ]
+
+          const sectionRouteMap = {
+            list: 'ProjectList',
+            calendar: 'ProjectCalendar',
+            settings: 'ProjectSettings',
+            board: 'ProjectBoard',
+            report: 'ProjectReport'
+          }
+
+          const targetName = sectionRouteMap[section]
+          if (!targetName) {
+            return {
+              name: 'ProjectList',
+              params: baseParams,
+              query: to.query
+            }
+          }
+
+          if (targetName === 'ProjectBoard' || targetName === 'ProjectReport') {
+            if (!itemId) {
+              return {
+                name: 'ProjectList',
+                params: baseParams,
+                query: to.query
+              }
+            }
+
+            return {
+              name: targetName,
+              params: { projectId, itemId },
+              query: to.query
+            }
+          }
+
+          if (itemId && (targetName === 'ProjectList' || targetName === 'ProjectCalendar')) {
+            baseParams.itemId = itemId
+          }
+
+          return {
+            name: targetName,
+            params: baseParams,
+            query: to.query
+          }
+        }
       },
       // Project routes
       {
         path: 'projects/:projectId',
-        name: 'Project',
         component: () => import('@/modules/project/views/ProjectView.vue'),
         meta: {
           title: 'Project'
@@ -230,10 +302,6 @@ const routes = [
             component: () => import('@/modules/project/views/ProjectNoteView.vue')
           },
           {
-            path: '',
-            redirect: 'list'
-          },
-          {
             path: 'board/:itemId',
             name: 'ProjectBoard',
             component: () => import('@/modules/project/views/ProjectBoardView.vue')
@@ -243,6 +311,10 @@ const routes = [
             name: 'ProjectReport',
             component: () => import('@/modules/project/views/ProjectBoardView.vue')
           },
+          {
+            path: '',
+            redirect: 'list'
+          }
         ]
       },
       // Task detail (as modal overlay or full page)

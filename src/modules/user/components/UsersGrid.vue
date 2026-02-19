@@ -304,7 +304,6 @@ const columnDefs = ref([
     width: 64,
     sortable: false,
     filter: false,
-    suppressMenu: true,
   },
   {
     field: 'fullName',
@@ -343,7 +342,6 @@ const defaultColDef = {
   sortable: true,
   resizable: true,
   filter: true,
-  suppressMenu: true,
   suppressHeaderMenuButton: true,
   suppressHeaderFilterButton: true,
   headerComponent: 'SortHeader'

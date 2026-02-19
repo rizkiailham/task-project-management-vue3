@@ -221,20 +221,26 @@ onMounted(() => {
       if (event.node === props.params.node) {
         isExpanded.value = props.params.node.expanded
       }
+      syncChildCount()
     }
   }
-  api.addEventListener('modelUpdated', handler)
-  api.addEventListener('rowDataUpdated', handler)
-  api.addEventListener('rowGroupOpened', handler)
+
+  api.addEventListener?.('modelUpdated', handler)
+  api.addEventListener?.('rowDataUpdated', handler)
+  api.addEventListener?.('rowGroupOpened', handler)
+
   modelListenerCleanup = () => {
-    api.removeEventListener('modelUpdated', handler)
-    api.removeEventListener('rowDataUpdated', handler)
-    api.removeEventListener('rowGroupOpened', handler)
+    api.removeEventListener?.('modelUpdated', handler)
+    api.removeEventListener?.('rowDataUpdated', handler)
+    api.removeEventListener?.('rowGroupOpened', handler)
   }
 })
 
 onBeforeUnmount(() => {
-  modelListenerCleanup?.()
+  if (typeof modelListenerCleanup === 'function') {
+    modelListenerCleanup()
+    modelListenerCleanup = null
+  }
 })
 
 defineExpose({ refresh })
