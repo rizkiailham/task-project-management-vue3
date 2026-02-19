@@ -131,6 +131,31 @@ const {
   columnDefinitions: columnMenuDefinitions
 })
 
+const currentSort = ref([])
+
+function handleSortChange({ colId, sort }) {
+  if (!gridApi.value) return
+
+  // Update local state
+  if (!sort) {
+    currentSort.value = currentSort.value.filter(s => s.colId !== colId)
+  } else {
+    const existing = currentSort.value.find(s => s.colId === colId)
+    if (existing) {
+      existing.sort = sort
+    } else {
+      // For single sort behavior (replace this with push for multi-sort if needed)
+      currentSort.value = [{ colId, sort }]
+    }
+  }
+
+  // Apply to grid
+  gridApi.value.applyColumnState({
+    state: currentSort.value,
+    defaultState: { sort: null }
+  })
+}
+
 function openFilterForColumn(colId) {
   addFilter(colId)
 }
@@ -779,7 +804,7 @@ const baseColumnDefs = [
     headerName: t('tasks.project', 'Project'),
     flex: 1,
     minWidth: 140,
-    cellClass: 'no-padding-cell',
+    cellClass: 'flex items-center justify-center p-0',
     cellRenderer: 'ProjectCell',
     rowDragText: (params) => {
       return params.rowNode?.data?.title || 'Unknown Task'
@@ -789,14 +814,11 @@ const baseColumnDefs = [
     colId: 'status',
     field: 'status',
     headerName: t('taskDetail.status', 'Status'),
-    width: 60,
-    minWidth: 100,
-    maxWidth: 100,
+    width: 100,
+    minWidth: 80,
+    headerComponent: 'SortHeader',
     cellRenderer: 'StatusCell',
     cellClass: 'flex items-center justify-center p-0',
-    headerClass: 'ag-header-cell-center',
-    sortable: false,
-    filter: false,
     rowDragText: (params) => {
       return params.rowNode?.data?.title || 'Unknown Task'
     }
@@ -805,14 +827,11 @@ const baseColumnDefs = [
     colId: 'assignee',
     field: 'assignee',
     headerName: t('taskDetail.assignee', 'Assignee'),
-    width: 60,
-    minWidth: 100,
-    maxWidth: 100,
+    width: 100,
+    minWidth: 80,
+    headerComponent: 'SortHeader',
     cellRenderer: 'AssigneeCell',
     cellClass: 'flex items-center justify-center p-0',
-    headerClass: 'ag-header-cell-center',
-    sortable: false,
-    filter: false,
     rowDragText: (params) => {
       return params.rowNode?.data?.title || 'Unknown Task'
     }
@@ -1089,11 +1108,13 @@ function onGridReady(params) {
           :activeFilters="activeFilters"
           :filterableColumns="filterableColumns"
           :statusOptions="statusOptions"
+          :sortModel="currentSort"
           :getOperatorsForColumn="getOperatorsForColumn"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
           @update-filter="(id, updates) => updateFilter(id, updates)"
           @reset-filters="resetFilters"
+          @update-sort="handleSortChange"
         />
       </template>
     </Pagination>

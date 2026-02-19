@@ -18,6 +18,7 @@
  * </DropdownMenu>
  */
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ChevronRight } from 'lucide-vue-next'
 
 const props = defineProps({
   /**
@@ -223,14 +224,14 @@ const menuClass = computed(() => {
   if (props.variant === 'sidebar') {
     return 'dropdown-menu fixed bg-[#f3f5f7] rounded-[6px] shadow-md border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
   }
-  return 'dropdown-menu fixed bg-[#f3f5f7] rounded-[6px] shadow-md border border-gray-200 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
+  return 'dropdown-menu fixed bg-[#f3f5f7] rounded-[6px] shadow-md border border-gray-300 py-1 z-[9999] overflow-y-auto overflow-x-hidden'
 })
 
 const dividerClass = computed(() => {
   if (props.variant === 'sidebar') {
     return 'border-t border-gray-200 my-1'
   }
-  return 'border-t border-gray-100 my-1'
+  return 'border-t border-gray-200 my-1'
 })
 
 const itemBaseClass = computed(() => {

@@ -38,7 +38,7 @@ function handleRemoveCustomColumn(columnId) {
   <DropdownMenu
     :items="menuItems"
     position="right"
-    width="18rem"
+    width="9rem"
     :closeOnSelect="false"
     @select="handleMenuSelect"
   >

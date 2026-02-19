@@ -1,10 +1,29 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ListFilter,
   X,
-  Search
+  Search,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  FileText,
+  Folder,
+  Activity,
+  User,
+  Calendar,
+  Tag,
+  Flag,
+  Hash,
+  Clock,
+  CalendarPlus,
+  UserPlus,
+  CalendarClock,
+  UserCheck,
+  Globe,
+  ChevronDown,
+  Plus
 } from 'lucide-vue-next'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -29,6 +48,10 @@ const props = defineProps({
   getOperatorsForColumn: {
     type: Function,
     default: () => () => []
+  },
+  sortModel: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -63,6 +86,61 @@ const filterColumnItems = computed(() => {
       key: col.id
     }))
 })
+
+// Build sort menu items
+const sortColumnItems = computed(() => {
+  return props.filterableColumns.map((col) => ({
+    type: 'item',
+    label: col.label,
+    key: col.id,
+    icon: getColumnIcon(col.id),
+    items: [
+      {
+        type: 'item',
+        label: t('common.ascending', 'Ascending'),
+        key: `${col.id}:asc`,
+        icon: ArrowUp,
+        active: isSortActive(col.id, 'asc')
+      },
+      {
+        type: 'item',
+        label: t('common.descending', 'Descending'),
+        key: `${col.id}:desc`,
+        icon: ArrowDown,
+        active: isSortActive(col.id, 'desc')
+      }
+    ]
+  }))
+})
+
+function isSortActive(colId, direction) {
+  const sort = props.sortModel.find(s => s.colId === colId)
+  return sort ? sort.sort === direction : false
+}
+
+function handleSortSelect(item) {
+  if (!item?.key) return
+  
+  // Handle nested selection (key format: "colId:direction")
+  const parts = item.key.split(':')
+  if (parts.length === 2) {
+    const [colId, direction] = parts
+    emit('update-sort', { colId, sort: direction })
+    return
+  }
+
+  // Handle direct toggle (if top-level item clicked - though UI prevents this for items with children)
+  // Fallback behavior
+  const currentSort = props.sortModel.find(s => s.colId === item.key)
+  let nextSort = 'asc'
+  
+  if (currentSort) {
+    if (currentSort.sort === 'asc') nextSort = 'desc'
+    else nextSort = null // Toggle off
+  }
+  
+  emit('update-sort', { colId: item.key, sort: nextSort })
+}
 
 function handleAddFilter(item) {
   if (item?.key) {
@@ -167,9 +245,17 @@ function handleSelectToggle(filterId, currentValue, optionValue) {
 }
 
 function getFilterSummary(filter) {
-  const { value, type, column } = filter
+  const { value, type, column, operator } = filter
   if (!value || (Array.isArray(value) && value.length === 0)) {
     return '...'
+  }
+
+  // Handle 'between' operator specially
+  if (operator === 'between' && type === 'date') {
+    if (!Array.isArray(value) || value.length < 2) return '...'
+    const start = formatDateDisplay(value[0])
+    const end = formatDateDisplay(value[1])
+    return `${start} - ${end}`
   }
 
   if (column === 'status') {
@@ -188,14 +274,19 @@ function getFilterSummary(filter) {
   }
 
   if (type === 'date') {
-    try {
-      const d = new Date(value)
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      }
-    } catch (e) { /* ignore */ }
+    return formatDateDisplay(value)
   }
 
+  return String(value)
+}
+
+function formatDateDisplay(value) {
+  try {
+    const d = new Date(value)
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+  } catch (e) { /* ignore */ }
   return String(value)
 }
 
@@ -216,12 +307,22 @@ function getStatusLabel(statusId) {
 }
 
 function getDateModel(value) {
+  if (Array.isArray(value)) {
+    if (value.length === 2) {
+      return { 
+        start: value[0] ? new Date(value[0]) : null, 
+        end: value[1] ? new Date(value[1]) : null 
+      }
+    }
+    return null
+  }
   if (!value) return null
   const parsed = new Date(value)
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
 function formatDateForFilter(value) {
+  if (!value) return ''
   const date = Array.isArray(value) ? value[0] : value
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return ''
   const year = date.getFullYear()
@@ -230,9 +331,73 @@ function formatDateForFilter(value) {
   return `${year}-${month}-${day}`
 }
 
-function handleDateChange(filterId, value) {
+function handleDateChange(filterId, value, operator) {
+  if (operator === 'between') {
+    // value is expected to be { start, end } from v-calendar range mode
+    if (value && typeof value === 'object' && (value.start || value.end)) {
+      const start = value.start ? formatDateForFilter(value.start) : ''
+      const end = value.end ? formatDateForFilter(value.end) : ''
+      handleValueChange(filterId, [start, end])
+    } else {
+      handleValueChange(filterId, [])
+    }
+    return
+  }
+  
   handleValueChange(filterId, formatDateForFilter(value))
 }
+
+const COLUMN_ICONS = {
+  title: FileText,
+  projectName: Folder,
+  status: Activity,
+  assignee: User,
+  dueDate: Calendar,
+  tags: Tag,
+  priority: Flag,
+  size: Hash,
+  trackingTime: Clock,
+  createdAt: CalendarPlus,
+  createdBy: UserPlus,
+  updatedAt: CalendarClock,
+  updatedBy: UserCheck,
+  timezone: Globe
+}
+
+const activeSort = computed(() => {
+  return props.sortModel.length > 0 ? props.sortModel[0] : null
+})
+
+function getColumnIcon(colId) {
+  return COLUMN_ICONS[colId] || ListFilter
+}
+
+function getColumnLabel(colId) {
+  const col = props.filterableColumns.find(c => c.id === colId)
+  return col ? col.label : colId
+}
+
+function toggleSortDirection(sortItem) {
+  const next = sortItem.sort === 'asc' ? 'desc' : 'asc'
+  emit('update-sort', { colId: sortItem.colId, sort: next })
+}
+
+// Auto-open filter editor when a new filter is added
+watch(() => props.activeFilters, async (newFilters, oldFilters) => {
+  if (newFilters.length > oldFilters.length) {
+    // A filter was added. Find the new one.
+    // Assuming new filters are appended to the end, but we can check IDs
+    const oldIds = new Set(oldFilters.map(f => f.id))
+    const addedFilter = newFilters.find(f => !oldIds.has(f.id))
+    
+    if (addedFilter) {
+      // Ensure the pill is rendered
+      await nextTick()
+      // Open the editor
+      editingFilterId.value = addedFilter.id
+    }
+  }
+}, { deep: true })
 
 function getStatusOptionValue(status) {
   return String(status?.id ?? status?.value ?? status?.key ?? status?.kanbanColumnId ?? '')
@@ -263,6 +428,68 @@ onBeforeUnmount(() => {
   <div class="filter-bar">
     <div class="filter-bar__scroll">
       <div class="filter-bar__scroll-inner">
+        <!-- Sort UI -->
+        <div class="flex items-center gap-2">
+          
+          <template v-if="activeSort">
+            <div class="flex items-center gap-1">
+              <!-- Active Sort Pill (Triggers Column Menu) -->
+              <DropdownMenu
+                :items="sortColumnItems"
+                position="left"
+                width="14rem"
+                contentPosition="before"
+                :openUp="true"
+                @select="handleSortSelect"
+              >
+                <template #trigger>
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 px-2 h-7 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    <component :is="getColumnIcon(activeSort.colId)" class="w-3.5 h-3.5 text-gray-500" />
+                    <span>{{ getColumnLabel(activeSort.colId) }}</span>
+                    <ChevronDown class="w-3 h-3 text-gray-400" />
+                  </button>
+                </template>
+              </DropdownMenu>
+
+              <!-- Sort Direction Toggle -->
+              <button
+                type="button"
+                class="flex items-center justify-center w-7 h-7 text-gray-500 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                @click="toggleSortDirection(activeSort)"
+                :title="activeSort.sort === 'asc' ? 'Ascending' : 'Descending'"
+              >
+                <component :is="activeSort.sort === 'asc' ? ArrowUp : ArrowDown" class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </template>
+
+          <template v-else>
+            <!-- Default Sort Button (No active sort) -->
+            <DropdownMenu
+              :items="sortColumnItems"
+              position="left"
+              width="14rem"
+              contentPosition="before"
+              :openUp="true"
+              @select="handleSortSelect"
+            >
+              <template #trigger>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 px-2 h-7 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                  :title="t('common.sort', 'Sort')"
+                >
+                  <ArrowUpDown class="w-3.5 h-3.5 text-gray-500" />
+                  <span>{{ t('common.sort', 'Sort') }}</span>
+                </button>
+              </template>
+            </DropdownMenu>
+          </template>
+        </div>
+
         <!-- Filter by button -->
         <DropdownMenu
           :items="filterColumnItems"
@@ -275,11 +502,10 @@ onBeforeUnmount(() => {
           <template #trigger>
             <button
               type="button"
-              class="filter-bar__add-btn"
+              class="text-xs font-medium text-gray-500 whitespace-nowrap hover:text-gray-700 transition-colors"
               :title="t('tasks.filterBy', 'Filter by')"
             >
-              <ListFilter class="w-3.5 h-3.5" />
-              <span>{{ t('tasks.filterBy', 'Filter by') }}</span>
+              {{ t('tasks.filterBy', 'Filter by') }}
             </button>
           </template>
 
@@ -400,9 +626,10 @@ onBeforeUnmount(() => {
                   <template v-else-if="filter.type === 'date'">
                     <VDatePicker
                       :model-value="getDateModel(filter.value)"
-                      mode="date"
+                      :mode="filter.operator === 'between' ? 'date' : 'date'"
+                      :is-range="filter.operator === 'between'"
                       :popover="{ visibility: 'click' }"
-                      @update:model-value="(value) => handleDateChange(filter.id, value)"
+                      @update:model-value="(value) => handleDateChange(filter.id, value, filter.operator)"
                     >
                       <template #default="{ inputValue, togglePopover }">
                         <button
@@ -410,7 +637,12 @@ onBeforeUnmount(() => {
                           class="filter-editor__input w-full text-left"
                           @click="togglePopover"
                         >
-                          {{ inputValue || t('tasks.enterValue', 'Enter value...') }}
+                          <template v-if="filter.operator === 'between'">
+                            {{ inputValue?.start && inputValue?.end ? `${inputValue.start} - ${inputValue.end}` : (inputValue?.start || t('tasks.enterValue', 'Select range...')) }}
+                          </template>
+                          <template v-else>
+                            {{ inputValue || t('tasks.enterValue', 'Enter value...') }}
+                          </template>
                         </button>
                       </template>
                     </VDatePicker>
@@ -420,6 +652,40 @@ onBeforeUnmount(() => {
             </Teleport>
           </div>
         </div>
+        <!-- Add Filter Button (Manual) -->
+        <DropdownMenu
+          :items="filterColumnItems"
+          position="left"
+          width="14rem"
+          contentPosition="before"
+          :openUp="true"
+          @select="handleAddFilter"
+        >
+          <template #trigger>
+            <button
+              type="button"
+              class="filter-bar__add-btn ml-1 px-1.5 h-7 hover:bg-gray-100 hover:text-gray-900 border-dashed border-gray-300 flex items-center justify-center"
+              :title="t('tasks.addFilter', 'Add Filter')"
+            >
+              <ListFilter class="w-3.5 h-3.5" />
+            </button>
+          </template>
+
+          <template #content>
+            <div class="filter-bar__search">
+              <Search class="w-3.5 h-3.5 text-gray-400" />
+              <InputText
+                v-model="filterSearchQuery"
+                :placeholder="t('tasks.searchFilters', 'Search filters...')"
+                class="filter-bar__search-input w-full !text-[13px] !border-0 !bg-transparent !shadow-none !px-0 !py-0 focus:!shadow-none"
+                @click.stop
+              />
+            </div>
+            <div v-if="filterColumnItems.length === 0" class="filter-bar__empty">
+              {{ t('tasks.noFiltersFound', 'No filters found') }}
+            </div>
+          </template>
+        </DropdownMenu>
       </div>
     </div>
 

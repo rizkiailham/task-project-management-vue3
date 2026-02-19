@@ -56,7 +56,6 @@ export const useKanbanColumnStore = defineStore('kanbanColumn', () => {
       const response = await kanbanColumnApi.getKanbanColumns({
         page: pagination.value.page,
         limit: pagination.value.limit,
-        sortBy: 'index:ASC',
         projectItemId: projectId,
         ...params
       })

@@ -117,17 +117,17 @@ function extractCustomFieldMap(task) {
   const writeEntry = (entry) => {
     if (!entry || typeof entry !== 'object') return
     const value = entry.value ?? entry.fieldValue ?? entry.customFieldValue ?? entry.data ?? entry.defaultValue ?? null
-    ;[
-      entry.id,
-      entry.fieldId,
-      entry.customFieldId,
-      entry.key,
-      entry.fieldKey,
-      entry.customFieldKey,
-      entry.name,
-      entry.fieldName,
-      entry.label
-    ].forEach((candidate) => write(candidate, value))
+      ;[
+        entry.id,
+        entry.fieldId,
+        entry.customFieldId,
+        entry.key,
+        entry.fieldKey,
+        entry.customFieldKey,
+        entry.name,
+        entry.fieldName,
+        entry.label
+      ].forEach((candidate) => write(candidate, value))
   }
 
   const sources = [
@@ -195,7 +195,6 @@ export function useProjectTaskColumns(t) {
   )
 
   const columnMenuItems = computed(() => ([
-    { type: 'header', label: t('tasks.columnOptions.title', 'Columns') },
     ...hiddenColumnMenuDefinitions.value.map((item) => ({
       id: `column-${item.id}`,
       key: item.id,

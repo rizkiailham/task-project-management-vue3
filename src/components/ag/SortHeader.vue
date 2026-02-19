@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, nextTick } from 'vue'
-import { ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowDown } from 'lucide-vue-next'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 
 const props = defineProps({
   params: {
@@ -20,12 +21,10 @@ function syncSortState() {
 
 onMounted(() => {
   props.params?.column?.addEventListener?.('sortChanged', syncSortState)
-  document.addEventListener('click', handleDocumentClick)
 })
 
 onBeforeUnmount(() => {
   props.params?.column?.removeEventListener?.('sortChanged', syncSortState)
-  document.removeEventListener('click', handleDocumentClick)
 })
 
 const isAsc = computed(() => sortState.value === 'asc')
@@ -41,142 +40,116 @@ const canHide = computed(() => {
   return typeof context?.toggleColumnOption === 'function'
 })
 
-function applySort(nextSort, event) {
+function applySort(nextSort) {
   if (typeof props.params?.setSort === 'function') {
-    props.params.setSort(nextSort, event?.shiftKey)
+    props.params.setSort(nextSort)
     return
   }
   if (typeof props.params?.column?.setSort === 'function') {
-    props.params.column.setSort(nextSort, event?.shiftKey)
+    props.params.column.setSort(nextSort)
   }
 }
 
-function handleSortAsc(event) {
-  if (!isSortable.value || isDesc.value) return
-  applySort(isAsc.value ? null : 'asc', event)
-}
+const menuItems = computed(() => {
+  const items = []
 
-function handleSortDesc(event) {
-  if (!isSortable.value || isAsc.value) return
-  applySort(isDesc.value ? null : 'desc', event)
-}
-
-function handleHeaderClick(event) {
-  if (!isSortable.value) return
-  // Cycle through: null -> asc -> desc -> null
-  if (sortState.value === null) {
-    applySort('asc', event)
-  } else if (sortState.value === 'asc') {
-    applySort('desc', event)
-  } else {
-    applySort(null, event)
+  if (canFilter.value) {
+    items.push({
+      type: 'item',
+      label: 'Filter',
+      action: handleMenuFilter
+    })
+    
+    // Add separator after Filter as per image
+    items.push({ type: 'divider' })
   }
-}
 
-function handleContextMenu(event) {
-  event.preventDefault()
-  event.stopPropagation()
-
-  // Position the context menu near the cursor
-  const headerEl = event.currentTarget
-  const rect = headerEl.getBoundingClientRect()
-  contextMenuStyle.value = {
-    top: `${rect.bottom + 2}px`,
-    left: `${Math.min(event.clientX, window.innerWidth - 200)}px`
+  if (isSortable.value) {
+    items.push({
+      type: 'item',
+      label: 'Sort ascending',
+      action: () => applySort('asc'),
+      active: isAsc.value
+    })
+    items.push({
+      type: 'item',
+      label: 'Sort descending',
+      action: () => applySort('desc'),
+      active: isDesc.value
+    })
+    items.push({ type: 'divider' })
   }
-  showContextMenu.value = true
-}
 
-function handleDocumentClick() {
-  if (showContextMenu.value) {
-    showContextMenu.value = false
+  if (canHide.value) {
+    // Check if the last item was already a divider to avoid duplicates
+    const lastItem = items[items.length - 1]
+    if ((canFilter.value || isSortable.value) && lastItem?.type !== 'divider') {
+       items.push({ type: 'divider' }) 
+    }
+    items.push({
+      type: 'item',
+      label: 'Hide column',
+      action: handleMenuHide
+    })
   }
-}
+
+  return items
+})
 
 function handleMenuFilter() {
-  showContextMenu.value = false
   const context = props.params?.context
   if (typeof context?.openFilterForColumn === 'function') {
     context.openFilterForColumn(colId.value)
   }
 }
 
-function handleMenuSortAsc() {
-  showContextMenu.value = false
-  applySort('asc')
-}
-
-function handleMenuSortDesc() {
-  showContextMenu.value = false
-  applySort('desc')
-}
-
 function handleMenuHide() {
-  showContextMenu.value = false
   const context = props.params?.context
   if (typeof context?.toggleColumnOption === 'function') {
     context.toggleColumnOption(colId.value)
   }
 }
+const dropdownRef = ref(null)
+
+function handleContextMenu(event) {
+  // Prevent default browser/grid context menu
+  // and open our custom dropdown instead
+  dropdownRef.value?.open?.()
+}
 </script>
 
 <template>
-  <div class="sort-header" @click="handleHeaderClick" @contextmenu="handleContextMenu">
-    <span class="sort-header__label">{{ params.displayName }}</span>
-    <span v-if="isSortable" class="sort-header__icons">
-      <ChevronUp :class="['sort-header__icon', { 'sort-header__icon--active': isAsc }]" />
-      <ChevronDown :class="['sort-header__icon', { 'sort-header__icon--active': isDesc }]" />
-    </span>
-
-    <!-- Context menu (teleported to body to avoid AG Grid clipping) -->
-    <Teleport to="body">
-      <div
-        v-if="showContextMenu"
-        class="sort-header-context-menu"
-        :style="contextMenuStyle"
-        @click.stop
+  <DropdownMenu
+    ref="dropdownRef"
+    :items="menuItems"
+    position="left"
+    width="max-content"
+    :openUp="false"
+    :style="{ minWidth: '160px' }"
+  >
+    <template #trigger>
+      <div 
+        class="sort-header"
+        @contextmenu.prevent.stop="handleContextMenu"
       >
-        <button
-          v-if="canFilter"
-          type="button"
-          class="sort-header-context-menu__item"
-          @click="handleMenuFilter"
-        >
-          Filter
-        </button>
-
-        <div v-if="canFilter && isSortable" class="sort-header-context-menu__divider" />
-
-        <button
-          v-if="isSortable"
-          type="button"
-          class="sort-header-context-menu__item"
-          @click="handleMenuSortAsc"
-        >
-          Sort ascending
-        </button>
-        <button
-          v-if="isSortable"
-          type="button"
-          class="sort-header-context-menu__item"
-          @click="handleMenuSortDesc"
-        >
-          Sort descending
-        </button>
-
-        <div v-if="canHide" class="sort-header-context-menu__divider" />
-
-        <button
-          v-if="canHide"
-          type="button"
-          class="sort-header-context-menu__item"
-          @click="handleMenuHide"
-        >
-          Hide column
-        </button>
+        <span class="sort-header__label">{{ params.displayName }}</span>
+        <span v-if="isSortable" class="sort-header__icons">
+          <ChevronUp :class="['sort-header__icon', { 'sort-header__icon--active': isAsc }]" />
+          <ChevronDown :class="['sort-header__icon', { 'sort-header__icon--active': isDesc }]" />
+        </span>
       </div>
-    </Teleport>
-  </div>
+    </template>
+    
+    <!-- Custom item template to show checkmark -->
+    <template #item="{ item }">
+      <div class="flex items-center gap-3">
+        <span>{{ item.label }}</span>
+      </div>
+      <div class="w-4 h-4 flex items-center justify-center shrink-0">
+        <Check v-if="item.active" class="w-3.5 h-3.5 text-blue-600" />
+      </div>
+    </template>
+  </DropdownMenu>
 </template>
 
 <style>
@@ -193,8 +166,9 @@ function handleMenuHide() {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
-  gap: 4px;
-  width: 100%;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
   height: 100%;
   cursor: pointer;
   user-select: none;
@@ -202,7 +176,7 @@ function handleMenuHide() {
 }
 
 .sort-header__label {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -229,41 +203,5 @@ function handleMenuHide() {
 
 .sort-header__icon--active {
   color: var(--color-gray-700);
-}
-
-/* Context menu styles */
-.sort-header-context-menu {
-  position: fixed;
-  z-index: 9999;
-  min-width: 170px;
-  background: #ffffff;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  padding: 4px 0;
-}
-
-.sort-header-context-menu__item {
-  display: block;
-  width: 100%;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-
-.sort-header-context-menu__item:hover {
-  background: #f3f4f6;
-}
-
-.sort-header-context-menu__divider {
-  height: 1px;
-  margin: 4px 0;
-  background: #e5e7eb;
 }
 </style>
