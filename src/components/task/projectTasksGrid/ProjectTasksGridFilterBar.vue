@@ -7,23 +7,7 @@ import {
   Search,
   ArrowUp,
   ArrowDown,
-  ArrowUpDown,
-  FileText,
-  Folder,
-  Activity,
-  User,
-  Calendar,
-  Tag,
-  Flag,
-  Hash,
-  Clock,
-  CalendarPlus,
-  UserPlus,
-  CalendarClock,
-  UserCheck,
-  Globe,
-  ChevronDown,
-  Plus
+  ChevronDown
 } from 'lucide-vue-next'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -95,20 +79,17 @@ const sortColumnItems = computed(() => {
     type: 'item',
     label: col.label,
     key: col.id,
-    icon: getColumnIcon(col.id),
     items: [
       {
         type: 'item',
         label: t('common.ascending', 'Ascending'),
         key: `${col.id}:asc`,
-        icon: ArrowUp,
         active: isSortActive(col.id, 'asc')
       },
       {
         type: 'item',
         label: t('common.descending', 'Descending'),
         key: `${col.id}:desc`,
-        icon: ArrowDown,
         active: isSortActive(col.id, 'desc')
       }
     ]
@@ -351,30 +332,9 @@ function handleDateChange(filterId, value, operator) {
   handleValueChange(filterId, formatDateForFilter(value))
 }
 
-const COLUMN_ICONS = {
-  title: FileText,
-  projectName: Folder,
-  status: Activity,
-  assignee: User,
-  dueDate: Calendar,
-  tags: Tag,
-  priority: Flag,
-  size: Hash,
-  trackingTime: Clock,
-  createdAt: CalendarPlus,
-  createdBy: UserPlus,
-  updatedAt: CalendarClock,
-  updatedBy: UserCheck,
-  timezone: Globe
-}
-
 const activeSort = computed(() => {
   return props.sortModel.length > 0 ? props.sortModel[0] : null
 })
-
-function getColumnIcon(colId) {
-  return COLUMN_ICONS[colId] || ListFilter
-}
 
 function getColumnLabel(colId) {
   const col = props.filterableColumns.find(c => c.id === colId)
@@ -452,7 +412,6 @@ onBeforeUnmount(() => {
                     type="button"
                     class="flex items-center gap-2 px-2 h-7 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
                   >
-                    <component :is="getColumnIcon(activeSort.colId)" class="w-3.5 h-3.5 text-gray-500" />
                     <span>{{ getColumnLabel(activeSort.colId) }}</span>
                     <ChevronDown class="w-3 h-3 text-gray-400" />
                   </button>
@@ -487,7 +446,6 @@ onBeforeUnmount(() => {
                   class="flex items-center gap-2 px-2 h-7 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
                   :title="t('common.sort', 'Sort')"
                 >
-                  <ArrowUpDown class="w-3.5 h-3.5 text-gray-500" />
                   <span>{{ t('common.sort', 'Sort') }}</span>
                 </button>
               </template>

@@ -1,39 +1,56 @@
-import { ref, computed } from 'vue'
-import {
-  Copy, Trash2, Edit2, Link, Download, Archive,
-  Calendar, Clock, Bell, UserPlus, Tag, Share2,
-  CornerUpRight, FileText, FolderPlus, Repeat,
-  CheckCircle2, ArrowRightCircle
-} from 'lucide-vue-next'
+import { Repeat } from 'lucide-vue-next'
 
-export function useTaskContextMenu(t) {
+export function useTaskContextMenu(t, options = {}) {
+  const {
+    onOpenTask,
+    onAddSubtask,
+    onSetReminder
+  } = options
+
+  function handleOpenTask(task) {
+    if (typeof onOpenTask === 'function') {
+      onOpenTask(task)
+      return
+    }
+    console.log('Open task', task)
+  }
+
+  function handleAddSubtask(task) {
+    if (typeof onAddSubtask === 'function') {
+      onAddSubtask(task)
+    }
+  }
+
+  function handleSetReminder(task) {
+    if (typeof onSetReminder === 'function') {
+      onSetReminder(task)
+    }
+  }
+
   function getMenuItems(task) {
     if (!task) return []
 
     return [
       {
         label: t('tasks.context.open', 'Open task'),
-        icon: CornerUpRight,
-        action: () => console.log('Open task', task)
+        action: () => handleOpenTask(task)
       },
       { type: 'divider' },
       {
         label: t('tasks.context.changeTask', 'Change task'),
-        icon: Edit2,
-        children: [
+        items: [
           { label: 'Change board', action: () => { } },
-          { label: 'Start timer', icon: Clock, action: () => { } },
-          { label: 'Change status', icon: CheckCircle2, action: () => { } },
-          { label: 'Change assignees', icon: UserPlus, action: () => { } },
-          { label: 'Change tags', icon: Tag, action: () => { } },
-          { label: 'Change subscriber', icon: Bell, action: () => { } },
+          { label: 'Start timer', action: () => { } },
+          { label: 'Change status', action: () => { } },
+          { label: 'Change assignees', action: () => { } },
+          { label: 'Change tags', action: () => { } },
+          { label: 'Change subscriber', action: () => { } },
         ]
       },
       {
         label: t('tasks.context.connect', 'Connect a task, doc, and more'),
-        icon: Link,
-        children: [
-          { label: 'Add subtask', action: () => { } },
+        items: [
+          { label: 'Add subtask', action: () => handleAddSubtask(task) },
           { label: 'Set existing subtask', action: () => { } },
           { label: 'Set parent', action: () => { } },
           { type: 'divider' },
@@ -41,14 +58,14 @@ export function useTaskContextMenu(t) {
           { label: 'Merge into another task', action: () => { } },
           { label: 'Reference another task', action: () => { } },
           { type: 'divider' },
-          { label: 'Link a folder', icon: FolderPlus, action: () => { } },
+          { label: 'Link a folder', action: () => { } },
           { label: 'Add attachment', action: () => { } },
           { label: 'Add link', action: () => { } },
         ]
       },
       {
         label: t('tasks.context.addSubtask', 'Add subtask'),
-        action: () => { }
+        action: () => handleAddSubtask(task)
       },
       {
         label: t('tasks.context.addAttachment', 'Add attachment'),
@@ -56,35 +73,37 @@ export function useTaskContextMenu(t) {
       },
       {
         label: t('tasks.context.setRecurrence', 'Set recurrence'),
-        icon: Repeat,
-        children: [
-          { label: 'Daily', action: () => { } },
-          { label: 'Every Monday', action: () => { } },
-          { label: 'Every weekday', action: () => { } },
-          { label: 'Monthly on the 12th', action: () => { } },
-          { label: 'Yearly on Jan 12th', action: () => { } },
-          { label: 'Custom', action: () => { } },
+        items: [
+          {
+            type: 'header',
+            label: t('tasks.context.setRecurrence', 'Set repetition'),
+            icon: Repeat
+          },
+          { label: 'Daily', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
+          { label: 'Every Monday', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
+          { label: 'Every weekday', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
+          { label: 'Monthly on the 12th', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
+          { label: 'Yearly on Jan 12th', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
+          { label: 'Custom', class: 'block w-full text-left px-3 py-2 m-1 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
         ]
       },
       {
+        key: 'setReminder',
         label: t('tasks.context.setReminder', 'Set reminder'),
-        icon: Bell,
-        children: [] // Calendar picker placeholder?
+        closeOnSelect: false,
+        action: () => handleSetReminder(task)
       },
       {
         label: t('tasks.context.unsubscribe', 'Unsubscribe'),
-        icon: Bell, // Strikethrough?
         action: () => { }
       },
       {
         label: t('tasks.context.archive', 'Move to archive board'),
-        icon: Archive,
         action: () => { }
       },
       { type: 'divider' },
       {
         label: t('tasks.context.copyLink', 'Copy task link'),
-        icon: Link,
         action: () => { }
       },
       {
@@ -94,8 +113,7 @@ export function useTaskContextMenu(t) {
       { type: 'divider' },
       {
         label: t('tasks.context.export', 'Export as'),
-        icon: Download,
-        children: [
+        items: [
           { label: 'PDF', action: () => { } },
           { label: 'HTML', action: () => { } },
           { label: 'Markdown', action: () => { } },
@@ -103,14 +121,11 @@ export function useTaskContextMenu(t) {
       },
       {
         label: t('tasks.context.replicate', 'Replicate'),
-        icon: Copy,
         action: () => { }
       },
       {
         label: t('common.delete', 'Delete'),
-        icon: Trash2,
-        action: () => { }, // Confirm delete
-        class: 'text-red-600'
+        action: () => { } // Confirm delete
       }
     ]
   }

@@ -14,6 +14,8 @@ import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
+import { DatePicker as VDatePicker } from 'v-calendar'
+import 'v-calendar/style.css'
 import { useProjectStore } from '@/stores'
 import { getKanbanColumns } from '@/api/kanbanColumn.api'
 import SortHeader from '@/components/ag/SortHeader.vue'
@@ -27,8 +29,10 @@ import StatusCell from '@/components/task/StatusCell.vue'
 import ProjectTasksGridColumnOptionsHeader from '@/components/task/projectTasksGrid/ProjectTasksGridColumnOptionsHeader.vue'
 import { useProjectTaskColumns } from '@/components/task/projectTasksGrid/useProjectTaskColumns'
 import { useProjectTaskFilters } from '@/components/task/projectTasksGrid/useProjectTaskFilters'
+import { useTaskContextMenu } from '@/components/task/projectTasksGrid/useTaskContextMenu'
 import ProjectTasksGridFilterBar from '@/components/task/projectTasksGrid/ProjectTasksGridFilterBar.vue'
 import Pagination from '@/components/ui/Pagination.vue'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 
 
 const projectStore = useProjectStore()
@@ -107,6 +111,15 @@ const focusKey = ref(null)
 const pendingTitleUpdates = new Map()
 const statusOptions = ref([])
 const apiStatusOptions = ref([])
+const contextMenuRef = ref(null)
+const contextMenuItems = ref([])
+const contextMenuAnchor = ref(null)
+const reminderMenuRef = ref(null)
+const reminderMenuAnchor = ref(null)
+const isReminderPickerOpen = ref(false)
+const reminderDateTime = ref('')
+const reminderCalendarRef = ref(null)
+const REMINDER_MENU_WIDTH = 320
 const {
   customColumns,
   columnMenuDefinitions,
@@ -130,6 +143,19 @@ const {
   getOperatorsForColumn
 } = useProjectTaskFilters(t, {
   columnDefinitions: columnMenuDefinitions
+})
+const { getMenuItems } = useTaskContextMenu(t, {
+  onOpenTask: (task) => {
+    handleOpenTaskDetail(task?._raw || task)
+  },
+  onAddSubtask: (task) => {
+    const pathKey = task?.pathKey || task?.id
+    if (!pathKey) return
+    addSubtask(pathKey)
+  },
+  onSetReminder: (task) => {
+    openReminderMenu()
+  }
 })
 
 const currentSort = ref([])
@@ -162,6 +188,177 @@ function handleSortChange({ colId, sort }) {
 
 function openFilterForColumn(colId) {
   addFilter(colId)
+}
+
+function onCellFocused() {
+  isReminderPickerOpen.value = false
+  contextMenuRef.value?.close?.()
+  reminderMenuRef.value?.close?.()
+}
+
+function onCellContextMenu(params = {}) {
+  const pointerEvent = params?.event
+  const row = params?.data || params?.node?.data
+  if (!pointerEvent || !row) return
+
+  pointerEvent.preventDefault?.()
+  pointerEvent.stopPropagation?.()
+
+  contextMenuAnchor.value = {
+    x: pointerEvent.clientX,
+    y: pointerEvent.clientY
+  }
+
+  isReminderPickerOpen.value = false
+  reminderMenuRef.value?.close?.()
+  contextMenuItems.value = getMenuItems(row)
+
+  nextTick(() => {
+    contextMenuRef.value?.close?.()
+    contextMenuRef.value?.open?.()
+  })
+}
+
+function formatReminderDateTime(value) {
+  if (!value) return ''
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return String(value)
+  return parsed.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function handleReminderDateTimeChange(value) {
+  reminderDateTime.value = value || ''
+}
+
+function handleReminderDateChange(value) {
+  if (!value) {
+    reminderDateTime.value = ''
+    return
+  }
+  // value from mode='date' is a Date object
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) {
+    reminderDateTime.value = ''
+    return
+  }
+  // Preserve existing time if any
+  if (reminderDateTime.value) {
+    const existing = new Date(reminderDateTime.value)
+    if (!Number.isNaN(existing.getTime())) {
+      d.setHours(existing.getHours(), existing.getMinutes(), existing.getSeconds())
+    }
+  }
+  reminderDateTime.value = d.toISOString()
+}
+
+function openReminderMenu() {
+  const anchor = contextMenuAnchor.value
+  const parentRect = contextMenuRef.value?.getMenuRect?.()
+  if (!anchor && !parentRect) return
+
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0
+  const baseLeft = parentRect?.left ?? anchor.x
+  const baseRight = parentRect?.right ?? anchor.x
+  const baseTop = parentRect?.top ?? anchor.y
+
+  const openLeft = viewportWidth > 0 && baseRight + REMINDER_MENU_WIDTH > viewportWidth
+
+  const x = openLeft
+    ? Math.max(8, baseLeft - REMINDER_MENU_WIDTH)
+    : baseRight
+
+  reminderMenuAnchor.value = {
+    x,
+    y: baseTop
+  }
+  isReminderPickerOpen.value = true
+
+  nextTick(() => {
+    reminderMenuRef.value?.close?.()
+    reminderMenuRef.value?.open?.()
+  })
+}
+
+function handleReminderMenuClose() {
+  isReminderPickerOpen.value = false
+}
+
+function formatReminderDateHeader(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric' // "January 15" - we might need "15th" manually if strict.
+    // "Wednesday, Jan 15" is close. "15th" suffix requires custom logic.
+  }) + getDaySuffix(date.getDate())
+}
+
+function getDaySuffix(day) {
+  if (day > 3 && day < 21) return 'th'
+  switch (day % 10) {
+    case 1: return 'st'
+    case 2: return 'nd'
+    case 3: return 'rd'
+    default: return 'th'
+  }
+}
+
+function formatReminderTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '00 : 00'
+  return date.toLocaleString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).replace(':', ' : ')
+}
+
+function handleClearReminder() {
+  reminderDateTime.value = ''
+  // Optionally save/emit clear immediately
+}
+
+const calendarAttributes = computed(() => [
+  {
+    key: 'today',
+    highlight: {
+      color: 'blue',
+      fillMode: 'outline',
+    },
+    dates: new Date(),
+  },
+  {
+    key: 'selected',
+    highlight: {
+      color: 'blue',
+      fillMode: 'solid',
+    },
+    dates: reminderDateTime.value ? new Date(reminderDateTime.value) : null,
+  }
+])
+
+
+function closeReminderMenu() {
+  isReminderPickerOpen.value = false
+  reminderMenuRef.value?.close?.()
+}
+
+function handleContextMenuSelect(item) {
+  if (item?.key === 'setReminder') return
+  closeReminderMenu()
+}
+
+function handleContextSubmenuToggle() {
+  closeReminderMenu()
 }
 
 // Track which parent IDs should be auto-expanded after subtask creation
@@ -974,6 +1171,8 @@ const gridOptions = ref({
   theme: myTheme,
   rowDragEntireRow: true,
   rowDragManaged: true, // Let grid manage the drag UI/ghost
+  preventDefaultOnContextMenu: true,
+  suppressContextMenu: true,
   suppressMoveWhenRowDragging: true, // Prevent default move behavior to keep control
   rowDragText: (params) => getTaskRowDragText(params),
   pagination: false,
@@ -1106,8 +1305,55 @@ function onGridReady(params) {
       :items="contextMenuItems"
       :anchor="contextMenuAnchor"
       :close-on-select="true"
+      :keep-open-with-other-menus="true"
       :width="'16rem'"
+      @select="handleContextMenuSelect"
+      @submenu-toggle="handleContextSubmenuToggle"
     />
+
+    <DropdownMenu
+      ref="reminderMenuRef"
+      :items="[]"
+      :anchor="reminderMenuAnchor"
+      :offset="0"
+      :close-on-select="false"
+      :keep-open-with-other-menus="true"
+      :width="'320px'"
+      @close="handleReminderMenuClose"
+    >
+      <template #content>
+        <div v-if="isReminderPickerOpen" class="task-reminder-panel w-full">
+          <!-- Custom Header: Date box + Time -->
+          <div class="reminder-header">
+             <div class="reminder-date-box">
+                <span class="reminder-date-text">
+                  {{ reminderDateTime ? formatReminderDateHeader(reminderDateTime) : t('common.selectDate', 'Select date') }}
+                </span>
+                <button 
+                  v-if="reminderDateTime" 
+                  @click.stop="handleClearReminder"
+                  class="reminder-clear-btn"
+                >
+                  <X class="w-4 h-4" />
+                </button>
+             </div>
+             <div class="reminder-time-display">
+                {{ reminderDateTime ? formatReminderTime(reminderDateTime) : '00 : 00' }}
+             </div>
+          </div>
+
+          <VDatePicker
+            ref="reminderCalendarRef"
+            :model-value="reminderDateTime"
+            mode="date"
+            is-inline
+            :first-day-of-week="2"
+            class="w-full task-reminder-calendar"
+            @update:model-value="handleReminderDateChange"
+          />
+        </div>
+      </template>
+    </DropdownMenu>
     <!-- Fixed Footer -->
     <Pagination
       v-model:currentPage="currentPage"
@@ -1141,6 +1387,81 @@ function onGridReady(params) {
 <style scoped>
 .project-tasks-grid {
   min-height: 300px;
+}
+
+.task-reminder-panel {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.reminder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.reminder-date-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 0;
+}
+
+.reminder-date-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminder-clear-btn {
+  margin-left: 8px;
+  color: #9ca3af;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.reminder-clear-btn:hover {
+  color: #6b7280;
+}
+
+.reminder-time-display {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+  letter-spacing: 1px;
+}
+
+/* ---- v-calendar overrides (keep defaults, just remove container border) ---- */
+:deep(.task-reminder-calendar .vc-container) {
+  width: 100%;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent;
+}
+
+:deep(.task-reminder-calendar .vc-pane-container) {
+  background: transparent;
+}
+
+/* Hide any time picker that might appear */
+:deep(.task-reminder-calendar .vc-time-picker) {
+  display: none !important;
 }
 
 :deep(.ag-theme-quartz .ag-row-hover) {

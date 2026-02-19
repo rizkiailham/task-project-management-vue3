@@ -17,7 +17,7 @@
  *   </template>
  * </DropdownMenu>
  */
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { ChevronRight, Check } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -75,6 +75,14 @@ const props = defineProps({
     default: true
   },
   /**
+   * Keep this dropdown open when interacting with other dropdown menus.
+   * Useful for parent + child side menus.
+   */
+  keepOpenWithOtherMenus: {
+    type: Boolean,
+    default: false
+  },
+  /**
    * Position custom content slot before or after items
    */
   contentPosition: {
@@ -91,7 +99,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['open', 'close', 'select'])
+const emit = defineEmits(['open', 'close', 'select', 'submenu-toggle'])
 
 const isOpen = ref(false)
 const triggerRef = ref(null)
@@ -264,6 +272,7 @@ function open() {
 }
 
 function close() {
+  activeSubmenuKey.value = null
   isOpen.value = false
 }
 
@@ -276,8 +285,11 @@ function handleItemClick(item, event) {
   emit('select', item)
 
   // Close first for immediate visual feedback
-  if (props.closeOnSelect) {
+  const shouldClose = item?.closeOnSelect ?? props.closeOnSelect
+  if (shouldClose) {
     close()
+  } else if (!item?.items?.length) {
+    activeSubmenuKey.value = null
   }
 
   // Then execute action
@@ -287,12 +299,22 @@ function handleItemClick(item, event) {
 }
 
 function handleClickOutside(event) {
+  const target = event?.target
+  if (
+    props.keepOpenWithOtherMenus &&
+    target instanceof Element &&
+    target.closest('.dropdown-menu')
+  ) {
+    return
+  }
+
   // Use nextTick timing to ensure click events are processed first
   if (
     menuRef.value &&
-    !menuRef.value.contains(event.target) &&
-    (!triggerRef.value || !triggerRef.value.contains(event.target))
+    !menuRef.value.contains(target) &&
+    (!triggerRef.value || !triggerRef.value.contains(target))
   ) {
+    activeSubmenuKey.value = null
     close()
   }
 }
@@ -304,6 +326,7 @@ function handleEscape(event) {
 }
 
 function handlePeerOpen(event) {
+  if (props.keepOpenWithOtherMenus) return
   if (event.detail !== instanceId) {
     close()
   }
@@ -312,13 +335,16 @@ function handlePeerOpen(event) {
 watch(isOpen, (newVal) => {
   if (newVal) {
     emit('open')
-    window.dispatchEvent(new CustomEvent('dropdown-open', { detail: instanceId }))
+    if (!props.keepOpenWithOtherMenus) {
+      window.dispatchEvent(new CustomEvent('dropdown-open', { detail: instanceId }))
+    }
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
     setTimeout(() => {
       menuHeightTick.value += 1
     }, 0)
   } else {
+    activeSubmenuKey.value = null
     emit('close')
     document.removeEventListener('click', handleClickOutside)
     document.removeEventListener('keydown', handleEscape)
@@ -351,7 +377,7 @@ onUnmounted(() => {
 // Submenu handling
 const activeSubmenuKey = ref(null)
 const submenuPosition = ref({ top: 0, left: 0 })
-const submenuTimeout = ref(null)
+const submenuRef = ref(null)
 
 const submenuStyle = computed(() => {
   return {
@@ -360,32 +386,48 @@ const submenuStyle = computed(() => {
   }
 })
 
-function handleSubmenuEnter(item, event) {
-  if (submenuTimeout.value) clearTimeout(submenuTimeout.value)
-  
-  // Use key if available, otherwise fallback to item itself (though key is safer)
-  // Ensure we have a valid key for comparison
+function openSubmenuAtElement(item, event) {
   const key = item.key || item.label || item.id
-  if (!key) return 
-  
-  activeSubmenuKey.value = key
-  
-  // Calculate position
+  if (!key) return
+
   const rect = event.currentTarget.getBoundingClientRect()
-  const viewportWidth = window.innerWidth
-  const submenuWidth = 192 // 12rem approx
-  
-  // Overlap slightly to ensure mouse move doesn't trigger leave
-  let left = rect.right
-  // Flip if not enough space on right
-  if (left + submenuWidth > viewportWidth) {
-    left = rect.left - submenuWidth
+  const parentRect = {
+    top: Math.round(rect.top),
+    left: Math.round(rect.left),
+    right: Math.round(rect.right)
   }
-  
+
+  activeSubmenuKey.value = key
+
   submenuPosition.value = {
-    top: rect.top - 4, // Align slightly higher
-    left: left - 5 // Overlap by 5px
+    top: parentRect.top,
+    left: parentRect.right
   }
+
+  nextTick(() => {
+    if (!submenuRef.value) return
+
+    const viewportPadding = 8
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const submenuRect = submenuRef.value.getBoundingClientRect()
+    const submenuWidth = Math.round(submenuRect.width)
+    const submenuHeight = Math.round(submenuRect.height)
+
+    let left = parentRect.right
+    if (left + submenuWidth > viewportWidth - viewportPadding) {
+      left = parentRect.left - submenuWidth
+    }
+    left = Math.max(viewportPadding, Math.min(left, viewportWidth - submenuWidth - viewportPadding))
+
+    const maxTop = Math.max(viewportPadding, viewportHeight - submenuHeight - viewportPadding)
+    const top = Math.max(viewportPadding, Math.min(parentRect.top, maxTop))
+
+    submenuPosition.value = {
+      top: Math.round(top),
+      left: Math.round(left)
+    }
+  })
 }
 
 function handleSubmenuClick(item, event) {
@@ -394,23 +436,20 @@ function handleSubmenuClick(item, event) {
 
   if (activeSubmenuKey.value === key) {
     activeSubmenuKey.value = null
+    emit('submenu-toggle', { item, isOpen: false })
   } else {
-    handleSubmenuEnter(item, event)
+    openSubmenuAtElement(item, event)
+    emit('submenu-toggle', { item, isOpen: true })
   }
 }
 
-function handleSubmenuLeave() {
-  submenuTimeout.value = setTimeout(() => {
-    activeSubmenuKey.value = null
-  }, 100)
-}
-
-function handleSubmenuListEnter() {
-  if (submenuTimeout.value) clearTimeout(submenuTimeout.value)
+function getMenuRect() {
+  if (!menuRef.value) return null
+  return menuRef.value.getBoundingClientRect()
 }
 
 // Expose methods for parent component
-defineExpose({ open, close, toggle, isOpen })
+defineExpose({ open, close, toggle, isOpen, getMenuRect })
 </script>
 
 <template>
@@ -470,6 +509,7 @@ defineExpose({ open, close, toggle, isOpen })
                 <Transition name="dropdown">
                   <div 
                     v-if="activeSubmenuKey === (item.key || item.label || item.id)"
+                    ref="submenuRef"
                     class="dropdown-menu fixed z-[50000] min-w-[12rem] bg-[#f3f5f7] border border-gray-300 rounded-[6px] shadow-xl py-1"
                     :style="submenuStyle"
                     @click.stop
@@ -506,32 +546,41 @@ defineExpose({ open, close, toggle, isOpen })
             </div>
 
             <!-- Standard Menu Item -->
-            <button
+            <div
               v-else
-              @click="handleItemClick(item, $event)"
-              :disabled="item.disabled"
               :class="[
-                itemBaseClass,
-                item.disabled
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : itemActiveClass
+                item.class ? '' : itemBaseClass, 
+                item.class ? '' : itemActiveClass,
+                item.class ? item.class : '',
+                { 
+                  'opacity-50 cursor-not-allowed': item.disabled,
+                  'bg-gray-100/50': activeSubmenuKey === (item.key || item.label)
+                }
               ]"
+              @click="handleItemClick(item, $event)"
             >
-              <slot name="item" :item="item" :index="index">
-                <div class="flex items-center gap-3">
-                  <!-- Custom Icon Slot or SVG -->
-                  <slot :name="`icon-${item.id || index}`" :item="item">
-                    <component 
-                      v-if="item.icon" 
-                      :is="item.icon" 
-                      :class="item.iconClass || 'w-4 h-4 text-gray-500'"
-                    />
-                  </slot>
-                  <span>{{ item.label }}</span>
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <!-- Icon or Checkbox -->
+                <div v-if="item.checked !== undefined" class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+                   <Check v-if="item.checked" class="w-3.5 h-3.5" />
                 </div>
-                <span v-if="item.shortcut" class="text-xs text-gray-400">{{ item.shortcut }}</span>
-              </slot>
-            </button>
+                <component 
+                  v-else-if="item.icon" 
+                  :is="item.icon" 
+                  class="w-4 h-4 text-gray-500 shrink-0" 
+                  :class="item.iconClass"
+                />
+                
+                <span class="truncate">{{ item.label }}</span>
+              </div>
+              
+              <!-- Shortcut or Submenu Arrow -->
+              <div class="flex items-center ml-3 text-xs text-gray-400">
+                <span v-if="item.shortcut">{{ item.shortcut }}</span>
+                <ChevronRight v-if="item.items && item.items.length" class="w-3.5 h-3.5 ml-1" />
+              </div>
+
+            </div>
           </template>
           
           <!-- Custom Content Slot -->
