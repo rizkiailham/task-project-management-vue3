@@ -291,8 +291,7 @@ function handleClickOutside(event) {
   if (
     menuRef.value &&
     !menuRef.value.contains(event.target) &&
-    triggerRef.value &&
-    !triggerRef.value.contains(event.target)
+    (!triggerRef.value || !triggerRef.value.contains(event.target))
   ) {
     close()
   }

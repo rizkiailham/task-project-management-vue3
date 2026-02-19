@@ -98,7 +98,8 @@ const emit = defineEmits([
   'update-task-title',
   'update-task-status',
   'change-page',
-  'update:pageSize'
+  'update:pageSize',
+  'sort-change'
 ])
 
 const gridApi = ref(null)
@@ -1094,9 +1095,19 @@ function onGridReady(params) {
       :paginationPageSize="pageSize"
       :suppressPaginationPanel="true"
       domLayout="autoHeight"
+      @cell-focused="onCellFocused"
+      @cell-context-menu="onCellContextMenu"
       @grid-ready="onGridReady"
     />
 
+    <!-- Context Menu -->
+    <DropdownMenu
+      ref="contextMenuRef"
+      :items="contextMenuItems"
+      :anchor="contextMenuAnchor"
+      :close-on-select="true"
+      :width="'16rem'"
+    />
     <!-- Fixed Footer -->
     <Pagination
       v-model:currentPage="currentPage"
