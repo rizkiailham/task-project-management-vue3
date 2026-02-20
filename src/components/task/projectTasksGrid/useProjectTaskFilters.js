@@ -1,24 +1,17 @@
 import { computed, ref } from 'vue'
+import {
+  TASK_COLUMN_DEFINITIONS,
+  getColumnFilterType,
+  getColumnIcon,
+  getAllColumnIds
+} from '@/components/task/projectTasksGrid/taskColumnDefinitions'
 
 /**
- * Column type definitions for filter logic
+ * Derive column type map from central definitions for quick lookup.
  */
-const COLUMN_TYPES = {
-  title: 'text',
-  projectName: 'text',
-  status: 'select',
-  assignee: 'select',
-  dueDate: 'date',
-  tags: 'multiselect',
-  trackingTime: 'text',
-  priority: 'text',
-  size: 'text',
-  createdAt: 'date',
-  updatedAt: 'date',
-  createdBy: 'text',
-  updatedBy: 'text',
-  timezone: 'text'
-}
+const COLUMN_TYPES = Object.fromEntries(
+  TASK_COLUMN_DEFINITIONS.map((def) => [def.id, def.type])
+)
 
 const OPERATORS_BY_TYPE = {
   text: [
@@ -35,6 +28,10 @@ const OPERATORS_BY_TYPE = {
     { id: 'include', label: 'include' },
     { id: 'not_include', label: 'do not include' }
   ],
+  user: [
+    { id: 'is', label: 'is' },
+    { id: 'is_not', label: 'is not' }
+  ],
   date: [
     { id: 'is', label: 'is' },
     { id: 'before', label: 'before' },
@@ -43,38 +40,7 @@ const OPERATORS_BY_TYPE = {
   ]
 }
 
-const COLUMN_ICONS = {
-  title: 'Type',
-  projectName: 'FolderKanban',
-  status: 'CircleDot',
-  assignee: 'Users',
-  dueDate: 'Calendar',
-  tags: 'Tag',
-  trackingTime: 'Clock',
-  priority: 'Flag',
-  createdAt: 'CalendarPlus',
-  updatedAt: 'CalendarClock',
-  createdBy: 'UserPlus',
-  updatedBy: 'UserCog',
-  timezone: 'Clock'
-}
-
-const DEFAULT_FILTER_COLUMN_IDS = [
-  'title',
-  'projectName',
-  'status',
-  'assignee',
-  'dueDate',
-  'tags',
-  'priority',
-  'size',
-  'trackingTime',
-  'createdAt',
-  'createdBy',
-  'updatedAt',
-  'updatedBy',
-  'timezone'
-]
+const DEFAULT_FILTER_COLUMN_IDS = getAllColumnIds()
 
 let filterId = 0
 
@@ -129,7 +95,7 @@ export function useProjectTaskFilters(t, options = {}) {
       return externalColumnDefinitions.value.map((column) => ({
         id: column.id,
         label: column.label || getColumnLabel(column.id),
-        icon: COLUMN_ICONS[column.id] || null,
+        icon: column.icon || getColumnIcon(column.id),
         type: getColumnType(column.id)
       }))
     }
@@ -137,7 +103,7 @@ export function useProjectTaskFilters(t, options = {}) {
     return DEFAULT_FILTER_COLUMN_IDS.map((colId) => ({
       id: colId,
       label: getColumnLabel(colId),
-      icon: COLUMN_ICONS[colId] || null,
+      icon: getColumnIcon(colId),
       type: getColumnType(colId)
     }))
   })
@@ -189,7 +155,8 @@ export function useProjectTaskFilters(t, options = {}) {
       type,
       operator: defaultOperator,
       value: type === 'multiselect' ? [] : '',
-      label: getColumnLabel(columnId)
+      label: getColumnLabel(columnId),
+      icon: getColumnIcon(columnId)
     }
 
     activeFilters.value = [...activeFilters.value, filter]
@@ -262,6 +229,8 @@ export function useProjectTaskFilters(t, options = {}) {
         return matchTextFilter(cellValue, operator, value)
       case 'select':
         return matchSelectFilter(cellValue, operator, value, column, row)
+      case 'user':
+        return matchUserFilter(cellValue, operator, value)
       case 'multiselect':
         return matchMultiselectFilter(cellValue, operator, value)
       case 'date':
@@ -381,6 +350,26 @@ export function useProjectTaskFilters(t, options = {}) {
     const hasMatch = filterLower.some((fv) => cellArr.includes(fv))
 
     return operator === 'include' ? hasMatch : !hasMatch
+  }
+
+  function matchUserFilter(cellValue, operator, filterUserObj) {
+    // filterUserObj is expected to be { id: '...', name: '...', email: '...' } or null
+    // If it's empty, consider it unmatched unless we specifically check for unassigned (not implemented here yet)
+    if (!filterUserObj || !filterUserObj.id) return true
+
+    // 'cellValue' could be an ID (e.g. from row.assignee string matching user id)
+    // or a user string. This is project specific, assuming we match cellValue loosely or explicitly vs filterUserObj.id
+    // Usually the cellValue here comes from `row.assignee` which might just be a string. 
+    // Just lowercasing and exact matching ID for best results
+    const cellStr = String(cellValue || '').trim().toLowerCase()
+
+    // We try to match either by exact user id or user name if that's what's stored in the grid
+    const matchId = String(filterUserObj.id).trim().toLowerCase()
+    const matchName = String(filterUserObj.name || '').trim().toLowerCase()
+
+    const matches = cellStr === matchId || cellStr === matchName
+
+    return operator === 'is' ? matches : !matches
   }
 
   function matchDateFilter(cellValue, operator, value) {

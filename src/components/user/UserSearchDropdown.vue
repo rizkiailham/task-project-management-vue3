@@ -26,6 +26,10 @@ const props = defineProps({
   dark: {
     type: Boolean,
     default: false
+  },
+  openUp: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -122,7 +126,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <DropdownMenu ref="dropdownRef" position="right" width="18rem" :variant="dark ? 'dark' : 'default'">
+  <DropdownMenu ref="dropdownRef" position="right" width="18rem" :variant="dark ? 'dark' : 'default'" :openUp="openUp">
     <template #trigger>
       <slot name="trigger"></slot>
     </template>

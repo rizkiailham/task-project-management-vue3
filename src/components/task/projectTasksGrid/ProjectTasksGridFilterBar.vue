@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ListFilter,
@@ -16,6 +16,7 @@ import Checkbox from 'primevue/checkbox'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
 
 const props = defineProps({
   activeFilters: {
@@ -52,8 +53,6 @@ const { t } = useI18n()
 
 // Search within "Filter by" dropdown
 const filterSearchQuery = ref('')
-const editingFilterId = ref(null)
-const filterPillRefs = ref({})
 const sortDropdownRef = ref(null)
 
 const activeColumnSet = computed(() => new Set(props.activeFilters.map((filter) => filter.column)))
@@ -70,7 +69,8 @@ const filterColumnItems = computed(() => {
     .map((col) => ({
       type: 'item',
       label: col.label,
-      key: col.id
+      key: col.id,
+      icon: col.icon || null
     }))
 })
 
@@ -80,6 +80,7 @@ const sortColumnItems = computed(() => {
     type: 'item',
     label: col.label,
     key: col.id,
+    icon: col.icon || null,
     items: [
       {
         type: 'item',
@@ -137,64 +138,13 @@ function handleAddFilter(item) {
 
 function handleRemoveFilter(filterId) {
   emit('remove-filter', filterId)
-  if (editingFilterId.value === filterId) {
-    editingFilterId.value = null
-  }
 }
 
 function handleResetFilters() {
   emit('reset-filters')
-  editingFilterId.value = null
 }
 
-function toggleEditFilter(filterId) {
-  editingFilterId.value = editingFilterId.value === filterId ? null : filterId
-}
 
-function setFilterPillRef(filterId, element) {
-  if (element) {
-    filterPillRefs.value[filterId] = element
-    return
-  }
-  delete filterPillRefs.value[filterId]
-}
-
-function getEditorPortalStyle(filterId) {
-  const pill = filterPillRefs.value[filterId]
-  if (!pill || typeof window === 'undefined') {
-    return { visibility: 'hidden' }
-  }
-
-  const rect = pill.getBoundingClientRect()
-  const editorWidth = 240
-  const viewportPadding = 8
-  const maxLeft = Math.max(viewportPadding, window.innerWidth - editorWidth - viewportPadding)
-  const left = Math.min(Math.max(rect.left, viewportPadding), maxLeft)
-  const top = Math.max(viewportPadding, rect.top - 6)
-
-  return {
-    left: `${left}px`,
-    top: `${top}px`,
-    width: `${editorWidth}px`,
-    transform: 'translateY(-100%)'
-  }
-}
-
-function handleDocumentClick(event) {
-  if (!editingFilterId.value) return
-  const target = event?.target
-  if (!(target instanceof Element)) return
-  if (target.closest('.p-select-overlay')) return
-  if (target.closest('.vc-container') || target.closest('.vc-popover-content') || target.closest('.vc-popover-content-wrapper')) return
-  if (target.closest('.filter-pill') || target.closest('.filter-editor')) return
-  editingFilterId.value = null
-}
-
-function handleEscape(event) {
-  if (event.key === 'Escape') {
-    editingFilterId.value = null
-  }
-}
 
 function handleOperatorChange(filterId, operator) {
   emit('update-filter', filterId, { operator })
@@ -242,6 +192,11 @@ function getFilterSummary(filter) {
     const start = formatDateDisplay(value[0])
     const end = formatDateDisplay(value[1])
     return `${start} - ${end}`
+  }
+
+  if (type === 'user') {
+    // value is expected to be a user object { id, name, ... }
+    return value.name || '...'
   }
 
   if (column === 'status') {
@@ -347,23 +302,6 @@ function toggleSortDirection(sortItem) {
   emit('update-sort', { colId: sortItem.colId, sort: next })
 }
 
-// Auto-open filter editor when a new filter is added
-watch(() => props.activeFilters, async (newFilters, oldFilters) => {
-  if (newFilters.length > oldFilters.length) {
-    // A filter was added. Find the new one.
-    // Assuming new filters are appended to the end, but we can check IDs
-    const oldIds = new Set(oldFilters.map(f => f.id))
-    const addedFilter = newFilters.find(f => !oldIds.has(f.id))
-    
-    if (addedFilter) {
-      // Ensure the pill is rendered
-      await nextTick()
-      // Open the editor
-      editingFilterId.value = addedFilter.id
-    }
-  }
-}, { deep: true })
-
 function getStatusOptionValue(status) {
   return String(status?.id ?? status?.value ?? status?.key ?? status?.kanbanColumnId ?? '')
 }
@@ -378,15 +316,7 @@ function isStatusSelected(currentValue, optionValue) {
   return current.includes(String(optionValue))
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
-  document.addEventListener('keydown', handleEscape)
-})
 
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleDocumentClick)
-  document.removeEventListener('keydown', handleEscape)
-})
 </script>
 
 <template>
@@ -496,66 +426,71 @@ onBeforeUnmount(() => {
             v-for="filter in activeFilters"
             :key="filter.id"
             class="filter-pill"
-            :class="{ 'filter-pill--editing': editingFilterId === filter.id }"
-            :ref="(element) => setFilterPillRef(filter.id, element)"
           >
-            <button
-              type="button"
-              class="filter-pill__body"
-              @click.stop="toggleEditFilter(filter.id)"
-            >
-              <span class="filter-pill__label">{{ filter.label }}</span>
-              <span class="filter-pill__operator">{{ getOperatorLabel(filter) }}</span>
-              <span class="filter-pill__value">{{ getFilterSummary(filter) }}</span>
-            </button>
-            <button
-              type="button"
-              class="filter-pill__remove"
-              @click.stop="handleRemoveFilter(filter.id)"
-            >
-              <X class="w-3 h-3" />
-            </button>
+            <!-- Label segment -->
+            <div class="filter-pill__segment filter-pill__segment--label bg-white">
+              <component v-if="filter.icon" :is="filter.icon" class="w-3.5 h-3.5 mr-1.5 text-gray-500" />
+              <span>{{ filter.label }}</span>
+            </div>
 
-            <!-- Inline editor popover -->
-            <Teleport to="body">
-              <div
-                v-if="editingFilterId === filter.id"
-                class="filter-editor filter-editor--portal"
-                :style="getEditorPortalStyle(filter.id)"
-                @click.stop
-              >
-                <!-- Operator selector -->
-                <div class="filter-editor__row">
-                  <Select
-                    :modelValue="filter.operator"
-                    :options="getOperatorsForColumn(filter.column)"
-                    optionLabel="label"
-                    optionValue="id"
-                    appendTo="self"
-                    class="w-full"
-                    @update:modelValue="(value) => handleOperatorChange(filter.id, value)"
-                  />
-                </div>
+            <!-- Separator -->
+            <div class="filter-pill__separator"></div>
 
-                <!-- Value editor based on type -->
-                <div class="filter-editor__row">
-                  <!-- Text input -->
-                  <template v-if="filter.type === 'text'">
-                    <InputText
-                      :modelValue="getCommaSeparatedValue(filter.value)"
-                      :placeholder="t('tasks.enterValue', 'Enter value...')"
-                      class="filter-editor__input w-full"
-                      @update:modelValue="(value) => handleValueChange(filter.id, value)"
-                    />
+            <!-- Operator segment -->
+            <DropdownMenu
+              class="h-full inline-flex items-center"
+              :items="getOperatorsForColumn(filter.column).map(op => ({ id: op.id, label: op.label, action: () => handleOperatorChange(filter.id, op.id) }))"
+              position="left"
+              contentPosition="before"
+              :openUp="true"
+            >
+              <template #trigger>
+                <button
+                  type="button"
+                  class="filter-pill__segment filter-pill__segment--action text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 transition-colors focus:bg-gray-50 focus:outline-none flex items-center justify-center h-full"
+                >
+                  {{ getOperatorLabel(filter) }}
+                </button>
+              </template>
+            </DropdownMenu>
+
+            <!-- Separator -->
+            <div class="filter-pill__separator"></div>
+
+            <!-- Value segment based on type -->
+            <div class="filter-pill__segment filter-pill__segment--value flex items-center h-full">
+              <!-- Text input -->
+              <template v-if="filter.type === 'text' || filter.type === 'select' || filter.type === 'multiselect'">
+                <input
+                  type="text"
+                  :value="getCommaSeparatedValue(filter.value)"
+                  class="filter-pill__input bg-transparent border-0 outline-none text-[13px] text-gray-700 min-w-[80px] px-2 h-full placeholder:text-gray-400"
+                  :placeholder="t('tasks.enterValue', 'Enter value...')"
+                  @input="(e) => handleValueChange(filter.id, filter.type === 'text' ? e.target.value : parseCommaSeparatedValues(e.target.value))"
+                  @click.stop
+                />
+              </template>
+
+              <!-- Status multi-select -->
+              <template v-else-if="filter.column === 'status'">
+                <DropdownMenu
+                  class="h-full inline-flex items-center"
+                  position="left"
+                  contentPosition="before"
+                  :openUp="true"
+                  :closeOnSelect="false"
+                >
+                  <template #trigger>
+                    <button class="filter-pill__input flex items-center justify-center gap-1.5 px-2.5 h-full whitespace-nowrap focus:outline-none hover:bg-gray-200 transition-colors">
+                      <span class="text-primary-600 font-medium">{{ getFilterSummary(filter) !== '...' ? getFilterSummary(filter) : t('tasks.selectStatus', 'Select status...') }}</span>
+                    </button>
                   </template>
-
-                  <!-- Status multi-select -->
-                  <template v-else-if="filter.column === 'status'">
-                    <div class="filter-editor__options">
-                      <label
-                        v-for="status in statusOptions"
-                        :key="getStatusOptionValue(status)"
-                        class="filter-editor__option"
+                  <template #content>
+                    <div class="p-1 min-w-[140px] max-h-[200px] overflow-y-auto overflow-x-hidden flex flex-col gap-0.5">
+                      <label 
+                        v-for="status in statusOptions" 
+                        :key="getStatusOptionValue(status)" 
+                        class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-[13px] text-gray-700 m-0"
                       >
                         <Checkbox
                           :modelValue="isStatusSelected(filter.value, getStatusOptionValue(status))"
@@ -566,55 +501,69 @@ onBeforeUnmount(() => {
                       </label>
                     </div>
                   </template>
+                </DropdownMenu>
+              </template>
 
-                  <!-- Select (assignee, etc.) -->
-                  <template v-else-if="filter.type === 'select'">
-                    <InputText
-                      :modelValue="getCommaSeparatedValue(filter.value)"
-                      :placeholder="t('tasks.enterValue', 'Enter value...')"
-                      class="filter-editor__input w-full"
-                      @update:modelValue="(value) => handleValueChange(filter.id, parseCommaSeparatedValues(value))"
-                    />
-                  </template>
-
-                  <!-- Multi-select (tags) -->
-                  <template v-else-if="filter.type === 'multiselect'">
-                    <InputText
-                      :modelValue="getCommaSeparatedValue(filter.value)"
-                      :placeholder="t('tasks.enterTags', 'Enter tags (comma-separated)...')"
-                      class="filter-editor__input w-full"
-                      @update:modelValue="(value) => handleValueChange(filter.id, parseCommaSeparatedValues(value))"
-                    />
-                  </template>
-
-                  <!-- Date picker -->
-                  <template v-else-if="filter.type === 'date'">
-                    <VDatePicker
-                      :model-value="getDateModel(filter.value)"
-                      :mode="filter.operator === 'between' ? 'date' : 'date'"
-                      :is-range="filter.operator === 'between'"
-                      :popover="{ visibility: 'click' }"
-                      @update:model-value="(value) => handleDateChange(filter.id, value, filter.operator)"
+              <!-- User selection -->
+              <template v-else-if="filter.type === 'user'">
+                <UserSearchDropdown
+                  class="h-full inline-flex items-center"
+                  :model-value="filter.value"
+                  :show-unassigned="true"
+                  :openUp="true"
+                  @update:model-value="(value) => handleValueChange(filter.id, value)"
+                >
+                  <template #trigger>
+                    <button
+                      type="button"
+                      class="filter-pill__input flex items-center justify-center gap-1.5 px-2.5 h-full whitespace-nowrap focus:outline-none hover:bg-gray-200 transition-colors"
                     >
-                      <template #default="{ inputValue, togglePopover }">
-                        <button
-                          type="button"
-                          class="filter-editor__input w-full text-left"
-                          @click="togglePopover"
-                        >
-                          <template v-if="filter.operator === 'between'">
-                            {{ inputValue?.start && inputValue?.end ? `${inputValue.start} - ${inputValue.end}` : (inputValue?.start || t('tasks.enterValue', 'Select range...')) }}
-                          </template>
-                          <template v-else>
-                            {{ inputValue || t('tasks.enterValue', 'Enter value...') }}
-                          </template>
-                        </button>
+                      <template v-if="filter.value?.name">
+                        <component v-if="filter.icon" :is="filter.icon" class="w-3.5 h-3.5 shrink-0 text-primary-500" />
+                        <span class="truncate text-primary-600 font-medium">{{ filter.value.name }}</span>
                       </template>
-                    </VDatePicker>
+                      <span v-else class="text-gray-500 truncate">{{ t('tasks.selectUser', 'Select user...') }}</span>
+                    </button>
                   </template>
-                </div>
-              </div>
-            </Teleport>
+                </UserSearchDropdown>
+              </template>
+
+              <!-- Date picker -->
+              <template v-else-if="filter.type === 'date'">
+                <VDatePicker
+                  class="h-full inline-flex items-center"
+                  :model-value="getDateModel(filter.value)"
+                  :mode="filter.operator === 'between' ? 'date' : 'date'"
+                  :is-range="filter.operator === 'between'"
+                  :popover="{ visibility: 'click', placement: 'top' }"
+                  @update:model-value="(value) => handleDateChange(filter.id, value, filter.operator)"
+                >
+                  <template #default="{ togglePopover }">
+                    <button
+                      type="button"
+                      class="filter-pill__input flex items-center justify-center px-2.5 h-full text-left text-[13px] whitespace-nowrap focus:outline-none hover:bg-gray-200 transition-colors"
+                      @click="togglePopover"
+                    >
+                      <span :class="getFilterSummary(filter) !== '...' ? 'text-primary-600 font-medium' : 'text-gray-500'">
+                        {{ getFilterSummary(filter) !== '...' ? getFilterSummary(filter) : t('tasks.enterValue', 'Select date...') }}
+                      </span>
+                    </button>
+                  </template>
+                </VDatePicker>
+              </template>
+            </div>
+
+            <!-- Separator -->
+            <div class="filter-pill__separator bg-white"></div>
+
+            <!-- Remove button segment -->
+            <button
+              type="button"
+              class="filter-pill__segment filter-pill__segment--remove text-gray-400 bg-white hover:bg-gray-50 hover:text-red-500 transition-colors focus:bg-gray-50 focus:outline-none"
+              @click.stop="handleRemoveFilter(filter.id)"
+            >
+              <X class="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
         <!-- Add Filter Button (Manual) -->
@@ -671,6 +620,7 @@ onBeforeUnmount(() => {
 .filter-bar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap; /* Support wrapping */
   gap: 8px;
   min-height: 28px;
   min-width: 0;
@@ -681,8 +631,6 @@ onBeforeUnmount(() => {
 .filter-bar__scroll {
   flex: 1 1 auto;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
 }
 
 .filter-bar__scroll-inner {
@@ -747,168 +695,76 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap; /* Wrap pills instead of scrolling horizontal */
 }
 
 .filter-pill {
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   position: relative;
   border-radius: 6px;
   border: 1px solid #d1d5db;
-  background: #f9fafb;
-  transition: all 0.15s ease;
+  background: #ffffff;
+  height: 28px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.filter-pill:hover {
-  border-color: #9ca3af;
-  background: #f3f4f6;
+.filter-pill > :first-child {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
 }
 
-.filter-pill--editing {
+.filter-pill > :last-child {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.filter-pill:focus-within {
   border-color: var(--color-primary-400, #60a5fa);
   box-shadow: 0 0 0 1px var(--color-primary-200, #bfdbfe);
 }
 
-.filter-pill__body {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 6px 3px 8px;
-  font-size: 13px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  color: var(--color-gray-700, #374151);
+.filter-pill__separator {
+  width: 1px;
+  background-color: #e5e7eb;
 }
 
-.filter-pill__label {
-  font-weight: var(--font-weight-medium);
+.filter-pill__segment {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+}
+
+.filter-pill__segment--label {
+  padding: 0 8px;
   color: var(--color-gray-600, #4b5563);
 }
 
-.filter-pill__operator {
-  color: var(--color-gray-400, #9ca3af);
-}
-
-.filter-pill__value {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-primary-600, #2563eb);
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.filter-pill__remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
+.filter-pill__segment--action {
+  padding: 0 8px;
+  cursor: pointer;
   height: 100%;
-  border: none;
-  background: transparent;
-  color: var(--color-gray-400, #9ca3af);
-  cursor: pointer;
-  border-left: 1px solid #e5e7eb;
-  padding: 0 2px;
-  border-radius: 0 5px 5px 0;
-  transition: all 0.12s ease;
 }
 
-.filter-pill__remove:hover {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.filter-editor {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 0;
-  z-index: 1000;
-  min-width: 200px;
-  background: #ffffff;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  padding: 8px;
-}
-
-.filter-editor--portal {
-  position: fixed;
-  bottom: auto;
-  left: 0;
-  z-index: 10001;
-}
-
-.filter-editor__row {
-  margin-bottom: 6px;
-}
-
-.filter-editor__row:last-child {
-  margin-bottom: 0;
-}
-
-.filter-editor__input {
-  width: 100%;
-  padding: 5px 8px;
-  font-size: 13px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #ffffff;
-  color: var(--color-gray-700, #374151);
-  outline: none;
-}
-
-.filter-editor__input:focus {
-  border-color: var(--color-primary-400, #60a5fa);
-}
-
-.filter-editor__options {
-  max-height: 160px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.filter-editor__option {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  font-size: 13px;
-  color: var(--color-gray-700, #374151);
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.filter-editor__option:hover {
+.filter-pill__segment--value {
+  padding: 0;
   background: #f3f4f6;
+  min-width: 60px; /* Base width */
 }
 
-.filter-editor :deep(.p-inputtext),
-.filter-editor :deep(.p-select) {
+.filter-pill__input {
   width: 100%;
-  min-height: 30px;
-  font-size: 13px;
-  border-color: #d1d5db;
-  box-shadow: none;
+  background: transparent;
+  border: none;
 }
 
-.filter-editor :deep(.p-inputtext:enabled:focus),
-.filter-editor :deep(.p-select.p-focus) {
-  border-color: var(--color-primary-400, #60a5fa);
-  box-shadow: none;
-}
-
-.filter-editor :deep(.p-select-label) {
-  font-size: 13px;
-}
-
-.filter-editor :deep(.p-checkbox-box) {
-  width: 14px;
-  height: 14px;
+.filter-pill__segment--remove {
+  padding: 0 8px;
+  cursor: pointer;
+  height: 100%;
 }
 
 .filter-bar__reset {

@@ -179,13 +179,18 @@ const menuStyle = computed(() => {
   
   // Decide whether to open up or down based on space
   // Default decision based on props
-  let effectiveOpenUp = props.openUp && availableTop >= 120;
+  let effectiveOpenUp = props.openUp
   
   // Auto-flip if not enough space below but enough space above
   // Increase threshold to account for expanded content (e.g. Color Picker)
-  const minDropdownHeight = resolveMinDropdownHeight()
+  const minDropdownHeight = Math.max(resolveMinDropdownHeight(), 200) // Assumed safe height
+  
   if (!effectiveOpenUp && availableBottom < minDropdownHeight && availableTop > availableBottom) {
+    // If told to open down, but no space down, and more space up -> open up
     effectiveOpenUp = true
+  } else if (effectiveOpenUp && availableTop < minDropdownHeight && availableBottom > availableTop) {
+    // If told to open up, but no space up, and more space down -> open down
+    effectiveOpenUp = false
   }
   
   if (effectiveOpenUp) {
@@ -193,7 +198,7 @@ const menuStyle = computed(() => {
     verticalStyle = {
       bottom: `${viewportHeight - rect.top + menuOffset}px`,
       top: 'auto',
-      maxHeight: `${Math.max(availableTop, 120)}px`
+      maxHeight: `${Math.max(availableTop, 120)}px` // Don't shrink below 120px
     }
   } else {
     // Open downwards: position top of menu at bottom of trigger

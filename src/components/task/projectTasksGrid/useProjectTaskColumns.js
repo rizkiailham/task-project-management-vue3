@@ -1,40 +1,20 @@
 import { computed, ref } from 'vue'
+import {
+  TASK_COLUMN_DEFINITIONS,
+  getDefaultColumnVisibility
+} from '@/components/task/projectTasksGrid/taskColumnDefinitions'
 
 const COLUMN_SETTINGS_STORAGE_PREFIX = 'project-tasks-grid-columns-v2'
 
-const DEFAULT_COLUMN_VISIBILITY = {
-  title: true,
-  projectName: true,
-  status: true,
-  assignee: true,
-  dueDate: true,
-  tags: true,
-  priority: false,
-  size: false,
-  trackingTime: false,
-  createdAt: false,
-  createdBy: false,
-  updatedAt: false,
-  updatedBy: false,
-  timezone: false
-}
+const DEFAULT_COLUMN_VISIBILITY = getDefaultColumnVisibility()
 
-const BASE_MENU_COLUMN_DEFS = [
-  { id: 'title', key: 'tasks.fields.title', fallback: 'Title', locked: true },
-  { id: 'projectName', key: 'tasks.project', fallback: 'Project' },
-  { id: 'status', key: 'taskDetail.status', fallback: 'Status' },
-  { id: 'assignee', key: 'taskDetail.assignee', fallback: 'Assignee' },
-  { id: 'dueDate', key: 'taskDetail.dueDate', fallback: 'Due date' },
-  { id: 'tags', key: 'taskDetail.tags', fallback: 'Tags' },
-  { id: 'priority', key: 'tasks.priority', fallback: 'Priority' },
-  { id: 'size', key: 'tasks.columnOptions.size', fallback: 'Size' },
-  { id: 'trackingTime', key: 'tasks.columnOptions.timeTracking', fallback: 'Time tracking' },
-  { id: 'createdAt', key: 'taskDetail.createdAt', fallback: 'Created' },
-  { id: 'createdBy', key: 'tasks.columnOptions.createdBy', fallback: 'Created by' },
-  { id: 'updatedAt', key: 'taskDetail.lastUpdated', fallback: 'Last updated' },
-  { id: 'updatedBy', key: 'tasks.columnOptions.lastUpdatedBy', fallback: 'Last updated by' },
-  { id: 'timezone', key: 'tasks.columnOptions.timezone', fallback: 'Timezone' }
-]
+const BASE_MENU_COLUMN_DEFS = TASK_COLUMN_DEFINITIONS.map((def) => ({
+  id: def.id,
+  key: def.labelKey,
+  fallback: def.fallback,
+  icon: def.icon,
+  locked: def.locked || false
+}))
 
 function slugify(value) {
   return String(value || '')
@@ -198,7 +178,8 @@ export function useProjectTaskColumns(t) {
     ...hiddenColumnMenuDefinitions.value.map((item) => ({
       id: `column-${item.id}`,
       key: item.id,
-      label: item.label
+      label: item.label,
+      icon: item.icon || null
     }))
   ]))
 
