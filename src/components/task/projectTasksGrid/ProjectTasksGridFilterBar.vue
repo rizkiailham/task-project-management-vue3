@@ -7,6 +7,7 @@ import {
   Search,
   ArrowUp,
   ArrowDown,
+  ArrowUpDown,
   ChevronDown
 } from 'lucide-vue-next'
 import InputText from 'primevue/inputtext'
@@ -446,6 +447,7 @@ onBeforeUnmount(() => {
                   class="flex items-center gap-2 px-2 h-7 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
                   :title="t('common.sort', 'Sort')"
                 >
+                  <ArrowUpDown class="w-3.5 h-3.5" />
                   <span>{{ t('common.sort', 'Sort') }}</span>
                 </button>
               </template>
