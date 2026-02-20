@@ -2,20 +2,14 @@
 /**
  * UsersGrid - AG Grid component for displaying users table
  */
-import { ref, watch, h, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
 import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import Pagination from '@/components/ui/Pagination.vue'
-import {
-  Settings,
-  Users,
-  SlidersHorizontal,
-  Check,
-  ChevronDown
-} from 'lucide-vue-next'
-import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import GridFilterBar from '@/components/ui/GridFilterBar.vue'
 import SortHeader from '@/components/ag/SortHeader.vue'
 import { getAvatarColor } from '@/utils/avatarColor'
 
@@ -23,6 +17,8 @@ import { getAvatarColor } from '@/utils/avatarColor'
 import NameCell from './cells/NameCell.vue'
 import StatusCell from './cells/StatusCell.vue'
 import ProjectsCell from './cells/ProjectsCell.vue'
+
+const { t } = useI18n()
 
 LicenseManager.setLicenseKey(
   '[TRIAL]_this_{AG_Charts_and_AG_Grid}_Enterprise_key_{AG-115376}_is_granted_for_evaluation_only___Use_in_production_is_not_permitted___Please_report_misuse_to_legal@ag-grid.com___For_help_with_purchasing_a_production_key_please_contact_info@ag-grid.com___You_are_granted_a_{Single_Application}_Developer_License_for_one_application_only___All_Front-End_JavaScript_developers_working_on_the_application_would_be_licensed___This_key_will_deactivate_on_{10 January 2026}____[v3]_[0102]_MTc2ODAwMzIwMDAwMA==565745f66e52728abae508b6680a451e'
@@ -32,14 +28,14 @@ ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule])
 
 const props = defineProps({
   users: { type: Array, default: () => [] },
-  meta: { 
-    type: Object, 
-    default: () => ({ 
-      currentPage: 1, 
-      totalPages: 1, 
-      itemsPerPage: 10, 
-      totalItems: 0 
-    }) 
+  meta: {
+    type: Object,
+    default: () => ({
+      currentPage: 1,
+      totalPages: 1,
+      itemsPerPage: 10,
+      totalItems: 0
+    })
   },
   roleOptions: {
     type: Array,
@@ -55,17 +51,28 @@ const rowData = ref([])
 // Sort state
 const sortBy = ref('createdAt')
 const orderBy = ref('DESC')
+const currentSort = ref([])
 
 // Filter state
-const selectedStatus = ref(null)
-const selectedRole = ref(null)
+const activeFilters = ref([])
+let filterSequence = 0
 
-// Filter options
-const statusOptions = [
-  { id: null, label: 'All Status' },
-  { id: true, label: 'Active' },
-  { id: false, label: 'Inactive' },
+const TEXT_OPERATORS = [
+  { id: 'contains', label: 'contains' },
+  { id: 'not_contains', label: 'does not contain' },
+  { id: 'is', label: 'is' },
+  { id: 'is_not', label: 'is not' }
 ]
+
+const SELECT_OPERATORS = [
+  { id: 'is', label: 'is' }
+]
+
+const statusOptions = computed(() => ([
+  { id: null, label: `${t('common.all', 'All')} ${t('taskDetail.status', 'Status')}` },
+  { id: true, label: t('users.fields.active', 'Active') },
+  { id: false, label: 'Inactive' }
+]))
 
 function formatRoleLabel(name) {
   if (name === 'super_admin') return 'Super Admin'
@@ -73,63 +80,305 @@ function formatRoleLabel(name) {
 }
 
 const roleOptionItems = computed(() => ([
-  { id: null, label: 'All Roles' },
-  ...props.roleOptions.map(role => ({
+  { id: null, label: `${t('common.all', 'All')} ${t('users.fields.role', 'Role')}` },
+  ...props.roleOptions.map((role) => ({
     id: role.id,
     label: formatRoleLabel(role.name || role.label || role.value || role.id)
   }))
 ]))
 
-// Get status menu items
-const statusMenuItems = computed(() => 
-  statusOptions.map(opt => ({
-    id: opt.id,
-    label: opt.label,
-    icon: selectedStatus.value === opt.id ? Check : null,
-    action: () => {
-      selectedStatus.value = opt.id
-      applyFilters()
-    }
-  }))
+const filterableColumns = computed(() => ([
+  { id: 'fullName', label: 'Name', type: 'text' },
+  { id: 'status', label: t('taskDetail.status', 'Status'), type: 'select' },
+  { id: 'updatedAt', label: 'Last activity', type: 'text' },
+  { id: 'projects', label: 'Project', type: 'text' },
+  { id: 'role', label: t('users.fields.role', 'Role'), type: 'select' }
+]))
+
+const sortableColumns = computed(() =>
+  columnDefs.value
+    .filter((column) => column.sortable !== false)
+    .map((column) => ({
+      id: column.field,
+      label: column.headerName
+    }))
 )
 
-// Get role menu items
-const roleMenuItems = computed(() => 
-  roleOptionItems.value.map(opt => ({
-    id: opt.id,
-    label: opt.label,
-    icon: selectedRole.value === opt.id ? Check : null,
-    action: () => {
-      selectedRole.value = opt.id
-      applyFilters()
-    }
-  }))
-)
+const activeSort = computed(() => {
+  return currentSort.value.length > 0 ? currentSort.value[0] : null
+})
 
-// Apply filters to grid
-function applyFilters() {
-  emit('filter', { isActive: selectedStatus.value, roleId: selectedRole.value })
+const sortColumnItems = computed(() => {
+  return sortableColumns.value.map((column) => ({
+    type: 'item',
+    label: column.label,
+    key: column.id,
+    items: [
+      {
+        type: 'item',
+        label: t('common.ascending', 'Ascending'),
+        key: `${column.id}:asc`,
+        active: isSortActive(column.id, 'asc')
+      },
+      {
+        type: 'item',
+        label: t('common.descending', 'Descending'),
+        key: `${column.id}:desc`,
+        active: isSortActive(column.id, 'desc')
+      }
+    ]
+  }))
+})
+
+function isSortActive(colId, direction) {
+  const sort = currentSort.value.find((state) => state.colId === colId)
+  return sort ? sort.sort === direction : false
 }
 
-// Clear all filters
+function getColumnConfig(columnId) {
+  return filterableColumns.value.find((column) => column.id === columnId) || null
+}
+
+function getOperatorsForColumn(columnId) {
+  const column = getColumnConfig(columnId)
+  return column?.type === 'select' ? SELECT_OPERATORS : TEXT_OPERATORS
+}
+
+function getOperatorLabel(filter) {
+  const operator = getOperatorsForColumn(filter.column).find((item) => item.id === filter.operator)
+  return operator?.label || filter.operator
+}
+
+function addFilter(columnId) {
+  const column = getColumnConfig(columnId)
+  if (!column) return null
+
+  const existing = activeFilters.value.find((filter) => filter.column === columnId)
+  if (existing) {
+    return existing.id
+  }
+
+  const operators = getOperatorsForColumn(columnId)
+  const nextFilter = {
+    id: `filter-${++filterSequence}`,
+    column: columnId,
+    type: column.type,
+    operator: operators[0]?.id || 'is',
+    value: column.type === 'select' ? null : '',
+    label: column.label
+  }
+
+  activeFilters.value = [...activeFilters.value, nextFilter]
+  return nextFilter.id
+}
+
+function handleAddFilter(columnId) {
+  addFilter(columnId)
+}
+
+function isServerFilterColumn(columnId) {
+  return columnId === 'status' || columnId === 'role'
+}
+
+function emitServerFilters() {
+  const statusFilter = activeFilters.value.find((filter) => filter.column === 'status')
+  const roleFilter = activeFilters.value.find((filter) => filter.column === 'role')
+
+  emit('filter', {
+    isActive: statusFilter?.value ?? null,
+    roleId: roleFilter?.value ?? null
+  })
+}
+
+function removeFilter(filterId) {
+  const target = activeFilters.value.find((filter) => filter.id === filterId)
+  if (!target) return
+
+  activeFilters.value = activeFilters.value.filter((filter) => filter.id !== filterId)
+  if (isServerFilterColumn(target.column)) {
+    emitServerFilters()
+  }
+}
+
+function updateFilter(filterId, updates) {
+  const target = activeFilters.value.find((filter) => filter.id === filterId)
+  if (!target) return
+
+  activeFilters.value = activeFilters.value.map((filter) => {
+    if (filter.id !== filterId) return filter
+    return { ...filter, ...updates }
+  })
+
+  if (isServerFilterColumn(target.column) && Object.prototype.hasOwnProperty.call(updates, 'value')) {
+    emitServerFilters()
+  }
+}
+
 function clearFilters() {
-  selectedStatus.value = null
-  selectedRole.value = null
-  emit('filter', { isActive: null, roleId: null })
+  if (!activeFilters.value.length) return
+  const hadServerFilter = activeFilters.value.some((filter) => isServerFilterColumn(filter.column))
+  activeFilters.value = []
+  if (hadServerFilter) {
+    emitServerFilters()
+  }
 }
 
-// Check if any filters are active
-const hasActiveFilters = computed(() => 
-  selectedStatus.value !== null || selectedRole.value !== null
-)
+function getStatusLabel(statusId) {
+  return statusOptions.value.find((option) => option.id === statusId)?.label || t('taskDetail.status', 'Status')
+}
 
-const selectedStatusLabel = computed(() => {
-  return statusOptions.find(opt => opt.id === selectedStatus.value)?.label || 'Status'
+function getRoleLabel(roleId) {
+  return roleOptionItems.value.find((option) => String(option.id) === String(roleId))?.label || t('users.fields.role', 'Role')
+}
+
+function getFilterSummary(filter) {
+  if (filter.type === 'text') {
+    return filter.value ? String(filter.value) : '...'
+  }
+
+  if (filter.column === 'status') {
+    return getStatusLabel(filter.value)
+  }
+
+  if (filter.column === 'role') {
+    return getRoleLabel(filter.value)
+  }
+
+  return filter.value ? String(filter.value) : '...'
+}
+
+function getStatusMenuItems(filter) {
+  return statusOptions.value.map((option) => ({
+    key: `status-${String(option.id)}`,
+    label: option.label,
+    action: () => updateFilter(filter.id, { value: option.id })
+  }))
+}
+
+function getRoleMenuItems(filter) {
+  return roleOptionItems.value.map((option) => ({
+    key: `role-${String(option.id)}`,
+    label: option.label,
+    action: () => updateFilter(filter.id, { value: option.id })
+  }))
+}
+
+function getSelectMenuItems(filter) {
+  if (filter?.column === 'status') return getStatusMenuItems(filter)
+  if (filter?.column === 'role') return getRoleMenuItems(filter)
+  return []
+}
+
+function getSelectPlaceholder(filter) {
+  if (filter?.column === 'status') return t('tasks.selectStatus', 'Select status...')
+  if (filter?.column === 'role') return t('users.placeholders.role', 'Select role')
+  return t('tasks.enterValue', 'Enter value...')
+}
+
+function handleFilterUpdate(payload) {
+  if (!payload?.id || !payload?.updates) return
+  updateFilter(payload.id, payload.updates)
+}
+
+function getFilterCellValue(row, column) {
+  if (!row) return ''
+
+  switch (column) {
+    case 'fullName':
+      return row.fullName || ''
+    case 'status':
+      return row.isActive
+    case 'updatedAt':
+      return formatDate(row.updatedAt)
+    case 'projects':
+      return Array.isArray(row.projects) ? row.projects.join(', ') : ''
+    case 'role':
+      return row.roleId ?? ''
+    default:
+      return row[column] || ''
+  }
+}
+
+function matchTextFilter(cellValue, operator, value) {
+  const search = String(value || '').toLowerCase().trim()
+  if (!search) return true
+
+  const content = String(cellValue || '').toLowerCase()
+  switch (operator) {
+    case 'contains':
+      return content.includes(search)
+    case 'not_contains':
+      return !content.includes(search)
+    case 'is':
+      return content === search
+    case 'is_not':
+      return content !== search
+    default:
+      return true
+  }
+}
+
+function matchSelectFilter(cellValue, value) {
+  if (value === null || value === undefined || value === '') return true
+  return String(cellValue) === String(value)
+}
+
+function matchesFilter(row, filter) {
+  if (!filter) return true
+
+  if (filter.type === 'text' && !String(filter.value || '').trim()) {
+    return true
+  }
+
+  if (filter.type === 'select' && (filter.value === null || filter.value === undefined || filter.value === '')) {
+    return true
+  }
+
+  const cellValue = getFilterCellValue(row, filter.column)
+  if (filter.type === 'select') {
+    return matchSelectFilter(cellValue, filter.value)
+  }
+  return matchTextFilter(cellValue, filter.operator, filter.value)
+}
+
+const filteredRowData = computed(() => {
+  if (!activeFilters.value.length) return rowData.value
+  return rowData.value.filter((row) => activeFilters.value.every((filter) => matchesFilter(row, filter)))
 })
 
-const selectedRoleLabel = computed(() => {
-  return roleOptionItems.value.find(opt => opt.id === selectedRole.value)?.label || 'Role'
-})
+function openFilterForColumn(columnId) {
+  addFilter(columnId)
+}
+
+const gridContext = {
+  openFilterForColumn
+}
+
+function handleSortSelect(item) {
+  if (!item?.key || !gridApi.value) return
+
+  const [colId, direction] = item.key.split(':')
+  if (!colId || !direction) return
+
+  gridApi.value.applyColumnState({
+    state: [{ colId, sort: direction }],
+    defaultState: { sort: null }
+  })
+}
+
+function toggleSortDirection(sortState) {
+  if (!gridApi.value || !sortState?.colId) return
+  const nextSort = sortState.sort === 'asc' ? 'desc' : 'asc'
+  gridApi.value.applyColumnState({
+    state: [{ colId: sortState.colId, sort: nextSort }],
+    defaultState: { sort: null }
+  })
+}
+
+function getColumnLabel(colId) {
+  const column = sortableColumns.value.find((item) => item.id === colId)
+  return column ? column.label : colId
+}
 
 // Pagination state from props (server-side)
 const pageSize = ref(10)
@@ -139,7 +388,6 @@ const totalItems = ref(0)
 
 function updatePagination() {
   if (!gridApi.value) return
-  // AG Grid is 0-indexed, UI is 1-indexed
   currentPage.value = gridApi.value.paginationGetCurrentPage() + 1
   totalItems.value = gridApi.value.paginationGetRowCount()
 }
@@ -165,7 +413,6 @@ function handlePageSizeChange(newSize) {
   pageSize.value = newSize
   if (gridApi.value) {
     gridApi.value.setGridOption('paginationPageSize', newSize)
-    // Reset to page 1 when changing page size
     emit('paginationChange', {
       page: 1,
       limit: newSize,
@@ -178,33 +425,33 @@ function handlePageSizeChange(newSize) {
 // Handle AG Grid sort change
 function onSortChanged() {
   if (!gridApi.value) return
-  
+
   const sortModel = gridApi.value.getColumnState()
-    .filter(col => col.sort)
-    .map(col => ({ colId: col.colId, sort: col.sort }))
-  
+    .filter((col) => col.sort)
+    .map((col) => ({ colId: col.colId, sort: col.sort }))
+
+  currentSort.value = sortModel.slice(0, 1)
+
   if (sortModel.length > 0) {
-    // Map field names to API field names
     const fieldMapping = {
-      'fullName': 'first_name',
-      'status': 'is_active',
-      'updatedAt': 'updated_at',
-      'createdAt': 'created_at'
+      fullName: 'first_name',
+      status: 'is_active',
+      updatedAt: 'updated_at',
+      createdAt: 'created_at'
     }
-    
+
     sortBy.value = fieldMapping[sortModel[0].colId] || sortModel[0].colId
     orderBy.value = sortModel[0].sort.toUpperCase()
   } else {
     sortBy.value = 'createdAt'
     orderBy.value = 'DESC'
   }
-  
+
   emit('sortChange', {
     sortBy: sortBy.value,
     orderBy: orderBy.value
   })
-  
-  // Also emit pagination change to refetch with new sort
+
   emit('paginationChange', {
     page: currentPage.value,
     limit: pageSize.value,
@@ -236,33 +483,33 @@ watch(() => props.meta?.currentPage, (newPage) => {
 // Transform users data for the grid
 watch(
   [() => props.users, () => props.meta],
-  ([users, meta]) => {
+  ([users]) => {
     if (!users || users.length === 0) {
       rowData.value = []
       return
     }
-    
-    rowData.value = users.map((user, index) => {
+
+    rowData.value = users.map((user) => {
       let projectNames = []
       if (user.projects && Array.isArray(user.projects)) {
-        projectNames = user.projects.map(p => typeof p === 'string' ? p : p.name).filter(Boolean)
+        projectNames = user.projects.map((project) => typeof project === 'string' ? project : project.name).filter(Boolean)
       }
-      
+
       return {
         ...user,
-        rowIndex: ((meta?.currentPage || 1) - 1) * (meta?.itemsPerPage || 10) + index + 1, // Calculate rowIndex based on meta
         fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown',
         status: user.isActive ? 'Active' : (user.status || 'Invited'),
         avatarColor: getAvatarColor(`${user.firstName || ''} ${user.lastName || ''}`),
         avatar: user.avatar,
         projects: projectNames,
+        roleId: user.roleId ?? user.role?.id ?? null
       }
     })
-    // Update pagination state after rowData changes
+
     if (gridApi.value) {
-      gridApi.value.setGridOption('paginationPageSize', pageSize.value);
-      gridApi.value.setGridOption('paginationTotalRowCount', props.meta?.totalItems || 0);
-      updatePagination();
+      gridApi.value.setGridOption('paginationPageSize', pageSize.value)
+      gridApi.value.setGridOption('paginationTotalRowCount', props.meta?.totalItems || 0)
+      updatePagination()
     }
   },
   { immediate: true, deep: true }
@@ -276,10 +523,10 @@ function formatDate(dateStr) {
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
   const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  
+
   if (dateOnly.getTime() === today.getTime()) return 'Today'
   if (dateOnly.getTime() === yesterday.getTime()) return 'Yesterday'
-  
+
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
@@ -299,13 +546,6 @@ function handleDelete(user) {
 // Column definitions
 const columnDefs = ref([
   {
-    field: 'rowIndex',
-    headerName: '#',
-    width: 64,
-    sortable: false,
-    filter: false,
-  },
-  {
     field: 'fullName',
     headerName: 'Name',
     flex: 2,
@@ -314,27 +554,27 @@ const columnDefs = ref([
     cellRendererParams: {
       onEdit: handleEdit,
       onResendInvite: handleResendInvite,
-      onDelete: handleDelete,
+      onDelete: handleDelete
     }
   },
   {
     field: 'status',
     headerName: 'Status',
     width: 120,
-    cellRenderer: StatusCell,
+    cellRenderer: StatusCell
   },
   {
     field: 'updatedAt',
     headerName: 'Last activity',
     width: 160,
-    valueFormatter: (params) => formatDate(params.value),
+    valueFormatter: (params) => formatDate(params.value)
   },
   {
     field: 'projects',
     headerName: 'Project',
     flex: 1.5,
     minWidth: 200,
-    cellRenderer: ProjectsCell,
+    cellRenderer: ProjectsCell
   }
 ])
 
@@ -391,11 +631,12 @@ const gridComponents = {
     <div class="users-grid">
       <ag-grid-vue
         class="ag-theme-quartz w-full h-full"
-        :rowData="rowData"
+        :rowData="filteredRowData"
         :columnDefs="columnDefs"
         :defaultColDef="defaultColDef"
         :theme="myTheme"
         :components="gridComponents"
+        :context="gridContext"
         :getRowId="getRowId"
         :rowHeight="52"
         :headerHeight="40"
@@ -415,59 +656,27 @@ const gridComponents = {
       @update:pageSize="handlePageSizeChange"
       @change-page="handlePageChange"
       :totalItems="props.meta?.total || props.meta?.totalItems || 0"
+      :fixed="false"
     >
       <template #filters>
-        <div class="flex items-center gap-3">
-          <span class="text-[13px] text-gray-500">Filter by</span>
-          
-          <!-- Status Filter Dropdown -->
-          <DropdownMenu :items="statusMenuItems" position="left" width="10rem" :openUp="true">
-            <template #trigger>
-              <button
-                :class="[
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] bg-white border rounded-md transition-colors',
-                  selectedStatus 
-                    ? 'text-blue-600 border-blue-300 bg-blue-50' 
-                    : 'text-gray-700 border-gray-300 hover:bg-gray-50'
-                ]"
-              >
-                <Settings class="w-4 h-4" :class="selectedStatus ? 'text-blue-500' : 'text-gray-400'" />
-                {{ selectedStatusLabel }}
-              </button>
-            </template>
-          </DropdownMenu>
-          
-          <!-- Role Filter Dropdown -->
-          <DropdownMenu :items="roleMenuItems" position="left" width="10rem" :openUp="true">
-            <template #trigger>
-              <button
-                :class="[
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] bg-white border rounded-md transition-colors',
-                  selectedRole 
-                    ? 'text-blue-600 border-blue-300 bg-blue-50' 
-                    : 'text-gray-700 border-gray-300 hover:bg-gray-50'
-                ]"
-              >
-                <Users class="w-4 h-4" :class="selectedRole ? 'text-blue-500' : 'text-gray-400'" />
-                {{ selectedRoleLabel }}
-              </button>
-            </template>
-          </DropdownMenu>
-          
-          <!-- Clear Filters Button -->
-          <button
-            @click="clearFilters"
-            :class="[
-              'inline-flex items-center p-1.5 border rounded-md transition-colors',
-              hasActiveFilters 
-                ? 'text-blue-600 border-blue-300 bg-blue-50 hover:bg-blue-100' 
-                : 'text-gray-700 border-gray-300 bg-white hover:bg-gray-50'
-            ]"
-            :title="hasActiveFilters ? 'Clear filters' : 'More filters'"
-          >
-            <SlidersHorizontal class="w-4 h-4" :class="hasActiveFilters ? 'text-blue-500' : 'text-gray-400'" />
-          </button>
-        </div>
+        <GridFilterBar
+          :activeSort="activeSort"
+          :sortColumnItems="sortColumnItems"
+          :getColumnLabel="getColumnLabel"
+          :activeFilters="activeFilters"
+          :filterableColumns="filterableColumns"
+          :getOperatorsForColumn="getOperatorsForColumn"
+          :getOperatorLabel="getOperatorLabel"
+          :getFilterSummary="getFilterSummary"
+          :getSelectMenuItems="getSelectMenuItems"
+          :getSelectPlaceholder="getSelectPlaceholder"
+          @sort-select="handleSortSelect"
+          @toggle-sort-direction="toggleSortDirection"
+          @add-filter="handleAddFilter"
+          @update-filter="handleFilterUpdate"
+          @remove-filter="removeFilter"
+          @reset="clearFilters"
+        />
       </template>
     </Pagination>
   </div>
@@ -478,87 +687,16 @@ const gridComponents = {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: calc(100vh - 108px);
+  height: 100%;
   position: relative;
 }
 
 .users-grid {
   width: 100%;
-  height: calc(100% - 52px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-}
-
-
-.pagination-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background-color: #ffffff;
-  color: var(--color-gray-500);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.pagination-btn-disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background-color: #f9fafb;
-}
-
-.pagination-page {
-  min-width: 32px;
-}
-
-.pagination-page-active {
-  background-color: #f3f4f6;
-  color: var(--color-gray-500);
-  border-color: #d1d5db;
-}
-
-/* Page Size Selector */
-.page-size-selector {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.page-size-select {
-  appearance: none;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 6px 28px 6px 10px;
-  cursor: pointer;
-  height: 32px;
-  transition: all 0.15s ease;
-}
-
-.page-size-select:hover {
-  border-color: #d1d5db;
-  background-color: #f9fafb;
-}
-
-.page-size-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.page-size-selector .w-3 {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 :deep(.ag-theme-quartz) {
@@ -588,15 +726,9 @@ const gridComponents = {
   z-index: 10;
 }
 
-:deep(.ag-theme-quartz .ag-header-row) {
-}
-
 :deep(.ag-theme-quartz .ag-header-cell) {
   padding-left: 16px;
   padding-right: 16px;
-}
-
-:deep(.ag-theme-quartz .ag-header-cell-text) {
 }
 
 :deep(.ag-theme-quartz .ag-header-icon) {
@@ -644,10 +776,10 @@ const gridComponents = {
   opacity: 1;
 }
 
-/* Sort icons */
-:deep(.ag-theme-quartz .ag-sort-indicator-icon) {
+.ag-theme-quartz .ag-sort-indicator-icon {
   color: var(--color-gray-400);
 }
+
 </style>
 
 

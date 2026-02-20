@@ -698,29 +698,31 @@ function onGridReady(params) {
 </script>
 
 <template>
-  <div class="">
-    <ag-grid-vue
-      class="ag-theme-quartz w-full"
-      :gridOptions="gridOptions"
-      :rowData="rowData"
-      :columnDefs="columnDefs"
-      :autoGroupColumnDef="autoGroupColumnDef"
-      :treeData="true"
-      :getDataPath="getDataPath"
-      :getRowId="getRowId"
-      :groupDefaultExpanded="0"
-      groupDisplayType="singleColumn"
-      rowModelType="clientSide"
-      :defaultColDef="defaultColDef"
-      :animateRows="true"
-      :rowHeight="36"
-      :pagination="true"
-      :paginationPageSize="pageSize"
-      :suppressPaginationPanel="true"
-      domLayout="autoHeight"
-      @row-clicked="gridOptions.onRowClicked"
-      @grid-ready="onGridReady"
-    />
+  <div class="mytasks-grid-wrapper">
+    <div class="mytasks-grid">
+      <ag-grid-vue
+        class="ag-theme-quartz w-full h-full"
+        :gridOptions="gridOptions"
+        :rowData="rowData"
+        :columnDefs="columnDefs"
+        :autoGroupColumnDef="autoGroupColumnDef"
+        :treeData="true"
+        :getDataPath="getDataPath"
+        :getRowId="getRowId"
+        :groupDefaultExpanded="0"
+        groupDisplayType="singleColumn"
+        rowModelType="clientSide"
+        :defaultColDef="defaultColDef"
+        :animateRows="true"
+        :rowHeight="36"
+        :pagination="true"
+        :paginationPageSize="pageSize"
+        :suppressPaginationPanel="true"
+        domLayout="normal"
+        @row-clicked="gridOptions.onRowClicked"
+        @grid-ready="onGridReady"
+      />
+    </div>
 
     <!-- Fixed Footer -->
     <Pagination
@@ -730,6 +732,7 @@ function onGridReady(params) {
       @update:pageSize="handlePageSizeChange"
       @change-page="handlePageChange"
       :totalItems="totalRows"
+      :fixed="false"
     >
       <template #filters>
          <slot name="footer-filters"></slot>
@@ -739,8 +742,20 @@ function onGridReady(params) {
 </template>
 
 <style scoped>
-.my-tasks-grid {
-  min-height: 460px;
+.mytasks-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.mytasks-grid {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 :deep(.task-level-dot) {

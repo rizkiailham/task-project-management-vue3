@@ -201,11 +201,11 @@ function changePageSize(size) {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
-  min-height: 52px;
+  gap: 6px;
+  min-height: 42px;
   background-color: #ffffff;
   border-top: 1px solid #e5e7eb;
-  padding: 8px 16px;
+  padding: 6px 12px;
   width: 100%;
 }
 

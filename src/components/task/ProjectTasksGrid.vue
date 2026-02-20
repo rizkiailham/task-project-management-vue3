@@ -1274,30 +1274,32 @@ function onGridReady(params) {
 </script>
 
 <template>
-  <div class="project-tasks-grid">
-    <ag-grid-vue
-      class="ag-theme-quartz w-full"
-      :gridOptions="gridOptions"
-      :rowData="filteredRowData"
-      :columnDefs="columnDefs"
-      :autoGroupColumnDef="autoGroupColumnDef"
-      :treeData="true"
-      :getDataPath="getDataPath"
-      :getRowId="getRowId"
-      :groupDefaultExpanded="0"
-      groupDisplayType="singleColumn"
-      rowModelType="clientSide"
-      :defaultColDef="defaultColDef"
-      :animateRows="true"
-      :rowHeight="36"
-      :pagination="true"
-      :paginationPageSize="pageSize"
-      :suppressPaginationPanel="true"
-      domLayout="autoHeight"
-      @cell-focused="onCellFocused"
-      @cell-context-menu="onCellContextMenu"
-      @grid-ready="onGridReady"
-    />
+  <div class="project-tasks-grid-wrapper">
+    <div class="project-tasks-grid">
+      <ag-grid-vue
+        class="ag-theme-quartz w-full h-full"
+        :gridOptions="gridOptions"
+        :rowData="filteredRowData"
+        :columnDefs="columnDefs"
+        :autoGroupColumnDef="autoGroupColumnDef"
+        :treeData="true"
+        :getDataPath="getDataPath"
+        :getRowId="getRowId"
+        :groupDefaultExpanded="0"
+        groupDisplayType="singleColumn"
+        rowModelType="clientSide"
+        :defaultColDef="defaultColDef"
+        :animateRows="true"
+        :rowHeight="36"
+        :pagination="true"
+        :paginationPageSize="pageSize"
+        :suppressPaginationPanel="true"
+        domLayout="normal"
+        @cell-focused="onCellFocused"
+        @cell-context-menu="onCellContextMenu"
+        @grid-ready="onGridReady"
+      />
+    </div>
 
     <!-- Context Menu -->
     <DropdownMenu
@@ -1362,6 +1364,7 @@ function onGridReady(params) {
       @update:pageSize="handlePageSizeChange"
       @change-page="handlePageChange"
       :totalItems="totalRows"
+      :fixed="false"
     >
       <template #filters>
         <ProjectTasksGridFilterBar
@@ -1385,8 +1388,20 @@ function onGridReady(params) {
 </template>
 
 <style scoped>
+.project-tasks-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
 .project-tasks-grid {
-  min-height: 300px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .task-reminder-panel {

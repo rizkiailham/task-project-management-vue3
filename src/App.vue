@@ -62,8 +62,11 @@ function handleKeyboardShortcuts(event) {
 <template>
   <div
     id="app-container"
-    class="min-h-screen bg-gray-50"
-    :class="{ 'dark': uiStore.isDarkMode }"
+    class="bg-gray-50"
+    :class="[
+      isAuthLayout ? 'min-h-screen' : 'h-screen overflow-hidden',
+      { 'dark': uiStore.isDarkMode }
+    ]"
   >
     <!-- Main Router View -->
     <RouterView />

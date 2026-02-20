@@ -104,7 +104,7 @@ async function handleCreateSubtask({ parentId, projectItemId, kanbanColumnId } =
 <template>
   <div class="h-full flex flex-col bg-white">
     <!-- Content -->
-    <div class="flex-1 overflow-hidden p-6">
+    <div class="flex-1 overflow-hidden">
       <div v-if="isLoading" class="space-y-2">
         <Skeleton v-for="i in 5" :key="i" height="50px" />
       </div>

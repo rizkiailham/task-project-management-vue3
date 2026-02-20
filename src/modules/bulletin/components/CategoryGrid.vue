@@ -207,6 +207,7 @@ const gridComponents = {
       @update:pageSize="changePageSize"
       @change-page="goToPage"
       :totalItems="props.meta?.total || props.meta?.totalItems || 0"
+      :fixed="false"
     />
   </div>
 </template>
@@ -216,13 +217,14 @@ const gridComponents = {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: calc(100vh - 108px);
+  height: 100%;
   position: relative;
 }
 
 .category-grid {
   width: 100%;
-  height: calc(100% - 52px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
