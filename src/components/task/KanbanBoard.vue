@@ -751,7 +751,7 @@ onUnmounted(() => {
                   data-kanban-card="true"
                   @click="openTaskPanel(task)"
                   :class="[
-                    'kanban-card cursor-pointer rounded-lg bg-white ring-1 ring-black/5 transition-all dark-edit:bg-gray-800 dark-edit:ring-white/10',
+                    'kanban-card cursor-pointer rounded-lg bg-white ring-1 ring-black/5 transition-shadow dark-edit:bg-gray-800 dark-edit:ring-white/10',
                     { 'kanban-card--dragging': draggedTask?.id === task.id }
                   ]"
                 >
@@ -893,9 +893,21 @@ onUnmounted(() => {
   background-color: #F9FAFB;
 }
 
+.kanban-card:focus,
+.kanban-card:focus-visible,
+.kanban-card:active {
+  background-color: white;
+  outline: none;
+}
+
 .kanban-card[draggable="true"]:active {
   cursor: grabbing;
-  opacity: 0.8;
+}
+
+:root.dark .kanban-card:focus,
+:root.dark .kanban-card:focus-visible,
+:root.dark .kanban-card:active {
+  background-color: rgb(31 41 55);
 }
 
 .kanban-card--dragging {

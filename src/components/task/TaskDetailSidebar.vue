@@ -11,7 +11,7 @@
  */
 import { ref, computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useUIStore, useAIChatStore, useProjectStore } from '@/stores'
+import { useTaskStore, useUIStore, useAIChatStore, useProjectStore, useProjectPropertyStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
@@ -46,6 +46,8 @@ const taskStore = useTaskStore()
 const uiStore = useUIStore()
 const aiChatStore = useAIChatStore()
 const projectStore = useProjectStore()
+const propertyStore = useProjectPropertyStore()
+
 
 // Topbar height constant
 const TOPBAR_HEIGHT = 56
@@ -74,6 +76,23 @@ const aiReplaceMode = computed(() => !isRichTextEmpty(descriptionBeforeAi.value)
 // Computed
 const isOpen = computed(() => uiStore.isTaskPanelOpen)
 const task = computed(() => taskStore.currentTask)
+
+// Dynamic property options (must be after task declaration)
+const currentProjectId = computed(() => task.value?.projectId || projectStore.currentProjectId)
+const dynamicStatusOptions = computed(() => {
+  if (!currentProjectId.value) return []
+  return propertyStore.statusOptions(currentProjectId.value)
+})
+const dynamicPriorityOptions = computed(() => {
+  if (!currentProjectId.value) return []
+  return propertyStore.priorityOptions(currentProjectId.value)
+})
+
+// Ensure properties are loaded when task changes
+watch(currentProjectId, (pid) => {
+  if (pid) propertyStore.fetchProperties(pid)
+}, { immediate: true })
+
 const subtasks = computed(() => taskStore.subtasks)
 const isLoading = computed(() => taskStore.isLoadingTask)
 const subtaskProgress = computed(() => taskStore.subtaskProgress)
@@ -209,6 +228,10 @@ async function handleDeleteSubtask(subtaskId) {
 }
 
 function getStatusLabel(status) {
+  // Try dynamic options first
+  const dynOpt = dynamicStatusOptions.value.find(o => o.value === status)
+  if (dynOpt) return dynOpt.value
+  // Fallback to hardcoded
   const labels = {
     [TaskStatus.TODO]: 'To Do',
     [TaskStatus.IN_PROGRESS]: 'In Progress',
@@ -231,6 +254,10 @@ function getStatusIcon(status) {
 }
 
 function getStatusProgress(status) {
+  // Try dynamic options first
+  const dynOpt = dynamicStatusOptions.value.find(o => o.value === status)
+  if (dynOpt) return dynOpt.progress ?? 0
+  // Fallback
   const progress = {
     [TaskStatus.TODO]: 0,
     [TaskStatus.IN_PROGRESS]: 50,
@@ -255,6 +282,10 @@ function formatDate(date) {
 }
 
 function getPriorityLabel(priority) {
+  // Try dynamic options first
+  const dynOpt = dynamicPriorityOptions.value.find(o => o.value === priority)
+  if (dynOpt) return dynOpt.value
+  // Fallback
   const labels = {
     [TaskPriority.LOW]: 'Low',
     [TaskPriority.MEDIUM]: 'Medium',
@@ -702,22 +733,44 @@ async function handleAddComment() {
                     </template>
                     <template #content>
                       <div class="py-1">
-                        <button
-                          v-for="(label, key) in TaskStatus"
-                          :key="key"
-                          type="button"
-                          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
-                          :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.status === label }"
-                          @click="handleUpdateStatus(label)"
-                        >
-                          <TaskProgressIcon 
-                            :status="label" 
-                            :progress="getStatusProgress(label)" 
-                            size="sm"
-                          />
-                          <span class="flex-1 text-left">{{ getStatusLabel(label) }}</span>
-                          <i v-if="task.status === label" class="pi pi-check text-[10px]"></i>
-                        </button>
+                        <!-- Dynamic status options from project properties -->
+                        <template v-if="dynamicStatusOptions.length > 0">
+                          <button
+                            v-for="opt in dynamicStatusOptions"
+                            :key="opt.value"
+                            type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+                            :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.status === opt.value }"
+                            @click="handleUpdateStatus(opt.value)"
+                          >
+                            <TaskProgressIcon 
+                              :status="opt.value" 
+                              :progress="opt.progress ?? 0" 
+                              size="sm"
+                            />
+                            <span class="flex-1 text-left">{{ opt.value }}</span>
+                            <i v-if="task.status === opt.value" class="pi pi-check text-[10px]"></i>
+                          </button>
+                        </template>
+                        <!-- Fallback: hardcoded status options -->
+                        <template v-else>
+                          <button
+                            v-for="(label, key) in TaskStatus"
+                            :key="key"
+                            type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+                            :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.status === label }"
+                            @click="handleUpdateStatus(label)"
+                          >
+                            <TaskProgressIcon 
+                              :status="label" 
+                              :progress="getStatusProgress(label)" 
+                              size="sm"
+                            />
+                            <span class="flex-1 text-left">{{ getStatusLabel(label) }}</span>
+                            <i v-if="task.status === label" class="pi pi-check text-[10px]"></i>
+                          </button>
+                        </template>
                       </div>
                     </template>
                   </DropdownMenu>

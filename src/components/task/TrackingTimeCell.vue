@@ -595,7 +595,7 @@ if (running.value) startTicking()
 </script>
 
 <template>
-  <div class="relative flex items-center justify-start pt-1">
+  <div class="tracking-time-cell relative flex items-center justify-start pt-1">
     <button
       type="button"
       ref="buttonRef"
