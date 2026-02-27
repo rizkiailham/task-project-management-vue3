@@ -578,7 +578,7 @@ function copyLink(link) {
 function resolveChildLink(projectId, item) {
   // Determine routeName based on item type
   let routeName
-  if (item.type === 'task') routeName = 'ProjectBoard'
+  if (item.type === 'task') routeName = 'ProjectList'
   else if (item.type === 'note') routeName = 'ProjectNoteList'
   else if (item.type === 'note-list') routeName = 'ProjectNoteList'
   else if (item.type === 'report') routeName = 'ProjectReport'
@@ -604,7 +604,7 @@ async function openChildItem(projectId, item) {
   
   // Determine routeName based on item type
   let routeName
-  if (item.type === 'task') routeName = 'ProjectBoard'
+  if (item.type === 'task') routeName = 'ProjectList'
   else if (item.type === 'note') routeName = 'ProjectNoteList'
   else if (item.type === 'note-list') routeName = 'ProjectNoteList'
   else if (item.type === 'report') routeName = 'ProjectReport'
