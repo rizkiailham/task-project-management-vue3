@@ -108,6 +108,10 @@ const instanceId = `dropdown-${Math.random().toString(36).slice(2, 9)}`
 const viewportWidth = ref(0)
 const menuHeightTick = ref(0)
 
+function isRenderableComponentIcon(icon) {
+  return typeof icon === 'object' || typeof icon === 'function'
+}
+
 function resolveMinDropdownHeight() {
   if (!menuRef.value) return 300
   const minHeightEl = menuRef.value.querySelector('[data-dropdown-min-height]')
@@ -337,12 +341,19 @@ function handlePeerOpen(event) {
   }
 }
 
+function handleGlobalOverlayOpen(event) {
+  const incomingId = event?.detail?.id
+  if (!incomingId || incomingId === instanceId) return
+  close()
+}
+
 watch(isOpen, (newVal) => {
   if (newVal) {
     emit('open')
     if (!props.keepOpenWithOtherMenus) {
       window.dispatchEvent(new CustomEvent('dropdown-open', { detail: instanceId }))
     }
+    window.dispatchEvent(new CustomEvent('floating-overlay-open', { detail: { id: instanceId, type: 'dropdown' } }))
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
     setTimeout(() => {
@@ -358,12 +369,14 @@ watch(isOpen, (newVal) => {
 
 onUnmounted(() => {
   window.removeEventListener('dropdown-open', handlePeerOpen)
+  window.removeEventListener('floating-overlay-open', handleGlobalOverlayOpen)
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleEscape)
 })
 
 onMounted(() => {
   window.addEventListener('dropdown-open', handlePeerOpen)
+  window.addEventListener('floating-overlay-open', handleGlobalOverlayOpen)
   if (typeof window !== 'undefined') {
     viewportWidth.value = window.innerWidth
     window.addEventListener('resize', handleResize)
@@ -500,7 +513,7 @@ defineExpose({ open, close, toggle, isOpen, getMenuRect })
               >
                 <div class="flex items-center gap-3">
                   <component 
-                    v-if="item.icon" 
+                    v-if="isRenderableComponentIcon(item.icon)" 
                     :is="item.icon" 
                     class="w-4 h-4 text-gray-500"
                   />
@@ -536,7 +549,7 @@ defineExpose({ open, close, toggle, isOpen, getMenuRect })
                         >
                            <div class="flex items-center gap-3">
                               <component 
-                                v-if="subItem.icon" 
+                                v-if="isRenderableComponentIcon(subItem.icon)" 
                                 :is="subItem.icon" 
                                 class="w-4 h-4 text-gray-500"
                               />
@@ -564,20 +577,22 @@ defineExpose({ open, close, toggle, isOpen, getMenuRect })
               ]"
               @click="handleItemClick(item, $event)"
             >
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <!-- Icon or Checkbox -->
-                <div v-if="item.checked !== undefined" class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
-                   <Check v-if="item.checked" class="w-3.5 h-3.5" />
+              <slot name="item" :item="item">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <!-- Icon or Checkbox -->
+                  <div v-if="item.checked !== undefined" class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+                    <Check v-if="item.checked" class="w-3.5 h-3.5" />
+                  </div>
+                  <component
+                    v-else-if="isRenderableComponentIcon(item.icon)"
+                    :is="item.icon"
+                    class="w-4 h-4 text-gray-500 shrink-0"
+                    :class="item.iconClass"
+                  />
+                  
+                  <span class="truncate">{{ item.label }}</span>
                 </div>
-                <component 
-                  v-else-if="item.icon" 
-                  :is="item.icon" 
-                  class="w-4 h-4 text-gray-500 shrink-0" 
-                  :class="item.iconClass"
-                />
-                
-                <span class="truncate">{{ item.label }}</span>
-              </div>
+              </slot>
               
               <!-- Shortcut or Submenu Arrow -->
               <div class="flex items-center ml-3 text-xs text-gray-400">

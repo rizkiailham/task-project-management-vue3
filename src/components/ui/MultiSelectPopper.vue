@@ -2,6 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Popper from 'vue3-popper'
 import ColorPicker from '@/components/ui/ColorPicker.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const defaultOptions = [
   { id: 'product', name: 'Product', color: '#3b82f6' },
@@ -61,15 +64,40 @@ const props = defineProps({
   maxVisibleTags: {
     type: Number,
     default: 0
+  },
+  maxSelection: {
+    type: Number,
+    default: 0
+  },
+  closeOnSelect: {
+    type: Boolean,
+    default: false
+  },
+  panelWidth: {
+    type: [String, Number],
+    default: null
+  },
+  panelMaxWidth: {
+    type: [String, Number],
+    default: null
+  },
+  wrapChips: {
+    type: Boolean,
+    default: false
+  },
+  selectedLabel: {
+    type: String,
+    default: 'options'
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'update:options', 'change', 'create'])
+const emit = defineEmits(['update:modelValue', 'update:options', 'change', 'create', 'open', 'close'])
 
 const localOptions = ref(normalizeOptions(defaultOptions))
 const optionsRef = ref([])
 const currentPlacement = ref(props.placement)
 const offsetDistanceValue = computed(() => String(props.offsetDistance))
+const instanceId = `multi-select-popper-${Math.random().toString(36).slice(2, 9)}`
 
 const isExternalOptions = computed(() => Array.isArray(props.options))
 
@@ -188,6 +216,30 @@ let overflowRaf = null
 const maxVisibleLimit = computed(() =>
   Number.isFinite(props.maxVisibleTags) && props.maxVisibleTags > 0 ? props.maxVisibleTags : Number.POSITIVE_INFINITY
 )
+const maxSelectionLimit = computed(() =>
+  Number.isFinite(props.maxSelection) && props.maxSelection > 0 ? props.maxSelection : Number.POSITIVE_INFINITY
+)
+const selectedLabelText = computed(() =>
+  String(props.selectedLabel || t('common.options', 'options')).trim() || t('common.options', 'options')
+)
+const selectedSummaryTitle = computed(() =>
+  t('tasks.selectedEntity', 'Selected {entity}', { entity: selectedLabelText.value })
+)
+const selectedSummaryEmpty = computed(() =>
+  t('tasks.noEntitySelected', 'No {entity} selected.', { entity: selectedLabelText.value })
+)
+const editTagColorLabel = computed(() => t('tasks.editTagColor', 'Edit tag color'))
+const emptyOptionsLabel = computed(() => t('tasks.noTagsYet', 'No tags yet.'))
+const panelStyle = computed(() => {
+  const next = {}
+  if (props.panelWidth !== null && props.panelWidth !== undefined && props.panelWidth !== '') {
+    next.width = typeof props.panelWidth === 'number' ? `${props.panelWidth}px` : String(props.panelWidth)
+  }
+  if (props.panelMaxWidth !== null && props.panelMaxWidth !== undefined && props.panelMaxWidth !== '') {
+    next.maxWidth = typeof props.panelMaxWidth === 'number' ? `${props.panelMaxWidth}px` : String(props.panelMaxWidth)
+  }
+  return next
+})
 
 const tagsForMeasure = computed(() => selectedTags.value.slice(0, maxVisibleLimit.value))
 
@@ -456,7 +508,10 @@ function toggleOption(option) {
   if (isSelected(option)) {
     commitTags(selectedTags.value.filter((tag) => tag.id !== option.id && tag.name !== option.name))
   } else {
-    commitTags([...selectedTags.value, option])
+    const next = maxSelectionLimit.value === 1
+      ? [option]
+      : [...selectedTags.value, option]
+    commitTags(next.slice(0, maxSelectionLimit.value))
   }
 }
 
@@ -499,6 +554,7 @@ function movePopperToBody() {
   const popperEl = rootRef.value.querySelector('.popper')
   if (!popperEl) return
   popperNode.value = popperEl
+  popperEl.setAttribute('data-multi-select-id', instanceId)
   popperParent.value = popperEl.parentElement
   applyFloatingVars(popperEl)
   if (popperEl.parentElement !== document.body) {
@@ -545,8 +601,18 @@ function closeDropdown() {
   isOpen.value = false
 }
 
+function handlePeerOpen(event) {
+  const incomingId = event?.detail?.id
+  if (!incomingId || incomingId === instanceId) return
+  closeDropdown()
+}
+
 function handleDocumentClick(event) {
   const target = event.target
+  if (target instanceof Element) {
+    if (target.closest(`[data-multi-select-id="${instanceId}"]`)) return
+    if (target.closest('.tag-panel')) return
+  }
   if (rootRef.value?.contains(target)) return
   if (triggerRef.value?.contains(target)) return
   if (popperNode.value?.contains(target)) return
@@ -559,9 +625,12 @@ function handleEscape(event) {
 
 watch(isOpen, (open) => {
   if (open) {
+    emit('open')
+    window.dispatchEvent(new CustomEvent('floating-overlay-open', { detail: { id: instanceId, type: 'multi-select-popper' } }))
     document.addEventListener('mousedown', handleDocumentClick)
     document.addEventListener('keydown', handleEscape)
   } else {
+    emit('close')
     document.removeEventListener('mousedown', handleDocumentClick)
     document.removeEventListener('keydown', handleEscape)
   }
@@ -575,12 +644,17 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  window.removeEventListener('floating-overlay-open', handlePeerOpen)
   document.removeEventListener('mousedown', handleDocumentClick)
   document.removeEventListener('keydown', handleEscape)
   restorePopper()
   if (resizeObserver) resizeObserver.disconnect()
   window.removeEventListener('resize', scheduleOverflowCheck)
   if (overflowRaf) cancelAnimationFrame(overflowRaf)
+})
+
+onMounted(() => {
+  window.addEventListener('floating-overlay-open', handlePeerOpen)
 })
 function handleOpen() {
   nextTick(() => {
@@ -602,7 +676,13 @@ function createOption() {
   const existing = findOptionByName(name)
   if (existing) {
     if (!isSelected(existing)) {
-      commitTags([...selectedTags.value, existing])
+      const next = maxSelectionLimit.value === 1
+        ? [existing]
+        : [...selectedTags.value, existing]
+      commitTags(next.slice(0, maxSelectionLimit.value))
+    }
+    if (props.closeOnSelect) {
+      closeDropdown()
     }
     newOptionName.value = ''
     return
@@ -615,8 +695,14 @@ function createOption() {
   }
   const nextOptions = [...availableOptions.value, option]
   setOptionsSource(nextOptions)
-  commitTags([...selectedTags.value, option])
+  const next = maxSelectionLimit.value === 1
+    ? [option]
+    : [...selectedTags.value, option]
+  commitTags(next.slice(0, maxSelectionLimit.value))
   emit('create', option)
+  if (props.closeOnSelect) {
+    closeDropdown()
+  }
   newOptionName.value = ''
 }
 
@@ -645,6 +731,9 @@ function updateOptionColor(optionId, color) {
 function handleOptionClick(option, event) {
   if (event?.target?.closest?.('.option-actions')) return
   toggleOption(option)
+  if (props.closeOnSelect) {
+    closeDropdown()
+  }
 }
 
 function getTextColor(hex) {
@@ -732,7 +821,13 @@ function getTextColor(hex) {
       </button>
 
       <template #content>
-        <div class="tag-panel">
+        <div
+          class="tag-panel"
+          :class="{ 'tag-panel--wrap-chips': wrapChips }"
+          :style="panelStyle"
+          @mousedown.stop
+          @click.stop
+        >
           <slot
             v-if="$slots.head"
             name="head"
@@ -747,6 +842,23 @@ function getTextColor(hex) {
             :remove="removeTag"
             :toggle="toggleOption"
           />
+          <div v-else class="selected-summary">
+            <div class="selected-summary__title">{{ selectedSummaryTitle }}</div>
+            <div v-if="selectedTags.length" class="selected-summary__chips">
+              <button
+                v-for="tag in selectedTags"
+                :key="`selected-${tag.id}`"
+                type="button"
+                class="selected-summary__chip"
+                :style="{ backgroundColor: tag.color, color: getTextColor(tag.color) }"
+                @click.stop="removeTag(tag)"
+              >
+                <span class="selected-summary__chip-name" :title="tag.name">{{ tag.name }}</span>
+                <span class="selected-summary__chip-remove">x</span>
+              </button>
+            </div>
+            <div v-else class="selected-summary__empty">{{ selectedSummaryEmpty }}</div>
+          </div>
           <div v-if="allowCreate" class="panel-header">
             <input
               ref="inputRef"
@@ -777,6 +889,7 @@ function getTextColor(hex) {
                 isSelected(option) ? 'option-row-selected' : '',
                 disabled ? 'option-row-disabled' : ''
               ]"
+              @mousedown.stop
               @click.stop="disabled ? null : handleOptionClick(option, $event)"
               role="button"
               tabindex="0"
@@ -799,8 +912,8 @@ function getTextColor(hex) {
                     type="button"
                     class="option-more"
                     :disabled="disabled"
-                    aria-label="Edit tag color"
-                    title="Edit tag color"
+                    :aria-label="editTagColorLabel"
+                    :title="editTagColorLabel"
                   >
                     <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
                       <circle cx="4" cy="10" r="1.5"></circle>
@@ -824,9 +937,7 @@ function getTextColor(hex) {
               </div>
             </div>
 
-            <div v-if="availableOptions.length === 0" class="option-empty">
-              No tags yet.
-            </div>
+            <div v-if="availableOptions.length === 0" class="option-empty">{{ emptyOptionsLabel }}</div>
           </div>
         </div>
       </template>
@@ -908,10 +1019,10 @@ function getTextColor(hex) {
   align-items: center;
   gap: 6px;
   border-radius: 4px;
-  padding: 3px 10px;
+  padding: 3px 8px;
   font-size: 11px;
   font-weight: var(--font-weight-medium);
-  line-height: 1;
+  line-height: 1.25;
   height: 22px;
   max-width: 160px;
   flex: 0 1 auto;
@@ -951,6 +1062,7 @@ function getTextColor(hex) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.25;
 }
 
 .tag-remove {
@@ -974,6 +1086,85 @@ function getTextColor(hex) {
 .tag-panel {
   /* width: 280px;
   max-width: 320px; */
+}
+
+.tag-panel--wrap-chips .tag-pill {
+  white-space: normal;
+  word-break: break-word;
+  height: auto;
+  min-height: 22px;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+.tag-panel--wrap-chips .tag-name {
+  max-width: none;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.tag-panel--wrap-chips .selected-summary__chip {
+  max-width: 100%;
+  align-items: flex-start;
+}
+
+.tag-panel--wrap-chips .selected-summary__chip-name {
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.tag-panel--wrap-chips .option-pill {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.25;
+  height: auto;
+}
+
+.selected-summary {
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.selected-summary__title {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: #6b7280;
+}
+
+.selected-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.selected-summary__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.selected-summary__chip-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-summary__chip-remove {
+  opacity: 0.85;
+}
+
+.selected-summary__empty {
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .panel-header {
