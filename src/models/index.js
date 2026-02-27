@@ -109,6 +109,104 @@ function normalizeDate(value) {
   return raw
 }
 
+function hasNonEmptyValue(value) {
+  return value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '')
+}
+
+function normalizeLookupKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+}
+
+function resolvePropertySourceValue(task, sourceField) {
+  if (!sourceField) return null
+
+  if (String(sourceField).endsWith('Id')) {
+    const relationKey = String(sourceField).slice(0, -2)
+    const relation = task?.[relationKey] || task?._raw?.[relationKey]
+    if (hasNonEmptyValue(relation)) return relation
+  }
+
+  const fromTask = task?.[sourceField]
+  if (hasNonEmptyValue(fromTask)) return fromTask
+
+  const fromRaw = task?._raw?.[sourceField]
+  if (hasNonEmptyValue(fromRaw)) return fromRaw
+
+  return null
+}
+
+function normalizeTaskPropertyValues(task = {}) {
+  const rawValues = Array.isArray(task.propertyValues)
+    ? task.propertyValues
+    : Array.isArray(task.customValues)
+      ? task.customValues
+      : []
+
+  return rawValues
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null
+      const property = entry.property && typeof entry.property === 'object' ? entry.property : {}
+      const propertyId = entry.propertyId || property.id || null
+      const propertyKey = entry.propertyKey || entry.key || property.key || null
+      const sourceField = property?.settings?.sourceField || null
+
+      const normalizedValue = hasNonEmptyValue(entry.value)
+        ? entry.value
+        : resolvePropertySourceValue(task, sourceField)
+
+      return {
+        ...entry,
+        property,
+        propertyId,
+        propertyKey,
+        value: normalizedValue ?? entry.value ?? null
+      }
+    })
+    .filter((entry) => entry && (entry.propertyId || entry.propertyKey))
+}
+
+function buildTaskPropertyValueMap(propertyValues = []) {
+  const map = {}
+
+  const write = (key, value) => {
+    const rawKey = String(key || '').trim()
+    if (!rawKey) return
+    map[rawKey] = value
+    const normalizedKey = normalizeLookupKey(rawKey)
+    if (normalizedKey && normalizedKey !== rawKey) {
+      map[normalizedKey] = value
+    }
+  }
+
+  propertyValues.forEach((entry) => {
+    const property = entry?.property || {}
+    const value = entry?.value
+
+    write(entry?.propertyId, value)
+    write(property?.id, value)
+    write(entry?.propertyKey, value)
+    write(property?.key, value)
+    write(property?.label, value)
+    write(property?.settings?.sourceField, value)
+  })
+
+  return map
+}
+
+function normalizeTagsValue(value) {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
 /**
  * Project status options
  * @readonly
@@ -234,6 +332,10 @@ export function createProject(data = {}) {
 export function createTask(data = {}) {
   // Handle inconsistent API response naming (children vs subTasks)
   const rawChildren = Array.isArray(data.children) ? data.children : (Array.isArray(data.subTasks) ? data.subTasks : [])
+  const propertyValues = normalizeTaskPropertyValues(data)
+  const propertyValueMap = buildTaskPropertyValueMap(propertyValues)
+  const rawPriority = hasNonEmptyValue(data.priority) ? data.priority : propertyValueMap.priority
+  const normalizedPriority = hasNonEmptyValue(rawPriority) ? normalizeTaskPriority(rawPriority) : null
 
   // Recursively normalize children to ensure they are also valid Task objects
   // This avoids circular dependency issues if imported carefully, or just rely on function hoisting/reference
@@ -246,6 +348,7 @@ export function createTask(data = {}) {
   })
   return {
     id: data.id || null,
+    projectItem: data.projectItem || null,
     projectItemId:
       data.projectItemId ||
       data.projectItem?.id ||
@@ -256,17 +359,26 @@ export function createTask(data = {}) {
     parentTaskId: data.parentTaskId || data.parentId || null,
     title: data.title || '',
     description: data.description || '',
-    status: normalizeTaskStatus(data.status),
-    priority: normalizeTaskPriority(data.priority),
-    assigneeId: data.assigneeId || data.assignToId || data.assignTo?.id || null,
-    assignee: normalizeAssignee(data.assignee || data.assignTo),
+    status: normalizeTaskStatus(data.status || propertyValueMap.status),
+    priority: normalizedPriority,
+    assigneeId:
+      data.assigneeId ||
+      data.assignToId ||
+      data.assignTo?.id ||
+      (typeof propertyValueMap.assignee === 'string' ? propertyValueMap.assignee : propertyValueMap.assignee?.id) ||
+      null,
+    assignee: normalizeAssignee(
+      data.assignee ||
+      data.assignTo ||
+      (typeof propertyValueMap.assignee === 'object' ? propertyValueMap.assignee : null)
+    ),
     reporterId: data.reporterId || data.createdById || null,
     reporter: data.reporter || data.createdBy || null,
-    dueDate: normalizeDate(data.dueDate),
+    dueDate: normalizeDate(data.dueDate || propertyValueMap.due_date || propertyValueMap.dueDate),
     startDate: data.startDate || null,
     estimatedHours: data.estimatedHours || null,
     actualHours: data.actualHours || null,
-    tags: data.tags || [],
+    tags: Array.isArray(data.tags) && data.tags.length ? data.tags : normalizeTagsValue(propertyValueMap.tags),
     attachments: data.attachments || [],
     watchers: data.watchers || [],
     subtaskCount: data.subtaskCount ?? children.length ?? 0,
@@ -275,6 +387,9 @@ export function createTask(data = {}) {
     order: data.order ?? data.index ?? 0,
     kanbanColumnId: data.kanbanColumnId || data.kanbanColumn?.id || null,
     kanbanColumn: data.kanbanColumn || null,
+    customValues: propertyValues,
+    propertyValues,
+    propertyValueMap,
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: data.updatedAt || new Date().toISOString(),
     completedAt: data.completedAt || null,
