@@ -37,6 +37,10 @@ const filteredMenuItems = computed(() => {
 
 const hasCustomColumns = computed(() => Array.isArray(props.customColumns) && props.customColumns.length > 0)
 
+function isRenderableIcon(icon) {
+  return typeof icon === 'object' || typeof icon === 'function'
+}
+
 function handleMenuSelect(item) {
   if (!item?.key || item.disabled) return
   emit('toggle-column', item.key)
@@ -63,7 +67,7 @@ function handleRemoveCustomColumn(columnId) {
 
     <template #item="{ item }">
       <div class="flex items-center gap-2 min-w-0">
-        <component v-if="item.icon" :is="item.icon" class="w-4 h-4 text-gray-500 shrink-0" />
+        <component v-if="isRenderableIcon(item.icon)" :is="item.icon" class="w-4 h-4 text-gray-500 shrink-0" />
         <span class="truncate">{{ item.label }}</span>
       </div>
     </template>

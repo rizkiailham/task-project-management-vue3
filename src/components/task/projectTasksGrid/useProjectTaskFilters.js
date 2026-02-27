@@ -1,17 +1,4 @@
 import { computed, ref } from 'vue'
-import {
-  TASK_COLUMN_DEFINITIONS,
-  getColumnFilterType,
-  getColumnIcon,
-  getAllColumnIds
-} from '@/components/task/projectTasksGrid/taskColumnDefinitions'
-
-/**
- * Derive column type map from central definitions for quick lookup.
- */
-const COLUMN_TYPES = Object.fromEntries(
-  TASK_COLUMN_DEFINITIONS.map((def) => [def.id, def.type])
-)
 
 const OPERATORS_BY_TYPE = {
   text: [
@@ -37,10 +24,22 @@ const OPERATORS_BY_TYPE = {
     { id: 'before', label: 'before' },
     { id: 'after', label: 'after' },
     { id: 'between', label: 'between' }
+  ],
+  number: [
+    { id: 'equals', label: 'equals' },
+    { id: 'not_equals', label: 'does not equal' },
+    { id: 'greater_than', label: 'greater than' },
+    { id: 'less_than', label: 'less than' }
+  ],
+  boolean: [
+    { id: 'is_checked', label: 'is checked' },
+    { id: 'is_unchecked', label: 'is unchecked' }
+  ],
+  checkbox: [
+    { id: 'is_checked', label: 'is checked' },
+    { id: 'is_unchecked', label: 'is unchecked' }
   ]
 }
-
-const DEFAULT_FILTER_COLUMN_IDS = getAllColumnIds()
 
 let filterId = 0
 
@@ -67,6 +66,10 @@ function getByPath(source, path) {
   return current
 }
 
+function hasValue(value) {
+  return value !== undefined && value !== null && !(typeof value === 'string' && value === '')
+}
+
 /**
  * Composable for managing task grid filters
  * @param {Function} t - i18n translation function
@@ -91,52 +94,35 @@ export function useProjectTaskFilters(t, options = {}) {
   })
 
   const filterableColumns = computed(() => {
-    if (externalColumnDefinitions.value.length) {
-      return externalColumnDefinitions.value.map((column) => ({
-        id: column.id,
-        label: column.label || getColumnLabel(column.id),
-        icon: column.icon || getColumnIcon(column.id),
-        type: getColumnType(column.id)
-      }))
-    }
-
-    return DEFAULT_FILTER_COLUMN_IDS.map((colId) => ({
-      id: colId,
-      label: getColumnLabel(colId),
-      icon: getColumnIcon(colId),
-      type: getColumnType(colId)
+    return externalColumnDefinitions.value.map((column) => ({
+      id: column.id,
+      label: column.label || getColumnLabel(column.id),
+      icon: column.icon || null,
+      type: column.type || column.propertyType || getColumnType(column.id),
+      propertyOptions: Array.isArray(column.propertyOptions) ? column.propertyOptions : []
     }))
   })
 
   function getColumnLabel(colId) {
     const externalDefinition = externalColumnMap.value.get(colId)
     if (externalDefinition?.label) return externalDefinition.label
-
-    const labelMap = {
-      title: t('tasks.fields.title', 'Title'),
-      projectName: t('tasks.project', 'Project'),
-      status: t('taskDetail.status', 'Status'),
-      assignee: t('taskDetail.assignee', 'Assignee'),
-      dueDate: t('taskDetail.dueDate', 'Due date'),
-      tags: t('taskDetail.tags', 'Tags'),
-      trackingTime: t('tasks.trackingTime', 'Time tracking'),
-      priority: t('tasks.priority', 'Priority'),
-      createdAt: t('tasks.columnOptions.createdAt', 'Created at'),
-      updatedAt: t('tasks.columnOptions.updatedAt', 'Updated at'),
-      createdBy: t('tasks.columnOptions.createdBy', 'Created by'),
-      updatedBy: t('tasks.columnOptions.lastUpdatedBy', 'Last updated by'),
-      timezone: t('tasks.columnOptions.timezone', 'Timezone')
-    }
-    return labelMap[colId] || colId
+    return colId
   }
 
   function getColumnType(colId) {
-    return COLUMN_TYPES[colId] || 'text'
+    const externalDefinition = externalColumnMap.value.get(colId)
+    if (externalDefinition?.type) return externalDefinition.type
+    if (externalDefinition?.propertyType) return externalDefinition.propertyType
+    return 'text'
   }
 
   function getOperatorsForColumn(colId) {
     const type = getColumnType(colId)
-    return OPERATORS_BY_TYPE[type] || OPERATORS_BY_TYPE.text
+    const operators = OPERATORS_BY_TYPE[type] || OPERATORS_BY_TYPE.text
+    return operators.map((operator) => ({
+      ...operator,
+      label: t(`tasks.filters.operators.${operator.id}`, operator.label)
+    }))
   }
 
   function addFilter(columnId) {
@@ -156,7 +142,10 @@ export function useProjectTaskFilters(t, options = {}) {
       operator: defaultOperator,
       value: type === 'multiselect' ? [] : '',
       label: getColumnLabel(columnId),
-      icon: getColumnIcon(columnId)
+      icon: externalColumnMap.value.get(columnId)?.icon || null,
+      propertyOptions: Array.isArray(externalColumnMap.value.get(columnId)?.propertyOptions)
+        ? externalColumnMap.value.get(columnId).propertyOptions
+        : []
     }
 
     activeFilters.value = [...activeFilters.value, filter]
@@ -235,6 +224,11 @@ export function useProjectTaskFilters(t, options = {}) {
         return matchMultiselectFilter(cellValue, operator, value)
       case 'date':
         return matchDateFilter(cellValue, operator, value)
+      case 'number':
+        return matchNumberFilter(cellValue, operator, value)
+      case 'boolean':
+      case 'checkbox':
+        return matchBooleanFilter(cellValue, operator, value)
       default:
         return true
     }
@@ -277,7 +271,7 @@ export function useProjectTaskFilters(t, options = {}) {
 
     for (const candidate of lookupCandidates) {
       const value = customFieldMap[candidate]
-      if (value !== undefined && value !== null && value !== '') {
+      if (hasValue(value)) {
         return value
       }
     }
@@ -285,12 +279,12 @@ export function useProjectTaskFilters(t, options = {}) {
     const directCandidates = [column, sourceKey].filter(Boolean)
     for (const path of directCandidates) {
       const value = getByPath(row, path) ?? getByPath(row?._raw, path)
-      if (value !== undefined && value !== null && value !== '') {
+      if (hasValue(value)) {
         return value
       }
     }
 
-    return row?.[column] || ''
+    return hasValue(row?.[column]) ? row[column] : ''
   }
 
   function matchTextFilter(cellValue, operator, value) {
@@ -357,17 +351,23 @@ export function useProjectTaskFilters(t, options = {}) {
     // If it's empty, consider it unmatched unless we specifically check for unassigned (not implemented here yet)
     if (!filterUserObj || !filterUserObj.id) return true
 
-    // 'cellValue' could be an ID (e.g. from row.assignee string matching user id)
-    // or a user string. This is project specific, assuming we match cellValue loosely or explicitly vs filterUserObj.id
-    // Usually the cellValue here comes from `row.assignee` which might just be a string. 
-    // Just lowercasing and exact matching ID for best results
-    const cellStr = String(cellValue || '').trim().toLowerCase()
-
     // We try to match either by exact user id or user name if that's what's stored in the grid
     const matchId = String(filterUserObj.id).trim().toLowerCase()
     const matchName = String(filterUserObj.name || '').trim().toLowerCase()
+    const matchEmail = String(filterUserObj.email || '').trim().toLowerCase()
 
-    const matches = cellStr === matchId || cellStr === matchName
+    const values = []
+    if (cellValue && typeof cellValue === 'object') {
+      values.push(
+        String(cellValue.id || '').trim().toLowerCase(),
+        String(cellValue.name || '').trim().toLowerCase(),
+        String(cellValue.email || '').trim().toLowerCase()
+      )
+    } else {
+      values.push(String(cellValue || '').trim().toLowerCase())
+    }
+
+    const matches = values.some((value) => value && (value === matchId || value === matchName || value === matchEmail))
 
     return operator === 'is' ? matches : !matches
   }
@@ -391,6 +391,55 @@ export function useProjectTaskFilters(t, options = {}) {
         return cellDay.getTime() < filterDay.getTime()
       case 'after':
         return cellDay.getTime() > filterDay.getTime()
+      default:
+        return true
+    }
+  }
+
+  /**
+   * Match a number-type filter
+   * @param {*} cellValue
+   * @param {string} operator - equals, not_equals, greater_than, less_than
+   * @param {*} value - numeric filter value
+   * @returns {boolean}
+   */
+  function matchNumberFilter(cellValue, operator, value) {
+    if (value === '' || value === null || value === undefined) return true
+    const cellNum = Number(cellValue)
+    const filterNum = Number(value)
+    if (isNaN(cellNum) || isNaN(filterNum)) return true
+
+    switch (operator) {
+      case 'equals':
+        return cellNum === filterNum
+      case 'not_equals':
+        return cellNum !== filterNum
+      case 'greater_than':
+        return cellNum > filterNum
+      case 'less_than':
+        return cellNum < filterNum
+      default:
+        return true
+    }
+  }
+
+  /**
+   * Match a boolean/checkbox-type filter
+   * @param {*} cellValue
+   * @param {string} operator - is_checked, is_unchecked
+   * @returns {boolean}
+   */
+  function matchBooleanFilter(cellValue, operator) {
+    const isTruthy =
+      cellValue === true ||
+      cellValue === 'true' ||
+      cellValue === '1' ||
+      cellValue === 1
+    switch (operator) {
+      case 'is_checked':
+        return isTruthy
+      case 'is_unchecked':
+        return !isTruthy
       default:
         return true
     }
