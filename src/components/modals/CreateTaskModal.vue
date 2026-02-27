@@ -4,7 +4,7 @@
  */
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useProjectStore, useUIStore, useAIStore, useUserStore } from '@/stores'
+import { useTaskStore, useProjectStore, useUIStore, useAIStore, useUserStore, useProjectPropertyStore } from '@/stores'
 import { TaskStatus, TaskPriority } from '@/models'
 import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
 import Avatar from 'primevue/avatar'
@@ -21,6 +21,7 @@ const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
 const aiStore = useAIStore()
+const propertyStore = useProjectPropertyStore()
 const { t } = useI18n()
 
 // Modal visibility
@@ -73,18 +74,41 @@ const projectOptions = computed(() =>
   projectStore.projects.map(p => ({ label: p.name, value: p.id }))
 )
 
-const statusOptions = [
-  { label: t('tasks.statusOptions.todo'), value: TaskStatus.TODO },
-  { label: t('tasks.statusOptions.inProgress'), value: TaskStatus.IN_PROGRESS },
-  { label: t('tasks.statusOptions.inReview'), value: TaskStatus.IN_REVIEW }
-]
+const statusOptions = computed(() => {
+  const pid = projectId?.value || projectStore.currentProjectId
+  if (pid) {
+    const dynOpts = propertyStore.statusOptions(pid)
+    if (dynOpts.length > 0) {
+      return dynOpts.map(opt => ({ label: opt.value, value: opt.value }))
+    }
+  }
+  return [
+    { label: t('tasks.statusOptions.todo'), value: TaskStatus.TODO },
+    { label: t('tasks.statusOptions.inProgress'), value: TaskStatus.IN_PROGRESS },
+    { label: t('tasks.statusOptions.inReview'), value: TaskStatus.IN_REVIEW }
+  ]
+})
 
-const priorityOptions = [
-  { label: t('tasks.priorityOptions.urgent'), value: TaskPriority.URGENT },
-  { label: t('tasks.priorityOptions.high'), value: TaskPriority.HIGH },
-  { label: t('tasks.priorityOptions.medium'), value: TaskPriority.MEDIUM },
-  { label: t('tasks.priorityOptions.low'), value: TaskPriority.LOW }
-]
+const priorityOptions = computed(() => {
+  const pid = projectId?.value || projectStore.currentProjectId
+  if (pid) {
+    const dynOpts = propertyStore.priorityOptions(pid)
+    if (dynOpts.length > 0) {
+      return dynOpts.map(opt => ({ label: opt.value, value: opt.value }))
+    }
+  }
+  return [
+    { label: t('tasks.priorityOptions.urgent'), value: TaskPriority.URGENT },
+    { label: t('tasks.priorityOptions.high'), value: TaskPriority.HIGH },
+    { label: t('tasks.priorityOptions.medium'), value: TaskPriority.MEDIUM },
+    { label: t('tasks.priorityOptions.low'), value: TaskPriority.LOW }
+  ]
+})
+
+// Ensure properties are loaded when project changes
+watch(() => projectId?.value || projectStore.currentProjectId, (pid) => {
+  if (pid) propertyStore.fetchProperties(pid)
+}, { immediate: true })
 
 // Watch for modal data changes
 watch(visible, (isVisible) => {
