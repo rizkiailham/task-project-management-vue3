@@ -2,13 +2,13 @@
 import { ref, watch, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Check, ChevronDown, Search, User as UserIcon } from 'lucide-vue-next'
-import { getAvatarColor } from '@/utils/avatarColor'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import Avatar from 'primevue/avatar'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
 import * as projectApi from '@/api/project.api'
 import { useProjectStore, useUIStore, useUserStore } from '@/stores'
+import { normalizeUserForDisplay } from '@/utils/user'
 
 const props = defineProps({
   projectId: {
@@ -48,13 +48,17 @@ const activeProjectId = computed(() => props.projectId || projectStore.currentPr
 
 // Local list of users to show when not searching
 const initialUsers = computed(() => {
-    return userStore.users.map(user => ({
-        id: user.id,
-        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.name,
-        email: user.email || '',
-        initials: (user.firstName || user.name || '?').charAt(0),
-        avatarUrl: user.avatar
-    }))
+    return userStore.users.map(user => {
+        const normalized = normalizeUserForDisplay(user)
+        return {
+            id: normalized.id,
+            name: normalized.name,
+            email: normalized.email,
+            initials: normalized.initials,
+            avatarUrl: normalized.avatarUrl,
+            color: normalized.color
+        }
+    })
 })
 
 async function fetchResults(query) {
@@ -73,13 +77,17 @@ async function fetchResults(query) {
     })
     
     const users = Array.isArray(response?.users) ? response.users : []
-    searchResults.value = users.map(user => ({
-      id: user.id,
-      name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
-      email: user.email || '',
-      initials: (user.firstName || '?').charAt(0),
-      avatarUrl: user.avatar
-    }))
+    searchResults.value = users.map(user => {
+      const normalized = normalizeUserForDisplay(user)
+      return {
+        id: normalized.id,
+        name: normalized.name,
+        email: normalized.email,
+        initials: normalized.initials,
+        avatarUrl: normalized.avatarUrl,
+        color: normalized.color
+      }
+    })
   } catch (error) {
     console.error('Search failed:', error)
     searchResults.value = []
@@ -189,7 +197,7 @@ onMounted(() => {
                 :label="!user.avatarUrl ? user.initials : undefined"
                 shape="circle"
                 class="usd-list-avatar"
-                :style="{ backgroundColor: user.avatarUrl ? 'transparent' : getAvatarColor(user.name) }"
+                :style="{ backgroundColor: user.color }"
               />
               <div class="usd-list-info">
                 <span class="usd-list-name">{{ user.name }}</span>
@@ -216,7 +224,7 @@ onMounted(() => {
                 :label="!user.avatarUrl ? user.initials : undefined"
                 shape="circle"
                 class="usd-list-avatar"
-                :style="{ backgroundColor: user.avatarUrl ? 'transparent' : getAvatarColor(user.name) }"
+                :style="{ backgroundColor: user.color }"
               />
               <div class="usd-list-info">
                 <span class="usd-list-name">{{ user.name }}</span>
