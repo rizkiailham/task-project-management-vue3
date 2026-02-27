@@ -460,7 +460,13 @@
       "generateDescription": "Failed to generate description"
     },
     "noFiltersFound": "No filters found",
-    "selectedLabel": "selected"
+    "selectedLabel": "selected",
+    "selectedEntity": "Selected {entity}",
+    "noEntitySelected": "No {entity} selected.",
+    "editTagColor": "Edit tag color",
+    "noTagsYet": "No tags yet.",
+    "selectedTags": "Selected tags",
+    "noTagsSelected": "No tags selected."
   },
   "projects": {
     "title": "Projects",

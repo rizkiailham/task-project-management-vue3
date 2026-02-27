@@ -4,7 +4,7 @@
  */
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useProjectStore, useUIStore } from '@/stores'
+import { useTaskStore, useProjectStore, useUIStore, useProjectPropertyStore } from '@/stores'
 import ProjectTasksGrid from '@/components/task/ProjectTasksGrid.vue'
 import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
@@ -12,16 +12,21 @@ import Skeleton from 'primevue/skeleton'
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const propertyStore = useProjectPropertyStore()
 const { t } = useI18n()
 
 const tasks = computed(() => taskStore.tasks)
 const isLoading = computed(() => taskStore.isLoading)
 
 async function loadData() {
-  if (projectStore.currentProjectId) {
+  if (projectStore.activeProjectItemId) {
     // Clear state before fetching to avoid stale data
     taskStore.clearState()
-    await taskStore.fetchTasks()
+    const requests = [taskStore.fetchTasks()]
+    if (projectStore.currentProjectId) {
+      requests.push(propertyStore.fetchProperties(projectStore.currentProjectId).catch(() => {}))
+    }
+    await Promise.all(requests)
   }
 }
 

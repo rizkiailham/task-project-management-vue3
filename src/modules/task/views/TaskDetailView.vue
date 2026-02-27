@@ -4,7 +4,7 @@
  */
 import { onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useTaskStore, useUIStore } from '@/stores'
+import { useTaskStore, useUIStore, useProjectPropertyStore } from '@/stores'
 
 // PrimeVue
 import Button from 'primevue/button'
@@ -14,6 +14,7 @@ const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
+const propertyStore = useProjectPropertyStore()
 
 const taskId = computed(() => route.params.taskId)
 const task = computed(() => taskStore.currentTask)
@@ -23,6 +24,15 @@ onMounted(async () => {
   if (taskId.value) {
     try {
       await taskStore.fetchTask(taskId.value)
+      
+      const pid =
+        taskStore.currentTask?.projectId ||
+        taskStore.currentTask?.projectItem?.projectId ||
+        taskStore.currentTask?._raw?.projectItem?.projectId ||
+        null
+      if (pid) {
+        propertyStore.fetchProperties(pid).catch(() => {})
+      }
     } catch (error) {
       uiStore.showApiError(error, 'Failed to load task')
       router.back()

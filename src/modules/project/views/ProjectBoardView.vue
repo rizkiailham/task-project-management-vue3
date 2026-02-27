@@ -11,7 +11,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useProjectStore, useKanbanColumnStore, useUIStore, useUserStore } from '@/stores'
+import { useTaskStore, useProjectStore, useKanbanColumnStore, useUIStore, useUserStore, useProjectPropertyStore } from '@/stores'
 import { reorderTasks } from '@/api/task.api'
 import KanbanBoard from '@/components/task/KanbanBoard.vue'
 import { useConfirm } from 'primevue/useconfirm'
@@ -22,6 +22,7 @@ const projectStore = useProjectStore()
 const kanbanColumnStore = useKanbanColumnStore()
 const uiStore = useUIStore()
 const userStore = useUserStore()
+const propertyStore = useProjectPropertyStore()
 const { t } = useI18n()
 const confirm = useConfirm()
 
@@ -142,7 +143,8 @@ async function handleUpdateTaskTitle({ taskId, title }) {
 
 // Fetch data on mount and when item changes
 async function loadBoardData() {
-  if (!projectStore.activeProjectItemId) return
+  const projectItemId = projectStore.activeProjectItemId
+  if (!projectItemId) return
   
   viewLoading.value = true
   try {
@@ -150,10 +152,16 @@ async function loadBoardData() {
     taskStore.clearState()
     kanbanColumnStore.clearState()
     
-    await Promise.all([
+    const requests = [
       kanbanColumnStore.fetchColumns(),
       taskStore.fetchTasks()
-    ])
+    ]
+
+    if (projectStore.currentProjectId) {
+      requests.push(propertyStore.fetchProperties(projectStore.currentProjectId).catch(() => {}))
+    }
+
+    await Promise.all(requests)
   } finally {
     viewLoading.value = false
   }

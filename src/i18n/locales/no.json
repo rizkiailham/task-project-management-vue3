@@ -451,7 +451,13 @@
       "generateDescription": "Kunne ikke generere beskrivelse"
     },
     "noFiltersFound": "Ingen filtre funnet",
-    "selectedLabel": "valgt"
+    "selectedLabel": "valgt",
+    "selectedEntity": "Valgt {entity}",
+    "noEntitySelected": "Ingen {entity} valgt.",
+    "editTagColor": "Rediger farge",
+    "noTagsYet": "Ingen tagger ennå.",
+    "selectedTags": "Valgte tagger",
+    "noTagsSelected": "Ingen tagger valgt."
   },
   "projects": {
     "title": "Prosjekter",
