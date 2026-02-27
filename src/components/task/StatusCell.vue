@@ -47,10 +47,109 @@ function resolveIconProps(icon, fallbackStatus) {
   return { ...ICON_OPTIONS[0], icon: '0' }
 }
 
+function resolveIconIdFromProgress(progress) {
+  const value = Number(progress ?? 0)
+  if (value >= 100) return '100'
+  if (value >= 75) return '75'
+  if (value >= 50) return '50'
+  if (value >= 25) return '25'
+  return '0'
+}
+
 const rowData = computed(() => props.params?.data || {})
 const selectedColumnId = ref('')
 
+function normalizeLookupKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+}
+
+function resolveStatusPropertyDefinition() {
+  const definitionsSource = props.params?.context?.propertyDefinitions
+  const definitions = Array.isArray(definitionsSource?.value)
+    ? definitionsSource.value
+    : Array.isArray(definitionsSource)
+      ? definitionsSource
+      : []
+
+  return definitions.find((property) => normalizeLookupKey(property?.key) === 'status') || null
+}
+
+function getMapValue(map, candidates = []) {
+  if (!map || typeof map !== 'object') return undefined
+  for (const candidate of candidates) {
+    const rawKey = String(candidate || '').trim()
+    if (!rawKey) continue
+    if (rawKey in map) return map[rawKey]
+    const normalized = normalizeLookupKey(rawKey)
+    if (normalized in map) return map[normalized]
+  }
+  return undefined
+}
+
+function normalizeStatusValue(value) {
+  if (value === undefined || value === null || value === '') return ''
+  if (typeof value === 'object') {
+    return String(value.value ?? value.label ?? value.name ?? value.id ?? '').trim()
+  }
+  return String(value).trim()
+}
+
+function resolveCurrentStatusValue() {
+  const data = rowData.value || {}
+  const statusProperty = resolveStatusPropertyDefinition()
+  const candidates = [statusProperty?.id, statusProperty?.key, statusProperty?.settings?.sourceField, 'status'].filter(Boolean)
+
+  const fromPropertyMap = getMapValue(data.propertyValueMap, candidates)
+  const normalizedFromPropertyMap = normalizeStatusValue(fromPropertyMap)
+  if (normalizedFromPropertyMap) return normalizedFromPropertyMap
+
+  const fromCustomMap = getMapValue(data.customFieldMap, candidates)
+  const normalizedFromCustomMap = normalizeStatusValue(fromCustomMap)
+  if (normalizedFromCustomMap) return normalizedFromCustomMap
+
+  const entrySources = [data.propertyValues, data.customValues, data?._raw?.propertyValues, data?._raw?.customValues]
+  for (const source of entrySources) {
+    if (!Array.isArray(source)) continue
+    const entry = source.find((item) => {
+      const property = item?.property || {}
+      const id = String(item?.propertyId || property?.id || '').trim()
+      const key = normalizeLookupKey(item?.propertyKey || item?.key || property?.key || '')
+      return candidates.some((candidate) => String(candidate) === id || normalizeLookupKey(candidate) === key)
+    })
+    const normalized = normalizeStatusValue(entry?.value)
+    if (normalized) return normalized
+  }
+
+  return normalizeStatusValue(data.status || data?._raw?.status || '')
+}
+
 const statusOptions = computed(() => {
+  const statusProperty = resolveStatusPropertyDefinition()
+  const propertyOptions = Array.isArray(statusProperty?.settings?.options) ? statusProperty.settings.options : []
+  if (propertyOptions.length) {
+    return propertyOptions.map((option, index) => {
+      const rawValue = option?.value ?? option?.label ?? option?.name ?? option?.id ?? ''
+      const optionValue = String(rawValue || '').trim()
+      const iconIdFromProgress = resolveIconIdFromProgress(option?.progress)
+      const normalizedIcon = normalizeIconValue(option?.icon ?? iconIdFromProgress)
+      const canonical = resolveIconProps(normalizedIcon, optionValue.toLowerCase())
+      const progress = Number.isFinite(Number(option?.progress)) ? Number(option.progress) : canonical.progress
+      const status = String(option?.status || canonical.status || 'todo')
+      return {
+        id: String(option?.id ?? (optionValue || `status-${index + 1}`)),
+        value: optionValue,
+        label: optionValue || t('taskDetail.status', 'Status'),
+        icon: normalizedIcon,
+        status,
+        progress,
+        color: option?.color || canonical.color
+      }
+    })
+  }
+
   const fromContext = props.params?.context?.statusOptions?.value
   if (Array.isArray(fromContext) && fromContext.length) return fromContext
 
@@ -66,12 +165,12 @@ const statusOptions = computed(() => {
 
 const currentOption = computed(() => {
   const options = statusOptions.value
-  const currentColumnId = selectedColumnId.value || (rowData.value?.kanbanColumnId ? String(rowData.value.kanbanColumnId) : null)
-  if (currentColumnId) {
-    const byColumnId = options.find((item) => String(item.id) === currentColumnId)
-    if (byColumnId) return byColumnId
-  }
-  const byStatus = options.find((item) => item.status === rowData.value?.status)
+  const currentStatusValue = resolveCurrentStatusValue()
+  const byValue = options.find((item) => String(item.value ?? item.label ?? '') === currentStatusValue)
+  if (byValue) return byValue
+  const byId = options.find((item) => String(item.id ?? '') === currentStatusValue)
+  if (byId) return byId
+  const byStatus = options.find((item) => item.status === currentStatusValue)
   return byStatus || options[0]
 })
 
@@ -84,37 +183,39 @@ const menuItems = computed(() =>
 
 function selectStatus(option) {
   const taskId = rowData.value?.id
-  if (!taskId || !option?.id) return
+  if (!taskId) return
 
-  const selectedId = String(option.id)
-  const currentId = rowData.value?.kanbanColumnId ? String(rowData.value.kanbanColumnId) : null
-  if (currentId && selectedId === currentId) return
+  const nextValue = String(option?.value ?? option?.label ?? option?.id ?? '').trim()
+  const currentValue = resolveCurrentStatusValue()
+  if (!nextValue || nextValue === currentValue) return
 
-  // Optimistic UI: switch icon/label immediately.
-  selectedColumnId.value = selectedId
+  selectedColumnId.value = nextValue
 
-  // Important FE/BE mapping note:
-  // "Status" dropdown in UI represents Kanban Column selection.
-  // Persisted API field is `kanbanColumnId` (and related `kanbanColumn` object), not `status`.
-  props.params?.context?.updateStatus?.({
-    taskId,
-    kanbanColumnId: option.id,
-    previousKanbanColumnId: currentId,
-    projectItemId: rowData.value?.projectItemId || rowData.value?._raw?.projectItemId || rowData.value?._raw?.projectId || null
-  })
+  const updateFn = props.params?.context?.updatePropertyValue
+  const statusProperty = resolveStatusPropertyDefinition()
+  const propertyId = String(statusProperty?.id || 'status').trim()
+  if (!updateFn || !propertyId) return
+
+  Promise.resolve(
+    updateFn({
+      taskId,
+      propertyId,
+      value: nextValue
+    })
+  )
 }
 
 watch(
-  () => rowData.value?.kanbanColumnId,
-  (nextId) => {
-    selectedColumnId.value = nextId ? String(nextId) : ''
+  () => [rowData.value, props.params?.context?.propertyDefinitions?.value],
+  () => {
+    selectedColumnId.value = resolveCurrentStatusValue()
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
 </script>
 
 <template>
-  <div class="status-cell-wrapper h-full w-full flex items-center justify-center">
+  <div class="status-cell-wrapper h-full w-full flex items-center justify-start">
     <DropdownMenu :items="menuItems" position="right" width="14rem">
       <template #trigger>
         <button type="button" class="status-trigger flex items-center justify-center rounded-md p-1 hover:bg-black/5">
@@ -137,7 +238,7 @@ watch(
           <span class="text-xs text-gray-700 truncate">{{ item.label }}</span>
         </div>
         <i
-          v-if="String(item.id) === String(currentOption?.id)"
+          v-if="String(item.value ?? item.label ?? item.id) === String(currentOption?.value ?? currentOption?.label ?? currentOption?.id)"
           class="pi pi-check text-[10px] text-primary-600"
         ></i>
       </template>
