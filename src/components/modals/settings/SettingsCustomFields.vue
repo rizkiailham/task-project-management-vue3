@@ -961,7 +961,7 @@ onUnmounted(() => {
 }
 
 .settings-divider {
-  width: 12px;
+  width: 1px;
   position: relative;
   cursor: col-resize;
   display: flex;

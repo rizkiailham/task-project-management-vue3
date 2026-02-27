@@ -5,7 +5,7 @@
 import { computed, ref, watch } from 'vue'
 import { useConfirm } from 'primevue/useconfirm'
 import { useI18n } from 'vue-i18n'
-import { useProjectStore, useUIStore, useUserStore } from '@/stores'
+import { useProjectStore, useUIStore, useUserStore, useProjectPropertyStore } from '@/stores'
 import * as projectApi from '@/api/project.api'
 import FormInput from '@/components/ui/FormInput.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
@@ -20,6 +20,7 @@ const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
 const userStore = useUserStore()
+const propertyStore = useProjectPropertyStore()
 
 const props = defineProps({
   formId: { type: String, default: '' }
@@ -602,12 +603,16 @@ function getUserOptions() {
 function getProjectTagOptions() {
   const pid = projectId.value
   if (!pid) return []
-  const tags = projectStore.projectTags[pid] || []
-  return tags.map(tag => ({
-    label: tag.name,
-    value: tag.name,
-    color: tag.color
-  }))
+  const tagsProperty = propertyStore.getPropertyByKey(pid, 'tags')
+  const rawOptions = tagsProperty?.settings?.options || []
+  return rawOptions.map(opt => {
+    if (typeof opt === 'string') return { label: opt, value: opt }
+    return {
+      label: opt?.value || opt?.name || '',
+      value: opt?.value || opt?.name || '',
+      color: opt?.color
+    }
+  })
 }
 
 function buildFieldFromApi(rawField, index = 0) {
@@ -862,13 +867,31 @@ async function loadFormFromApi(targetFormId = '') {
   const token = ++loadToken
   isLoading.value = true
   try {
-    const [, , , columns] = await Promise.all([
+    const [, , , statusOpts] = await Promise.all([
       projectStore.fetchProjectItems(projectId.value),
-      projectStore.fetchProjectTags(projectId.value),
+      propertyStore.fetchProperties(projectId.value, { force: true }),
       userStore.users.length === 0 ? userStore.fetchUsers({ limit: 50 }) : Promise.resolve(),
-      projectStore.fetchProjectColumns(projectId.value).catch(() => [])
+      Promise.resolve() // status options resolved from propertyStore below
     ])
-    projectStatusOptions.value = mapProjectColumnsToStatusOptions(columns)
+    // Build status options from propertyStore
+    const dynStatusOpts = propertyStore.statusOptions(projectId.value)
+    if (dynStatusOpts.length > 0) {
+      projectStatusOptions.value = dynStatusOpts.map(opt => ({
+        label: opt.value || '',
+        value: opt.value || '',
+        status: 'todo',
+        progress: opt.progress ?? 0,
+        color: '#9ca3af'
+      }))
+    } else {
+      // Fallback: try fetchProjectColumns
+      try {
+        const columns = await projectStore.fetchProjectColumns(projectId.value)
+        projectStatusOptions.value = mapProjectColumnsToStatusOptions(columns)
+      } catch {
+        projectStatusOptions.value = []
+      }
+    }
     const response = await projectApi.getProjectForms({ projectId: projectId.value })
     if (token !== loadToken) return
 
@@ -1077,8 +1100,12 @@ watch(projectStatusOptions, () => {
   })
 }, { deep: true, immediate: true })
 
-// Keep tags field options in sync with project tags
-watch(() => projectStore.projectTags[projectId.value], () => {
+// Keep tags field options in sync with propertyStore tags
+watch(() => {
+  const pid = projectId.value
+  if (!pid) return null
+  return propertyStore.getPropertyByKey(pid, 'tags')?.settings?.options
+}, () => {
   formFields.value.forEach(field => {
     if (field.key === 'tags') {
       const selectedOptions = extractSelectedOptionsFromValue('tags', field.value)

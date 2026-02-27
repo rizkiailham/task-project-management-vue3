@@ -1,10 +1,14 @@
 <script setup>
 /**
  * SettingsProjectTags - Project tags editor
+ * 
+ * Manages tags via the dynamic project-properties API.
+ * Tags are a system property (key: 'tags', type: 'multiselect')
+ * whose settings.options define the available tags.
  */
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useProjectStore, useUIStore } from '@/stores'
+import { useProjectStore, useUIStore, useProjectPropertyStore } from '@/stores'
 import { Plus } from 'lucide-vue-next'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import ColorPicker from '@/components/ui/ColorPicker.vue'
@@ -15,9 +19,12 @@ const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendin
 const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const propertyStore = useProjectPropertyStore()
 
+// The tags property definition from the API
+const tagsPropertyId = ref(null)
 const tags = ref([])
-const originalTags = ref([]) // To track deletions and modifications
+const originalSnapshot = ref('[]')
 const hasPendingChanges = ref(false)
 const isSaving = ref(false)
 const isLoading = ref(false)
@@ -27,15 +34,48 @@ const optionColors = [
   '#0ea5e9', '#14b8a6', '#eab308', '#ec4899', '#6366f1'
 ]
 
-// Initialize tags
+function createSnapshot(list = tags.value) {
+  return JSON.stringify(
+    list.map(tag => ({
+      id: tag.id,
+      name: (tag.name || '').trim(),
+      color: tag.color
+    }))
+  )
+}
+
+/**
+ * Convert a property option to our local tag format.
+ * API may return plain strings (e.g. "Bug") or objects ({ value, color, ... }).
+ */
+function normalizeTagOption(rawOption, index) {
+  const option = typeof rawOption === 'string' ? { value: rawOption } : rawOption
+  return {
+    id: option?.id || `opt-${index}`,
+    name: option?.value || option?.name || '',
+    color: option?.color || optionColors[index % optionColors.length],
+    projectId: projectStore.currentProjectId
+  }
+}
+
 async function loadTags() {
   if (!projectStore.currentProjectId) return
   isLoading.value = true
   try {
-    const fetched = await projectStore.fetchProjectTags(projectStore.currentProjectId)
-    // Deep copy for local editing
-    tags.value = JSON.parse(JSON.stringify(fetched))
-    originalTags.value = JSON.parse(JSON.stringify(fetched))
+    await propertyStore.fetchProperties(projectStore.currentProjectId, { force: true })
+    
+    const tagsProp = propertyStore.getPropertyByKey(projectStore.currentProjectId, 'tags')
+    
+    if (tagsProp) {
+      tagsPropertyId.value = tagsProp.id
+      const options = tagsProp.settings?.options || []
+      tags.value = options.map((opt, idx) => normalizeTagOption(opt, idx))
+    } else {
+      tagsPropertyId.value = null
+      tags.value = []
+    }
+    
+    originalSnapshot.value = createSnapshot(tags.value)
     hasPendingChanges.value = false
   } finally {
     isLoading.value = false
@@ -47,9 +87,8 @@ watch(() => projectStore.currentProjectId, loadTags, { immediate: true })
 function addTag() {
   const color = optionColors[Math.floor(Math.random() * optionColors.length)]
   tags.value.push({
-    // Use a temp ID that starts with 'new-' to identify new items
     id: `new-${Date.now()}`,
-    name: t('settings.project.tags.new', 'New Tag'), // API uses 'name', not 'label'
+    name: t('settings.project.tags.new', 'New Tag'),
     projectId: projectStore.currentProjectId,
     color: color,
     isNew: true
@@ -99,50 +138,39 @@ async function saveChanges() {
   
   isSaving.value = true
   try {
-    // 1. Identify Deleted Tags: Present in original but not in current
-    const currentIds = new Set(tags.value.map(t => t.id))
-    const deletedTags = originalTags.value.filter(t => !currentIds.has(t.id))
-    
-    // 2. Identify New Tags: isNew flag or starts with 'new-'
-    const newTags = tags.value.filter(t => t.isNew || String(t.id).startsWith('new-'))
-    
-    // 3. Identify Modified Tags: Not new, but different from original
-    const modifiedTags = tags.value.filter(t => {
-      if (t.isNew || String(t.id).startsWith('new-')) return false
-      const original = originalTags.value.find(ot => ot.id === t.id)
-      return original && (original.name !== t.name || original.color !== t.color)
-    })
-    
-    // Execute Actions
-    const promises = []
-    
-    // Delete
-    deletedTags.forEach(tag => {
-      promises.push(projectStore.deleteProjectTag(tag.id, projectId))
-    })
-    
-    // Create
-    newTags.forEach(tag => {
-      promises.push(projectStore.createProjectTag({
+    // Build the options array for the tags property
+    const options = tags.value.map((tag, index) => ({
+      value: (tag.name || '').trim() || t('settings.project.tags.new', 'New Tag'),
+      color: tag.color,
+      index: index + 1
+    }))
+
+    if (tagsPropertyId.value) {
+      // Update existing tags property's options
+      await propertyStore.updateProperty(
+        tagsPropertyId.value,
+        { settings: { options } },
+        projectId
+      )
+    } else {
+      // Create the tags property if it doesn't exist yet
+      const created = await propertyStore.createProperty({
         projectId,
-        name: tag.name,
-        color: tag.color
-      }))
-    })
-    
-    // Update
-    modifiedTags.forEach(tag => {
-      promises.push(projectStore.updateProjectTag(tag.id, {
-        name: tag.name,
-        color: tag.color
-      }, projectId))
-    })
-    
-    await Promise.all(promises)
-    
-    // Refresh to get clean state (IDs etc)
+        key: 'tags',
+        label: 'Tags',
+        type: 'multiselect',
+        isSystem: true,
+        isRequired: false,
+        isVisible: true,
+        settings: { options }
+      })
+      if (created?.id) {
+        tagsPropertyId.value = created.id
+      }
+    }
+
+    uiStore.showApiSuccess(null, t('settings.project.tags.messages.saved', 'Tags saved successfully'))
     await loadTags()
-    
   } catch (error) {
     uiStore.showApiError(error)
   } finally {
@@ -155,7 +183,6 @@ watch([hasPendingChanges, isSaving], () => {
   emit('update:hasPendingChanges', hasPendingChanges.value)
   emit('update:isSaving', isSaving.value)
   emit('update:canSave', hasPendingChanges.value && !isSaving.value)
-  // Auto-emit canSave true if there are changes, assuming valid state
 })
 
 defineExpose({ saveChanges })

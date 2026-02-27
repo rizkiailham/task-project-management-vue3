@@ -4,7 +4,7 @@
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useProjectStore, useUIStore } from '@/stores'
+import { useProjectStore, useUIStore, useProjectPropertyStore } from '@/stores'
 import { useConfirm } from 'primevue/useconfirm'
 import * as projectApi from '@/api/project.api'
 import SettingsProjectGeneral from '@/components/modals/settings/SettingsProjectGeneral.vue'
@@ -16,11 +16,15 @@ import SettingsProjectExport from '@/components/modals/settings/SettingsProjectE
 import SettingsProjectImport from '@/components/modals/settings/SettingsProjectImport.vue'
 import SettingsProjectEmail from '@/components/modals/settings/SettingsProjectEmail.vue'
 import SettingsProjectForms from '@/components/modals/settings/SettingsProjectForms.vue'
-import { HelpCircle, Plus } from 'lucide-vue-next'
+import SettingsPropertyEditor from '@/components/modals/settings/SettingsPropertyEditor.vue'
+import { HelpCircle, Plus, X, LayoutGrid, CircleDot, Users, Tag, Flag, Calendar, Clock, Scaling, CalendarPlus, UserPlus, CalendarClock, UserCog, Globe, FileText, Hash, CheckSquare, List } from 'lucide-vue-next'
+import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import { getColumnDefinition } from '@/components/task/projectTasksGrid/taskColumnDefinitions'
 
 const { t } = useI18n()
 const uiStore = useUIStore()
 const projectStore = useProjectStore()
+const propertyStore = useProjectPropertyStore()
 const confirm = useConfirm()
 
 const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendingChanges'])
@@ -115,6 +119,159 @@ function handleFormRenamed({ formId, name }) {
   }
 }
 
+// ─── Dynamic property items from propertyStore ───────────
+
+// Icon map for property types (fallback)
+const propertyTypeIcons = {
+  select: List,
+  multiselect: LayoutGrid,
+  user: Users,
+  date: Calendar,
+  text: FileText,
+  number: Hash,
+  boolean: CheckSquare,
+  checkbox: CheckSquare
+}
+
+// Map property key → taskColumnDefinitions column id
+const propertyKeyToColumnId = {
+  status: 'status',
+  assignee: 'assignee',
+  priority: 'priority',
+  due_date: 'dueDate',
+  tags: 'tags',
+  size: 'size',
+  time_tracking: 'trackingTime',
+  created: 'createdAt',
+  created_by: 'createdBy',
+  last_updated: 'updatedAt',
+  last_updated_by: 'updatedBy',
+  timezone: 'timezone'
+}
+
+function getPropertyIcon(prop) {
+  // Primary: reuse icon from taskColumnDefinitions (single source of truth)
+  const colId = propertyKeyToColumnId[prop.key]
+  if (colId) {
+    const colDef = getColumnDefinition(colId)
+    if (colDef?.icon) return colDef.icon
+  }
+  // Fallback to type-based icon
+  return propertyTypeIcons[prop.type] || FileText
+}
+
+// System properties (built-in)
+const systemPropertyItems = computed(() => {
+  const pid = projectId.value
+  if (!pid) return []
+  return propertyStore.propertiesForProject(pid)
+    .filter(p => p.isSystem)
+    .map(p => ({
+      id: `property-${p.key}`,
+      label: p.label || p.key,
+      propertyKey: p.key,
+      propertyId: p.id,
+      isSystem: true,
+      icon: getPropertyIcon(p)
+    }))
+})
+
+// Custom properties (user-created)
+const customPropertyItems = computed(() => {
+  const pid = projectId.value
+  if (!pid) return []
+  return propertyStore.propertiesForProject(pid)
+    .filter(p => !p.isSystem)
+    .map(p => ({
+      id: `property-${p.key}`,
+      label: p.label || p.key,
+      propertyKey: p.key,
+      propertyId: p.id,
+      isSystem: false,
+      icon: getPropertyIcon(p)
+    }))
+})
+
+// Combined for lookups
+const propertyItems = computed(() => [
+  ...systemPropertyItems.value,
+  ...customPropertyItems.value
+])
+
+// Property type options for the create dropdown (matches Dart AI image 2)
+const propertyTypeMenuItems = computed(() => [
+  { id: 'create-select', label: 'Select', icon: List, action: () => handleCreateCustomProperty('select', 'Select') },
+  { id: 'create-multiselect', label: 'Multiselect', icon: LayoutGrid, action: () => handleCreateCustomProperty('multiselect', 'Multiselect') },
+  { id: 'create-status', label: 'Status', icon: CircleDot, action: () => handleCreateCustomProperty('select', 'Status') },
+  { id: 'create-user', label: 'User', icon: Users, action: () => handleCreateCustomProperty('user', 'User') },
+  { id: 'create-date', label: 'Date', icon: Calendar, action: () => handleCreateCustomProperty('date', 'Date') },
+  { id: 'create-time-tracking', label: 'Time tracking', icon: Clock, action: () => handleCreateCustomProperty('number', 'Time tracking') },
+  { id: 'create-text', label: 'Text', icon: FileText, action: () => handleCreateCustomProperty('text', 'Text') },
+  { id: 'create-number', label: 'Number', icon: Hash, action: () => handleCreateCustomProperty('number', 'Number') },
+  { id: 'create-checkbox', label: 'Checkbox', icon: CheckSquare, action: () => handleCreateCustomProperty('checkbox', 'Checkbox') }
+])
+
+const addPropertyMenuRef = ref(null)
+
+async function handleCreateCustomProperty(type = 'text', labelPrefix = 'Custom') {
+  const pid = projectId.value
+  if (!pid) return
+  try {
+    const existingCustom = propertyStore.customProperties(pid)
+    const customKey = `${labelPrefix.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`
+    const data = {
+      projectId: pid,
+      key: customKey,
+      label: `${labelPrefix} ${existingCustom.length + 1}`,
+      type,
+      description: '',
+      isSystem: false,
+      isRequired: false,
+      isVisible: true,
+      settings: type === 'select' || type === 'multiselect' ? { options: [] } : {}
+    }
+    const created = await propertyStore.createProperty(data)
+    addPropertyMenuRef.value?.close?.()
+    if (created) {
+      activeSideItem.value = `property-${customKey}`
+    }
+    uiStore.showSuccess(t('settings.project.properties.created', 'Property created'))
+  } catch (error) {
+    uiStore.showApiError(error, t('settings.project.properties.createError', 'Failed to create property'))
+  }
+}
+
+async function handleDeleteProperty(propertyId, propertyKey) {
+  const pid = projectId.value
+  if (!pid || !propertyId) return
+  confirm.require({
+    message: t('settings.project.properties.deleteConfirm', 'Are you sure you want to delete this property?'),
+    header: t('common.confirm', 'Confirm'),
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: t('common.delete', 'Delete'),
+    rejectLabel: t('common.cancel', 'Cancel'),
+    acceptClass: 'p-button-danger p-button-sm',
+    rejectClass: 'p-button-outlined p-button-secondary p-button-sm',
+    accept: async () => {
+      confirm.close()
+      try {
+        await propertyStore.deleteProperty(propertyId, pid)
+        uiStore.showSuccess(t('settings.project.properties.deleted', 'Property deleted'))
+        const remaining = customPropertyItems.value.filter(p => p.propertyId !== propertyId)
+        activeSideItem.value = remaining.length > 0 ? remaining[0].id : 'general'
+      } catch (error) {
+        uiStore.showApiError(error, t('settings.project.properties.deleteError', 'Failed to delete property'))
+      }
+    },
+    reject: () => confirm.close()
+  })
+}
+
+// Load properties when projectId changes
+watch(projectId, (pid) => {
+  if (pid) propertyStore.fetchProperties(pid)
+}, { immediate: true })
+
 const menuGroups = computed(() => [
   {
     k: 'settings',
@@ -124,11 +281,31 @@ const menuGroups = computed(() => [
       { id: 'general', label: t('settings.project.menu.items.general') },
       { id: 'access-control', label: t('settings.project.menu.items.accessControl') },
       { id: 'instruction', label: t('settings.project.menu.items.instruction', 'Instruction') },
-      { id: 'status', label: t('settings.project.menu.items.status', 'Status') },
-      { id: 'tags', label: t('settings.project.menu.items.tags', 'Tags') },
       { id: 'export', label: t('settings.project.menu.items.export', 'Export') },
       { id: 'import', label: t('settings.project.menu.items.import', 'Import') }
     ]
+  },
+  {
+    k: 'properties',
+    label: t('settings.project.menu.groups.properties', 'PROPERTIES'),
+    icon: HelpCircle,
+    showItemIcons: true,
+    items: systemPropertyItems.value.length > 0
+      ? systemPropertyItems.value
+      : [
+          { id: 'property-status', label: 'Status', propertyKey: 'status', icon: CircleDot },
+          { id: 'property-assignee', label: 'Assignee', propertyKey: 'assignee', icon: Users },
+          { id: 'property-priority', label: 'Priority', propertyKey: 'priority', icon: Flag },
+          { id: 'property-due_date', label: 'Due Date', propertyKey: 'due_date', icon: Calendar }
+        ]
+  },
+  {
+    k: 'custom-properties',
+    label: t('settings.project.menu.groups.customProperties', 'CUSTOM PROPERTIES'),
+    icon: HelpCircle,
+    hasDropdownAction: true,
+    showItemIcons: true,
+    items: customPropertyItems.value
   },
   {
     k: 'forms',
@@ -180,6 +357,10 @@ const formSectionRef = ref(null)
 const formCanSave = ref(false)
 const formIsSaving = ref(false)
 const formHasPendingChanges = ref(false)
+const propertyEditorRef = ref(null)
+const propertyEditorCanSave = ref(false)
+const propertyEditorIsSaving = ref(false)
+const propertyEditorHasPendingChanges = ref(false)
 const listWidth = ref(280)
 const isResizing = ref(false)
 let resizeStartX = 0
@@ -194,11 +375,16 @@ watch(() => uiStore.modalData, (data) => {
   if (exists) activeSideItem.value = tab
 }, { immediate: true })
 
-// Computed helpers for form section detection
+// Computed helpers for section detection
 const isFormSection = computed(() => activeSideItem.value.startsWith('form-'))
 const activeFormId = computed(() => {
   if (!isFormSection.value) return ''
   return activeSideItem.value.replace(/^form-/, '')
+})
+const isPropertySection = computed(() => activeSideItem.value.startsWith('property-'))
+const activePropertyKey = computed(() => {
+  if (!isPropertySection.value) return ''
+  return activeSideItem.value.replace(/^property-/, '')
 })
 
 // Load forms when projectId changes
@@ -254,16 +440,24 @@ function syncState() {
     emit('update:hasPendingChanges', instructionHasPendingChanges.value)
     return
   }
-  if (activeSideItem.value === 'status') {
-    emit('update:canSave', statusCanSave.value)
-    emit('update:isSaving', statusIsSaving.value)
-    emit('update:hasPendingChanges', statusHasPendingChanges.value)
-    return
-  }
-  if (activeSideItem.value === 'tags') {
-    emit('update:canSave', tagsCanSave.value)
-    emit('update:isSaving', tagsIsSaving.value)
-    emit('update:hasPendingChanges', tagsHasPendingChanges.value)
+  // Dynamic property sections (status, tags, custom)
+  if (isPropertySection.value) {
+    if (activePropertyKey.value === 'status') {
+      emit('update:canSave', statusCanSave.value)
+      emit('update:isSaving', statusIsSaving.value)
+      emit('update:hasPendingChanges', statusHasPendingChanges.value)
+      return
+    }
+    if (activePropertyKey.value === 'tags') {
+      emit('update:canSave', tagsCanSave.value)
+      emit('update:isSaving', tagsIsSaving.value)
+      emit('update:hasPendingChanges', tagsHasPendingChanges.value)
+      return
+    }
+    // Other properties — generic editor
+    emit('update:canSave', propertyEditorCanSave.value)
+    emit('update:isSaving', propertyEditorIsSaving.value)
+    emit('update:hasPendingChanges', propertyEditorHasPendingChanges.value)
     return
   }
   if (activeSideItem.value === 'email-default') {
@@ -297,11 +491,11 @@ watch([accessCanSave, accessIsSaving, accessHasPendingChanges], () => {
   syncState()
 })
 watch([statusCanSave, statusIsSaving, statusHasPendingChanges], () => {
-  if (activeSideItem.value !== 'status') return
+  if (activePropertyKey.value !== 'status') return
   syncState()
 })
 watch([tagsCanSave, tagsIsSaving, tagsHasPendingChanges], () => {
-  if (activeSideItem.value !== 'tags') return
+  if (activePropertyKey.value !== 'tags') return
   syncState()
 })
 watch([emailCanSave, emailIsSaving, emailHasPendingChanges], () => {
@@ -312,6 +506,11 @@ watch([formCanSave, formIsSaving, formHasPendingChanges], () => {
   if (activeSideItem.value !== 'form-default' && !isFormSection.value) return
   syncState()
 })
+watch([propertyEditorCanSave, propertyEditorIsSaving, propertyEditorHasPendingChanges], () => {
+  if (!isPropertySection.value) return
+  if (activePropertyKey.value === 'status' || activePropertyKey.value === 'tags') return
+  syncState()
+})
 
 function saveChanges() {
   if (activeSideItem.value === 'general') {
@@ -320,21 +519,29 @@ function saveChanges() {
   }
   if (activeSideItem.value === 'access-control') {
     accessSectionRef.value?.saveChanges?.()
+    return
   }
   if (activeSideItem.value === 'instruction') {
     instructionSectionRef.value?.saveChanges?.()
+    return
   }
-  if (activeSideItem.value === 'status') {
-    statusSectionRef.value?.saveChanges?.()
-  }
-  if (activeSideItem.value === 'tags') {
-    tagsSectionRef.value?.saveChanges?.()
+  if (isPropertySection.value) {
+    if (activePropertyKey.value === 'status') {
+      statusSectionRef.value?.saveChanges?.()
+    } else if (activePropertyKey.value === 'tags') {
+      tagsSectionRef.value?.saveChanges?.()
+    } else {
+      propertyEditorRef.value?.saveChanges?.()
+    }
+    return
   }
   if (activeSideItem.value === 'email-default') {
     emailSectionRef.value?.saveChanges?.()
+    return
   }
   if (activeSideItem.value === 'form-default' || isFormSection.value) {
     formSectionRef.value?.saveChanges?.()
+    return
   }
 }
 
@@ -342,8 +549,11 @@ const pendingChanges = computed(() => {
   if (activeSideItem.value === 'general') return generalHasPendingChanges.value
   if (activeSideItem.value === 'access-control') return accessHasPendingChanges.value
   if (activeSideItem.value === 'instruction') return instructionHasPendingChanges.value
-  if (activeSideItem.value === 'status') return statusHasPendingChanges.value
-  if (activeSideItem.value === 'tags') return tagsHasPendingChanges.value
+  if (isPropertySection.value) {
+    if (activePropertyKey.value === 'status') return statusHasPendingChanges.value
+    if (activePropertyKey.value === 'tags') return tagsHasPendingChanges.value
+    return false
+  }
   if (activeSideItem.value === 'email-default') return emailHasPendingChanges.value
   if (activeSideItem.value === 'form-default' || isFormSection.value) return formHasPendingChanges.value
   return false
@@ -398,9 +608,25 @@ defineExpose({ saveChanges, pendingChanges })
                {{ group.label }}
                <component :is="group.icon" v-if="group.icon" class="w-3.5 h-3.5" />
              </div>
-             <button v-if="group.actionIcon" type="button" class="text-gray-400 hover:text-gray-700" @click.stop="group.onAction && group.onAction()">
+             <!-- Regular action button (forms, email) -->
+             <button v-if="group.actionIcon && !group.hasDropdownAction" type="button" class="text-gray-400 hover:text-gray-700" @click.stop="group.onAction && group.onAction()">
                <component :is="group.actionIcon" class="w-4 h-4" />
              </button>
+             <!-- Dropdown action button (custom properties) -->
+             <DropdownMenu
+               v-if="group.hasDropdownAction"
+               ref="addPropertyMenuRef"
+               :items="propertyTypeMenuItems"
+               position="right"
+               width="12.5rem"
+               variant="sidebar"
+             >
+               <template #trigger>
+                 <button type="button" class="text-gray-400 hover:text-gray-700">
+                   <Plus class="w-4 h-4" />
+                 </button>
+               </template>
+             </DropdownMenu>
           </div>
           <button
             v-for="item in group.items"
@@ -410,6 +636,7 @@ defineExpose({ saveChanges, pendingChanges })
             :class="{ 'is-selected': activeSideItem === item.id }"
             @click="selectSideItem(item.id)"
           >
+            <component :is="item.icon" v-if="item.icon && group.showItemIcons" class="settings-list-row-icon w-4 h-4 flex-shrink-0" />
             <span class="settings-list-row-label">{{ item.label }}</span>
           </button>
         </div>
@@ -443,7 +670,7 @@ defineExpose({ saveChanges, pendingChanges })
           @update:hasPendingChanges="instructionHasPendingChanges = $event"
         />
       </div>
-      <div v-else-if="activeSideItem === 'status'" class="settings-section-wrapper">
+      <div v-else-if="activePropertyKey === 'status'" class="settings-section-wrapper">
         <SettingsProjectStatus
           ref="statusSectionRef"
           @update:canSave="statusCanSave = $event"
@@ -451,12 +678,22 @@ defineExpose({ saveChanges, pendingChanges })
           @update:hasPendingChanges="statusHasPendingChanges = $event"
         />
       </div>
-      <div v-else-if="activeSideItem === 'tags'" class="settings-section-wrapper">
+      <div v-else-if="activePropertyKey === 'tags'" class="settings-section-wrapper">
         <SettingsProjectTags
           ref="tagsSectionRef"
           @update:canSave="tagsCanSave = $event"
           @update:isSaving="tagsIsSaving = $event"
           @update:hasPendingChanges="tagsHasPendingChanges = $event"
+        />
+      </div>
+      <div v-else-if="isPropertySection" class="settings-section-wrapper">
+        <SettingsPropertyEditor
+          :key="activePropertyKey"
+          ref="propertyEditorRef"
+          :propertyKey="activePropertyKey"
+          @update:canSave="propertyEditorCanSave = $event"
+          @update:isSaving="propertyEditorIsSaving = $event"
+          @update:hasPendingChanges="propertyEditorHasPendingChanges = $event"
         />
       </div>
       <div v-else-if="activeSideItem === 'export'" class="settings-section-wrapper">
@@ -604,7 +841,7 @@ defineExpose({ saveChanges, pendingChanges })
 }
 
 .settings-divider {
-  width: 12px;
+  width: 1px;
   position: relative;
   cursor: col-resize;
   display: flex;
@@ -624,7 +861,7 @@ defineExpose({ saveChanges, pendingChanges })
   flex-direction: column;
   gap: 18px;
   padding: 24px 28px;
-  padding-top: 50px;
+  padding-top: 40px;
   padding-bottom: calc(30px + var(--settings-footer-height, 72px));
   height: 100%;
   overflow: auto;
@@ -637,7 +874,6 @@ defineExpose({ saveChanges, pendingChanges })
   width: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
 }
 
 .settings-section-wrapper--form {

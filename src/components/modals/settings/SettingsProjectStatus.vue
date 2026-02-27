@@ -1,10 +1,14 @@
 <script setup>
 /**
- * SettingsProjectStatus - Project status (kanban columns) editor
+ * SettingsProjectStatus - Project status property editor
+ * 
+ * Manages status options via the dynamic project-properties API.
+ * The status is a system property (key: 'status', type: 'select')
+ * whose settings.options define the available statuses.
  */
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useProjectStore, useUIStore } from '@/stores'
+import { useProjectStore, useUIStore, useProjectPropertyStore } from '@/stores'
 import { 
   Plus, 
   GripVertical, 
@@ -22,8 +26,11 @@ const emit = defineEmits(['update:canSave', 'update:isSaving', 'update:hasPendin
 const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUIStore()
+const propertyStore = useProjectPropertyStore()
 const projectId = computed(() => projectStore.currentProjectId)
 
+// The status property definition from the API
+const statusPropertyId = ref(null)
 const columns = ref([])
 const originalSnapshot = ref('[]')
 const isSaving = ref(false)
@@ -71,14 +78,28 @@ function resolveIconProps(icon) {
   }
 }
 
-function normalizeColumn(column) {
-  const iconProps = resolveIconProps(column?.icon)
+/**
+ * Convert a property option from the API to our local column format.
+ * API may return plain strings (e.g. "To Do") or objects ({ value, progress, ... }).
+ */
+function normalizeOption(rawOption, index) {
+  const option = typeof rawOption === 'string' ? { value: rawOption } : rawOption
+  const progress = option?.progress ?? 0
+  // Map progress to our icon system
+  let iconId = '0'
+  if (progress >= 100) iconId = '100'
+  else if (progress >= 75) iconId = '75'
+  else if (progress >= 50) iconId = '50'
+  else if (progress >= 25) iconId = '25'
+  
+  const iconProps = resolveIconProps(iconId)
   return {
-    id: column?.id,
-    name: column?.name || '',
+    id: option?.id || `opt-${index}`,
+    name: option?.value || '',
     icon: iconProps.icon,
-    index: Number(column?.index) || 0,
+    index: option?.index ?? (index + 1),
     isHidden: false,
+    isSystem: option?.isSystem ?? false,
     ...iconProps
   }
 }
@@ -89,7 +110,8 @@ function createSnapshot(list = columns.value) {
       id: column.id,
       name: (column.name || '').trim(),
       icon: normalizeIconValue(column.icon),
-      index: index + 1
+      index: index + 1,
+      isSystem: column.isSystem || false
     }))
   )
 }
@@ -104,20 +126,33 @@ async function loadColumns() {
   if (!projectId.value) {
     columns.value = []
     originalSnapshot.value = '[]'
+    statusPropertyId.value = null
     return
   }
 
   isLoading.value = true
   try {
-    const response = await projectStore.fetchProjectColumns(projectId.value)
-    const items = Array.isArray(response) ? response : []
-    const sorted = [...items].sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))
-    columns.value = sorted.map(normalizeColumn)
+    // Fetch project properties (cached unless force)
+    await propertyStore.fetchProperties(projectId.value, { force: true })
+    
+    // Find the status property
+    const statusProp = propertyStore.statusProperty(projectId.value)
+    
+    if (statusProp) {
+      statusPropertyId.value = statusProp.id
+      const options = statusProp.settings?.options || []
+      const sorted = [...options].sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      columns.value = sorted.map((opt, idx) => normalizeOption(opt, idx))
+    } else {
+      statusPropertyId.value = null
+      columns.value = []
+    }
+    
     originalSnapshot.value = createSnapshot(columns.value)
   } catch (error) {
     columns.value = []
     originalSnapshot.value = '[]'
-    uiStore.showApiError(error, t('settings.project.status.errors.load', 'Failed to load project columns'))
+    uiStore.showApiError(error, t('settings.project.status.errors.load', 'Failed to load project statuses'))
   } finally {
     isLoading.value = false
   }
@@ -135,6 +170,7 @@ function addColumn() {
     color: '#14b8a6',
     index: columns.value.length + 1,
     isHidden: false,
+    isSystem: false,
     isNew: true
   }
   columns.value.push(newCol)
@@ -153,10 +189,8 @@ function cancelEdit() {
   const column = columns.value.find(c => c.id === editingColumnId.value)
   if (column) {
     if (column.isNew && !column.name) {
-      // If it was a new column and empty/cancelled, remove it
       removeColumn(column.id)
     } else {
-      // Revert changes from temp
       Object.assign(column, tempEditingColumn.value)
     }
   }
@@ -200,64 +234,46 @@ function updateIconSelection(column, option) {
   column.color = option.defaultColor || column.color
 }
 
+/**
+ * Convert local columns back to API options format and save via property update
+ */
 async function saveChanges() {
   if (!projectId.value || !hasPendingChanges.value) return
   isSaving.value = true
   try {
-    const original = JSON.parse(originalSnapshot.value || '[]')
-    const originalMap = new Map(original.map((item) => [item.id, item]))
-    const currentIds = new Set(columns.value.filter((item) => !String(item.id).startsWith('new-')).map((item) => item.id))
+    // Build the options array for the status property
+    const options = columns.value.map((col, index) => ({
+      value: (col.name || '').trim() || t('settings.project.status.new', 'New Status'),
+      progress: col.progress ?? 0,
+      isSystem: col.isSystem ?? false,
+      index: index + 1
+    }))
 
-    let lastResponse = null
-
-    for (const originalItem of original) {
-      if (!currentIds.has(originalItem.id)) {
-        lastResponse = await projectStore.deleteProjectColumn(originalItem.id)
-      }
-    }
-
-    for (const column of columns.value) {
-      if (String(column.id).startsWith('new-')) {
-        const created = await projectStore.createProjectColumn({
-          projectId: projectId.value,
-          name: column.name?.trim() || t('settings.project.status.new', 'New Status'),
-          icon: normalizeIconValue(column.icon)
-        })
-        const payload = created?.data || created?.column || created
-        if (payload?.id) {
-          column.id = payload.id
-          column.index = Number(payload.index) || column.index
-        }
-        lastResponse = created
-        continue
-      }
-
-      const originalItem = originalMap.get(column.id)
-      if (!originalItem) continue
-
-      const nextName = column.name?.trim() || t('settings.project.status.new', 'New Status')
-      const nextIcon = normalizeIconValue(column.icon)
-      const isChanged = originalItem.name !== nextName || String(originalItem.icon ?? '0') !== nextIcon
-      if (!isChanged) continue
-
-      lastResponse = await projectStore.updateProjectColumn(column.id, {
-        name: nextName,
-        icon: nextIcon
-      })
-    }
-
-    const orderedIds = columns.value.map((column) => column.id).filter(Boolean)
-    if (orderedIds.length > 0) {
-      lastResponse = await projectStore.reorderProjectColumns({
+    if (statusPropertyId.value) {
+      // Update existing status property's options
+      await propertyStore.updateProperty(
+        statusPropertyId.value,
+        { settings: { options } },
+        projectId.value
+      )
+    } else {
+      // Create the status property if it doesn't exist yet
+      const created = await propertyStore.createProperty({
         projectId: projectId.value,
-        columnIds: orderedIds
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        isSystem: true,
+        isRequired: false,
+        isVisible: true,
+        settings: { options }
       })
+      if (created?.id) {
+        statusPropertyId.value = created.id
+      }
     }
 
-    if (lastResponse) {
-      uiStore.showApiSuccess(lastResponse, t('settings.project.status.messages.saved', 'Project statuses saved successfully'))
-    }
-
+    uiStore.showApiSuccess(null, t('settings.project.status.messages.saved', 'Project statuses saved successfully'))
     await loadColumns()
   } catch (error) {
     uiStore.showApiError(error, t('settings.project.status.errors.save', 'Failed to save project statuses'))
@@ -623,9 +639,3 @@ defineExpose({ saveChanges })
   border-color: #d1d5db;
 }
 </style>
-
-
-
-
-
-
