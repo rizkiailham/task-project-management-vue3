@@ -90,7 +90,7 @@ export const TASK_COLUMN_DEFINITIONS = [
     labelKey: 'tasks.priority',
     fallback: 'Priority',
     icon: Flag,
-    type: 'text',
+    type: 'select',
     defaultVisible: false,
     locked: false
   },
@@ -99,7 +99,7 @@ export const TASK_COLUMN_DEFINITIONS = [
     labelKey: 'tasks.columnOptions.size',
     fallback: 'Size',
     icon: Scaling,
-    type: 'text',
+    type: 'number',
     defaultVisible: false,
     locked: false
   },
@@ -108,7 +108,7 @@ export const TASK_COLUMN_DEFINITIONS = [
     labelKey: 'tasks.columnOptions.timeTracking',
     fallback: 'Time tracking',
     icon: Clock,
-    type: 'text',
+    type: 'number',
     defaultVisible: false,
     locked: false
   },
