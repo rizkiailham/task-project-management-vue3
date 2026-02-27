@@ -16,7 +16,7 @@ import { AllEnterpriseModule, LicenseManager } from 'ag-grid-enterprise'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
-import { useProjectStore } from '@/stores'
+import { useProjectStore, useProjectPropertyStore, useTaskStore, useUIStore } from '@/stores'
 import { getKanbanColumns } from '@/api/kanbanColumn.api'
 import SortHeader from '@/components/ag/SortHeader.vue'
 import AssigneeCell from '@/components/task/AssigneeCell.vue'
@@ -26,6 +26,13 @@ import TrackingTimeCell from '@/components/task/TrackingTimeCell.vue'
 import DartboardCell from '@/components/task/DartboardCell.vue'
 import ProjectCell from '@/components/task/ProjectCell.vue'
 import StatusCell from '@/components/task/StatusCell.vue'
+import PropertyTextCell from '@/components/task/cells/PropertyTextCell.vue'
+import PropertyNumberCell from '@/components/task/cells/PropertyNumberCell.vue'
+import PropertyCheckboxCell from '@/components/task/cells/PropertyCheckboxCell.vue'
+import PropertySelectCell from '@/components/task/cells/PropertySelectCell.vue'
+import PropertyMultiselectCell from '@/components/task/cells/PropertyMultiselectCell.vue'
+import PropertyDateCell from '@/components/task/cells/PropertyDateCell.vue'
+import PropertyUserCell from '@/components/task/cells/PropertyUserCell.vue'
 import ProjectTasksGridColumnOptionsHeader from '@/components/task/projectTasksGrid/ProjectTasksGridColumnOptionsHeader.vue'
 import { useProjectTaskColumns } from '@/components/task/projectTasksGrid/useProjectTaskColumns'
 import { useProjectTaskFilters } from '@/components/task/projectTasksGrid/useProjectTaskFilters'
@@ -33,9 +40,13 @@ import { useTaskContextMenu } from '@/components/task/projectTasksGrid/useTaskCo
 import ProjectTasksGridFilterBar from '@/components/task/projectTasksGrid/ProjectTasksGridFilterBar.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
+import { X } from 'lucide-vue-next'
 
 
 const projectStore = useProjectStore()
+const propertyStore = useProjectPropertyStore()
+const taskStore = useTaskStore()
+const uiStore = useUIStore()
 const { t } = useI18n()
 
 LicenseManager.setLicenseKey(
@@ -51,6 +62,159 @@ const props = defineProps({
     type: Object,
     default: () => null
   }
+})
+
+const projectIdFromTasks = computed(() => {
+  if (!Array.isArray(props.tasks) || props.tasks.length === 0) return null
+  const firstTask = props.tasks.find((task) => task && typeof task === 'object')
+  if (!firstTask) return null
+  return (
+    firstTask?.projectItem?.projectId ||
+    firstTask?.projectId ||
+    firstTask?._raw?.projectItem?.projectId ||
+    firstTask?._raw?.projectId ||
+    null
+  )
+})
+
+const propertyProjectId = computed(() => {
+  return projectStore.currentProjectId || projectIdFromTasks.value || null
+})
+
+function normalizePropertyDefinition(definition) {
+  if (!definition || typeof definition !== 'object') return null
+
+  const normalized = {
+    ...definition,
+    settings: definition.settings && typeof definition.settings === 'object'
+      ? { ...definition.settings }
+      : {}
+  }
+
+  if (!Array.isArray(normalized.settings.options)) {
+    normalized.settings.options = []
+  }
+
+  return normalized
+}
+
+function mergePropertyDefinition(baseDefinition, nextDefinition) {
+  const base = normalizePropertyDefinition(baseDefinition)
+  const next = normalizePropertyDefinition(nextDefinition)
+  if (!base) return next
+  if (!next) return base
+
+  const mergedSettings = {
+    ...base.settings,
+    ...next.settings
+  }
+
+  if (Array.isArray(next.settings?.options) && next.settings.options.length) {
+    mergedSettings.options = next.settings.options
+  }
+
+  return {
+    ...base,
+    ...next,
+    settings: mergedSettings
+  }
+}
+
+function collectPropertyDefinitionsFromTaskList(taskList = []) {
+  const map = new Map()
+
+  const visit = (task) => {
+    if (!task || typeof task !== 'object') return
+
+    const sources = [
+      task.propertyValues,
+      task.customValues,
+      task?._raw?.propertyValues,
+      task?._raw?.customValues
+    ]
+
+    sources.forEach((source) => {
+      if (!Array.isArray(source)) return
+      source.forEach((entry) => {
+        const property = normalizePropertyDefinition(entry?.property)
+        if (!property) return
+        const propertyId = String(property.id || entry?.propertyId || property.key || '').trim()
+        if (!propertyId) return
+
+        const existing = map.get(propertyId) || null
+        map.set(propertyId, mergePropertyDefinition(existing, property))
+      })
+    })
+
+    const nestedTasks = Array.isArray(task.subTasks)
+      ? task.subTasks
+      : Array.isArray(task.children)
+        ? task.children
+        : []
+
+    nestedTasks.forEach(visit)
+  }
+
+  taskList.forEach(visit)
+
+  return Array.from(map.values()).sort((a, b) => (a?.index ?? Number.MAX_SAFE_INTEGER) - (b?.index ?? Number.MAX_SAFE_INTEGER))
+}
+
+const propertyDefinitions = computed(() => {
+  const projectId = propertyProjectId.value
+  const storeDefinitions = projectId
+    ? propertyStore.propertiesForProject(projectId)
+    : []
+  const taskDefinitions = collectPropertyDefinitionsFromTaskList(props.tasks)
+
+  const merged = new Map()
+
+  storeDefinitions.forEach((definition) => {
+    const normalized = normalizePropertyDefinition(definition)
+    const propertyId = String(normalized?.id || normalized?.key || '').trim()
+    if (!propertyId) return
+    merged.set(propertyId, normalized)
+  })
+
+  taskDefinitions.forEach((definition) => {
+    const propertyId = String(definition?.id || definition?.key || '').trim()
+    if (!propertyId) return
+    const existing = merged.get(propertyId) || null
+    merged.set(propertyId, mergePropertyDefinition(existing, definition))
+  })
+
+  return Array.from(merged.values()).sort((a, b) => (a?.index ?? Number.MAX_SAFE_INTEGER) - (b?.index ?? Number.MAX_SAFE_INTEGER))
+})
+
+const tagOptions = computed(() => {
+  const tagsProperty = propertyDefinitions.value.find(
+    (property) => String(property?.key || '').trim().toLowerCase() === 'tags'
+  )
+  const options = Array.isArray(tagsProperty?.settings?.options) ? tagsProperty.settings.options : []
+
+  return options
+    .map((option, index) => {
+      if (typeof option === 'string' || typeof option === 'number') {
+        const value = String(option)
+        return {
+          id: value || `tag-${index + 1}`,
+          name: value || `Tag ${index + 1}`,
+          color: ''
+        }
+      }
+
+      if (!option || typeof option !== 'object') return null
+
+      const value = String(option.value ?? option.label ?? option.name ?? option.id ?? '').trim()
+      if (!value) return null
+
+      return {
+        id: String(option.id ?? value ?? `tag-${index + 1}`),
+        name: value,
+        color: option.color || ''
+      }
+    })
+    .filter(Boolean)
 })
 
 const currentPage = ref(1)
@@ -109,6 +273,7 @@ const emit = defineEmits([
 const gridApi = ref(null)
 const focusKey = ref(null)
 const pendingTitleUpdates = new Map()
+const rowValueOverrides = ref(new Map())
 const statusOptions = ref([])
 const apiStatusOptions = ref([])
 const contextMenuRef = ref(null)
@@ -130,7 +295,9 @@ const {
   toggleColumnVisibility,
   removeCustomColumn,
   mapTaskColumnMeta
-} = useProjectTaskColumns(t)
+} = useProjectTaskColumns(t, {
+  propertyDefinitions
+})
 
 const {
   activeFilters,
@@ -514,7 +681,31 @@ async function loadApiStatusOptions(projectItemId, projectId) {
   }
 
   try {
-    // Primary source: Kanban Column API (runtime statuses).
+    // Primary source: Dynamic project properties (if available)
+    if (projectId) {
+      await propertyStore.fetchProperties(projectId)
+      const dynStatusOpts = propertyStore.statusOptions(projectId)
+      if (dynStatusOpts.length > 0) {
+        apiStatusOptions.value = dynStatusOpts.map((opt, idx) => {
+          let iconId = '0'
+          const progress = opt.progress ?? 0
+          if (progress >= 100) iconId = '100'
+          else if (progress >= 75) iconId = '75'
+          else if (progress >= 50) iconId = '50'
+          else if (progress >= 25) iconId = '25'
+          const iconProps = resolveStatusIconProps(iconId)
+          return {
+            id: opt.id || `prop-${idx}`,
+            label: opt.value || 'Status',
+            index: opt.index ?? (idx + 1),
+            ...iconProps
+          }
+        })
+        return
+      }
+    }
+
+    // Secondary source: Kanban Column API (runtime statuses).
     if (projectItemId) {
       const response = await getKanbanColumns({
         projectItemId,
@@ -593,6 +784,112 @@ function buildTree(flatTasks) {
   return roots
 }
 
+function findAssigneePropertyEntry(task) {
+  const sources = [
+    task?.propertyValues,
+    task?.customValues,
+    task?._raw?.propertyValues,
+    task?._raw?.customValues
+  ]
+
+  for (const source of sources) {
+    if (!Array.isArray(source)) continue
+    const entry = source.find((item) => {
+      if (!item || typeof item !== 'object') return false
+      const property = item.property && typeof item.property === 'object' ? item.property : {}
+      const key = String(item.propertyKey || item.key || property.key || '').trim().toLowerCase()
+      return key === 'assignee'
+    })
+    if (entry) return entry
+  }
+
+  return null
+}
+
+function resolveTaskAssigneeData(task) {
+  const entry = findAssigneePropertyEntry(task)
+  const propertyValue = entry?.value
+  if (propertyValue && typeof propertyValue === 'object') {
+    return propertyValue
+  }
+
+  if (typeof propertyValue === 'string' || typeof propertyValue === 'number') {
+    return { id: propertyValue }
+  }
+
+  return task?.assignTo || task?.assignee || task?._raw?.assignTo || task?._raw?.assignee || null
+}
+
+function findStatusPropertyEntry(task) {
+  const sources = [
+    task?.propertyValues,
+    task?.customValues,
+    task?._raw?.propertyValues,
+    task?._raw?.customValues
+  ]
+
+  for (const source of sources) {
+    if (!Array.isArray(source)) continue
+    const entry = source.find((item) => {
+      if (!item || typeof item !== 'object') return false
+      const property = item.property && typeof item.property === 'object' ? item.property : {}
+      const key = String(item.propertyKey || item.key || property.key || '').trim().toLowerCase()
+      return key === 'status'
+    })
+    if (entry) return entry
+  }
+
+  return null
+}
+
+function resolveTaskStatusValue(task) {
+  const entry = findStatusPropertyEntry(task)
+  const statusValue = entry?.value
+  if (statusValue !== undefined && statusValue !== null && statusValue !== '') {
+    if (typeof statusValue === 'object') {
+      return String(statusValue.value ?? statusValue.label ?? statusValue.name ?? statusValue.id ?? '')
+    }
+    return String(statusValue)
+  }
+
+  return String(task?.status || task?._raw?.status || '')
+}
+
+function findDueDatePropertyEntry(task) {
+  const sources = [
+    task?.propertyValues,
+    task?.customValues,
+    task?._raw?.propertyValues,
+    task?._raw?.customValues
+  ]
+
+  for (const source of sources) {
+    if (!Array.isArray(source)) continue
+    const entry = source.find((item) => {
+      if (!item || typeof item !== 'object') return false
+      const property = item.property && typeof item.property === 'object' ? item.property : {}
+      const key = String(item.propertyKey || item.key || property.key || '').trim().toLowerCase()
+      return key === 'due_date'
+    })
+    if (entry) return entry
+  }
+
+  return null
+}
+
+function resolveTaskDueDateValue(task) {
+  const entry = findDueDatePropertyEntry(task)
+  const value = entry?.value
+  if (value !== undefined && value !== null && value !== '') {
+    if (typeof value === 'object') {
+      return value.value ?? value.date ?? value.start ?? null
+    }
+    return value
+  }
+
+  return task?.dueDate || task?._raw?.dueDate || null
+}
+
 // Helper function to flatten tree data with pathKey for AG Grid
 function flattenTree(nodes, parentPathIds = []) {
   const result = []
@@ -602,17 +899,22 @@ function flattenTree(nodes, parentPathIds = []) {
     const pathKey = String(nodeId)
     const hasChildren = Array.isArray(node.children) && node.children.length > 0
     
-    result.push({
+    const resolvedAssigneeData = resolveTaskAssigneeData(node)
+    const resolvedAssigneeLabel = resolvedAssigneeData?.name
+      || resolvedAssigneeData?.firstName
+      || t('taskDetail.unassigned', 'Unassigned')
+
+    const baseRow = {
       id: node.id,
       title: node.title,
       path: pathIds,
       pathKey,
-      dartboard: node.projectName || projectStore.currentProjectName || 'Project',
-      status: node.status,
+      dartboard: node.projectName || projectStore.currentProjectName || t('tasks.project', 'Project'),
+      status: resolveTaskStatusValue(node),
       priority: node.priority,
-      assignee: node.assignee?.name || node.assignee?.firstName || 'Unassigned',
-      assigneeData: node.assignee,
-      dueDate: node.dueDate,
+      assignee: resolvedAssigneeLabel,
+      assigneeData: resolvedAssigneeData,
+      dueDate: resolveTaskDueDateValue(node),
       tags: node.tags || [],
       hasChildren,
       subtaskCount: node.subtaskCount || (node.children?.length || 0),
@@ -623,11 +925,14 @@ function flattenTree(nodes, parentPathIds = []) {
       kanbanColumnName: node.kanbanColumn?.name || '',
       kanbanColumnIcon: node.kanbanColumn?.icon || null,
       kanbanColumn: node.kanbanColumn || null,
-      projectItemId: node.projectItemId || node.projectId || null,
+      projectItemId: node.projectItemId || node.projectItem?.id || null,
       projectId: node.projectId,
       children: node.children || [],
       _raw: node
-    })
+    }
+
+    const override = rowValueOverrides.value.get(String(node.id || '')) || null
+    result.push(override ? { ...baseRow, ...override } : baseRow)
     
     // Recursively flatten children
     if (hasChildren) {
@@ -635,6 +940,13 @@ function flattenTree(nodes, parentPathIds = []) {
     }
   })
   return result
+}
+
+function setRowOverride(taskId, patch = {}) {
+  const key = String(taskId || '').trim()
+  if (!key) return
+  const next = { ...(rowValueOverrides.value.get(key) || {}), ...patch }
+  rowValueOverrides.value.set(key, next)
 }
 
 // Local row data for manual drag and drop management
@@ -654,6 +966,17 @@ watch(
       // Build tree first, then flatten
       const tree = buildTree(newTasks)
       rowData.value = flattenTree(tree)
+      for (const [taskId, override] of rowValueOverrides.value.entries()) {
+        if (!override || typeof override !== 'object') continue
+        const sourceTask = findTaskInTreeById(newTasks, taskId)
+        if (!sourceTask) continue
+        const sourceAssigneeData = resolveTaskAssigneeData(sourceTask)
+        const sourceAssigneeId = String(sourceAssigneeData?.id || sourceTask.assignToId || sourceTask.assigneeId || '')
+        const overrideAssigneeId = String(override.assigneeData?.id || '')
+        if (overrideAssigneeId && sourceAssigneeId && overrideAssigneeId === sourceAssigneeId) {
+          rowValueOverrides.value.delete(taskId)
+        }
+      }
       pendingTitleUpdates.clear()
       
       // Restore expansion for tracked parents after data refresh
@@ -671,6 +994,15 @@ watch(
     }
   },
   { immediate: true, deep: true }
+)
+
+watch(
+  () => propertyProjectId.value,
+  (projectId) => {
+    if (!projectId) return
+    propertyStore.fetchProperties(projectId).catch(() => {})
+  },
+  { immediate: true }
 )
 
 watch(
@@ -720,6 +1052,287 @@ function updateField(pathKey, field, value) {
   }
 }
 
+function normalizePropertyLookupKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+}
+
+function setPropertyMapValue(map, key, value) {
+  if (!map || typeof map !== 'object') return
+
+  const rawKey = String(key || '').trim()
+  if (!rawKey) return
+
+  map[rawKey] = value
+
+  const normalized = normalizePropertyLookupKey(rawKey)
+  if (normalized && normalized !== rawKey) {
+    map[normalized] = value
+  }
+}
+
+function hasPersistableCustomValue(value) {
+  return value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '')
+}
+
+function getByPath(source, path) {
+  if (!source || !path) return undefined
+
+  const segments = String(path)
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+
+  if (!segments.length) return undefined
+
+  let current = source
+  for (const segment of segments) {
+    if (!current || typeof current !== 'object') return undefined
+    current = current[segment]
+  }
+
+  return current
+}
+
+function getMapValueByCandidates(map, candidates = []) {
+  if (!map || typeof map !== 'object') return undefined
+
+  for (const candidate of candidates) {
+    const rawKey = String(candidate || '').trim()
+    if (!rawKey) continue
+
+    if (rawKey in map) return map[rawKey]
+
+    const normalized = normalizePropertyLookupKey(rawKey)
+    if (normalized && normalized in map) return map[normalized]
+  }
+
+  return undefined
+}
+
+function resolveRowPropertyValue(rowData, property) {
+  const propertyId = String(property?.id || '').trim()
+  const propertyKey = String(property?.key || '').trim()
+  const sourceField = String(property?.settings?.sourceField || '').trim()
+  const candidates = [propertyId, propertyKey, sourceField].filter(Boolean)
+
+  const propertyValueMap = rowData?.propertyValueMap && typeof rowData.propertyValueMap === 'object'
+    ? rowData.propertyValueMap
+    : {}
+  const mappedPropertyValue = getMapValueByCandidates(propertyValueMap, candidates)
+  if (mappedPropertyValue !== undefined) return mappedPropertyValue
+
+  const customFieldMap = rowData?.customFieldMap && typeof rowData.customFieldMap === 'object'
+    ? rowData.customFieldMap
+    : {}
+  const mappedCustomValue = getMapValueByCandidates(customFieldMap, candidates)
+  if (mappedCustomValue !== undefined) return mappedCustomValue
+
+  for (const candidate of candidates) {
+    const direct = rowData?.[candidate]
+    if (direct !== undefined) return direct
+  }
+
+  if (sourceField) {
+    const fromSource = getByPath(rowData, sourceField) ?? getByPath(rowData?._raw, sourceField)
+    if (fromSource !== undefined) return fromSource
+  }
+
+  return undefined
+}
+
+function buildTaskCustomValuesPayload(rowData, changedPropertyId, changedValue) {
+  const targetPropertyId = String(changedPropertyId || '').trim()
+  const payload = []
+  const included = new Set()
+
+  propertyDefinitions.value.forEach((property) => {
+    const propertyId = String(property?.id || '').trim()
+    if (!propertyId || included.has(propertyId)) return
+    included.add(propertyId)
+
+    const value = propertyId === targetPropertyId
+      ? changedValue
+      : resolveRowPropertyValue(rowData, property)
+
+    if (propertyId !== targetPropertyId && !hasPersistableCustomValue(value)) {
+      return
+    }
+
+    payload.push({
+      propertyId,
+      value: value ?? null
+    })
+  })
+
+  if (targetPropertyId && !payload.some((entry) => String(entry.propertyId) === targetPropertyId)) {
+    payload.push({
+      propertyId: targetPropertyId,
+      value: changedValue ?? null
+    })
+  }
+
+  return payload
+}
+
+/**
+ * Persist a property value change for a task.
+ * Called by property cell renderers via grid context.
+ *
+ * @param {{ taskId: string, propertyId: string, value: any }} payload
+ */
+async function updatePropertyValue(payload) {
+  const { taskId, propertyId, value, user } = payload || {}
+  if (!taskId || !propertyId) return
+
+  const propertyIdStr = String(propertyId)
+  const propDef = propertyDefinitions.value.find((property) => {
+    if (!property) return false
+    return String(property.id || '') === propertyIdStr || String(property.key || '') === propertyIdStr
+  }) || null
+
+  if (propDef?.settings?.readonly) return
+
+  const propertyKey = String(propDef?.key || '').trim() || null
+  const sourceField = String(propDef?.settings?.sourceField || '').trim() || null
+  const isSystemProperty = propDef?.isSystem === true
+  const isAssignee = isSystemProperty && propertyKey === 'assignee'
+  const isStatus = isSystemProperty && propertyKey === 'status'
+  const useKanbanStatus = payload?.useKanban === true
+  const isDueDate = isSystemProperty && propertyKey === 'due_date'
+
+  const node = findNodeByPathKey(String(taskId))
+  const previousValues = {
+    propertyValue: node?.data?.[propertyIdStr],
+    keyedValue: propertyKey ? node?.data?.[propertyKey] : undefined,
+    kanbanColumnId: node?.data?.kanbanColumnId,
+    assigneeId: node?.data?.assigneeId,
+    assigneeData: node?.data?.assigneeData,
+    assignee: node?.data?.assignee,
+    dueDate: node?.data?.dueDate,
+    customMap: {},
+    propertyMap: {}
+  }
+
+  const mapKeys = [propertyIdStr, propertyKey, sourceField].filter(Boolean)
+  if (node?.data?.customFieldMap && typeof node.data.customFieldMap === 'object') {
+    mapKeys.forEach((key) => {
+      previousValues.customMap[key] = node.data.customFieldMap[key]
+    })
+  }
+  if (node?.data?.propertyValueMap && typeof node.data.propertyValueMap === 'object') {
+    mapKeys.forEach((key) => {
+      previousValues.propertyMap[key] = node.data.propertyValueMap[key]
+    })
+  }
+
+  const refreshColumns = [propertyIdStr, propertyKey, sourceField].filter(Boolean)
+
+  if (node?.data) {
+    node.data[propertyIdStr] = value
+
+    if (propertyKey && !['assignee', 'due_date'].includes(propertyKey)) {
+      node.data[propertyKey] = value
+    }
+
+    if (isAssignee) {
+      node.data.assigneeId = value
+      node.data.assigneeData = user || null
+      node.data.assignee = user?.name || user?.firstName || t('taskDetail.unassigned', 'Unassigned')
+      setRowOverride(taskId, {
+        assigneeId: value ?? null,
+        assigneeData: user || null,
+        assignee: user?.name || user?.firstName || t('taskDetail.unassigned', 'Unassigned')
+      })
+    } else if (isDueDate) {
+      node.data.dueDate = value
+    }
+
+    if (node.data.customFieldMap && typeof node.data.customFieldMap === 'object') {
+      mapKeys.forEach((key) => setPropertyMapValue(node.data.customFieldMap, key, value))
+    }
+    if (node.data.propertyValueMap && typeof node.data.propertyValueMap === 'object') {
+      mapKeys.forEach((key) => setPropertyMapValue(node.data.propertyValueMap, key, value))
+    }
+
+    gridApi.value?.refreshCells?.({
+      rowNodes: [node],
+      columns: refreshColumns,
+      force: true
+    })
+  }
+
+  if (isStatus && useKanbanStatus) {
+    const previousKanbanColumnId = previousValues.kanbanColumnId || previousValues.propertyValue
+    updateStatus({ taskId, kanbanColumnId: value, previousKanbanColumnId })
+    return
+  }
+
+  try {
+    const projectItemId = resolveRowProjectItemId(node?.data)
+    const targetPropertyId = propDef?.id || propertyIdStr
+    const customValues = buildTaskCustomValuesPayload(node?.data, targetPropertyId, value)
+    if (isAssignee) {
+      await taskStore.updateTask(
+        taskId,
+        {
+          customValues,
+          assignToId: value ?? null,
+          projectItemId
+        },
+        { silent: true }
+      )
+    } else {
+      await taskStore.updateTaskPropertyValue(taskId, targetPropertyId, value, {
+        projectItemId,
+        customValues,
+        silent: true
+      })
+    }
+  } catch (error) {
+    if (uiStore?.showApiError) {
+      uiStore.showApiError(error, t('tasks.errors.updateProperty', 'Failed to update property'))
+    } else {
+      console.error('[ProjectTasksGrid] Failed to update property value:', error)
+    }
+
+    if (node?.data) {
+      node.data[propertyIdStr] = previousValues.propertyValue
+
+      if (propertyKey && !['assignee', 'due_date'].includes(propertyKey)) {
+        node.data[propertyKey] = previousValues.keyedValue
+      }
+
+      if (node.data.customFieldMap && typeof node.data.customFieldMap === 'object') {
+        mapKeys.forEach((key) => setPropertyMapValue(node.data.customFieldMap, key, previousValues.customMap[key]))
+      }
+      if (node.data.propertyValueMap && typeof node.data.propertyValueMap === 'object') {
+        mapKeys.forEach((key) => setPropertyMapValue(node.data.propertyValueMap, key, previousValues.propertyMap[key]))
+      }
+
+      if (isAssignee) {
+        node.data.assigneeId = previousValues.assigneeId
+        node.data.assigneeData = previousValues.assigneeData
+        node.data.assignee = previousValues.assignee
+        setRowOverride(taskId, {
+          assigneeId: previousValues.assigneeId ?? null,
+          assigneeData: previousValues.assigneeData || null,
+          assignee: previousValues.assignee || t('taskDetail.unassigned', 'Unassigned')
+        })
+      }
+      if (isDueDate) node.data.dueDate = previousValues.dueDate
+
+      gridApi.value?.refreshCells?.({
+        rowNodes: [node],
+        columns: refreshColumns,
+        force: true
+      })
+    }
+  }
+}
+
 function findTaskInTreeById(taskList, taskId) {
   if (!Array.isArray(taskList) || !taskId) return null
   const lookupId = String(taskId)
@@ -756,18 +1369,24 @@ function findNodeByPathKey(pathKey) {
   return matched
 }
 
+function resolveRowProjectItemId(rowData) {
+  return (
+    rowData?.projectItemId ||
+    rowData?.projectItem?.id ||
+    rowData?._raw?.projectItemId ||
+    rowData?._raw?.projectItem?.id ||
+    projectStore.activeProjectItemId ||
+    null
+  )
+}
+
 async function addSubtask(pathKey, options = {}) {
   const node = gridApi.value?.getRowNode(pathKey)
   if (!node) return
 
   const taskId = node.data?.id
   const parentKanbanColumnId = node.data?.kanbanColumnId || node.data?._raw?.kanbanColumnId || null
-  const parentProjectItemId =
-    node.data?.projectItemId ||
-    node.data?.projectId ||
-    node.data?._raw?.projectItemId ||
-    node.data?._raw?.projectId ||
-    null
+  const parentProjectItemId = resolveRowProjectItemId(node.data)
   if (!taskId) return
 
   const { ensureEmpty = false, forceCreate = false } = options || {}
@@ -948,7 +1567,7 @@ function updateStatus(payload = {}) {
   emit('update-task-status', {
     taskId,
     kanbanColumnId,
-    projectItemId: payload?.projectItemId || node?.data?.projectItemId || node?.data?._raw?.projectItemId || node?.data?._raw?.projectId || null
+    projectItemId: payload?.projectItemId || resolveRowProjectItemId(node?.data)
   })
 }
 
@@ -1005,7 +1624,7 @@ const baseColumnDefs = [
     headerName: t('tasks.project', 'Project'),
     flex: 1,
     minWidth: 140,
-    cellClass: 'flex items-center justify-center p-0',
+    cellClass: 'flex items-center p-0',
     cellRenderer: 'ProjectCell',
     rowDragText: (params) => {
       return params.rowNode?.data?.title || 'Unknown Task'
@@ -1019,7 +1638,7 @@ const baseColumnDefs = [
     minWidth: 80,
     headerComponent: 'SortHeader',
     cellRenderer: 'StatusCell',
-    cellClass: 'flex items-center justify-center p-0',
+    cellClass: 'flex items-center p-0',
     rowDragText: (params) => {
       return params.rowNode?.data?.title || 'Unknown Task'
     }
@@ -1032,7 +1651,7 @@ const baseColumnDefs = [
     minWidth: 80,
     headerComponent: 'SortHeader',
     cellRenderer: 'AssigneeCell',
-    cellClass: 'flex items-center justify-center p-0',
+    cellClass: 'flex items-center p-0',
     rowDragText: (params) => {
       return params.rowNode?.data?.title || 'Unknown Task'
     }
@@ -1186,6 +1805,13 @@ const gridOptions = ref({
     DartboardCell,
     ProjectCell,
     StatusCell,
+    PropertyTextCell,
+    PropertyNumberCell,
+    PropertyCheckboxCell,
+    PropertySelectCell,
+    PropertyMultiselectCell,
+    PropertyDateCell,
+    PropertyUserCell,
     ProjectTasksGridColumnOptionsHeader
   },
 
@@ -1194,7 +1820,7 @@ const gridOptions = ref({
 
   context: {
     updateField,
-    tagOptions: ref([]),
+    tagOptions,
     statusOptions,
     columnMenuItems,
     customColumns,
@@ -1205,7 +1831,9 @@ const gridOptions = ref({
     addSubtask,
     updateTitle,
     handleCommit,
-    focusKey
+    focusKey,
+    propertyDefinitions,
+    updatePropertyValue
   },
   rowSelection: {
     mode: 'multiRow',
@@ -1228,17 +1856,11 @@ const gridOptions = ref({
   },
   onRowClicked: (params) => {
     if (!params?.data) return
-    
-    // Prevent opening sidebar when clicking on input fields (e.g., editing title)
-    const target = params.event?.target
-    if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
+
+    if (shouldSkipRowClick(params?.event)) {
       return
     }
-    // Also check if clicking inside a cell that has input focus
-    if (target?.closest('.dartboard-input') || target?.closest('input')) {
-      return
-    }
-    
+
     handleOpenTaskDetail(params.data._raw || params.data)
   },
 
@@ -1255,6 +1877,39 @@ const gridOptions = ref({
 function handleOpenTaskDetail(task) {
   if (!task) return
   emit('task-click', task)
+}
+
+function shouldSkipRowClick(event) {
+  const target = event?.target
+  if (!target?.closest) return false
+
+  return Boolean(
+    target.closest(
+      [
+        'input',
+        'textarea',
+        'select',
+        '.dartboard-input',
+        '.property-text-cell',
+        '.property-number-cell',
+        '.property-checkbox-cell',
+        '.property-select-cell',
+        '.property-multiselect-cell',
+        '.property-date-cell',
+        '.property-user-cell',
+        '.assignee-cell-wrapper',
+        '.status-cell-wrapper',
+        '.due-date-cell-wrapper',
+        '.due-date-cell',
+        '.tracking-time-cell',
+        '.p-checkbox',
+        '.tag-trigger',
+        '.dropdown-menu-content',
+        '.dropdown-menu-trigger',
+        '[role="button"]'
+      ].join(',')
+    )
+  )
 }
 
 function onGridReady(params) {
@@ -1552,7 +2207,10 @@ function onGridReady(params) {
 /* Keep assignee tooltip visible above AG Grid row/cell clipping contexts */
 :deep(.ag-theme-quartz .ag-cell[col-id="assignee"]),
 :deep(.ag-theme-quartz .ag-cell[col-id="assignee"] .ag-cell-wrapper),
-:deep(.ag-theme-quartz .ag-cell[col-id="assignee"] .ag-cell-value) {
+:deep(.ag-theme-quartz .ag-cell[col-id="assignee"] .ag-cell-value),
+:deep(.ag-theme-quartz .ag-cell .property-user-cell),
+:deep(.ag-theme-quartz .ag-cell .property-user-cell .ag-cell-wrapper),
+:deep(.ag-theme-quartz .ag-cell .property-user-cell .ag-cell-value) {
   overflow: visible !important;
 }
 
