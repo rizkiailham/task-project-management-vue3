@@ -45,6 +45,26 @@ export async function updateTask(taskId, data, config = {}) {
 }
 
 /**
+ * Update one or more dynamic property values on a task.
+ * @param {string} taskId
+ * @param {Array<{propertyId: string, value: any}>} propertyValues
+ * @param {string|null} [projectItemId]
+ * @param {Object} config - Optional axios config
+ * @returns {Promise<any>}
+ */
+export async function updateTaskProperties(taskId, propertyValues = [], projectItemId = null, config = {}) {
+  const customValues = Array.isArray(propertyValues) ? propertyValues : []
+  return patch(
+    `/tasks/${taskId}`,
+    {
+      customValues,
+      ...(projectItemId ? { projectItemId } : {})
+    },
+    config
+  )
+}
+
+/**
  * Delete a task
  * @param {string} taskId
  * @param {string|null} [projectItemId]
@@ -112,6 +132,13 @@ export async function getComments(taskId) {
  */
 export async function addComment(taskId, data) {
   return post(`/tasks/${taskId}/comments`, data)
+}
+
+/**
+ * Delete a comment from a task
+ */
+export async function deleteComment(taskId, commentId) {
+  return del(`/tasks/${taskId}/comments/${commentId}`)
 }
 
 // ================================

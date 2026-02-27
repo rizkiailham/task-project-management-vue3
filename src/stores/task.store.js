@@ -756,6 +756,41 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
+  /**
+   * Update a dynamic project property value for a task.
+   * Uses task PATCH payload with `customValues`.
+   *
+   * @param {string} taskId
+   * @param {string} propertyId
+   * @param {*} value
+   * @param {Object} [options]
+   * @param {boolean} [options.silent=true]
+   * @param {string|null} [options.projectItemId=null]
+   * @param {Array<{propertyId: string, value: *}>|null} [options.customValues=null]
+   */
+  async function updateTaskPropertyValue(taskId, propertyId, value, options = {}) {
+    if (!taskId || !propertyId) return null
+
+    const {
+      silent = true,
+      projectItemId = null,
+      customValues = null
+    } = options
+
+    const normalizedCustomValues = Array.isArray(customValues) && customValues.length
+      ? customValues
+      : [{ propertyId, value }]
+
+    return updateTask(
+      taskId,
+      {
+        customValues: normalizedCustomValues,
+        ...(projectItemId ? { projectItemId } : {})
+      },
+      { silent }
+    )
+  }
+
   // ================================
   // Subtask Actions
   // ================================
@@ -1029,6 +1064,7 @@ export const useTaskStore = defineStore('task', () => {
     fetchTask,
     createNewTask,
     updateTask,
+    updateTaskPropertyValue,
     deleteTask,
     changeTaskStatus,
     changeTaskAssignee,
