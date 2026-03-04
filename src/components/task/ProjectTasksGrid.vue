@@ -491,7 +491,52 @@ function formatReminderTime(value) {
 
 function handleClearReminder() {
   reminderDateTime.value = ''
-  // Optionally save/emit clear immediately
+}
+
+const reminderHour = computed(() => {
+  if (!reminderDateTime.value) return '00'
+  const d = new Date(reminderDateTime.value)
+  return Number.isNaN(d.getTime()) ? '00' : String(d.getHours()).padStart(2, '0')
+})
+
+const reminderMinute = computed(() => {
+  if (!reminderDateTime.value) return '00'
+  const d = new Date(reminderDateTime.value)
+  return Number.isNaN(d.getTime()) ? '00' : String(d.getMinutes()).padStart(2, '0')
+})
+
+function applyReminderTime(hours, minutes) {
+  let d
+  if (reminderDateTime.value) {
+    d = new Date(reminderDateTime.value)
+    if (Number.isNaN(d.getTime())) d = new Date()
+  } else {
+    d = new Date()
+  }
+  d.setHours(hours, minutes, 0, 0)
+  reminderDateTime.value = d.toISOString()
+}
+
+function handleReminderHourInput(e) {
+  const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+  e.target.value = raw
+}
+
+function commitReminderHour(e) {
+  const num = Math.min(23, Math.max(0, parseInt(e.target.value, 10) || 0))
+  e.target.value = String(num).padStart(2, '0')
+  applyReminderTime(num, parseInt(reminderMinute.value, 10))
+}
+
+function handleReminderMinuteInput(e) {
+  const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+  e.target.value = raw
+}
+
+function commitReminderMinute(e) {
+  const num = Math.min(59, Math.max(0, parseInt(e.target.value, 10) || 0))
+  e.target.value = String(num).padStart(2, '0')
+  applyReminderTime(parseInt(reminderHour.value, 10), num)
 }
 
 const calendarAttributes = computed(() => [
@@ -1994,8 +2039,32 @@ function onGridReady(params) {
                   <X class="w-4 h-4" />
                 </button>
              </div>
-             <div class="reminder-time-display">
-                {{ reminderDateTime ? formatReminderTime(reminderDateTime) : '00 : 00' }}
+             <div class="reminder-time-editor">
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  :value="reminderHour"
+                  @input="handleReminderHourInput"
+                  @blur="commitReminderHour"
+                  @keydown.enter="$event.target.blur()"
+                  @click.stop
+                  class="reminder-time-input"
+                  placeholder="00"
+                />
+                <span class="reminder-time-sep">:</span>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  :value="reminderMinute"
+                  @input="handleReminderMinuteInput"
+                  @blur="commitReminderMinute"
+                  @keydown.enter="$event.target.blur()"
+                  @click.stop
+                  class="reminder-time-input"
+                  placeholder="00"
+                />
              </div>
           </div>
 
@@ -2060,7 +2129,7 @@ function onGridReady(params) {
 }
 
 .task-reminder-panel {
-  padding: 12px 14px;
+  padding: 8px 0 0;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -2070,8 +2139,8 @@ function onGridReady(params) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin: 0 10px 4px;
 }
 
 .reminder-date-box {
@@ -2079,8 +2148,8 @@ function onGridReady(params) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 6px 10px;
   min-width: 0;
@@ -2109,24 +2178,72 @@ function onGridReady(params) {
   color: #6b7280;
 }
 
-.reminder-time-display {
+.reminder-time-editor {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+
+.reminder-time-input {
+  width: 24px;
+  border: none;
+  background: transparent;
   font-size: 13px;
   font-weight: 500;
   color: #374151;
-  white-space: nowrap;
-  letter-spacing: 1px;
+  text-align: center;
+  padding: 2px 0;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
-/* ---- v-calendar overrides (keep defaults, just remove container border) ---- */
+.reminder-time-input::placeholder {
+  color: #9ca3af;
+}
+
+.reminder-time-sep {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  user-select: none;
+}
+
+/* ---- v-calendar overrides ---- */
+:deep(.task-reminder-calendar) {
+  width: 100% !important;
+  --vc-bg: transparent;
+  --vc-border: transparent;
+}
+
 :deep(.task-reminder-calendar .vc-container) {
-  width: 100%;
+  width: 100% !important;
   border: none !important;
   box-shadow: none !important;
-  background-color: transparent;
+  background-color: transparent !important;
+}
+
+:deep(.task-reminder-calendar .vc-bordered) {
+  border: none !important;
 }
 
 :deep(.task-reminder-calendar .vc-pane-container) {
-  background: transparent;
+  background: transparent !important;
+  width: 100%;
+}
+
+:deep(.task-reminder-calendar .vc-pane) {
+  width: 100% !important;
+}
+
+:deep(.task-reminder-calendar .vc-weeks) {
+  width: 100%;
 }
 
 /* Hide any time picker that might appear */
