@@ -3,6 +3,9 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Avatar from 'primevue/avatar'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
+import { getPropertyId } from '@/components/task/cells/propertyCellUtils'
+import { useUserStore } from '@/stores'
+import { normalizeUserForDisplay } from '@/utils/user'
 
 const props = defineProps({
   params: { type: Object, required: true }
@@ -43,6 +46,7 @@ function safeJsonParse(raw, fallback) {
 
 const taskId = computed(() => props.params?.data?.id || props.params?.data?.pathKey)
 const assigneeName = computed(() => props.params?.data?.assignee || 'Unassigned')
+const propertyId = computed(() => getPropertyId(props.params))
 
 const isOpen = ref(false)
 const buttonRef = ref(null)
@@ -115,6 +119,32 @@ function save() {
   } catch {
     // ignore
   }
+  persistToBackend()
+}
+
+function persistToBackend() {
+  const id = props.params?.data?.id
+  if (!id || !propertyId.value) return
+
+  const totalSec = totalSeconds.value + totalEntriesSeconds.value
+  const row = props.params?.data
+  const colDef = props.params?.colDef || {}
+  const colId = String(colDef.colId || colDef.field || '').trim()
+  const sourceKey = String(colDef.sourceKey || '').trim()
+
+  if (row && typeof row === 'object') {
+    if (colId) row[colId] = totalSec
+    if (!row.propertyValueMap || typeof row.propertyValueMap !== 'object') row.propertyValueMap = {}
+    if (!row.customFieldMap || typeof row.customFieldMap !== 'object') row.customFieldMap = {}
+    row.propertyValueMap[propertyId.value] = totalSec
+    if (sourceKey) row.propertyValueMap[sourceKey] = totalSec
+    if (sourceKey) row.customFieldMap[sourceKey] = totalSec
+  }
+
+  const updateFn = props.params?.context?.updatePropertyValue
+  if (updateFn) {
+    Promise.resolve(updateFn({ taskId: id, propertyId: propertyId.value, value: totalSec }))
+  }
 }
 
 function currentSessionSeconds() {
@@ -128,32 +158,30 @@ const totalEntriesSeconds = computed(() => entries.value.reduce((acc, e) => acc 
 const liveTotalSeconds = computed(() => totalSeconds.value + totalEntriesSeconds.value + (running.value ? liveSessionSeconds.value : 0))
 const hasTrackingTime = computed(() => liveTotalSeconds.value > 0)
 
-const defaultUsers = [
-  { id: 'u1', name: 'Erik Olsvik' },
-  { id: 'u2', name: 'Hari W' },
-  { id: 'u3', name: 'studio@lomedia.no' }
-]
+const userStore = useUserStore()
 
 const users = computed(() => {
-  const fromGrid = []
-  const raw = props.params?.context?.teamOptions
-  if (Array.isArray(raw)) {
-    for (const u of raw) {
-      if (!u) continue
-      const id = u.id ?? u.value ?? u.name
-      const name = u.name ?? u.label ?? String(u.value ?? '')
-      if (id && name) fromGrid.push({ id, name })
+  const result = []
+  const seen = new Set()
+
+  for (const u of userStore.users) {
+    const id = u.id || u.userId
+    if (id && !seen.has(id)) {
+      seen.add(id)
+      const n = normalizeUserForDisplay(u)
+      result.push({ id, name: n.name, initials: n.initials, avatarUrl: n.avatarUrl, color: n.color })
     }
   }
-  const merged = [...fromGrid]
-  for (const u of defaultUsers) if (!merged.some((m) => m.id === u.id)) merged.push(u)
-  return merged
+
+  return result
 })
+
+const UNASSIGNED_ID = '__unassigned__'
 
 const assigneeUserId = computed(() => {
   const name = assigneeName.value
   const hit = users.value.find((u) => u.name === name)
-  return hit?.id || (users.value[0]?.id ?? 'u1')
+  return hit?.id || users.value[0]?.id || UNASSIGNED_ID
 })
 
 function dateLabelFromIso(iso) {
@@ -271,6 +299,13 @@ const totalsByUser = computed(() => {
   return totals
 })
 
+function resolveUserName(id) {
+  if (id === UNASSIGNED_ID) return assigneeName.value
+  if (id === assigneeUserId.value) return assigneeName.value
+  const u = users.value.find((x) => x.id === id)
+  return u?.name || assigneeName.value
+}
+
 const visibleUsers = computed(() => {
   const ids = new Set()
   ids.add(assigneeUserId.value)
@@ -279,7 +314,12 @@ const visibleUsers = computed(() => {
 
   const list = []
   for (const id of ids) {
-    const u = users.value.find((x) => x.id === id) || { id, name: id === assigneeUserId.value ? assigneeName.value : String(id) }
+    let u = users.value.find((x) => x.id === id)
+    if (!u) {
+      const name = resolveUserName(id)
+      const n = normalizeUserForDisplay(name)
+      u = { id, name: n.name, initials: n.initials, avatarUrl: null, color: n.color }
+    }
     const total = totalsByUser.value.get(id) || 0
     const hasEntries = entries.value.some((e) => e.userId === id)
     if (total > 0 || hasEntries || (running.value && (sessionUserId.value || assigneeUserId.value) === id)) list.push({ ...u, total })
@@ -617,8 +657,8 @@ if (running.value) startTicking()
       <div
         v-if="isOpen"
         ref="panelRef"
-        class="fixed z-[10000] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden"
-        :style="popoverStyle"
+        class="fixed z-[10000] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col"
+        :style="{ ...popoverStyle, maxHeight: 'calc(100vh - 80px)' }"
       >
       <!-- Header row -->
       <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
@@ -651,7 +691,8 @@ if (running.value) startTicking()
         <span class="text-sm text-gray-500 tabular-nums">{{ formatHMS(liveTotalSeconds) }}</span>
       </div>
 
-      <!-- User row (only after first run or if running) -->
+      <!-- User rows (scrollable) -->
+      <div class="overflow-y-auto flex-1 min-h-0">
       <div
         v-for="user in visibleUsers"
         :key="user.id"
@@ -678,11 +719,11 @@ if (running.value) startTicking()
               </svg>
               <Avatar
                 v-else
-                :label="user.name.charAt(0).toUpperCase()"
+                :image="user.avatarUrl || undefined"
+                :label="!user.avatarUrl ? (user.initials || user.name.charAt(0).toUpperCase()) : undefined"
                 shape="circle"
                 size="small"
-                class="bg-orange-100 text-orange-700"
-                style="width: 18px; height: 18px; font-size: 9px;"
+                :style="{ width: '18px', height: '18px', fontSize: '9px', color: '#fff', backgroundColor: user.color || '#9CA3AF' }"
               />
             </div>
             <span class="text-xs text-gray-700 truncate">{{ user.name }}</span>
@@ -783,6 +824,7 @@ if (running.value) startTicking()
           </div>
         </div>
       </div>
+      </div>
 
       <button
         type="button"
@@ -808,7 +850,7 @@ if (running.value) startTicking()
         class="fixed z-[10001] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden"
         :style="addEntryMenuStyle"
       >
-        <div class="py-1">
+        <div class="py-1 max-h-[240px] overflow-y-auto">
           <button
             v-for="u in users"
             :key="u.id"
@@ -816,9 +858,12 @@ if (running.value) startTicking()
             class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
             @click="selectUserForEntry(u)"
           >
-            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] font-semibold text-gray-800">
-              {{ u.name.charAt(0).toUpperCase() }}
-            </span>
+            <Avatar
+              :image="u.avatarUrl || undefined"
+              :label="!u.avatarUrl ? (u.initials || u.name.charAt(0).toUpperCase()) : undefined"
+              shape="circle"
+              :style="{ width: '24px', height: '24px', fontSize: '10px', fontWeight: '600', color: '#fff', backgroundColor: u.color || '#9CA3AF' }"
+            />
             <span class="truncate text-xs">{{ u.name }}</span>
           </button>
         </div>
