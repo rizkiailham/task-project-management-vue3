@@ -250,7 +250,6 @@ defineExpose({ refresh })
 .property-select-cell :deep(.tag-trigger) {
   width: 100%;
   height: 100%;
-  padding: 0 8px;
   background: transparent;
   border: none;
   min-height: unset;

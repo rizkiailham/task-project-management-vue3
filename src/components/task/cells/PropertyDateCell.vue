@@ -146,7 +146,7 @@ defineExpose({ refresh })
       @mousedown.stop
       @click.stop="togglePopover"
       :class="[
-        'flex items-center gap-1 text-xs cursor-pointer hover:bg-black/5 px-2 py-1 rounded transition-colors',
+        'flex items-center gap-1 text-xs cursor-pointer hover:bg-black/5 py-1 rounded transition-colors',
         localDate ? (isOverdue ? 'text-red-600' : 'text-gray-700') : 'text-gray-400',
         readonly ? 'is-readonly' : ''
       ]"

@@ -218,12 +218,12 @@ watch(
   <div class="status-cell-wrapper h-full w-full flex items-center justify-start">
     <DropdownMenu :items="menuItems" position="right" width="14rem">
       <template #trigger>
-        <button type="button" class="status-trigger flex items-center justify-center rounded-md p-1 hover:bg-black/5">
+        <button type="button" class="status-trigger flex items-center justify-center rounded-md hover:bg-black/5">
           <TaskProgressIcon
             :status="currentOption?.status || rowData?.status || 'todo'"
             :progress="currentOption?.progress ?? 0"
             :color="currentOption?.color || ''"
-            size="sm"
+            size="lg"
           />
         </button>
       </template>
@@ -233,7 +233,7 @@ watch(
             :status="item.status || 'todo'"
             :progress="item.progress ?? 0"
             :color="item.color || ''"
-            size="sm"
+            size="lg"
           />
           <span class="text-xs text-gray-700 truncate">{{ item.label }}</span>
         </div>

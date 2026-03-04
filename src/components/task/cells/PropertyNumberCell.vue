@@ -162,7 +162,7 @@ defineExpose({ refresh })
 
 <template>
   <div
-    class="property-number-cell h-full w-full flex items-center px-2"
+    class="property-number-cell h-full w-full flex items-center"
     :class="{ 'is-readonly': readonly, 'is-focused': isFocused }"
     @mousedown.stop
     @click.stop

@@ -88,9 +88,9 @@ const avatarColor = computed(() => {
 })
 
 const avatarStyle = computed(() => ({
-  width: '28px',
-  height: '28px',
-  minWidth: '28px',
+  width: '24px',
+  height: '24px',
+  minWidth: '24px',
   fontSize: '11px',
   fontWeight: '600',
   color: '#ffffff',
@@ -100,9 +100,9 @@ const avatarStyle = computed(() => ({
   backgroundColor: avatarColor.value
 }))
 const unassignedStyle = {
-  width: '28px',
-  height: '28px',
-  minWidth: '28px',
+  width: '24px',
+  height: '24px',
+  minWidth: '24px',
   borderRadius: '50%',
   border: '1.5px dashed #d1d5db',
   display: 'inline-flex',
@@ -215,9 +215,9 @@ defineExpose({ refresh })
 }
 
 :deep(.assignee-avatar) {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   color: #ffffff !important;
@@ -249,9 +249,9 @@ defineExpose({ refresh })
 }
 
 .assignee-unassigned-avatar {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
   border-radius: 50% !important;
   border: 1.5px dashed #d1d5db !important;
   display: inline-flex !important;
