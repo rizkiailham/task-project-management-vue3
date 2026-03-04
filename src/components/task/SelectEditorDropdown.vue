@@ -534,7 +534,7 @@ defineExpose({ refresh })
   gap: 6px;
   width: 100%;
   min-height: 28px;
-  padding: 2px 6px;
+  padding: 2px 0px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
