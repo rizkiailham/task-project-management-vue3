@@ -79,12 +79,11 @@ export function useTaskContextMenu(t, options = {}) {
             label: t('tasks.context.setRecurrence', 'Set repetition'),
             icon: Repeat
           },
-          { label: 'Daily', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
-          { label: 'Every Monday', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
-          { label: 'Every weekday', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
-          { label: 'Monthly on the 12th', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
-          { label: 'Yearly on Jan 12th', class: 'block w-full text-left px-3 py-2 m-1 mb-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
-          { label: 'Custom', class: 'block w-full text-left px-3 py-2 m-1 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500', action: () => { } },
+          ...['Daily', 'Every Monday', 'Every weekday', 'Monthly on the 12th', 'Yearly on Jan 12th', 'Custom'].map(label => ({
+            label,
+            class: 'recurrence-card-item',
+            action: () => { }
+          }))
         ]
       },
       {

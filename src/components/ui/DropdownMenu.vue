@@ -342,6 +342,7 @@ function handlePeerOpen(event) {
 }
 
 function handleGlobalOverlayOpen(event) {
+  if (props.keepOpenWithOtherMenus) return
   const incomingId = event?.detail?.id
   if (!incomingId || incomingId === instanceId) return
   close()
@@ -528,29 +529,34 @@ defineExpose({ open, close, toggle, isOpen, getMenuRect })
                   <div 
                     v-if="activeSubmenuKey === (item.key || item.label || item.id)"
                     ref="submenuRef"
-                    class="dropdown-menu fixed z-[50000] min-w-[12rem] bg-[#f3f5f7] border border-gray-300 rounded-[6px] shadow-xl py-1"
+                    class="dropdown-menu fixed z-[50000] min-w-[14rem] bg-[#f3f5f7] border border-gray-300 rounded-[6px] shadow-xl py-1"
                     :style="submenuStyle"
                     @click.stop
                   >
                      <template v-for="(subItem, subIndex) in item.items" :key="subIndex">
                         <!-- Divider -->
                         <div v-if="subItem.type === 'divider'" :class="dividerClass"></div>
-                        
+
                         <!-- Section Header -->
-                        <div v-else-if="subItem.type === 'header'" :class="headerClass">
-                          <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{{ subItem.label }}</span>
+                        <div v-else-if="subItem.type === 'header'" :class="subItem.icon ? 'flex items-center gap-2 px-3 py-2' : headerClass">
+                          <component
+                            v-if="isRenderableComponentIcon(subItem.icon)"
+                            :is="subItem.icon"
+                            class="w-4 h-4 text-gray-500"
+                          />
+                          <span :class="subItem.icon ? 'text-sm font-semibold text-gray-700' : 'text-[10px] font-semibold text-gray-400 uppercase tracking-wide'">{{ subItem.label }}</span>
                         </div>
 
-                        <!-- Submenu Item (Recursive not fully supported here, simplified for 2 levels) -->
+                        <!-- Submenu Item -->
                         <button
                           v-else
                           @click="handleItemClick(subItem, $event)"
-                          :class="[itemBaseClass, itemActiveClass]"
+                          :class="subItem.class ? subItem.class : [itemBaseClass, itemActiveClass]"
                         >
                            <div class="flex items-center gap-3">
-                              <component 
-                                v-if="isRenderableComponentIcon(subItem.icon)" 
-                                :is="subItem.icon" 
+                              <component
+                                v-if="isRenderableComponentIcon(subItem.icon)"
+                                :is="subItem.icon"
                                 class="w-4 h-4 text-gray-500"
                               />
                               <span>{{ subItem.label }}</span>
@@ -663,6 +669,33 @@ defineExpose({ open, close, toggle, isOpen, getMenuRect })
 .dropdown-menu--dark :deep(button.is-selected) {
   background: rgba(37, 99, 235, 0.2) !important;
   color: #93c5fd !important;
+}
+</style>
+
+<!-- Unscoped: styles for teleported submenu card items -->
+<style>
+.recurrence-card-item {
+  display: block;
+  width: calc(100% - 16px);
+  text-align: left;
+  padding: 8px 12px;
+  margin: 0 8px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.recurrence-card-item:last-child {
+  margin-bottom: 8px;
+}
+
+.recurrence-card-item:hover {
+  background: #f9fafb;
 }
 </style>
 
