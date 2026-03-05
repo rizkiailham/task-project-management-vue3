@@ -600,6 +600,10 @@
   "calendar": {
     "today": "Today",
     "moreCount": "+{count} more",
+    "month": "Month",
+    "week": "Week",
+    "day": "Day",
+    "addTask": "Add task",
     "days": {
       "sun": "Sun",
       "mon": "Mon",
