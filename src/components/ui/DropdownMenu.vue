@@ -253,9 +253,9 @@ const dividerClass = computed(() => {
 
 const itemBaseClass = computed(() => {
   if (props.variant === 'sidebar') {
-    return 'flex items-center justify-between w-full px-3 py-2 text-sm transition-colors'
+    return 'flex items-center justify-between w-full px-3 py-1 text-sm transition-colors'
   }
-  return 'flex items-center justify-between w-full px-3 py-2 text-sm transition-colors'
+  return 'flex items-center justify-between w-full px-3 py-1 text-sm transition-colors'
 })
 
 const itemActiveClass = computed(() => {
