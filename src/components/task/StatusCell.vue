@@ -223,7 +223,7 @@ watch(
             :status="currentOption?.status || rowData?.status || 'todo'"
             :progress="currentOption?.progress ?? 0"
             :color="currentOption?.color || ''"
-            size="lg"
+            size="md"
           />
         </button>
       </template>
@@ -233,7 +233,7 @@ watch(
             :status="item.status || 'todo'"
             :progress="item.progress ?? 0"
             :color="item.color || ''"
-            size="lg"
+            size="md"
           />
           <span class="text-xs text-gray-700 truncate">{{ item.label }}</span>
         </div>
