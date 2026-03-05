@@ -1145,7 +1145,7 @@ function getTextColor(hex) {
   gap: 4px;
   border: none;
   border-radius: 4px;
-  padding: 2px 0px;
+  padding: 2px 4px;
   font-size: 10px;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
