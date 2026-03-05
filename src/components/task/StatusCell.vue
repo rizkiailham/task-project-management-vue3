@@ -174,13 +174,6 @@ const currentOption = computed(() => {
   return byStatus || options[0]
 })
 
-const menuItems = computed(() =>
-  statusOptions.value.map((option) => ({
-    ...option,
-    action: () => selectStatus(option)
-  }))
-)
-
 function selectStatus(option) {
   const taskId = rowData.value?.id
   if (!taskId) return
@@ -216,7 +209,7 @@ watch(
 
 <template>
   <div class="status-cell-wrapper h-full w-full flex items-center justify-start">
-    <DropdownMenu :items="menuItems" position="right" width="14rem">
+    <DropdownMenu position="right" width="12rem">
       <template #trigger>
         <button type="button" class="status-trigger flex items-center justify-center rounded-md hover:bg-black/5">
           <TaskProgressIcon
@@ -227,20 +220,26 @@ watch(
           />
         </button>
       </template>
-      <template #item="{ item }">
-        <div class="flex items-center gap-2 min-w-0">
-          <TaskProgressIcon
-            :status="item.status || 'todo'"
-            :progress="item.progress ?? 0"
-            :color="item.color || ''"
-            size="md"
-          />
-          <span class="text-xs text-gray-700 truncate">{{ item.label }}</span>
+      <template #content>
+        <div class="py-1 max-h-60 overflow-y-auto">
+          <button
+            v-for="opt in statusOptions"
+            :key="opt.id"
+            type="button"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+            :class="{ 'text-primary-600 bg-primary-50 font-semibold': currentOption?.id === opt.id }"
+            @click="selectStatus(opt)"
+          >
+            <TaskProgressIcon
+              :status="opt.status || 'todo'"
+              :progress="opt.progress ?? 0"
+              :color="opt.color || ''"
+              size="sm"
+            />
+            <span class="flex-1 text-left truncate">{{ opt.label }}</span>
+            <i v-if="currentOption?.id === opt.id" class="pi pi-check text-[10px]"></i>
+          </button>
         </div>
-        <i
-          v-if="String(item.value ?? item.label ?? item.id) === String(currentOption?.value ?? currentOption?.label ?? currentOption?.id)"
-          class="pi pi-check text-[10px] text-primary-600"
-        ></i>
       </template>
     </DropdownMenu>
   </div>
