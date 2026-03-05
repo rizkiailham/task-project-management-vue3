@@ -1294,6 +1294,10 @@
     "createdAt": "Created",
     "lastUpdated": "Last updated",
     "by": "by",
-    "archive": "Archive"
+    "archive": "Archive",
+    "board": "Board",
+    "priority": "Priority",
+    "timeTracking": "Time Tracking",
+    "noTimeTracked": "0 hrs"
   }
 }

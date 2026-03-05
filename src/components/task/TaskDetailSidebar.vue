@@ -11,33 +11,28 @@
  */
 import { ref, computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTaskStore, useUIStore, useAIChatStore, useProjectStore, useProjectPropertyStore } from '@/stores'
-import { TaskStatus, TaskPriority } from '@/models'
+import { useTaskStore, useUIStore, useAIChatStore } from '@/stores'
+import { TaskStatus } from '@/models'
 import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
 import Skeleton from 'primevue/skeleton'
 import NotionEditor from '@/components/editor/NotionEditor.vue'
-import UserSearchDropdown from '@/components/user/UserSearchDropdown.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
-import { DatePicker as VDatePicker } from 'v-calendar'
-import 'v-calendar/style.css'
-import { 
-  Sparkles, 
-  ChevronRight, 
+import TaskDetailProperties from '@/components/task/TaskDetailProperties.vue'
+import {
+  Sparkles,
+  ChevronRight,
   ChevronDown,
-  User as UserIcon, 
-  Link2, 
-  Paperclip, 
+  Link2,
+  Paperclip,
   MoreHorizontal,
   X,
   Maximize2,
-  Clock,
   Pin,
   Copy,
   Pencil,
   Trash,
-  Calendar,
   CornerUpLeft
 } from 'lucide-vue-next'
 
@@ -45,8 +40,6 @@ const { t } = useI18n()
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
 const aiChatStore = useAIChatStore()
-const projectStore = useProjectStore()
-const propertyStore = useProjectPropertyStore()
 
 
 // Topbar height constant
@@ -76,22 +69,6 @@ const aiReplaceMode = computed(() => !isRichTextEmpty(descriptionBeforeAi.value)
 // Computed
 const isOpen = computed(() => uiStore.isTaskPanelOpen)
 const task = computed(() => taskStore.currentTask)
-
-// Dynamic property options (must be after task declaration)
-const currentProjectId = computed(() => task.value?.projectId || projectStore.currentProjectId)
-const dynamicStatusOptions = computed(() => {
-  if (!currentProjectId.value) return []
-  return propertyStore.statusOptions(currentProjectId.value)
-})
-const dynamicPriorityOptions = computed(() => {
-  if (!currentProjectId.value) return []
-  return propertyStore.priorityOptions(currentProjectId.value)
-})
-
-// Ensure properties are loaded when task changes
-watch(currentProjectId, (pid) => {
-  if (pid) propertyStore.fetchProperties(pid)
-}, { immediate: true })
 
 const subtasks = computed(() => taskStore.subtasks)
 const isLoading = computed(() => taskStore.isLoadingTask)
@@ -227,11 +204,8 @@ async function handleDeleteSubtask(subtaskId) {
   }
 }
 
+// Status helpers (used by Relationships section for parent task display)
 function getStatusLabel(status) {
-  // Try dynamic options first
-  const dynOpt = dynamicStatusOptions.value.find(o => o.value === status)
-  if (dynOpt) return dynOpt.value
-  // Fallback to hardcoded
   const labels = {
     [TaskStatus.TODO]: 'To Do',
     [TaskStatus.IN_PROGRESS]: 'In Progress',
@@ -242,22 +216,7 @@ function getStatusLabel(status) {
   return labels[status] || status
 }
 
-function getStatusIcon(status) {
-  const icons = {
-    [TaskStatus.TODO]: '○',
-    [TaskStatus.IN_PROGRESS]: '◐',
-    [TaskStatus.IN_REVIEW]: '◑',
-    [TaskStatus.DONE]: '✓',
-    [TaskStatus.BLOCKED]: '⊘'
-  }
-  return icons[status] || '○'
-}
-
 function getStatusProgress(status) {
-  // Try dynamic options first
-  const dynOpt = dynamicStatusOptions.value.find(o => o.value === status)
-  if (dynOpt) return dynOpt.progress ?? 0
-  // Fallback
   const progress = {
     [TaskStatus.TODO]: 0,
     [TaskStatus.IN_PROGRESS]: 50,
@@ -279,30 +238,6 @@ function formatDate(date) {
   } catch (e) {
     return date
   }
-}
-
-function getPriorityLabel(priority) {
-  // Try dynamic options first
-  const dynOpt = dynamicPriorityOptions.value.find(o => o.value === priority)
-  if (dynOpt) return dynOpt.value
-  // Fallback
-  const labels = {
-    [TaskPriority.LOW]: 'Low',
-    [TaskPriority.MEDIUM]: 'Medium',
-    [TaskPriority.HIGH]: 'High',
-    [TaskPriority.URGENT]: 'Urgent'
-  }
-  return labels[priority] || priority
-}
-
-function getPriorityColor(priority) {
-  const colors = {
-    [TaskPriority.LOW]: 'text-blue-500 bg-blue-50',
-    [TaskPriority.MEDIUM]: 'text-gray-500 bg-gray-50',
-    [TaskPriority.HIGH]: 'text-orange-500 bg-orange-50',
-    [TaskPriority.URGENT]: 'text-red-500 bg-red-50'
-  }
-  return colors[priority] || 'text-gray-500 bg-gray-50'
 }
 
 // Description editing methods
@@ -509,52 +444,6 @@ function toggleSection(section) {
   if (section === 'comments') isCommentsOpen.value = !isCommentsOpen.value
 }
 
-async function handleUpdateAssignee(user) {
-  if (!task.value) return
-  try {
-    const userId = user ? user.id : null
-    await taskStore.changeTaskAssignee(task.value.id, userId)
-  } catch (error) {
-    uiStore.showApiError(error)
-  }
-}
-
-async function handleUpdateStatus(status) {
-  if (!task.value) return
-  try {
-    await taskStore.changeTaskStatus(task.value.id, status)
-  } catch (error) {
-    uiStore.showApiError(error)
-  }
-}
-
-async function handleUpdatePriority(priority) {
-  if (!task.value) return
-  try {
-    await taskStore.updateTask(task.value.id, { priority })
-  } catch (error) {
-    uiStore.showApiError(error)
-  }
-}
-
-async function handleUpdateDueDate(val) {
-  if (!task.value) return
-  try {
-    await taskStore.updateTask(task.value.id, { dueDate: val })
-  } catch (error) {
-    uiStore.showApiError(error)
-  }
-}
-
-async function handleUpdateProject(projectId) {
-  if (!task.value) return
-  try {
-    await taskStore.updateTask(task.value.id, { projectId })
-  } catch (error) {
-    uiStore.showApiError(error)
-  }
-}
-
 async function openRelatedTask(taskId) {
   if (!taskId) return
   try {
@@ -715,190 +604,7 @@ async function handleAddComment() {
               {{ t('taskDetail.properties') }}
             </button>
             
-            <div v-show="isPropertiesOpen" class="grid grid-cols-2 gap-2 text-xs">
-              <!-- Status -->
-              <div>
-                <span class="text-gray-500 text-[11px]">{{ t('taskDetail.status') }}</span>
-                <div class="mt-0.5">
-                  <DropdownMenu width="12rem">
-                    <template #trigger>
-                      <div class="flex items-center gap-1.5 px-1 py-0.5 -ml-1 rounded hover:bg-gray-100 cursor-pointer transition-colors group">
-                        <TaskProgressIcon 
-                          :status="task.status" 
-                          :progress="getStatusProgress(task.status)" 
-                          size="sm"
-                        />
-                        <span class="font-medium text-gray-700">{{ getStatusLabel(task.status) }}</span>
-                      </div>
-                    </template>
-                    <template #content>
-                      <div class="py-1">
-                        <!-- Dynamic status options from project properties -->
-                        <template v-if="dynamicStatusOptions.length > 0">
-                          <button
-                            v-for="opt in dynamicStatusOptions"
-                            :key="opt.value"
-                            type="button"
-                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
-                            :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.status === opt.value }"
-                            @click="handleUpdateStatus(opt.value)"
-                          >
-                            <TaskProgressIcon 
-                              :status="opt.value" 
-                              :progress="opt.progress ?? 0" 
-                              size="sm"
-                            />
-                            <span class="flex-1 text-left">{{ opt.value }}</span>
-                            <i v-if="task.status === opt.value" class="pi pi-check text-[10px]"></i>
-                          </button>
-                        </template>
-                        <!-- Fallback: hardcoded status options -->
-                        <template v-else>
-                          <button
-                            v-for="(label, key) in TaskStatus"
-                            :key="key"
-                            type="button"
-                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
-                            :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.status === label }"
-                            @click="handleUpdateStatus(label)"
-                          >
-                            <TaskProgressIcon 
-                              :status="label" 
-                              :progress="getStatusProgress(label)" 
-                              size="sm"
-                            />
-                            <span class="flex-1 text-left">{{ getStatusLabel(label) }}</span>
-                            <i v-if="task.status === label" class="pi pi-check text-[10px]"></i>
-                          </button>
-                        </template>
-                      </div>
-                    </template>
-                  </DropdownMenu>
-                </div>
-              </div>
-              
-              <!-- Assignees -->
-              <div>
-                <span class="text-gray-500 text-[11px]">Assignees</span>
-                <div class="mt-0.5">
-                  <UserSearchDropdown
-                    :model-value="task.assignee"
-                    @select="handleUpdateAssignee"
-                  >
-                    <template #trigger>
-                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 cursor-pointer transition-colors group">
-                        <div class="flex -space-x-1">
-                          <Avatar 
-                            v-if="task.assignee"
-                            :label="task.assignee.name?.charAt(0)"
-                            shape="circle"
-                            size="small"
-                            class="bg-blue-100 text-blue-700 font-semibold ring-2 ring-white"
-                            style="width: 20px; height: 20px; font-size: 10px;"
-                          />
-                          <div 
-                            v-else 
-                            class="w-5 h-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 group-hover:border-gray-500 group-hover:text-gray-600 transition-colors"
-                          >
-                            <UserIcon class="w-2.5 h-2.5" />
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </UserSearchDropdown>
-                </div>
-              </div>
-              
-              <!-- Board -->
-              <div>
-                <span class="text-gray-500 text-[11px]">Board</span>
-                <div class="mt-0.5">
-                  <DropdownMenu width="14rem">
-                    <template #trigger>
-                      <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 cursor-pointer transition-colors group">
-                        <span class="font-medium text-gray-700">Project / {{ task.projectName || 'Tasks' }}</span>
-                        <ChevronDown class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
-                      </div>
-                    </template>
-                    <template #content>
-                      <div class="py-1 max-h-60 overflow-y-auto custom-scrollbar">
-                        <button
-                          v-for="project in projectStore.projects"
-                          :key="project.id"
-                          type="button"
-                          class="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
-                          :class="{ 'text-primary-600 bg-primary-50 font-semibold': task.projectId === project.id }"
-                          @click="handleUpdateProject(project.id)"
-                        >
-                          <span>📁</span>
-                          <span class="flex-1 text-left">{{ project.name }}</span>
-                          <i v-if="task.projectId === project.id" class="pi pi-check text-[10px]"></i>
-                        </button>
-                      </div>
-                    </template>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              <!-- Tags -->
-              <div>
-                <span class="text-gray-500 text-[11px]">{{ t('taskDetail.tags') }}</span>
-                <div class="mt-0.5 flex flex-wrap items-center gap-1">
-                  <template v-if="task.tags?.length > 0">
-                    <span
-                      v-for="(tag, index) in task.tags.slice(0, 2)"
-                      :key="tag.id"
-                      class="px-2 py-0.5 rounded-full text-[10px] font-medium"
-                      :style="{ backgroundColor: tag.color + '20', color: tag.color }"
-                    >
-                      {{ tag.name }}
-                    </span>
-                    <span 
-                      v-if="task.tags.length > 2" 
-                      class="text-xs text-gray-500"
-                    >
-                      +{{ task.tags.length - 2 }}
-                    </span>
-                  </template>
-                  <span v-else class="text-gray-400 italic">{{ t('taskDetail.none') }}</span>
-                </div>
-              </div>
-
-              <!-- Due Date -->
-              <div>
-                <span class="text-gray-500 text-[11px]">{{ t('taskDetail.dueDate') }}</span>
-                <div class="mt-0.5">
-                  <VDatePicker
-                    :model-value="task.dueDate"
-                    :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
-                    @update:model-value="handleUpdateDueDate"
-                  >
-                    <template #default="{ togglePopover }">
-                      <div
-                        @click="togglePopover"
-                        class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 rounded hover:bg-gray-100 cursor-pointer transition-colors group"
-                      >
-                        <Calendar class="w-3.5 h-3.5 text-gray-400" />
-                        <span :class="task.dueDate ? 'text-gray-700 font-medium' : 'text-gray-400'">
-                          {{ task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : t('taskDetail.none') }}
-                        </span>
-                      </div>
-                    </template>
-                  </VDatePicker>
-                </div>
-              </div>
-
-              <!-- Time Tracking -->
-              <div>
-                <span class="text-gray-500 text-[11px]">Time Tracking</span>
-                <div class="mt-0.5">
-                  <div class="flex items-center gap-2 px-1.5 py-1 -ml-1.5 text-gray-700">
-                    <Clock class="w-3.5 h-3.5 text-gray-400" />
-                    <span>0 hrs</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TaskDetailProperties v-show="isPropertiesOpen" :task="task" />
           </div>
           
           <!-- Description Section -->
