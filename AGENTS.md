@@ -21,6 +21,13 @@ These rules apply to all future work in this repository.
 - For AG Grid pagination footers, only render them when total items exceed the current page size (or totalPages > 1).
 - For file upload progress indicators, use `src/components/ui/FileUploadProgress.vue`. Pass an array of `{ id, name, size, progress, status, error }` objects and listen for `@cancel` / `@retry` events.
 - For file preview modals, use `src/components/ui/FilePreviewModal.vue` (built on BaseModal). Supports images, PDFs, videos, audio, text, and unsupported fallback.
+- For modals, use `src/components/ui/BaseModal.vue` (wraps PrimeVue Dialog with consistent styling). Pass `dialog-class` for per-modal overrides.
+- For form inputs, use `src/components/ui/FormInput.vue` (wraps PrimeVue InputText/Textarea/Select with FloatLabel).
+- For buttons, use PrimeVue `Button` component for consistency.
+- For user selection, use `src/components/user/UserSearchDropdown.vue` (single) or `src/components/user/UserMultiSearchDropdown.vue` (multi). Both support `:show-groups="true"` to include a GROUP section fetched from the groups API.
+- For task linking/relationship selection, use `src/components/task/TaskLinkDropdown.vue`. Shows RECENT and TASK sections with subtask support, search, and "Show more" pagination.
+- For time-only pickers, use PrimeVue `DatePicker` with `timeOnly` prop.
+- For avatar initial colors, always use `getAvatarColor(name)` from `@/utils/avatarColor` for consistent, persistent colors across users and groups.
 - For confirmations (including delete actions), use the global PrimeVue `ConfirmDialog` flow (`useConfirm`) with `src/components/ui/AppConfirmDialog.vue`; do not introduce local delete-confirm modal components.
 - For toasts tied to API calls, show backend response messages for success/error instead of hardcoding frontend strings.
 - Always localize user-facing strings using the project's localization system.
