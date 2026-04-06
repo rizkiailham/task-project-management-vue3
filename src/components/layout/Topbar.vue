@@ -301,12 +301,12 @@ function setView(view) {
       </div>
 
       <!-- Create Task Button (Project View) -->
-      <Button 
+      <Button
         v-if="showViewSwitcher"
-        label="Create Task" 
-        icon="pi pi-plus" 
+        label="Create Task"
+        icon="pi pi-plus"
         class="!h-8 !px-3 !text-xs !bg-blue-600 !border-blue-600 hover:!bg-blue-700 !text-white flex items-center gap-2"
-        @click="uiStore.openTaskPanel()"
+        @click="uiStore.openModal('createTask')"
       />
 
 

@@ -320,8 +320,8 @@ function openTaskPanel(task) {
 }
 
 function handleAddTask(date) {
-  // Placeholder — could open a task creation dialog with this date
-  console.log('Add task for', date)
+  const dueDate = date ? new Date(date).toISOString().split('T')[0] : null
+  uiStore.openModal('createTask', { defaultDueDate: dueDate })
 }
 
 // ================================
