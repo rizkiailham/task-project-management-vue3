@@ -19,6 +19,8 @@ These rules apply to all future work in this repository.
 - For tables (AG Grid), modals, inputs, and buttons, use existing Vue components already present in the codebase.
 - For tables, use AG Grid and follow pagination patterns from `src/modules/user/components/UsersGrid.vue`.
 - For AG Grid pagination footers, only render them when total items exceed the current page size (or totalPages > 1).
+- For file upload progress indicators, use `src/components/ui/FileUploadProgress.vue`. Pass an array of `{ id, name, size, progress, status, error }` objects and listen for `@cancel` / `@retry` events.
+- For file preview modals, use `src/components/ui/FilePreviewModal.vue` (built on BaseModal). Supports images, PDFs, videos, audio, text, and unsupported fallback.
 - For confirmations (including delete actions), use the global PrimeVue `ConfirmDialog` flow (`useConfirm`) with `src/components/ui/AppConfirmDialog.vue`; do not introduce local delete-confirm modal components.
 - For toasts tied to API calls, show backend response messages for success/error instead of hardcoding frontend strings.
 - Always localize user-facing strings using the project's localization system.
