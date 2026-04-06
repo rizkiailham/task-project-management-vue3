@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
 import FormInput from '@/components/ui/FormInput.vue'
@@ -23,6 +24,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
+const { t } = useI18n()
+const dpRefs = ref({})
 
 const visibleFields = computed(() => (props.fields || []).filter((field) => field?.isShow !== false))
 
@@ -182,6 +186,7 @@ function mapInputListeners(events) {
 
       <template v-else-if="field.type === 'date' && field.settings?.isDateRange">
         <VDatePicker
+          :ref="el => { if (el) dpRefs[getFieldKey(field)] = el }"
           :modelValue="modelValue[getFieldKey(field)]"
           is-range
           :model-config="dateModelConfig"
@@ -204,11 +209,18 @@ function mapInputListeners(events) {
               :pt="{ root: mapInputListeners(inputEvents?.start) }"
             />
           </template>
+          <template #footer>
+            <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].updateValue({ start: new Date(), end: new Date() }); dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].hidePopover()">{{ t('calendar.today', 'Today') }}</button>
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].updateValue(null); dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].hidePopover()">{{ t('calendar.clear', 'Clear') }}</button>
+            </div>
+          </template>
         </VDatePicker>
       </template>
 
       <template v-else-if="field.type === 'date'">
         <VDatePicker
+          :ref="el => { if (el) dpRefs[getFieldKey(field)] = el }"
           :modelValue="modelValue[getFieldKey(field)]"
           :model-config="dateModelConfig"
           :masks="dateMasks"
@@ -228,6 +240,12 @@ function mapInputListeners(events) {
                 inputClass="w-full"
                 :pt="{ root: mapInputListeners(inputEvents) }"
               />
+            </div>
+          </template>
+          <template #footer>
+            <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].updateValue(new Date()); dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].hidePopover()">{{ t('calendar.today', 'Today') }}</button>
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].updateValue(null); dpRefs[getFieldKey(field)] && dpRefs[getFieldKey(field)].hidePopover()">{{ t('calendar.clear', 'Clear') }}</button>
             </div>
           </template>
         </VDatePicker>

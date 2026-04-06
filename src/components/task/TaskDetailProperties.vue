@@ -42,6 +42,7 @@ const props = defineProps({
 })
 
 const { t } = useI18n()
+const dpRefs = ref({})
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
 const projectStore = useProjectStore()
@@ -805,6 +806,7 @@ function formatDateDisplay(value) {
       <span class="text-gray-500 text-[11px]">{{ t('taskDetail.dueDate') }}</span>
       <div class="mt-0.5">
         <VDatePicker
+          ref="dpDue"
           :model-value="task.dueDate"
           :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
           @update:model-value="handleUpdateDueDate"
@@ -818,6 +820,12 @@ function formatDateDisplay(value) {
               <span :class="task.dueDate ? 'text-gray-700 font-medium' : 'text-gray-400'">
                 {{ formatDateDisplay(task.dueDate) }}
               </span>
+            </div>
+          </template>
+          <template #footer>
+            <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="$refs.dpDue && $refs.dpDue.updateValue(new Date()); $refs.dpDue && $refs.dpDue.hidePopover()">{{ t('calendar.today', 'Today') }}</button>
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="$refs.dpDue && $refs.dpDue.updateValue(null); $refs.dpDue && $refs.dpDue.hidePopover()">{{ t('calendar.clear', 'Clear') }}</button>
             </div>
           </template>
         </VDatePicker>
@@ -953,6 +961,7 @@ function formatDateDisplay(value) {
         <span class="text-gray-500 text-[11px]">{{ prop.label }}</span>
         <div class="mt-0.5">
           <VDatePicker
+            :ref="el => { if (el) dpRefs[prop.id] = el }"
             :model-value="getPropertyValue(prop)"
             :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
             @update:model-value="(val) => handleCustomDateChange(prop, val)"
@@ -966,6 +975,12 @@ function formatDateDisplay(value) {
                 <span :class="getPropertyValue(prop) ? 'text-gray-700 font-medium' : 'text-gray-400'">
                   {{ formatDateDisplay(getPropertyValue(prop)) }}
                 </span>
+              </div>
+            </template>
+            <template #footer>
+              <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+                <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="dpRefs[prop.id] && dpRefs[prop.id].updateValue(new Date()); dpRefs[prop.id] && dpRefs[prop.id].hidePopover()">{{ t('calendar.today', 'Today') }}</button>
+                <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="dpRefs[prop.id] && dpRefs[prop.id].updateValue(null); dpRefs[prop.id] && dpRefs[prop.id].hidePopover()">{{ t('calendar.clear', 'Clear') }}</button>
               </div>
             </template>
           </VDatePicker>

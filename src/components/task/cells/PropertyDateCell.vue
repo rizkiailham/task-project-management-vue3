@@ -171,7 +171,14 @@ defineExpose({ refresh })
           :model-value="localDate"
           mode="date"
           @update:model-value="handleDateChange"
-        />
+        >
+          <template #footer>
+            <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="handleDateChange(new Date())">{{ t('calendar.today', 'Today') }}</button>
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="handleDateChange(null)">{{ t('calendar.clear', 'Clear') }}</button>
+            </div>
+          </template>
+        </VDatePicker>
       </div>
     </Teleport>
   </div>

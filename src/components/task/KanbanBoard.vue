@@ -866,7 +866,14 @@ onUnmounted(() => {
             mode="date"
             :model-config="{ type: 'string', mask: 'YYYY-MM-DD' }"
             @update:model-value="handleDateSelect"
-          />
+          >
+            <template #footer>
+              <div class="px-4 pb-3 flex items-center justify-between mt-2 pt-3 border-t border-gray-100">
+                <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="handleDateSelect(new Date())">{{ t('calendar.today', 'Today') }}</button>
+                <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="handleDateSelect(null)">{{ t('calendar.clear', 'Clear') }}</button>
+              </div>
+            </template>
+          </VDatePicker>
         </div>
       </div>
     </Teleport>

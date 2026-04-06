@@ -41,6 +41,7 @@ const emit = defineEmits([
 ])
 
 const { t } = useI18n()
+const filterDpRefs = ref({})
 
 const sortColumnItems = computed(() => {
   return props.filterableColumns.map((col) => ({
@@ -536,6 +537,7 @@ function handleDateChange(filterId, value, operator) {
 
       <template v-else-if="filter.type === 'date'">
         <VDatePicker
+          :ref="el => { if (el) filterDpRefs[filter.id] = el }"
           class="h-full inline-flex items-center"
           :model-value="getDateModel(filter.value)"
           :mode="filter.operator === 'between' ? 'date' : 'date'"
@@ -553,6 +555,12 @@ function handleDateChange(filterId, value, operator) {
                 {{ filterSummary !== '...' ? filterSummary : t('tasks.enterValue', 'Select date...') }}
               </span>
             </button>
+          </template>
+          <template #footer>
+            <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="filterDpRefs[filter.id] && filterDpRefs[filter.id].updateValue(filter.operator === 'between' ? { start: new Date(), end: new Date() } : new Date()); filterDpRefs[filter.id] && filterDpRefs[filter.id].hidePopover()">{{ t('calendar.today', 'Today') }}</button>
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="filterDpRefs[filter.id] && filterDpRefs[filter.id].updateValue(null); filterDpRefs[filter.id] && filterDpRefs[filter.id].hidePopover()">{{ t('calendar.clear', 'Clear') }}</button>
+            </div>
           </template>
         </VDatePicker>
       </template>

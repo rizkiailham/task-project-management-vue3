@@ -761,9 +761,10 @@ function getTextColor(hex) {
       @open:popper="handleOpen"
       @close:popper="handleClose"
     >
-      <button
-        ref="triggerRef"
-        type="button"
+      <slot name="trigger" :toggle="toggleDropdown" :disabled="disabled" :selected-tags="selectedTags">
+        <button
+          ref="triggerRef"
+          type="button"
         class="tag-trigger"
         :class="disabled ? 'tag-trigger-disabled' : ''"
         :disabled="disabled"
@@ -819,6 +820,7 @@ function getTextColor(hex) {
         </div>
         <span ref="chevronRef" class="chevron-spacer" aria-hidden="true"></span>
       </button>
+    </slot>
 
       <template #content>
         <div
@@ -947,7 +949,6 @@ function getTextColor(hex) {
 
 <style scoped>
 .tag-select {
-  width: 100%;
   height: 100%;
   display: flex;
   align-items: center;

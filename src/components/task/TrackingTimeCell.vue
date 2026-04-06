@@ -887,6 +887,12 @@ if (running.value) startTicking()
           class="w-full desidia-inline-datepicker"
           @update:modelValue="commitEditingDate()"
         >
+          <template #footer>
+            <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="editingDateValue = new Date(); commitEditingDate({ close: true })">Today</button>
+              <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="editingDateValue = null; commitEditingDate({ close: true })">Clear</button>
+            </div>
+          </template>
         </VDatePicker>
       </div>
     </Teleport>

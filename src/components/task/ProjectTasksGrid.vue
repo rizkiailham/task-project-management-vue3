@@ -2076,7 +2076,14 @@ function onGridReady(params) {
             :first-day-of-week="2"
             class="w-full task-reminder-calendar"
             @update:model-value="handleReminderDateChange"
-          />
+          >
+            <template #footer>
+              <div class="px-4 pb-3 flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+                <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="handleReminderDateChange(new Date())">{{ t('calendar.today', 'Today') }}</button>
+                <button type="button" class="text-[13px] font-semibold text-gray-700 hover:text-gray-900 cursor-pointer" @click="handleReminderDateChange(null)">{{ t('calendar.clear', 'Clear') }}</button>
+              </div>
+            </template>
+          </VDatePicker>
         </div>
       </template>
     </DropdownMenu>
