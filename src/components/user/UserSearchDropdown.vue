@@ -7,8 +7,10 @@ import Avatar from 'primevue/avatar'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
 import * as projectApi from '@/api/project.api'
+import * as groupApi from '@/api/group.api'
 import { useProjectStore, useUIStore, useUserStore } from '@/stores'
 import { normalizeUserForDisplay } from '@/utils/user'
+import { getAvatarColor } from '@/utils/avatarColor'
 
 const props = defineProps({
   projectId: {
@@ -30,6 +32,10 @@ const props = defineProps({
   openUp: {
     type: Boolean,
     default: false
+  },
+  showGroups: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -44,6 +50,8 @@ const searchQuery = ref('')
 const isSearching = ref(false)
 const searchResults = ref([])
 const dropdownRef = ref(null)
+const visibleLimit = ref(5)
+const STEP = 5
 const activeProjectId = computed(() => props.projectId || projectStore.currentProjectId)
 
 // Local list of users to show when not searching
@@ -60,6 +68,68 @@ const initialUsers = computed(() => {
         }
     })
 })
+
+const visibleUsers = computed(() => initialUsers.value.slice(0, visibleLimit.value))
+const hasMoreUsers = computed(() => initialUsers.value.length > visibleLimit.value)
+
+function showMore() {
+  visibleLimit.value += STEP
+}
+
+// Groups
+const allGroups = ref([])
+const groupLimit = ref(5)
+const isLoadingGroups = ref(false)
+
+function normalizeGroup(g) {
+  if (!g) return null
+  return {
+    id: g.id,
+    name: g.name || g.label || '',
+    description: g.description || '',
+    memberCount: g.totalMembers ?? g.userCount ?? g.membersCount ?? g.count ?? (g.users || g.members || []).length ?? 0,
+    _isGroup: true
+  }
+}
+
+const visibleGroups = computed(() => allGroups.value.slice(0, groupLimit.value))
+const hasMoreGroups = computed(() => allGroups.value.length > groupLimit.value)
+
+const filteredGroups = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return allGroups.value
+  return allGroups.value.filter((g) => g.name.toLowerCase().includes(q))
+})
+
+const visibleFilteredGroups = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) return filteredGroups.value
+  return visibleGroups.value
+})
+
+const hasMoreFilteredGroups = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) return false
+  return hasMoreGroups.value
+})
+
+function showMoreGroups() {
+  groupLimit.value += STEP
+}
+
+async function fetchGroups() {
+  if (!props.showGroups || isLoadingGroups.value) return
+  isLoadingGroups.value = true
+  try {
+    const response = await groupApi.getGroups({ limit: 100 })
+    const raw = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : []
+    allGroups.value = raw.map(normalizeGroup).filter(Boolean)
+  } catch {
+    allGroups.value = []
+  } finally {
+    isLoadingGroups.value = false
+  }
+}
 
 async function fetchResults(query) {
   if (!activeProjectId.value) return
@@ -113,7 +183,7 @@ function handleSelect(user) {
   emit('update:modelValue', user)
   searchQuery.value = ''
   searchResults.value = []
-  // Close the dropdown after selection
+  visibleLimit.value = STEP
   dropdownRef.value?.close?.()
 }
 
@@ -129,6 +199,9 @@ function handleUnassign() {
 onMounted(() => {
     if (userStore.users.length === 0) {
         userStore.fetchUsers({ limit: 20 })
+    }
+    if (props.showGroups) {
+        fetchGroups()
     }
 })
 </script>
@@ -148,7 +221,7 @@ onMounted(() => {
             v-model="searchQuery"
             type="text"
             class="usd-search-input"
-            :placeholder="t('common.search') + '...'"
+            :placeholder="showGroups ? t('common.assignUserOrGroup', 'Assign a user or group') : t('common.search') + '...'"
             @click.stop
           />
         </div>
@@ -212,7 +285,7 @@ onMounted(() => {
                {{ t('settings.project.search.users') }}
             </div>
             <button
-              v-for="user in initialUsers"
+              v-for="user in visibleUsers"
               :key="user.id"
               type="button"
               class="usd-list-item"
@@ -232,6 +305,14 @@ onMounted(() => {
               </div>
               <Check v-if="modelValue?.id === user.id" class="usd-list-check" />
             </button>
+            <button
+              v-if="hasMoreUsers"
+              type="button"
+              class="usd-show-more"
+              @click.stop="showMore"
+            >
+              {{ t('common.showMore', 'Show more') }}
+            </button>
           </div>
 
           <!-- Empty states -->
@@ -246,6 +327,41 @@ onMounted(() => {
                  {{ t('settings.project.search.minChars') }}
              </div>
           </div>
+
+          <!-- Group section -->
+          <template v-if="showGroups && visibleFilteredGroups.length">
+            <div class="usd-list-divider"></div>
+            <div class="usd-list-section-title">
+              {{ t('common.group', 'Group') }}
+            </div>
+            <button
+              v-for="group in visibleFilteredGroups"
+              :key="'g-' + group.id"
+              type="button"
+              class="usd-list-item"
+              :class="{ 'is-selected': modelValue?.id === group.id && modelValue?._isGroup }"
+              @click="handleSelect(group)"
+            >
+              <Avatar
+                :label="(group.name || '?').charAt(0)"
+                shape="circle"
+                class="usd-list-avatar"
+                :style="{ backgroundColor: getAvatarColor(group.name || '') }"
+              />
+              <div class="usd-list-info">
+                <span class="usd-list-name">{{ group.name }}</span>
+              </div>
+              <Check v-if="modelValue?.id === group.id && modelValue?._isGroup" class="usd-list-check" />
+            </button>
+            <button
+              v-if="hasMoreFilteredGroups"
+              type="button"
+              class="usd-show-more"
+              @click.stop="showMoreGroups"
+            >
+              {{ t('common.showMore', 'Show more') }}
+            </button>
+          </template>
         </template>
       </div>
     </template>
@@ -337,18 +453,18 @@ onMounted(() => {
 }
 
 .usd-list-avatar {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px;
-  font-size: 11px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px;
+  font-size: 10px !important;
   color: #ffffff !important;
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .usd-unassigned-avatar {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 1.5px dashed #d1d5db;
   display: flex;
@@ -378,7 +494,7 @@ onMounted(() => {
 
 .usd-list-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -388,7 +504,7 @@ onMounted(() => {
 }
 
 .usd-list-email {
-  font-size: 12px;
+  font-size: 11px;
   color: #9ca3af;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -403,6 +519,28 @@ onMounted(() => {
   height: 14px;
   color: var(--p-primary-500, #3b82f6);
   flex-shrink: 0;
+}
+
+.usd-list-divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin: 4px 0;
+}
+
+.usd-show-more {
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: color 0.15s ease;
+}
+
+.usd-show-more:hover {
+  color: #6b7280;
 }
 
 /* ─── Loading ─────────────────────────────────────────── */

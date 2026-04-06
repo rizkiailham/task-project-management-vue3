@@ -8,6 +8,7 @@ import Avatar from 'primevue/avatar'
 import { debounce } from '@/utils/debounce'
 import { resolveSearchKeywords } from '@/utils/search'
 import * as projectApi from '@/api/project.api'
+import * as groupApi from '@/api/group.api'
 import { useProjectStore, useUserStore } from '@/stores'
 
 const props = defineProps({
@@ -34,6 +35,10 @@ const props = defineProps({
   dark: {
     type: Boolean,
     default: false
+  },
+  showGroups: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -46,6 +51,8 @@ const userStore = useUserStore()
 const searchQuery = ref('')
 const searchResults = ref([])
 const isSearching = ref(false)
+const visibleLimit = ref(5)
+const STEP = 5
 
 const activeProjectId = computed(() => props.projectId || projectStore.currentProjectId)
 
@@ -181,7 +188,7 @@ const filteredLocalUsers = computed(() => {
   })
 })
 
-const displayUsers = computed(() => {
+const displayUsersAll = computed(() => {
   const hasSearchText = searchQuery.value.trim().length > 0
   if (!hasSearchText) return mergedUsers.value
   if (searchResults.value.length > 0) {
@@ -189,6 +196,81 @@ const displayUsers = computed(() => {
   }
   return filteredLocalUsers.value
 })
+
+const displayUsers = computed(() => {
+  const hasSearchText = searchQuery.value.trim().length > 0
+  if (hasSearchText) return displayUsersAll.value
+  return displayUsersAll.value.slice(0, visibleLimit.value)
+})
+
+const hasMoreUsers = computed(() => {
+  const hasSearchText = searchQuery.value.trim().length > 0
+  if (hasSearchText) return false
+  return displayUsersAll.value.length > visibleLimit.value
+})
+
+function showMore() {
+  visibleLimit.value += STEP
+}
+
+// Groups
+const allGroups = ref([])
+const groupLimit = ref(5)
+const isLoadingGroups = ref(false)
+
+function normalizeGroup(g) {
+  if (!g) return null
+  return {
+    id: g.id,
+    value: g.id,
+    name: g.name || g.label || '',
+    label: g.name || g.label || '',
+    description: g.description || '',
+    initials: (g.name || '?').charAt(0),
+    memberCount: g.totalMembers ?? g.userCount ?? g.membersCount ?? g.count ?? (g.users || g.members || []).length ?? 0,
+    _isGroup: true
+  }
+}
+
+const filteredGroups = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return allGroups.value
+  return allGroups.value.filter((g) => g.name.toLowerCase().includes(q))
+})
+
+const visibleFilteredGroups = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) return filteredGroups.value
+  return allGroups.value.slice(0, groupLimit.value)
+})
+
+const hasMoreGroups = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) return false
+  return allGroups.value.length > groupLimit.value
+})
+
+function showMoreGroups() {
+  groupLimit.value += STEP
+}
+
+function isGroupSelected(group) {
+  return selectedValueSet.value.has(String(group.id))
+}
+
+async function fetchGroups() {
+  if (!props.showGroups || isLoadingGroups.value) return
+  isLoadingGroups.value = true
+  try {
+    const response = await groupApi.getGroups({ limit: 100 })
+    const raw = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : []
+    allGroups.value = raw.map(normalizeGroup).filter(Boolean)
+  } catch {
+    allGroups.value = []
+  } finally {
+    isLoadingGroups.value = false
+  }
+}
 
 const selectedSummary = computed(() => {
   if (selectedUsers.value.length === 0) return ''
@@ -198,7 +280,7 @@ const selectedSummary = computed(() => {
 
 const triggerPlaceholder = computed(() => props.placeholder || t('common.selectUser', 'Select user'))
 
-const hasSearchResults = computed(() => displayUsers.value.length > 0)
+const hasSearchResults = computed(() => displayUsersAll.value.length > 0)
 
 function isSelected(user) {
   return selectedValueSet.value.has(String(user.value))
@@ -291,43 +373,48 @@ onMounted(() => {
   if (userStore.users.length === 0) {
     userStore.fetchUsers({ limit: 50 })
   }
+  if (props.showGroups) {
+    fetchGroups()
+  }
 })
 </script>
 
 <template>
   <DropdownMenu position="right" width="18rem" :closeOnSelect="!multiple" :variant="dark ? 'dark' : 'default'">
     <template #trigger>
-      <button
-        type="button"
-        class="multi-trigger"
-        :class="{ 'is-dark': dark }"
-      >
-        <!-- Selected users display -->
-        <div v-if="selectedUsers.length > 0" class="multi-trigger-content">
-          <!-- Stacked avatars -->
-          <div class="multi-trigger-avatars">
-            <Avatar
-              v-for="user in selectedUsers.slice(0, 3)"
-              :key="String(user.value)"
-              :image="user.avatarUrl"
-              :label="!user.avatarUrl ? user.initials : undefined"
-              shape="circle"
-              class="multi-trigger-avatar"
-              :style="{ backgroundColor: user.avatarUrl ? 'transparent' : getAvatarColor(user.name) }"
-            />
-            <div
-              v-if="selectedUsers.length > 3"
-              class="multi-trigger-avatar-overflow"
-            >
-              +{{ selectedUsers.length - 3 }}
+      <slot name="trigger" :selected-users="selectedUsers">
+        <button
+          type="button"
+          class="multi-trigger"
+          :class="{ 'is-dark': dark }"
+        >
+          <!-- Selected users display -->
+          <div v-if="selectedUsers.length > 0" class="multi-trigger-content">
+            <!-- Stacked avatars -->
+            <div class="multi-trigger-avatars">
+              <Avatar
+                v-for="user in selectedUsers.slice(0, 3)"
+                :key="String(user.value)"
+                :image="user.avatarUrl"
+                :label="!user.avatarUrl ? user.initials : undefined"
+                shape="circle"
+                class="multi-trigger-avatar"
+                :style="{ backgroundColor: user.avatarUrl ? 'transparent' : getAvatarColor(user.name) }"
+              />
+              <div
+                v-if="selectedUsers.length > 3"
+                class="multi-trigger-avatar-overflow"
+              >
+                +{{ selectedUsers.length - 3 }}
+              </div>
             </div>
+            <span class="multi-trigger-label">{{ selectedSummary }}</span>
           </div>
-          <span class="multi-trigger-label">{{ selectedSummary }}</span>
-        </div>
-        <!-- Placeholder -->
-        <span v-else class="multi-trigger-placeholder">{{ triggerPlaceholder }}</span>
-        <ChevronDown class="multi-trigger-chevron" />
-      </button>
+          <!-- Placeholder -->
+          <span v-else class="multi-trigger-placeholder">{{ triggerPlaceholder }}</span>
+          <ChevronDown class="multi-trigger-chevron" />
+        </button>
+      </slot>
     </template>
 
     <template #content>
@@ -339,7 +426,7 @@ onMounted(() => {
             v-model="searchQuery"
             type="text"
             class="multi-search-input"
-            :placeholder="`${t('common.search', 'Search')}...`"
+            :placeholder="showGroups ? t('common.assignUserOrGroup', 'Assign a user or group') : `${t('common.search', 'Search')}...`"
             @click.stop
           />
         </div>
@@ -410,11 +497,56 @@ onMounted(() => {
             <Check v-if="isSelected(user)" class="multi-list-check" />
           </button>
 
+          <!-- Show more -->
+          <button
+            v-if="hasMoreUsers"
+            type="button"
+            class="multi-show-more"
+            @click.stop="showMore"
+          >
+            {{ t('common.showMore', 'Show more') }}
+          </button>
+
           <!-- Empty state -->
-          <div v-if="!hasSearchResults" class="multi-list-empty">
+          <div v-if="!hasSearchResults && !visibleFilteredGroups.length" class="multi-list-empty">
             <UserIcon class="multi-list-empty-icon" />
             <div class="multi-list-empty-text">{{ t('common.noResults', 'No results found') }}</div>
           </div>
+
+          <!-- Group section -->
+          <template v-if="showGroups && visibleFilteredGroups.length">
+            <div class="multi-list-divider"></div>
+            <div class="multi-list-section-title">
+              {{ t('common.group', 'Group') }}
+            </div>
+            <button
+              v-for="group in visibleFilteredGroups"
+              :key="'g-' + group.id"
+              type="button"
+              class="multi-list-item"
+              :class="{ 'is-selected': isGroupSelected(group) }"
+              @click="toggleUser(group)"
+            >
+              <Avatar
+                :label="group.initials"
+                shape="circle"
+                class="multi-list-avatar"
+                :style="{ backgroundColor: getAvatarColor(group.name || '') }"
+              />
+              <div class="multi-list-info">
+                <span class="multi-list-name">{{ group.name }}</span>
+              </div>
+              <Check v-if="isGroupSelected(group)" class="multi-list-check" />
+            </button>
+            <button
+              v-if="hasMoreGroups"
+              type="button"
+              class="multi-show-more"
+              @click.stop="showMoreGroups"
+            >
+              {{ t('common.showMore', 'Show more') }}
+            </button>
+          </template>
         </template>
       </div>
     </template>
@@ -666,10 +798,10 @@ onMounted(() => {
 }
 
 .multi-list-avatar {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px;
-  font-size: 11px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px;
+  font-size: 10px !important;
   color: #ffffff !important;
   font-weight: 600;
   flex-shrink: 0;
@@ -686,7 +818,7 @@ onMounted(() => {
 
 .multi-list-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -696,7 +828,7 @@ onMounted(() => {
 }
 
 .multi-list-email {
-  font-size: 12px;
+  font-size: 11px;
   color: #9ca3af;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -711,6 +843,28 @@ onMounted(() => {
   height: 14px;
   color: var(--p-primary-500, #3b82f6);
   flex-shrink: 0;
+}
+
+.multi-list-divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin: 4px 0;
+}
+
+.multi-show-more {
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: color 0.15s ease;
+}
+
+.multi-show-more:hover {
+  color: #6b7280;
 }
 
 /* ─── Loading ─────────────────────────────────────────── */
