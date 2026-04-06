@@ -63,7 +63,7 @@ const dialogVisible = computed({
     :closeOnEscape="closeOnEscape && !loading"
     class="base-modal"
     :pt="{
-      root: { class: ['rounded-xl overflow-hidden shadow-2xl border-0', dialogClass].filter(Boolean).join(' ') },
+      root: { class: ['rounded-xl overflow-hidden shadow-2xl border-0', dialogClass].filter(Boolean).join(' '), style: 'border: none' },
       header: { class: 'bg-white border-b border-gray-200 px-6 py-4' },
       content: { class: 'bg-white px-6 pb-5' },
       footer: { class: 'bg-gray-50 border-t border-gray-200 px-6 py-4' },
