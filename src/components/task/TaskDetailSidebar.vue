@@ -16,10 +16,14 @@ import { TaskStatus } from '@/models'
 import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
 import Skeleton from 'primevue/skeleton'
+import { useConfirm } from 'primevue/useconfirm'
 import NotionEditor from '@/components/editor/NotionEditor.vue'
 import DropdownMenu from '@/components/ui/DropdownMenu.vue'
 import TaskProgressIcon from '@/components/dashboard/TaskProgressIcon.vue'
 import TaskDetailProperties from '@/components/task/TaskDetailProperties.vue'
+import FilePreviewModal from '@/components/ui/FilePreviewModal.vue'
+import FileUploadProgress from '@/components/ui/FileUploadProgress.vue'
+import * as taskApi from '@/api/task.api'
 import {
   Sparkles,
   ChevronRight,
@@ -33,14 +37,16 @@ import {
   Copy,
   Pencil,
   Trash,
-  CornerUpLeft
+  CornerUpLeft,
+  Eye,
+  Download
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const taskStore = useTaskStore()
 const uiStore = useUIStore()
 const aiChatStore = useAIChatStore()
-
+const confirm = useConfirm()
 
 // Topbar height constant
 const TOPBAR_HEIGHT = 56
@@ -60,6 +66,8 @@ const isSubscribersOpen = ref(false)
 const isSubtasksOpen = ref(true)
 const isActivityOpen = ref(false)
 const isCommentsOpen = ref(true)
+const isDragOver = ref(false)
+let dragEnterCount = 0
 const isAiDescriptionPending = ref(false)
 const pendingAiDescription = ref('')
 const descriptionBeforeAi = ref('')
@@ -114,6 +122,180 @@ const parentTaskLabel = computed(() => {
   if (!parentTaskId.value) return t('taskDetail.none')
   return `#${parentTaskId.value}`
 })
+
+// ================================
+// Attachments
+// ================================
+// TODO: replace dummy data with real task.attachments when backend is ready
+const dummyAttachments = [
+  { id: '1', name: 'Reference docs draft 20251232.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', type: 'application/pdf', size: 245000 },
+  { id: '2', name: 'meeting room preview.jpg', url: 'https://picsum.photos/id/237/800/600', type: 'image/jpeg', size: 1200000 },
+  { id: '3', name: 'report Call 22-01.docx', url: '#', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 89000 },
+  { id: '4', name: 'filename-with-really-long-name-truncated-to-fit-the-sidebar-width.png', url: 'https://picsum.photos/id/1015/1200/800', type: 'image/png', size: 3400000 },
+  { id: '5', name: 'discussion-log-22-03-12.txt', url: 'data:text/plain;base64,TG9nIGVudHJ5IDEgLSAyMDI1LTAzLTEyIDA5OjAwCkRpc2N1c3NlZCBwcm9qZWN0IHRpbWVsaW5lIGFuZCBtaWxlc3RvbmVzLgoKTG9nIGVudHJ5IDIgLSAyMDI1LTAzLTEyIDEwOjMwClJldmlld2VkIGRlc2lnbiBtb2NrdXBzIGZvciBkYXNoYm9hcmQgdjIu', type: 'text/plain', size: 12000 }
+]
+const attachments = computed(() => {
+  const real = task.value?.attachments
+  return Array.isArray(real) && real.length ? real : dummyAttachments
+})
+const previewFile = ref(null)
+const isPreviewOpen = ref(false)
+const uploadingFiles = ref([])
+const uploadTimers = new Map()
+
+function getFileIcon(attachment) {
+  const name = attachment?.name || attachment?.url || ''
+  const match = name.match(/\.(\w+)(?:\?.*)?$/)
+  const ext = match ? match[1].toLowerCase() : ''
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif', 'ico'].includes(ext)) return 'image'
+  if (ext === 'pdf') return 'pdf'
+  if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext)) return 'video'
+  if (['mp3', 'wav', 'aac', 'flac', 'm4a'].includes(ext)) return 'audio'
+  return 'file'
+}
+
+function truncateFilename(name, maxLen = 38) {
+  if (!name || name.length <= maxLen) return name || ''
+  const dotIdx = name.lastIndexOf('.')
+  if (dotIdx <= 0) return name.slice(0, maxLen - 3) + '...'
+  const ext = name.slice(dotIdx)
+  const base = name.slice(0, dotIdx)
+  const available = maxLen - ext.length - 3
+  if (available <= 0) return name.slice(0, maxLen - 3) + '...'
+  return base.slice(0, available) + '...' + ext
+}
+
+function openPreview(attachment) {
+  previewFile.value = attachment
+  isPreviewOpen.value = true
+}
+
+function downloadAttachment(attachment) {
+  if (!attachment?.url) return
+  const a = document.createElement('a')
+  a.href = attachment.url
+  a.download = attachment.name || 'download'
+  a.target = '_blank'
+  a.rel = 'noopener'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
+function confirmDeleteAttachment(attachment) {
+  confirm.require({
+    message: t('taskDetail.confirmDeleteAttachment', 'Are you sure you want to delete this attachment?'),
+    header: t('common.confirm', 'Confirm'),
+    acceptClass: 'p-button-danger',
+    accept: () => deleteAttachment(attachment)
+  })
+}
+
+async function deleteAttachment(attachment) {
+  if (!task.value?.id || !attachment?.id) return
+  try {
+    await taskApi.deleteAttachment(task.value.id, attachment.id)
+    // Remove from local task data
+    if (task.value.attachments) {
+      task.value.attachments = task.value.attachments.filter((a) => a.id !== attachment.id)
+    }
+  } catch (error) {
+    uiStore.showApiError(error)
+  }
+}
+
+// ================================
+// Drag & drop file upload
+// ================================
+function handleDragEnter(e) {
+  e.preventDefault()
+  dragEnterCount++
+  if (e.dataTransfer?.types?.includes('Files')) {
+    isDragOver.value = true
+  }
+}
+
+function handleDragOver(e) {
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+}
+
+function handleDragLeave(e) {
+  e.preventDefault()
+  dragEnterCount--
+  if (dragEnterCount <= 0) {
+    dragEnterCount = 0
+    isDragOver.value = false
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault()
+  dragEnterCount = 0
+  isDragOver.value = false
+  const files = Array.from(e.dataTransfer?.files || [])
+  if (!files.length) return
+  handleDroppedFiles(files)
+}
+
+function handleDroppedFiles(files) {
+  isAttachmentsOpen.value = true
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    const id = `upload-${Date.now()}-${i}`
+    const entry = { id, name: file.name, size: file.size, progress: 0, status: 'uploading', _file: file }
+    uploadingFiles.value.push(entry)
+    simulateUpload(entry)
+  }
+}
+
+// TODO: replace with real upload using httpClient.upload() when backend is ready
+function simulateUpload(entry) {
+  let progress = 0
+  const interval = setInterval(() => {
+    progress += Math.floor(Math.random() * 15) + 5
+    if (progress >= 100) {
+      progress = 100
+      clearInterval(interval)
+      uploadTimers.delete(entry.id)
+      finishUpload(entry)
+    }
+    const item = uploadingFiles.value.find((f) => f.id === entry.id)
+    if (item) item.progress = Math.min(progress, 100)
+  }, 200 + Math.random() * 300)
+  uploadTimers.set(entry.id, interval)
+}
+
+function finishUpload(entry) {
+  const idx = uploadingFiles.value.findIndex((f) => f.id === entry.id)
+  if (idx !== -1) {
+    uploadingFiles.value[idx].status = 'completed'
+    // Move to attachments list after a brief delay
+    setTimeout(() => {
+      uploadingFiles.value = uploadingFiles.value.filter((f) => f.id !== entry.id)
+      const attachment = {
+        id: entry.id,
+        name: entry.name,
+        url: URL.createObjectURL(entry._file),
+        type: entry._file.type,
+        size: entry._file.size
+      }
+      if (task.value) {
+        task.value.attachments = [...(task.value.attachments || []), attachment]
+      }
+    }, 600)
+  }
+}
+
+function cancelUpload(file) {
+  const timer = uploadTimers.get(file.id)
+  if (timer) {
+    clearInterval(timer)
+    uploadTimers.delete(file.id)
+  }
+  uploadingFiles.value = uploadingFiles.value.filter((f) => f.id !== file.id)
+}
 
 // Calculate right offset based on AI Chat sidebar visibility
 const rightOffset = computed(() => {
@@ -477,13 +659,30 @@ async function handleAddComment() {
       class="task-detail-sidebar fixed bg-white border-l border-gray-200 shadow-xl z-30 flex flex-col"
       :style="sidebarStyle"
       :class="{ 'select-none': isResizing }"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
     >
       <!-- Resize Handle -->
       <div
         class="resize-handle absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-gray-200 transition-colors z-10"
         @mousedown="startResize"
       ></div>
-      
+
+      <!-- Drag & Drop Overlay -->
+      <Transition name="fade">
+        <div
+          v-if="isDragOver"
+          class="absolute inset-0 z-50 flex items-center justify-center bg-blue-50/90 backdrop-blur-sm border-2 border-dashed border-blue-300 rounded-lg m-1 pointer-events-none"
+        >
+          <div class="flex flex-col items-center gap-3">
+            <Paperclip class="w-10 h-10 text-blue-400" />
+            <span class="text-sm font-medium text-blue-600">{{ t('taskDetail.dropFilesHere', 'Drop files here to attach.') }}</span>
+          </div>
+        </div>
+      </Transition>
+
       <!-- Header -->
       <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200">
         <div class="flex items-center gap-2">
@@ -682,23 +881,100 @@ async function handleAddComment() {
 
           <!-- Attachments Section -->
           <div>
-            <button
-              class="flex items-center gap-1 text-xs font-medium text-gray-700"
-              type="button"
-              @click="toggleSection('attachments')"
-            >
-              <ChevronRight 
-                class="w-3.5 h-3.5 transition-transform" 
-                :class="{ 'rotate-90': isAttachmentsOpen }" 
-              />
-              Attachments
-              <span class="ml-0.5 text-[10px] text-gray-400">(0)</span>
-            </button>
-            
+            <div class="flex items-center justify-between group/attach">
+              <button
+                class="flex items-center gap-1 text-xs font-medium text-gray-700"
+                type="button"
+                @click="toggleSection('attachments')"
+              >
+                <ChevronRight
+                  class="w-3.5 h-3.5 transition-transform"
+                  :class="{ 'rotate-90': isAttachmentsOpen }"
+                />
+                {{ t('taskDetail.attachments', 'Attachments') }}
+                <span class="ml-0.5 text-[10px] text-gray-400">({{ attachments.length }})</span>
+              </button>
+
+              <DropdownMenu width="12rem" class="opacity-0 group-hover/attach:opacity-100 transition-opacity">
+                <template #trigger>
+                  <button
+                    type="button"
+                    class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  >
+                    <MoreHorizontal class="w-3.5 h-3.5" />
+                  </button>
+                </template>
+                <template #content>
+                  <div class="py-1">
+                    <button
+                      type="button"
+                      class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+                      @click="notify('Add attachment')"
+                    >
+                      <Paperclip class="w-3.5 h-3.5 text-gray-500" />
+                      <span>{{ t('taskDetail.addAttachment', 'Add attachment') }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+                      @click="notify('Add link as attachment')"
+                    >
+                      <Link2 class="w-3.5 h-3.5 text-gray-500" />
+                      <span>{{ t('taskDetail.addLinkAttachment', 'Add link as attachment') }}</span>
+                    </button>
+                  </div>
+                </template>
+              </DropdownMenu>
+            </div>
+
             <div v-show="isAttachmentsOpen" class="mt-2 pl-4">
-              <div class="text-xs text-gray-400 italic">
-                No attachments yet
+              <template v-if="attachments.length">
+                <div
+                  v-for="attachment in attachments"
+                  :key="attachment.id"
+                  class="group/file flex items-center justify-between gap-2 py-1.5 px-1 -mx-1 min-h-[32px] rounded hover:bg-gray-50 transition-colors"
+                >
+                  <span class="text-xs text-gray-500 truncate min-w-0" :title="attachment.name">
+                    {{ truncateFilename(attachment.name) }}
+                  </span>
+                  <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/file:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                      :title="t('common.preview', 'Preview')"
+                      @click="openPreview(attachment)"
+                    >
+                      <Eye class="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                      :title="t('common.download', 'Download')"
+                      @click="downloadAttachment(attachment)"
+                    >
+                      <Download class="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      :title="t('common.delete', 'Delete')"
+                      @click="confirmDeleteAttachment(attachment)"
+                    >
+                      <Trash class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <div v-else-if="!uploadingFiles.length" class="text-xs text-gray-400 italic">
+                {{ t('taskDetail.noAttachments', 'No attachments yet') }}
               </div>
+
+              <!-- Upload progress -->
+              <FileUploadProgress
+                :files="uploadingFiles"
+                @cancel="cancelUpload"
+                @retry="simulateUpload"
+              />
             </div>
           </div>
 
@@ -1078,6 +1354,13 @@ async function handleAddComment() {
       </div>
     </div>
   </Transition>
+
+  <!-- File Preview Modal -->
+  <FilePreviewModal
+    v-model:visible="isPreviewOpen"
+    :file="previewFile"
+    @download="downloadAttachment"
+  />
 </template>
 
 <style scoped>
@@ -1089,6 +1372,16 @@ async function handleAddComment() {
 .slide-left-enter-from,
 .slide-left-leave-to {
   transform: translateX(100%);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .resize-handle:hover {

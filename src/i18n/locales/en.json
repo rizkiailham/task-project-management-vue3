@@ -1298,6 +1298,16 @@
     "board": "Board",
     "priority": "Priority",
     "timeTracking": "Time Tracking",
-    "noTimeTracked": "0 hrs"
+    "noTimeTracked": "0 hrs",
+    "addAttachment": "Add attachment",
+    "addLinkAttachment": "Add link as attachment",
+    "dropFilesHere": "Drop files here to attach.",
+    "noAttachments": "No attachments yet",
+    "attachments": "Attachments",
+    "confirmDeleteAttachment": "Are you sure you want to delete this attachment?",
+    "filePreview": "File preview",
+    "previewNotAvailable": "Preview not available for this file type.",
+    "videoNotSupported": "Your browser does not support video playback.",
+    "audioNotSupported": "Your browser does not support audio playback."
   }
 }
