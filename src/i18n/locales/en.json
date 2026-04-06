@@ -19,6 +19,8 @@
     "next": "Next",
     "submit": "Submit",
     "confirm": "Confirm",
+    "group": "Group",
+    "assignUserOrGroup": "Assign a user or group",
     "close": "Close",
     "yes": "Yes",
     "no": "No",
@@ -439,11 +441,24 @@
     "createModal": {
       "title": "Create New Task",
       "subtitle": "Add a new task to your project",
-      "cta": "Create Task",
+      "cta": "Create task",
       "creating": "Creating...",
       "aiGenerate": "AI Generate",
+      "taskAI": "Task AI",
+      "createMore": "Create more",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "dueTime": "Due time",
+      "relationship": "Relationship",
+      "recurrence": "Recurrence",
+      "subscriber": "Subscriber",
+      "linkTask": "Link a task",
+      "searchResults": "Results",
+      "recent": "Recent",
+      "noTasks": "No tasks yet",
+      "taskSection": "Task",
       "placeholders": {
-        "title": "Enter task title..."
+        "title": "Task name"
       }
     },
     "validation": {

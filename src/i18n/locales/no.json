@@ -433,6 +433,14 @@
       "cta": "Opprett oppgave",
       "creating": "Oppretter...",
       "aiGenerate": "AI Generer",
+      "taskAI": "Task AI",
+      "createMore": "Opprett flere",
+      "expand": "Utvid",
+      "collapse": "Skjul",
+      "dueTime": "Forfallstid",
+      "relationship": "Relasjon",
+      "recurrence": "Gjentakelse",
+      "subscriber": "Abonnent",
       "placeholders": {
         "title": "Skriv inn oppgavetittel..."
       }
